@@ -132,3 +132,28 @@ www.support.systems.cineplex.de
 www.webmail.cineplex.de
 www.wiesbaden.cineplex.de
 wwww.cineplex.de
+
+## PASSIVE RECON 2026-09-02 (read-only, non-intrusive)
+
+> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+
+**Probed:** 132 hosts | **Live HTTP:** 6
+
+| Host | Status | Server/Tech |
+|---|---|---|
+| `cloud.systems.cineplex.de` | 302 | Server: openresty -> https://cloud.systems.cineplex.de/login |
+| `data-9fc27eb430.cineplex.de` | 200 | X-Powered-By: cST-84fa11a-2608271446-prd; Via: 1.1 |
+| `profil.cineplex.de` | 302 | - -> /preference |
+| `support.systems.cineplex.de` | 200 | Server: nginx |
+| `mailing.cineplex.de` | 200 | - |
+| `vpn-portal.systems.cineplex.de` | 200 | - |
+
+**CNAME review signals (8):**
+- `cloud.systems.cineplex.de` -> `nx37783.your-storageshare.de`
+- `data-9fc27eb430.cineplex.de` -> `cineplex-relay.iocnt.net`
+- `web-dev.cineplex.de` -> `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`
+- `profil.cineplex.de` -> `cineplex-preference.showtimeanalytics.com`
+- `support.systems.cineplex.de` -> `cineplex.zammad.com`
+- `mailing.cineplex.de` -> `t.mailjet.com`
+- `vpn-portal.systems.cineplex.de` -> `ingress-external.n-web-k8s1.web.n.ntxzone.de`
+- `talk.tho.cineplex.de` -> `talk.tho.ntxzone.de`
