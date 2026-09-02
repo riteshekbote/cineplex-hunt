@@ -157,3 +157,27 @@ wwww.cineplex.de
 - `mailing.cineplex.de` -> `t.mailjet.com`
 - `vpn-portal.systems.cineplex.de` -> `ingress-external.n-web-k8s1.web.n.ntxzone.de`
 - `talk.tho.cineplex.de` -> `talk.tho.ntxzone.de`
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `cloud.systems.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `data-9fc27eb430.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `mailing.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `profil.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `support.systems.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
+
+## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
+**Host:** `vpn-portal.systems.cineplex.de` | **Ports:** [80, 443]
+**Web surface only:** [80, 443]
