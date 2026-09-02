@@ -181,3 +181,5 @@ wwww.cineplex.de
 ## DEEP SERVICE SCAN 2026-09-02 (read-only connect+banner)
 **Host:** `vpn-portal.systems.cineplex.de` | **Ports:** [80, 443]
 **Web surface only:** [80, 443]
+
+## 2026-09-02 21:39:17 UTC
