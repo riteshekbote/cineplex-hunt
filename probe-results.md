@@ -25,3 +25,11 @@ https://booking.cineplex.de/api/booking/{id -> HTTP 403
 https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
 https://api.cineplex.de/ -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-03 21:46:59 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://booking.cineplex.de/api/booking/{id -> HTTP 403
+https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
+https://api.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://data-9fc27eb430.cineplex.de/ -> 200 len=?

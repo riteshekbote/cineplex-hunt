@@ -208,3 +208,9 @@ wwww.cineplex.de
 - NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
 
 ## 2026-09-03 19:05:42 UTC
+
+## 2026-09-03 21:46:44 UTC
+- NEW No new inventory hosts or passive recon data since 2026-09-02; last probe (GraphQL introspection on graphql-api.app.cineplex.de) was queued but results not yet in context
+- CHANGED Phase remains HYPOTHESIS with target=api; accepted classes unchanged (graphql_introspection, idor_booking, jwt_alg_confusion)
+- NEW data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11
+- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e

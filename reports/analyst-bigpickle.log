@@ -138,3 +138,419 @@ STEP 6 — LEARNING
 STEP 7 — RISK
 
 [RISK] cineplex: 8/100 — open-bug-bounty crowdsourced surface; active probes on customer-facing API carry PII-exposure risk which the program explicitly forbids; GraphQL introspection is read-only and low-risk; stay passive-first.
+===== ANALYST bigpickle 2026-09-03 21:46:44 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead inventory/cineplex.md[90m [limit=100][0m
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead analyst-out.txt
+Let me check the current state files and probe results to understand the delta.
+[0m→ [0mRead knowledge
+[0m→ [0mRead leads
+Let me check the knowledge base, state files of other agents, and any latest data to compute the delta.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && for f in state_laguna.json state_ling3.json state_longcat.json state_mimo.json state_nemotron3.json; do echo "=== $f ==="; cat "$f"; echo; done
+=== state_laguna.json ===
+{"phase": "HYPOTHESIS", "target": "api"}
+=== state_ling3.json ===
+{"phase": "HYPOTHESIS", "target": "api"}
+=== state_longcat.json ===
+{"phase": "HYPOTHESIS", "target": "api"}
+=== state_mimo.json ===
+{"phase": "POC", "target": "api"}
+=== state_nemotron3.json ===
+{"phase": "HYPOTHESIS", "target": "api"}
+[0m
+[0m→ [0mRead knowledge/index.md
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead leads/lead-mimo.md
+[0m→ [0mRead leads/lead-nemotron3.md
+Now I have the picture. Let me check the latest probe results more carefully. The probes returned HTTP 403 for the top hypotheses:
+- graphql-api.app.cineplex.de/ -> 403
+- api.cineplex.de/ -> 403
+- graphql-api.app.staging.cineplex.de/ -> 403
+
+So the previous #1 and #3 hypotheses (GraphQL introspection on prod and staging) both returned 403 on the root. This is important delta — the introspection leads were de-prioritized by the 403 results. Let me look at other agents' leads and check what POC mimo is doing.
+[0m→ [0mRead scope.yml
+[0m✗ [0mRead leads/leads/reposcan-cineplex.md failed
+[91m[1mError: [0mFile not found: /home/runner/work/cineplex-hunt/cineplex-hunt/leads/leads/reposcan-cineplex.md
+Let me check the scope.yml, the reposcan lead, and other agent leads, plus recon-notes for any probe data for api.cineplex.de.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat leads/reposcan-cineplex.md 2>/dev/null | head -100; echo "---RECON---"; ls recon-notes 2>/dev/null; echo "---TRIAGE---"; ls triage 2>/dev/null; echo "---REPORTS---"; ls reports 2>/dev/null
+## REPOSCAN 2026-09-03 15:31:58 UTC
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+## REPOSCAN 2026-09-03 18:51:54 UTC
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+## REPOSCAN 2026-09-03 21:31:43 UTC
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+---RECON---
+DEDICATED-DEEP.md
+---TRIAGE---
+run-2026-09-02-21-37.md
+run-2026-09-02-23-32.md
+run-2026-09-03-01-25.md
+run-2026-09-03-06-28.md
+run-2026-09-03-11-42.md
+run-2026-09-03-15-48.md
+run-2026-09-03-19-07.md
+---REPORTS---
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -rn "api.cineplex.de" --include="*.md" --include="*.txt" -l . 2>/dev/null | head; echo "=== latest hypotheses-bigpickle ==="; cat reports/hypotheses-bigpickle.txt; echo "=== hypotheses.md tail ==="; tail -60 reports/hypotheses.md
+./analyst-out.txt
+./inventory/cineplex.md
+./analyst-prompt.txt
+./probe-results.md
+./reports/hypotheses-bigpickle.txt
+./reports/hypotheses-nemotron3.txt
+./leads/lead-nemotron3.md
+./leads/lead-bigpickle.md
+./ctx.txt
+=== latest hypotheses-bigpickle ===
+## 2026-09-03 19:03:44 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,8.5,0.25(9)+0.25(8)+0.15(10,GraphQL)+0.15(9,no-auth introspect)+0.10(8,cloud)+0.10(8,fresh)
+[PRIO] api.cineplex.de,7.5,0.25(7,untested)+0.25(9,core API)+0.15(9,REST/JWT)+0.15(8,likely open)+0.10(8,cloud)+0.10(6,fresh)
+[PRIO] graphql-api.app.staging.cineplex.de,6.5,0.25(5,staging)+0.25(6)+0.15(10,GraphQL)+0.15(9)+0.10(7)+0.10(5)
+[HYP] Production GraphQL introspection leakage
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 70
+reasoning: Endpoint not in any REJECTED class; introspection is a known high-value passive check; staging/couat siblings exist suggesting shared GraphQL infra with potential env confusion
+evidence_needed: 200 response returning __schema types/fields
+verify_steps: (1) GET https://graphql-api.app.cineplex.de/ with Accept: application/json; (2) POST same with body {"query":"{__schema{types{name fields{name}}}}"}; (3) if blocked, POST query for a single known field to fingerprint resolver names
+impact: Full API schema disclosure enabling targeted IDOR/BOLA and mutation attacks; medium
+testability: PASSIVE
+[HYP] JWT alg confusion / weak signing on auth API
+class: AUTH
+asset: api.cineplex.de
+confidence: 45
+reasoning: New, untested host; sibling auth.cineplex.de prioritizes JWT alg/key confusion per directives; api.cineplex.de likely issues/validates tokens for mobile/app clients
+evidence_needed: token accepted with alg=none or HS256 with public key as HMAC secret
+verify_steps: (1) OPTIONS/HEAD https://api.cineplex.de/ to fingerprint; (2) fetch a public endpoint returning any JWT and decode header; (3) if alg=RS256 observed, forge HS256 variant and replay to a validation endpoint — read-only only
+impact: Token forgery -> ATO; high
+testability: AUTH_HELPED
+[HYP] Staging GraphQL env confusion / relaxed auth on sibling
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: Staging/couat environments often mirror production GraphQL but with weaker auth; same resolver layer as prod endpoint
+evidence_needed: different auth requirement or exposed schema vs production
+verify_steps: (1) GET https://graphql-api.app.staging.cineplex.de/ Accept application/json; (2) introspection query as above; compare auth posture to prod
+impact: Schema + mutation surface without auth; medium-high
+testability: PASSIVE
+[PARKED] JWT alg confusion @ api.cineplex.de: confidence 45, needs token acquisition — defer until endpoint fingerprinting returns token; keep as candidate
+[FINAL] Production GraphQL introspection @ graphql-api.app.cineplex.de — confidence 70, passive-verifiable, high value, in scope
+[FINAL] Staging GraphQL env confusion @ graphql-api.app.staging.cineplex.de — confidence 55, passive-verifiable, cheaper than prod first
+[NEXT] PROBE: GET https://graphql-api.app.cineplex.de/ with Accept: application/json — if 200/400 GraphQL response, follow with POST {"query":"{__schema{types{name fields{name}}}}"} (read-only, 1 rps)
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+[RISK] cineplex: 8/100 — open-bug-bounty crowdsourced surface; active probes on customer-facing API carry PII-exposure risk which the program explicitly forbids; GraphQL introspection is read-only and low-risk; stay passive-first.
+=== hypotheses.md tail ===
+# Hypotheses (ranked)
+
+## RANKED HYPOTHESES 2026-09-02 21:39:17 UTC
+
+## RANKED HYPOTHESES 2026-09-02 23:32:58 UTC
+
+## RANKED HYPOTHESES 2026-09-03 01:26:17 UTC
+
+## RANKED HYPOTHESES 2026-09-03 06:31:50 UTC
+
+## RANKED HYPOTHESES 2026-09-03 11:42:25 UTC
+
+## RANKED HYPOTHESES 2026-09-03 15:49:19 UTC
+- [75] graphql-api.app.cineplex.de: GraphQL Introspection & Unauthorized Mutations on Production API (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET https://graphql-api.app.cineplex.de/ — Accept: application/json — body: `{"query":"{__schema{types{name fields{name}}}"}` — expect 200 with schema if
+- LEARN: REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot pass
+- LEARN: REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+
+## RANKED HYPOTHESES 2026-09-03 19:05:42 UTC
+- [75] graphql-api.app.cineplex.de: GraphQL Introspection Enabled on Production API (from art/lead_nemotron3.txt)
+- [70] graphql-api.app.cineplex.de: Production GraphQL introspection leakage (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET https://graphql-api.app.cineplex.de/ — Accept: application/json — Content-Type: application/json — body: {"query":"{__schema{types{name fields{name}}
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET https://graphql-api.app.cineplex.de/ with Accept: application/json — if 200/400 GraphQL response, follow with POST {"query":"{__schema{types{name fie
+- LEARN: REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot pass
+- LEARN: REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+[0m
+Let me look at the probe data for `api.cineplex.de` and the latest triage run to understand what's happening. Also check the dedicated deep recon and recent hypotheses.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat triage/run-2026-09-03-19-07.md; echo "=== DEEP ==="; cat recon-notes/DEDICATED-DEEP.md 2>/dev/null | head -80
+===== TRIAGE 2026-09-03 19:07:25 UTC =====
+[0m
+> build · mimo-v2.5-free
+[0m
+[0m→ [0mRead .
+[0m✱ [0mGlob "**/*scope*"[90m 1 match[0m
+[0m✱ [0mGlob "**/*cineplex*"[90m 2 matches[0m
+[0m→ [0mRead scope.yml
+[0m→ [0mRead inventory/cineplex.md
+[0m→ [0mRead leads
+[0m→ [0mRead new-leads.txt
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead leads/lead-laguna.md
+[0m→ [0mRead leads/lead-ling3.md
+[0m→ [0mRead leads/lead-longcat.md
+[0m→ [0mRead leads/lead-mimo.md
+[0m→ [0mRead leads/lead-nemotron3.md
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead probe-results.txt
+[0m→ [0mRead triage-output.txt
+[0m→ [0mRead triage
+[0m→ [0mRead triage/run-2026-09-03-15-48.md
+You've provided "LEADS:" with no content. The workspace contains three hypotheses in `leads/lead-nemotron3.md` and three probe results in `probe-results.md`. Here's the triage of those three hypotheses against the probe evidence:
+
+---
+
+## Lead 1: GraphQL Introspection & Unauthorized Mutations on Production API
+
+**Asset:** `graphql-api.app.cineplex.de`
+
+| Gate | Answer | Detail |
+|------|--------|--------|
+| Q1 Scope | YES | `graphql-api.app.cineplex.de` in inventory; program covers "APIs" |
+| Q2 Reachable | YES | Host resolves, serves HTTP |
+| Q3 Impact | YES | Full schema disclosure → hidden mutations → unauthorized booking/payment (Critical if confirmed) |
+| Q4 Provable | **NO** | Probe returned HTTP 403 — introspection query blocked; no auth tokens available |
+| Q5 Novel | N/A | Cannot assess without proof |
+| Q6 Not rejected | YES | Not on always-rejected list |
+| Q7 Triager accept | NO | 403 proves introspection disabled; no PoC possible |
+
+**Verdict: INVALID** — Introspection disabled (403). No evidence of vulnerability. Would need auth tokens and a successful introspection/mutation to reopen.
+
+---
+
+## Lead 2: IDOR/BOLA on Booking API — Cross-User Booking Access
+
+**Asset:** `booking.cineplex.de`
+
+| Gate | Answer | Detail |
+|------|--------|--------|
+| Q1 Scope | YES | `booking.cineplex.de` in inventory; booking/ticketing in program scope |
+| Q2 Reachable | YES | Host resolves, serves HTTP |
+| Q3 Impact | YES | Cross-user booking data access (PII, seats, payments) — High/Critical |
+| Q4 Provable | **NO** | Probe `booking.cineplex.de/api/booking/{id}` returned HTTP 403 — endpoint blocked without valid session; AUTH_HELPED required |
+| Q5 Novel | N/A | Cannot assess without proof |
+| Q6 Not rejected | YES | IDOR/BOLA explicitly prioritized |
+| Q7 Triager accept | NO | 403 with no auth context = no proof of IDOR |
+
+**Verdict: HOLD** — Endpoint exists but 403 blocks unauthenticated testing. Needs valid test-account session to verify ownership validation. Reopen only with AUTH_HELPED and two-account proof showing cross-user access.
+
+---
+
+## Lead 3: JWT Algorithm/Key Confusion on Central Auth (auth.cineplex.de / sso.cineplex.de)
+
+**Asset:** `auth.cineplex.de`
+
+| Gate | Answer | Detail |
+|------|--------|--------|
+| Q1 Scope | YES | `auth.cineplex.de` in inventory; auth/SSO in program scope |
+| Q2 Reachable | YES | Host resolves |
+| Q3 Impact | YES | Token forgery → full ATO across all Cineplex properties (Critical) |
+| Q4 Provable | **NO** | Probe `auth.cineplex.de/.well-known/jwks.json` returned HTTP 404 — no JWKS endpoint exposed; no JWT captured |
+| Q5 Novel | N/A | Cannot assess without proof |
+| Q6 Not rejected | YES | JWT confusion not on rejected list |
+| Q7 Triager accept | NO | No JWKS endpoint = attack path blocked at discovery |
+
+**Verdict: INVALID** — No JWKS endpoint (404). Attack requires RS256-signed JWTs from a working JWKS; cannot proceed. Would need to capture a JWT from actual login flow first (AUTH_HELPED) and confirm algorithm before reassessing.
+
+---
+
+**Summary:** 0 VALID, 2 INVALID, 1 HOLD. All three hypotheses lack proof due to 403/404 probe results. Next steps require either AUTH_HELPED (valid test accounts) or targeted probing of endpoints that returned 200 (e.g., `support.systems.cineplex.de`, `cloud.systems.cineplex.de`, `profil.cineplex.de`).
+=== DEEP ===
+# Dedicated deep surface (wildcard-filtered) 2026-09-03
+
+**Target:** `cineplex`
+**Root zones:** `cineplex.de`
+
+## Wildcard analysis
+
+- Total resolving hostnames in zone: 158
+- After shared/wildcard IP filtering: **0 genuinely dedicated hosts**
+- Reason: all resolving hostnames use shared/CDN/wildcard IP signatures
+
+## Honest conclusion
+
+This target's subdomain space is wildcard-dominated. No genuinely dedicated
+subdomain surface was recovered from passive brute + subfinder enumeration.
+The surface either (a) uses wildcard DNS records, (b) all CNAME records
+point to shared CDN/Cloudflare/CloudFront/AWS IPs, or (c) has no
+subdomain program at all. This is the honest exhaustive result.
+
+---
+_Honest framing: passive DNS enumeration + shared-IP wildcard filtering. No finding claimed. No active testing performed._
+[0m
+I now have the full picture. The key delta is: the previous #1 and #3 hypotheses (GraphQL introspection on prod and staging GraphQL APIs) were probed and returned **HTTP 403** at the root. Also `api.cineplex.de/` returned 403. So the top GraphQL leads are now de-prioritized.
+
+Let me check the latest triage run and the DEDICATED-DEEP recon for the most recent state.
+I now have a complete picture of the delta and current state. The key facts:
+
+1. **Previous #1 hypothesis** (GraphQL introspection on prod) — returned **403**, triaged **INVALID**
+2. **Previous #3 hypothesis** (staging GraphQL) — returned **403**
+3. **Previous #2** (JWT alg confusion at api.cineplex.de) was parked at conf 45
+4. **api.cineplex.de/** returned **403** in the new probe
+5. Only 6 hosts are confirmed live (200): `cloud.systems.cineplex.de`, `data-9fc27eb430.cineplex.de`, `profil.cineplex.de`, `support.systems.cineplex.de`, `mailing.cineplex.de`, `vpn-portal.systems.cineplex.de`
+
+The 403s from the WAF/edge on all API/GraphQL endpoints suggest a protective gate. The most productive path now is the **200-returning hosts** that aren't behind the 403 gate — `data-9fc27eb430.cineplex.de` (which had interesting headers `X-Powered-By: cST-84fa11a...` and is a relay via `cineplex-relay.iocnt.net`), and `profil.cineplex.de` (Showtime Analytics integration).
+
+Let me verify the probe results file was updated by checking for probe-results.txt.
+
+Since my state says target `api`, but the api probes returned 403, I need to pivot. Let me run a couple of passive read-only probes on the 200-returning hosts to establish facts, then emit structured output. Actually, per rules, passive-first GET/HEAD/OPTIONS only, ≤1rps. Let me do a couple of safe fingerprint probes.
+
+Let me first check what's reachable and get fresh facts.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && (curl -s -o /dev/null -w "profil HTTP %{http_code} loc=%{redirect_url}\n" --max-time 15 https://profil.cineplex.de/ ; curl -s -o /dev/null -w "data HTTP %{http_code}\n" --max-time 15 https://data-9fc27eb430.cineplex.de/ ) 2>&1
+profil HTTP 302 loc=https://profil.cineplex.de/preference
+data HTTP 200
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && (curl -s -I --max-time 15 https://data-9fc27eb430.cineplex.de/ ; echo "---"; curl -s --max-time 15 https://data-9fc27eb430.cineplex.de/ | head -c 1200 ) 2>&1
+HTTP/2 200 
+x-powered-by: cST-479f2fb-2609030725-prd
+date: Thu, 03 Sep 2026 21:45:42 GMT
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+---
+[0m
+Interesting — `data-9fc27eb430.cineplex.de` returns 200 with an empty body and a distinctive `X-Powered-By: cST-479f2fb-2609030725-prd` header (note: header version changed from `cST-84fa11a-2608271446-prd` on the earlier scan to `cST-479f2fb-2609030725-prd`). The CNAME is `cineplex-relay.iocnt.net`. This is a live, 200-returning relay host not behind the 403 WAF gate. This is a fresh, high-value target worth fingerprinting. Let me probe it further (read-only) to understand what it is.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && for p in /health /healthz /api /api/health /version /swagger /openapi.json /api/v1 /graphql /status; do code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 12 "https://data-9fc27eb430.cineplex.de$p"); echo "$p -> $code"; sleep 1; done 2>&1
+/health -> 200
+/healthz -> 404
+/api -> 404
+/api/health -> 404
+/version -> 404
+/swagger -> 404
+/openapi.json -> 404
+/api/v1 -> 404
+/graphql -> 404
+/status -> 404
+[0m
+`/health` returns 200 on `data-9fc27eb430.cineplex.de` (the relay). Let me get its content — this could be a health endpoint revealing an internal relay/service identity (potentially a proxy you could route SSRF through, or a service health leak). Let me check the body.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== /health body ==="; curl -s --max-time 12 https://data-9fc27eb430.cineplex.de/health | head -c 2000; echo; echo "=== /health headers ==="; curl -s -I --max-time 12 https://data-9fc27eb430.cineplex.de/health
+=== /health body ===
+{"status":"ok"}
+=== /health headers ===
+HTTP/2 200 
+content-type: application/json
+x-powered-by: cST-479f2fb-2609030725-prd
+date: Thu, 03 Sep 2026 21:46:03 GMT
+content-length: 15
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000
+[0m
+`data-9fc27eb430.cineplex.de/health` returns `{"status":"ok"}` — a JSON health endpoint on a relay host (`cineplex-relay.iocnt.net`), exposed with no auth. This confirms `data-9fc27eb430.cineplex.de` is a **live health-endpoint-bearing service** reachable without the 403 WAF gate. This is a strong fresh lead — an internal relay/API surface.
+
+Let me check the DEDICATED-DEEP and confirm which hosts are the most unexplored 200-returning ones. Given my constraints (target `api`, passive-first), the strongest new fact-driven lead is `data-9fc27eb430.cineplex.de` — a relay/API that returns live JSON with a changing build header, and it's not gated. Let me also quickly check the `profil.cineplex.de/preference` endpoint since it's 302 to a third-party Showtime Analytics (a possible open-redirect / OAuth / SSRF / auth-sharing chain).
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && curl -s -o /dev/null -w "preference HTTP %{http_code} -> %{redirect_url}\n" --max-time 15 "https://profil.cineplex.de/preference"; curl -s -o /dev/null -w "profil-open HTTP %{http_code} -> %{redirect_url}\n" --max-time 15 "https://profil.cineplex.de/preference?redirect=https://example.com" 2>&1
+preference HTTP 200 -> 
+profil-open HTTP 200 ->
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat >> probe-results.md <<'EOF'
+
+## 2026-09-03 21:46:00 UTC
+https://data-9fc27eb430.cineplex.de/health -> HTTP 200 {"status":"ok"} (revealed live health endpoint)
+https://profil.cineplex.de/ -> HTTP 302 -> /preference
+https://profil.cineplex.de/preference -> HTTP 200 (no open redirect)
+EOF
+echo done
+done
+[0m
+`profil.cineplex.de/preference` returns 200 (not a redirect, so no open-redirect there). Good.
+
+I now have enough fresh facts to produce the structured analyst output. Let me compute the delta and update the state files.
+
+Key delta facts from this run:
+1. **graphql-api.app.cineplex.de** — new probe HTTP 403 (was hypothesis #1 INVALID per triage)
+2. **graphql-api.app.staging.cineplex.de** — new probe HTTP 403
+3. **api.cineplex.de** — new probe HTTP 403 (target host gated)
+4. **data-9fc27eb430.cineplex.de** — NEW: probe confirms live JSON `/health`=`{"status":"ok"}` at 200, returning exposed health endpoint with changing build header `cST-479f2fb-2609030725-prd`; relay via `cineplex-relay.iocnt.net`; NOT behind 403 gate. Fresh high-value discovery.
+5. **profil.cineplex.de/preference** — 200, no open-redirect signal.
+
+The 403 gate on all API/GraphQL endpoints means my target `api` is blocked at the edge. The productive pivot is `data-...` (a relay with a 200 health endpoint) — the only authless 200 API-ish surface found. Let me record my probe results and emit.
+
+Let me update probe-results.md and the lead file, then output.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat >> leads/lead-bigpickle.md <<'EOF'
+## 2026-09-03 21:46:00 UTC [target] (model bigpickle)
+[NEW] data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11a-2608271446-prd => active deployment), CNAME cineplex-relay.iocnt.net, NOT behind the 403 WAF gate
+[CHANGED] api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27eb430)
+[PRIO] data-9fc27eb430.cineplex.de,8.0,0.25(8,200 live relay)+0.25(8,internal relay)+0.15(8,JSON health/wire)+0.15(10,no-auth gate)+0.10(7,google-fronted)+0.10(8,fresh active deploy)
+EOF
+echo '{"phase": "HYPOTHESIS", "target": "data-9fc27eb430.cineplex.de"}' > state_bigpickle.json
+echo done
+done
+[0m
+Let me append the lead to the lead file and update the state file.
+Now let me emit the structured analyst output.
+
+## STEP 1 — DELTA
+- [CHANGED] `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de` all root probes now HTTP 403 => target "api" surface is gated at edge WAF; prior GraphQL introspection hypothesis triaged INVALID
+- [NEW] `data-9fc27eb430.cineplex.de` — live 200 relay host returning unauthenticated JSON `/health` → `{"status":"ok"}`, exposed build header `X-Powered-By: cST-479f2fb-2609030725-prd` (changed from prior cST-84fa11a-2608271446-prd => active deployment), CNAME `cineplex-relay.iocnt.net`, NOT behind 403 gate
+- [NEW] `profil.cineplex.de/preference` → HTTP 200 (no open-redirect observed on redirect param)
+
+## STEP 2 — PRIORITIZE
+- [PRIO] `data-9fc27eb430.cineplex.de`,8.0,0.25(8,200 live relay)+0.25(8,internal relay)+0.15(8,JSON wire/health)+0.15(10,no-auth gate)+0.10(7,cloud-fronted "via google")+0.10(8,fresh active deploy)
+- [PRIO] `api.cineplex.de`,6.5,0.25(6,gated 403)+0.25(9,core API)+0.15(9,REST/JWT)+0.15(5,edge-blocked)+0.10(8,cloud)+0.10(5,stale)
+
+## STEP 3 — HYPOTHESES
+[HYP] Relay/internal-service path disclosure via exposed health/build endpoint
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 60
+reasoning: Only authless 200 JSON surface not behind the 403 gate; franchise relay (`cineplex-relay.iocnt.net`) with /health returning {"status":"ok"} and a mutable deployment header (cST-...-prd) indicating CI/CD-driven env; exposed internals often accompany an unauthenticated admin/proxy console or an SSRF-forwarding relay
+evidence_needed: additional unauthenticated 200 endpoints (e.g. /metrics, /admin, /proxy, /api/, /internal) beyond /health; any path reflecting an upstream URL (relay-forwarding = SSRF primitive)
+verify_steps: (1) GET /metrics, /debug, /admin, /proxy, /api/ on host (already /openapi,/swagger,/graphql,/healthz = 404); (2) if relay forwards, GET a path with a target param and confirm it returns an upstream response — read-only, do NOT point at cloud metadata; (3) compare /health header drift across scans to confirm live CI pipeline
+impact: Internal relay/health/metrics disclosure -> footprint for SSRF/proxy abuse -> lateral movement toward cloud metadata; medium-high if relay reflects requests
+testability: PASSIVE
+[HYP] REST/JSON API shim reachable on relay (method-based gating bypass)
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 45
+reasoning: Root and /health return distinct responses while /api* 404 — a routing shim exists serving JSON; root body empty on GET suggests POST/OPTIONS may expose controller routes that the 403 WAF on api.cineplex.de would not
+evidence_needed: OPTIONS or HEAD on / returning Allow header list or a non-403 differing fallback; any path returning a distinct route/version identifier
+verify_steps: (1) OPTIONS / and HEAD / on data-9fc27eb430.cineplex.de and compare Allow/status to root; (2) if Methods differ from Gate, enumerate /api/v1/* and /rpc/* on this relay instead of gated api.cineplex.de — read-only
+impact: Undocumented API surface reachable without the edge auth-gate => potential IDOR/BOLA on relay-backed booking/service calls; medium
+testability: PASSIVE
+[PARKED] JWT alg confusion @ api.cineplex.de — root 403, no token/JWKS obtainable; gate blocks even fingerprinting; keep parked until an auth flow yields a token
+[PARKED] GraphQL introspection @ graphql-api.app.cineplex.de / staging — 403 at root proves introspection visually disabled; triage INVALID; reopen only with valid session tokens
+
+## STEP 4 — SELF-CRITIQUE
+[PARKED] JWT alg confusion @ api.cineplex.de: conf 45, gate 403, no token; cannot verify passively now
+[PARKED] GraphQL introspection (prod+staging): conf dropped to ~15 after 403; triage INVALID; no passive verification possible
+[FINAL] Relay/internal-service disclosure @ data-9fc27eb430.cineplex.de — conf 60, live 200 JSON surface, unique in not being WAF-gated, high-value fresh active deploy
+[FINAL] REST/JSON API shim @ data-9fc27eb430.cineplex.de — conf 45, method-based route gating on relay, worth one OPTIONS/HEAD probe to confirm routing exists
+
+## STEP 5 — NEXT ACTION
+[NEXT] PROBE: OPTIONS and HEAD https://data-9fc27eb430.cineplex.de/ , then GET /metrics and /api/ on same host (read-only, ≤1 rps); if Allow differs from root or any new 200 JSON surface appears, enumerate /api/v1/* there instead of gated api.cineplex.de
+
+## STEP 6 — LEARNING
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+[LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+
+## STEP 7 — RISK
+[RISK] cineplex: 7/100 — target "api" fully 403-gated at edge; remaining live 200 surface (data-9fc27eb430 relay, profil/preference, cloud, support, mailing, vpn-portal) is the only reachable perimeter; franchise relay carries moderate internal-exposure potential; program forbids touching customer/employee/financial/auth data, so stay strictly passive read-only on the health/build surface and never point a relay reflector at cloud metadata or customer endpoints.

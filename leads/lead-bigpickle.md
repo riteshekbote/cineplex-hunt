@@ -40,3 +40,73 @@ testability: PASSIVE
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
 [LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
 [RISK] cineplex: 8/100 — open-bug-bounty crowdsourced surface; active probes on customer-facing API carry PII-exposure risk which the program explicitly forbids; GraphQL introspection is read-only and low-risk; stay passive-first.
+## 2026-09-03 21:46:33 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,8.5,0.25(9)+0.25(8)+0.15(10,GraphQL)+0.15(9,no-auth introspect)+0.10(8,cloud)+0.10(8,fresh)
+[PRIO] api.cineplex.de,7.5,0.25(7,untested)+0.25(9,core API)+0.15(9,REST/JWT)+0.15(8,likely open)+0.10(8,cloud)+0.10(6,fresh)
+[PRIO] graphql-api.app.staging.cineplex.de,6.5,0.25(5,staging)+0.25(6)+0.15(10,GraphQL)+0.15(9)+0.10(7)+0.10(5)
+[HYP] Production GraphQL introspection leakage
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 70
+reasoning: Endpoint not in any REJECTED class; introspection is a known high-value passive check; staging/couat siblings exist suggesting shared GraphQL infra with potential env confusion
+evidence_needed: 200 response returning __schema types/fields
+verify_steps: (1) GET https://graphql-api.app.cineplex.de/ with Accept: application/json; (2) POST same with body {"query":"{__schema{types{name fields{name}}}}"}; (3) if blocked, POST query for a single known field to fingerprint resolver names
+impact: Full API schema disclosure enabling targeted IDOR/BOLA and mutation attacks; medium
+testability: PASSIVE
+[HYP] JWT alg confusion / weak signing on auth API
+class: AUTH
+asset: api.cineplex.de
+confidence: 45
+reasoning: New, untested host; sibling auth.cineplex.de prioritizes JWT alg/key confusion per directives; api.cineplex.de likely issues/validates tokens for mobile/app clients
+evidence_needed: token accepted with alg=none or HS256 with public key as HMAC secret
+verify_steps: (1) OPTIONS/HEAD https://api.cineplex.de/ to fingerprint; (2) fetch a public endpoint returning any JWT and decode header; (3) if alg=RS256 observed, forge HS256 variant and replay to a validation endpoint — read-only only
+impact: Token forgery -> ATO; high
+testability: AUTH_HELPED
+[HYP] Staging GraphQL env confusion / relaxed auth on sibling
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: Staging/couat environments often mirror production GraphQL but with weaker auth; same resolver layer as prod endpoint
+evidence_needed: different auth requirement or exposed schema vs production
+verify_steps: (1) GET https://graphql-api.app.staging.cineplex.de/ Accept application/json; (2) introspection query as above; compare auth posture to prod
+impact: Schema + mutation surface without auth; medium-high
+testability: PASSIVE
+[PARKED] JWT alg confusion @ api.cineplex.de: confidence 45, needs token acquisition — defer until endpoint fingerprinting returns token; keep as candidate
+[FINAL] Production GraphQL introspection @ graphql-api.app.cineplex.de — confidence 70, passive-verifiable, high value, in scope
+[FINAL] Staging GraphQL env confusion @ graphql-api.app.staging.cineplex.de — confidence 55, passive-verifiable, cheaper than prod first
+[NEXT] PROBE: GET https://graphql-api.app.cineplex.de/ with Accept: application/json — if 200/400 GraphQL response, follow with POST {"query":"{__schema{types{name fields{name}}}}"} (read-only, 1 rps)
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+[RISK] cineplex: 8/100 — open-bug-bounty crowdsourced surface; active probes on customer-facing API carry PII-exposure risk which the program explicitly forbids; GraphQL introspection is read-only and low-risk; stay passive-first.
+[NEW] data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11a-2608271446-prd => active deployment), CNAME cineplex-relay.iocnt.net, NOT behind the 403 WAF gate
+[CHANGED] api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27eb430)
+[PRIO] data-9fc27eb430.cineplex.de,8.0,0.25(8,200 live relay)+0.25(8,internal relay)+0.15(8,JSON health/wire)+0.15(10,no-auth gate)+0.10(7,google-fronted)+0.10(8,fresh active deploy)
+[HYP] Relay/internal-service path disclosure via exposed health/build endpoint
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 60
+reasoning: Only authless 200 JSON surface not behind the 403 gate; franchise relay (`cineplex-relay.iocnt.net`) with /health returning {"status":"ok"} and a mutable deployment header (cST-...-prd) indicating CI/CD-driven env; exposed internals often accompany an unauthenticated admin/proxy console or an SSRF-forwarding relay
+evidence_needed: additional unauthenticated 200 endpoints (e.g. /metrics, /admin, /proxy, /api/, /internal) beyond /health; any path reflecting an upstream URL (relay-forwarding = SSRF primitive)
+verify_steps: (1) GET /metrics, /debug, /admin, /proxy, /api/ on host (already /openapi,/swagger,/graphql,/healthz = 404); (2) if relay forwards, GET a path with a target param and confirm it returns an upstream response — read-only, do NOT point at cloud metadata; (3) compare /health header drift across scans to confirm live CI pipeline
+impact: Internal relay/health/metrics disclosure -> footprint for SSRF/proxy abuse -> lateral movement toward cloud metadata; medium-high if relay reflects requests
+testability: PASSIVE
+[HYP] REST/JSON API shim reachable on relay (method-based gating bypass)
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 45
+reasoning: Root and /health return distinct responses while /api* 404 — a routing shim exists serving JSON; root body empty on GET suggests POST/OPTIONS may expose controller routes that the 403 WAF on api.cineplex.de would not
+evidence_needed: OPTIONS or HEAD on / returning Allow header list or a non-403 differing fallback; any path returning a distinct route/version identifier
+verify_steps: (1) OPTIONS / and HEAD / on data-9fc27eb430.cineplex.de and compare Allow/status to root; (2) if Methods differ from Gate, enumerate /api/v1/* and /rpc/* on this relay instead of gated api.cineplex.de — read-only
+impact: Undocumented API surface reachable without the edge auth-gate => potential IDOR/BOLA on relay-backed booking/service calls; medium
+testability: PASSIVE
+[PARKED] JWT alg confusion @ api.cineplex.de — root 403, no token/JWKS obtainable; gate blocks even fingerprinting; keep parked until an auth flow yields a token
+[PARKED] GraphQL introspection @ graphql-api.app.cineplex.de / staging — 403 at root proves introspection visually disabled; triage INVALID; reopen only with valid session tokens
+[PARKED] JWT alg confusion @ api.cineplex.de: conf 45, gate 403, no token; cannot verify passively now
+[PARKED] GraphQL introspection (prod+staging): conf dropped to ~15 after 403; triage INVALID; no passive verification possible
+[FINAL] Relay/internal-service disclosure @ data-9fc27eb430.cineplex.de — conf 60, live 200 JSON surface, unique in not being WAF-gated, high-value fresh active deploy
+[FINAL] REST/JSON API shim @ data-9fc27eb430.cineplex.de — conf 45, method-based route gating on relay, worth one OPTIONS/HEAD probe to confirm routing exists
+[NEXT] PROBE: OPTIONS and HEAD https://data-9fc27eb430.cineplex.de/ , then GET /metrics and /api/ on same host (read-only, ≤1 rps); if Allow differs from root or any new 200 JSON surface appears, enumerate /api/v1/* there instead of gated api.cineplex.de
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+[LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+[RISK] cineplex: 7/100 — target "api" fully 403-gated at edge; remaining live 200 surface (data-9fc27eb430 relay, profil/preference, cloud, support, mailing, vpn-portal) is the only reachable perimeter; franchise relay carries moderate internal-exposure potential; program forbids touching customer/employee/financial/auth data, so stay strictly passive read-only on the health/build surface and never point a relay reflector at cloud metadata or customer endpoints.
