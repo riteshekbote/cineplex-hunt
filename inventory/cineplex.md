@@ -191,3 +191,18 @@ wwww.cineplex.de
 ## 2026-09-03 06:31:50 UTC
 
 ## 2026-09-03 11:42:25 UTC
+
+## 2026-09-03 15:49:19 UTC
+- NEW 132 hosts in inventory from passive DNS/CT (seed 2026-09-02)
+- NEW 6 live HTTP hosts confirmed: `cloud.systems.cineplex.de`, `data-9fc27eb430.cineplex.de`, `profil.cineplex.de`, `support.systems.cineplex.de`, `mailing.cineplex.de`, `vpn-portal.systems.cineplex.de`
+- NEW 8 CNAME signals to third-party: `your-storageshare.de`, `cineplex-relay.iocnt.net`, `azurecontainerapps.io`, `showtimeanalytics.com`, `zammad.com`, `mailjet.com`, `ntxzone.de` (2x)
+- NEW High-value API targets identified: `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `booking.cineplex.de`, `buchung.cineple
+- NEW Auth/identity surface: `auth.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`, `account.cineplex.de`, `my.cineplex.de`, `profil.cineplex.de`
+- NEW Staging/dev surface: `app.staging.cineplex.de`, `staging.cineplex.de`, `dev.cineplex.de`, `web-dev.cineplex.de`, `booking-dev.cineplex.de`, `buchung-dev.cineplex.de`, `bms-dev.cineplex.de`, `prelive.c
+- NEW Customer-facing portals: `shop.cineplex.de`, `webshop.cineplex.de`, `tickets.cineplex.de`, `booking.cineplex.de`, `portal.cineplex.de`, `mobile.cineplex.de`, `app.cineplex.de`
+- NEW Admin/internal: `admin.cineplex.de`, `dashboard.cineplex.de`, `cms.cineplex.de`, `ci.cineplex.de`, `jenkins.cineplex.de`, `jira.systems.cineplex.de`
+- NEW VPN/remote access: `vpn-portal.systems.cineplex.de`, `vpn-openvpn-cpz.systems.cineplex.de`
+- NEW Regional cinema sites (potential multi-tenant): 20+ location subdomains (aichach, bayreuth, eisenach, frankfurt, etc.)
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory

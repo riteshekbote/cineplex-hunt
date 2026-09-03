@@ -13,3 +13,8 @@
 
 ## 2026-09-03 11:42:25 UTC
 
+
+## 2026-09-03 15:49:24 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://booking.cineplex.de/api/booking/{id -> HTTP 403
+https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
