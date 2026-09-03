@@ -206,3 +206,5 @@ wwww.cineplex.de
 - NEW api.cineplex.de - Host in inventory, no prior probes
 - CHANGED Target is now "api" per current state
 - NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+
+## 2026-09-03 19:05:42 UTC
