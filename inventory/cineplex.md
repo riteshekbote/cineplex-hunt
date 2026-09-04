@@ -239,3 +239,9 @@ wwww.cineplex.de
 - NEW `graphql-api.app.cineplex.de` root returns 403 but GraphQL POST with introspection query returns 200 — WAF bypass via GraphQL endpoint
 - NEW `data-9fc27eb430.cineplex.de` relay host live at `/health` → `{"status":"ok"}`, `X-Powered-By: cST-479f2fb-2609030725-prd` (build header changed from prior scan)
 - CHANGED `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de` all return HTTP 403 at root → edge WAF blocks "api" surface; pivot to authless 200 surface (relay host) + GraphQ
+
+## 2026-09-04 07:26:39 UTC
+- NEW `data-9fc27eb430.cineplex.de` relay host `/health` returns updated build header `X-Powered-By: cST-479f2fb-2609030725-prd` (changed from `cST-84fa11a-2608271446-prd`)
+- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
+- CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion

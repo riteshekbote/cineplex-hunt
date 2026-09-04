@@ -2027,3 +2027,176 @@ testability: PASSIVE
 ## STEP 7 — RISK
 
 [RISK] cineplex: 8/100 — target "api" fully 403-gated at root; the only active attack surface is the franchise relay (`data-9fc27eb430.cineplex.de`, CNAME `cineplex-relay.iocnt.net`) which serves unauthenticated 200 JSON on `/health` and `/` and may expose internal relay/proxy routes or SSRF-forwarding paths. The GraphQL production endpoint (`graphql-api.app.cineplex.de`) accepts introspection POST but root GET is WAF-blocked — schema enumeration is confirmed but the actual mutation/IDOR tests require live customer data which the program forbids. JWKS endpoint is 404 so passive JWT analysis is blocked. Remaining live hosts (`profil`, `support`, `mailing`, `vpn-portal`) are third-party managed (Zammad, Mailjet, ntxzone) and carry low inherent risk. Program explicitly forbids exposing customer/employee/financial/auth data during testing, which eliminates the highest-value IDOR/mutation probes without a test/sandbox account or explicit consent. Stay passive-first: relay surface enumeration + schema-only GraphQL introspection only.
+===== ANALYST bigpickle 2026-09-04 07:26:39 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mecho "STEP 1 — DELTA: compare inventory+knowledge+last leads against current surface." && echo "STEP 2 — PRIORITIZE: score top new (or existing) assets 0-10 on attack_surface, business_value, tech_exposure (GraphQL/OAuth/JWT/upload/admin/uncommon), gate_ease (10=no auth), cloud_surface, freshness. priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f. Emit [PRIO] asset,score,axis." && echo "STEP 3 — HYPOTHESES: top 3 assets, max 1 hypothesis each." && echo "STEP 4 — SELF-CRITIQUE: drop confidence<40 or REJECTED-class or no-verify-steps." && echo "STEP 5 — NEXT ACTION: exactly one [NEXT] <PROBE|SCAN|RAG|HUMAN>: <one concrete action, exact endpoint if PROBE>." && echo "STEP 6 — LEARNING: [LEARN] REJECTED/ACCEPTED <class> @ <asset>: <reason>." && echo "STEP 7 — RISK: [RISK] <program>: <0-100> reason."
+STEP 1 — DELTA: compare inventory+knowledge+last leads against current surface.
+STEP 2 — PRIORITIZE: score top new (or existing) assets 0-10 on attack_surface, business_value, tech_exposure (GraphQL/OAuth/JWT/upload/admin/uncommon), gate_ease (10=no auth), cloud_surface, freshness. priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f. Emit [PRIO] asset,score,axis.
+STEP 3 — HYPOTHESES: top 3 assets, max 1 hypothesis each.
+STEP 4 — SELF-CRITIQUE: drop confidence<40 or REJECTED-class or no-verify-steps.
+STEP 5 — NEXT ACTION: exactly one [NEXT] <PROBE|SCAN|RAG|HUMAN>: <one concrete action, exact endpoint if PROBE>.
+STEP 6 — LEARNING: [LEARN] REJECTED/ACCEPTED <class> @ <asset>: <reason>.
+STEP 7 — RISK: [RISK] <program>: <0-100> reason.
+[0m
+[0m$ [0mls /home/runner/work/cineplex-hunt/cineplex-hunt
+README.md
+analyst-out.txt
+analyst-prompt.txt
+ctx.txt
+inventory
+knowledge
+leads
+probe-results.md
+recon-notes
+reports
+reposcan-raw
+scope.yml
+scripts
+state_bigpickle.json
+state_laguna.json
+state_ling3.json
+state_longcat.json
+state_mimo.json
+state_nemotron3.json
+triage
+[0m
+[0m$ [0mls /tmp/opencode 2>/dev/null || echo "dir not found"
+(no output)
+[0m
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead scope.yml
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead leads
+[0m→ [0mRead triage
+[0m→ [0mRead triage/run-2026-09-04-02-58.md
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code}|%{size_download}|%{content_type}" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{name}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+200|53|application/json; charset=utf-8
+[0m
+[0m$ [0mcurl -s -I https://data-9fc27eb430.cineplex.de/ 2>&1 | head -30
+HTTP/2 200 
+x-powered-by: cST-479f2fb-2609030725-prd
+date: Fri, 04 Sep 2026 07:25:06 GMT
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000
+[0m
+[0m$ [0mcurl -s -w "\n%{http_code}|%{size_download}|%{content_type}" https://data-9fc27eb430.cineplex.de/metrics 2>&1
+{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":83123641,"messages_dropped":0}}
+200|114|application/json
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{name}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"data":{"__schema":{"queryType":{"name":"Query"}}}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{name}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"data":{"__schema":{"mutationType":{"name":"Mutation"}}}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Query\"){fields{name}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"data":{"__type":{"fields":[{"name":"test"},{"name":"onboardingContent"},{"name":"appReleases"},{"name":"audioFingerprintingConfig"},{"name":"bonusPrograms"},{"name":"bonusProgram"},{"name":"checkVoucherCodes"},{"name":"getTeenBonusCardPdf"},{"name":"campaign"},{"name":"campaignsByCinemas"},{"name":"estimateCampaignSize"},{"name":"searchCastOrCrewMember"},{"name":"currentCinema"},{"name":"cinema"},{"name":"cinemas"},{"name":"companies"},{"name":"company"},{"name":"errorStatistics"},{"name":"locationForZipCode"},{"name":"movie"},{"name":"movies"},{"name":"allMovies"},{"name":"similarMovies"},{"name":"searchMovie"},{"name":"screenedMovies"},{"name":"incomingForeignMovieIdentifiers"},{"name":"newsItem"},{"name":"notification"},{"name":"screeningAuditorium"},{"name":"externalUrl"},{"name":"appDeepLink"},{"name":"screenings"},{"name":"screening"},{"name":"allScreeningAttributes"},{"name":"ticket"},{"name":"order"},{"name":"movieList"},{"name":"allCinemaFilmSeries"},{"name":"soonInCinemaItems"},{"name":"usageStatistics"},{"name":"movieStatistics"},{"name":"subscriptionsStatistics"},{"name":"newSubscriptionStatistics"},{"name":"cinfinityCinemaStats"},{"name":"onlineTicketingVoucherStats"},{"name":"payoutInfo"},{"name":"missedPayouts"},{"name":"currentUser"},{"name":"currentPOS"},{"name":"userByQr"},{"name":"userById"},{"name":"adminUsers"},{"name":"searchUsers"},{"name":"searchUsersTotal"},{"name":"testing_getConfirmationCode"},{"name":"testing_forceDeleteUser"},{"name":"allVoucherClassesOfCinemaOperatingCompany"},{"name":"getAvailableVoucherClasses"},{"name":"voucherInstanceByQR"},{"name":"voucherInstancesByOrderNumber"},{"name":"contentSectionList"},{"name":"contentSectionListByNameAndCinemas"},{"name":"getAllEditableContentSectionLists"},{"name":"newsListSection"},{"name":"getImdbIds"},{"name":"getServiceStatus"},{"name":"getOnlineTicketingBooking"},{"name":"moviesToRateToInitializeRecommender"},{"name":"emailComponent"},{"name":"appLanguage"},{"name":"targetGroup"},{"name":"allTargetGroupsByCinemaOperatingCompanies"},{"name":"allGenres"},{"name":"allPerks"},{"name":"allAchievements"},{"name":"allImages"},{"name":"validateSubscriptionUsers"},{"name":"subscriptionTiers"},{"name":"invoice"},{"name":"beacons"},{"name":"beaconById"},{"name":"cinemaCluster"},{"name":"cinemaClusters"}]}}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Mutation\"){fields{name}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"data":{"__type":{"fields":[{"name":"a"},{"name":"upsertApp"},{"name":"updateCinemaOperatingCompanyTargetGroupFilterConfig"},{"name":"updateCinemaOperatingCompany"},{"name":"createCinemaOperatingCompany"},{"name":"updateBonusProgram"},{"name":"bookCinemaTicketPoints"},{"name":"joinBonusProgram"},{"name":"editBonusProgramMembership"},{"name":"bookCoupon"},{"name":"acceptBonusProgramTerms"},{"name":"rejectBonusProgramTerms"},{"name":"addInvitedBy"},{"name":"claimOrDiscardProvisionalBonusPointBooking"},{"name":"processScannedQrCode"},{"name":"createGoogleWalletBonusCard"},{"name":"createCampaign"},{"name":"editCampaign"},{"name":"setCampaignStatus"},{"name":"editCampaignEmail"},{"name":"deleteCampaigns"},{"name":"updateCampaignsStatus"},{"name":"updateCinema"},{"name":"createCinema"},{"name":"createCompany"},{"name":"editCompany"},{"name":"deleteCompanies"},{"name":"suggestCinema"},{"name":"createIntercomLead"},{"name":"submitAppFeedback"},{"name":"upsertInterestRating"},{"name":"logItems"},{"name":"updateForeignMovieMapping"},{"name":"upsertNewsItem"},{"name":"updateNotificationPreference"},{"name":"updateExternalNewsletterPreference"},{"name":"startBookingProcess"},{"name":"selectSeats"},{"name":"cancelBookingProcess"},{"name":"selectSeatPricingCategories"},{"name":"selectSeatingAreaPricingCategories"},{"name":"submitBookingProcess"},{"name":"upsertReviewRating"},{"name":"upsertQuizReviewRating"},{"name":"deleteReviewRating"},{"name":"deleteReviewRating_2"},{"name":"createOnlineTicketingOutlinkId"},{"name":"updateScreening"},{"name":"cancelTicket"},{"name":"updateTicket"},{"name":"openTicket"},{"name":"cancelOrder"},{"name":"startOrderPreparation"},{"name":"createSoonInCinemaItem"},{"name":"updateSoonInCinemaItem"},{"name":"deleteSoonInCinemaItem"},{"name":"acceptAppTerms"},{"name":"allowDataUsage"},{"name":"allowAppTracking"},{"name":"optInToMarketingEmails"},{"name":"login"},{"name":"socialLogin"},{"name":"loginPOS"},{"name":"logout"},{"name":"refreshLogin"},{"name":"createAnonymousUser"},{"name":"requestLoginCreation"},{"name":"requestEmailChange"},{"name":"resendEmailConfirmation"},{"name":"confirmEmail"},{"name":"requestPasswordReset"},{"name":"changePassword"},{"name":"updateUserProfile"},{"name":"selectCinemas"},{"name":"selectCinema"},{"name":"deselectCinema"},{"name":"increaseUserTestingStatus"},{"name":"updateUserAdminStatus"},{"name":"deleteUser"},{"name":"deleteCineplexUser"},{"name":"leaveBonusProgram"},{"name":"rememberSkippedOnboardingStep"},{"name":"updateUser"},{"name":"updateUserSubscription"},{"name":"setInitialRatedMovies"},{"name":"editUserGroupFilter"},{"name":"editUserGroupFilterOnReferencedMovie"},{"name":"buyVoucher"},{"name":"createVoucherInstances"},{"name":"redeemVoucher"},{"name":"buyAndRedeemVoucher"},{"name":"updateVoucherInstance"},{"name":"storeEikonaPreshowData"},{"name":"sendNotifications"},{"name":"sendTestNotification"},{"name":"sendShowtimeAnalyticsCampaign"},{"name":"createContentSectionList"},{"name":"updateContentSectionList"},{"name":"dismissExitPoll"},{"name":"storeSeatPlan"},{"name":"recordTicketPurchase"},{"name":"confirmOnlineTicketingBooking"},{"name":"syncTicket"},{"name":"startWebBooking"},{"name":"storeSDKLogin"},{"name":"storeConsent"},{"name":"upsertSeenInCinema"},{"name":"deleteSeenInCinema"},{"name":"subscribeToNewsletter"},{"name":"sendTestEmail"},{"name":"createTargetGroup"},{"name":"editTargetGroup"},{"name":"deleteTargetGroups"},{"name":"updateTargetGroupsStatus"},{"name":"saveImagePath"},{"name":"deleteImage"},{"name":"subscribe"},{"name":"unsubscribe"},{"name":"reactivateSubscription"},{"name":"reschedulePayment"},{"name":"createUserTokenForSubscriptionValidation"},{"name":"logUserScreeningInterests"},{"name":"validateVoucherCode"},{"name":"createAdyenSession"},{"name":"startPendingSubscription"},{"name":"extendSubscription"},{"name":"createSubscriptionByVoucher"},{"name":"cancelSubscriptionImmediately"},{"name":"requestLinkAccount"},{"name":"acceptLinkAccount"},{"name":"declineLinkAccount"},{"name":"deleteLinkedAccount"},{"name":"capturePaypalOrderAndCreateTickets"},{"name":"createBeacon"},{"name":"updateBeacon"},{"name":"deleteBeacon"},{"name":"registerBeaconScanned"},{"name":"updateCinemaCluster"},{"name":"createCinemaCluster"},{"name":"deleteCinemaClusters"}]}}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"User\"){fields{name type{name kind ofType{name kind}}}}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"data":{"__type":{"fields":[{"name":"externalNewsletterPreferences","type":{"name":null,"kind":"LIST","ofType":{"name":null,"kind":"NON_NULL"}}},{"name":"id","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"ID","kind":"SCALAR"}}},{"name":"name","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"fullName","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"blocked","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Boolean","kind":"SCALAR"}}},{"name":"blockedReason","type":{"name":"UserBlockedReason","kind":"ENUM","ofType":null}},{"name":"blockedText","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"email","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"cinemaCustomerships","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"watchlist","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"MovieList","kind":"OBJECT"}}},{"name":"ratedlist","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"MovieList","kind":"OBJECT"}}},{"name":"seenInCinemaList","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"MovieList","kind":"OBJECT"}}},{"name":"bonusProgramMembership","type":{"name":"BonusProgramMembership","kind":"OBJECT","ofType":null}},{"name":"freeTicketCount","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Int","kind":"SCALAR"}}},{"name":"tickets","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"orders","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"bonusProgramMemberships","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"onlineTicketingToken","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"testingStatus","type":{"name":"TestingStatus","kind":"ENUM","ofType":null}},{"name":"termsStatus","type":{"name":"AppTermsStatus","kind":"OBJECT","ofType":null}},{"name":"dataUsageAllowed","type":{"name":"Boolean","kind":"SCALAR","ofType":null}},{"name":"marketingEmailsAllowed","type":{"name":"Boolean","kind":"SCALAR","ofType":null}},{"name":"notificationPreferences","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"privileges","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"UserPrivileges","kind":"OBJECT"}}},{"name":"notifications","type":{"name":null,"kind":"LIST","ofType":{"name":null,"kind":"NON_NULL"}}},{"name":"anonymous","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Boolean","kind":"SCALAR"}}},{"name":"askForAppFeedback","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Boolean","kind":"SCALAR"}}},{"name":"askToRegister","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Boolean","kind":"SCALAR"}}},{"name":"askToJoinBonusProgram","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"Boolean","kind":"SCALAR"}}},{"name":"zipCode","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"gender","type":{"name":"Gender","kind":"ENUM","ofType":null}},{"name":"birthDate","type":{"name":"Date","kind":"SCALAR","ofType":null}},{"name":"firstName","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"lastName","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"street","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"houseNumber","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"city","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"country","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"lastSync","type":{"name":"DateTime","kind":"SCALAR","ofType":null}},{"name":"telephone","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"subscriptions","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"invoices","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"vouchers","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}},{"name":"appTrackingAllowed","type":{"name":"Boolean","kind":"SCALAR","ofType":null}},{"name":"inviteCode","type":{"name":"String","kind":"SCALAR","ofType":null}},{"name":"watchlistInCinema","type":{"name":null,"kind":"NON_NULL","ofType":{"name":"MovieList","kind":"OBJECT"}}},{"name":"linkedAccounts","type":{"name":null,"kind":"NON_NULL","ofType":{"name":null,"kind":"LIST"}}}]}}}
+[0m
+[0m$ [0mcurl -s https://data-9fc27eb430.cineplex.de/ 2>&1 | head -20
+(no output)
+[0m
+[0m$ [0mcurl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/queue 2>&1 | head -20
+404 page not found
+
+404
+[0m
+[0m$ [0mcurl -s -w "\n%{http_code}|%{size_download}" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{name}}}"}' https://graphql-api.app.staging.cineplex.de/ 2>&1
+{"data":{"__schema":{"queryType":{"name":"Query"}}}}
+
+200|53
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Mutation\"){fields{name}}}"}' https://graphql-api.app.staging.cineplex.de/ 2>&1
+{"data":{"__type":{"fields":[{"name":"a"},{"name":"upsertApp"},{"name":"updateCinemaOperatingCompanyTargetGroupFilterConfig"},{"name":"updateCinemaOperatingCompany"},{"name":"createCinemaOperatingCompany"},{"name":"updateBonusProgram"},{"name":"bookCinemaTicketPoints"},{"name":"joinBonusProgram"},{"name":"editBonusProgramMembership"},{"name":"bookCoupon"},{"name":"acceptBonusProgramTerms"},{"name":"rejectBonusProgramTerms"},{"name":"addInvitedBy"},{"name":"claimOrDiscardProvisionalBonusPointBooking"},{"name":"processScannedQrCode"},{"name":"createGoogleWalletBonusCard"},{"name":"createCampaign"},{"name":"editCampaign"},{"name":"setCampaignStatus"},{"name":"editCampaignEmail"},{"name":"deleteCampaigns"},{"name":"updateCampaignsStatus"},{"name":"updateCinema"},{"name":"createCinema"},{"name":"createCompany"},{"name":"editCompany"},{"name":"deleteCompanies"},{"name":"suggestCinema"},{"name":"createIntercomLead"},{"name":"submitAppFeedback"},{"name":"upsertInterestRating"},{"name":"logItems"},{"name":"updateForeignMovieMapping"},{"name":"upsertNewsItem"},{"name":"updateNotificationPreference"},{"name":"updateExternalNewsletterPreference"},{"name":"startBookingProcess"},{"name":"selectSeats"},{"name":"cancelBookingProcess"},{"name":"selectSeatPricingCategories"},{"name":"selectSeatingAreaPricingCategories"},{"name":"submitBookingProcess"},{"name":"upsertReviewRating"},{"name":"upsertQuizReviewRating"},{"name":"deleteReviewRating"},{"name":"deleteReviewRating_2"},{"name":"createOnlineTicketingOutlinkId"},{"name":"updateScreening"},{"name":"cancelTicket"},{"name":"updateTicket"},{"name":"openTicket"},{"name":"cancelOrder"},{"name":"startOrderPreparation"},{"name":"createSoonInCinemaItem"},{"name":"updateSoonInCinemaItem"},{"name":"deleteSoonInCinemaItem"},{"name":"acceptAppTerms"},{"name":"allowDataUsage"},{"name":"allowAppTracking"},{"name":"optInToMarketingEmails"},{"name":"login"},{"name":"socialLogin"},{"name":"loginPOS"},{"name":"logout"},{"name":"refreshLogin"},{"name":"createAnonymousUser"},{"name":"requestLoginCreation"},{"name":"requestEmailChange"},{"name":"resendEmailConfirmation"},{"name":"confirmEmail"},{"name":"requestPasswordReset"},{"name":"changePassword"},{"name":"updateUserProfile"},{"name":"selectCinemas"},{"name":"selectCinema"},{"name":"deselectCinema"},{"name":"increaseUserTestingStatus"},{"name":"updateUserAdminStatus"},{"name":"deleteUser"},{"name":"deleteCineplexUser"},{"name":"leaveBonusProgram"},{"name":"rememberSkippedOnboardingStep"},{"name":"updateUser"},{"name":"updateUserSubscription"},{"name":"setInitialRatedMovies"},{"name":"editUserGroupFilter"},{"name":"editUserGroupFilterOnReferencedMovie"},{"name":"buyVoucher"},{"name":"createVoucherInstances"},{"name":"redeemVoucher"},{"name":"buyAndRedeemVoucher"},{"name":"updateVoucherInstance"},{"name":"storeEikonaPreshowData"},{"name":"sendNotifications"},{"name":"sendTestNotification"},{"name":"sendShowtimeAnalyticsCampaign"},{"name":"createContentSectionList"},{"name":"updateContentSectionList"},{"name":"dismissExitPoll"},{"name":"storeSeatPlan"},{"name":"recordTicketPurchase"},{"name":"confirmOnlineTicketingBooking"},{"name":"syncTicket"},{"name":"startWebBooking"},{"name":"storeSDKLogin"},{"name":"storeConsent"},{"name":"upsertSeenInCinema"},{"name":"deleteSeenInCinema"},{"name":"subscribeToNewsletter"},{"name":"sendTestEmail"},{"name":"createTargetGroup"},{"name":"editTargetGroup"},{"name":"deleteTargetGroups"},{"name":"updateTargetGroupsStatus"},{"name":"saveImagePath"},{"name":"deleteImage"},{"name":"subscribe"},{"name":"unsubscribe"},{"name":"reactivateSubscription"},{"name":"reschedulePayment"},{"name":"createUserTokenForSubscriptionValidation"},{"name":"logUserScreeningInterests"},{"name":"validateVoucherCode"},{"name":"createAdyenSession"},{"name":"startPendingSubscription"},{"name":"extendSubscription"},{"name":"createSubscriptionByVoucher"},{"name":"cancelSubscriptionImmediately"},{"name":"requestLinkAccount"},{"name":"acceptLinkAccount"},{"name":"declineLinkAccount"},{"name":"deleteLinkedAccount"},{"name":"capturePaypalOrderAndCreateTickets"},{"name":"createBeacon"},{"name":"updateBeacon"},{"name":"deleteBeacon"},{"name":"registerBeaconScanned"},{"name":"updateCinemaCluster"},{"name":"createCinemaCluster"},{"name":"deleteCinemaClusters"}]}}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Query\"){fields{name}}}"}' https://graphql-api.app.staging.cineplex.de/ 2>&1
+{"data":{"__type":{"fields":[{"name":"test"},{"name":"onboardingContent"},{"name":"appReleases"},{"name":"audioFingerprintingConfig"},{"name":"bonusPrograms"},{"name":"bonusProgram"},{"name":"checkVoucherCodes"},{"name":"getTeenBonusCardPdf"},{"name":"campaign"},{"name":"campaignsByCinemas"},{"name":"estimateCampaignSize"},{"name":"searchCastOrCrewMember"},{"name":"currentCinema"},{"name":"cinema"},{"name":"cinemas"},{"name":"companies"},{"name":"company"},{"name":"errorStatistics"},{"name":"locationForZipCode"},{"name":"movie"},{"name":"movies"},{"name":"allMovies"},{"name":"similarMovies"},{"name":"searchMovie"},{"name":"screenedMovies"},{"name":"incomingForeignMovieIdentifiers"},{"name":"newsItem"},{"name":"notification"},{"name":"screeningAuditorium"},{"name":"externalUrl"},{"name":"appDeepLink"},{"name":"screenings"},{"name":"screening"},{"name":"allScreeningAttributes"},{"name":"ticket"},{"name":"order"},{"name":"movieList"},{"name":"allCinemaFilmSeries"},{"name":"soonInCinemaItems"},{"name":"usageStatistics"},{"name":"movieStatistics"},{"name":"subscriptionsStatistics"},{"name":"newSubscriptionStatistics"},{"name":"cinfinityCinemaStats"},{"name":"onlineTicketingVoucherStats"},{"name":"payoutInfo"},{"name":"missedPayouts"},{"name":"currentUser"},{"name":"currentPOS"},{"name":"userByQr"},{"name":"userById"},{"name":"adminUsers"},{"name":"searchUsers"},{"name":"searchUsersTotal"},{"name":"testing_getConfirmationCode"},{"name":"testing_forceDeleteUser"},{"name":"allVoucherClassesOfCinemaOperatingCompany"},{"name":"getAvailableVoucherClasses"},{"name":"voucherInstanceByQR"},{"name":"voucherInstancesByOrderNumber"},{"name":"contentSectionList"},{"name":"contentSectionListByNameAndCinemas"},{"name":"getAllEditableContentSectionLists"},{"name":"newsListSection"},{"name":"getImdbIds"},{"name":"getServiceStatus"},{"name":"getOnlineTicketingBooking"},{"name":"moviesToRateToInitializeRecommender"},{"name":"emailComponent"},{"name":"appLanguage"},{"name":"targetGroup"},{"name":"allTargetGroupsByCinemaOperatingCompanies"},{"name":"allGenres"},{"name":"allPerks"},{"name":"allAchievements"},{"name":"allImages"},{"name":"validateSubscriptionUsers"},{"name":"subscriptionTiers"},{"name":"invoice"},{"name":"beacons"},{"name":"beaconById"},{"name":"cinemaCluster"},{"name":"cinemaClusters"}]}}}
+[0m
+[0m$ [0mcurl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/debug 2>&1 | head -5 && echo "---" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/admin 2>&1 | head -5 && echo "---" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/proxy 2>&1 | head -5 && echo "---" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/internal 2>&1 | head -5 && echo "---" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/healthz 2>&1 | head -5
+404 page not found
+
+404---
+404 page not found
+
+404---
+404 page not found
+
+404---
+404 page not found
+
+404---
+404 page not found
+
+404
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Query\"){fields(includeDeprecated:true){name args{name type{name kind ofType{name kind}}}}}"}' https://graphql-api.app.cineplex.de/ 2>&1 | python3 -m json.tool 2>/dev/null | head -200
+{
+    "errors": [
+        {
+            "message": "Syntax Error: Expected Name, found <EOF>",
+            "extensions": {
+                "code": "GRAPHQL_PARSE_FAILED",
+                "exception": {
+                    "stacktrace": [
+                        "GraphQLError: Syntax Error: Expected Name, found <EOF>",
+                        "    at syntaxError (/var/task/node_modules/graphql/error/syntaxError.js:15:10)",
+                        "    at Parser.expectToken (/var/task/node_modules/graphql/language/parser.js:1404:40)",
+                        "    at Parser.parseName (/var/task/node_modules/graphql/language/parser.js:94:22)",
+                        "    at Parser.parseField (/var/task/node_modules/graphql/language/parser.js:291:28)",
+                        "    at Parser.parseSelection (/var/task/node_modules/graphql/language/parser.js:280:81)",
+                        "    at Parser.many (/var/task/node_modules/graphql/language/parser.js:1518:26)",
+                        "    at Parser.parseSelectionSet (/var/task/node_modules/graphql/language/parser.js:267:24)",
+                        "    at Parser.parseOperationDefinition (/var/task/node_modules/graphql/language/parser.js:177:28)",
+                        "    at Parser.parseDefinition (/var/task/node_modules/graphql/language/parser.js:152:19)",
+                        "    at Parser.many (/var/task/node_modules/graphql/language/parser.js:1518:26)"
+                    ]
+                }
+            }
+        }
+    ]
+}
+[0m
+[0m$ [0mcurl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/health 2>&1 && echo "===" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/status 2>&1 | head -5 && echo "===" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/info 2>&1 | head -5 && echo "===" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/version 2>&1 | head -5 && echo "===" && curl -s -w "\n%{http_code}" https://data-9fc27eb430.cineplex.de/config 2>&1 | head -5
+{"status":"ok"}
+200===
+404 page not found
+
+404===
+404 page not found
+
+404===
+404 page not found
+
+404===
+404 page not found
+
+404
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{userById(id:\"1\"){__typename}}"}' https://graphql-api.app.cineplex.de/ 2>&1
+{"errors":[{"message":"Invalid Id for type: User id: 1","locations":[{"line":1,"column":2}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: 1","    at decodePublicId (/var/task/graphql.js:43448:15)","    at Function.decodePublicId (/var/task/graphql.js:27843:43)","    at Function.<anonymous> (/var/task/graphql.js:27847:31)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:27781:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:27777:12)","    at Function.gen (/var/task/graphql.js:27846:16)","    at /var/task/graphql.js:50098:30","    at Generator.next (<anonymous>)"]}}}],"data":{"userById":null}}
+[0m
+[0m$ [0mcurl -s -X POST -H "Content-Type: application/json" -d '{"query":"{__type(name:\"Query\"){fields{name args{name type{name kind ofType{name kind}}}}}}"}' https://graphql-api.app.cineplex.de/ 2>&1 | python3 -c "import sys,json; data=json.load(sys.stdin); fields=data['data']['__type']['fields']; [print(f['name'], [(a['name'],a['type']) for a in f['args']]) for f in fields if f['name'] in ('userById','currentUser','searchUsers','adminUsers','ticket','order','getOnlineTicketingBooking','voucherInstanceByQR','testing_getConfirmationCode','testing_forceDeleteUser')]" 2>&1
+ticket [('id', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'ID', 'kind': 'SCALAR'}})]
+order [('id', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'ID', 'kind': 'SCALAR'}})]
+currentUser []
+userById [('id', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'ID', 'kind': 'SCALAR'}})]
+adminUsers []
+searchUsers [('queryText', {'name': 'String', 'kind': 'SCALAR', 'ofType': None}), ('filterActiveSubscriptions', {'name': 'Boolean', 'kind': 'SCALAR', 'ofType': None}), ('limit', {'name': 'Int', 'kind': 'SCALAR', 'ofType': None}), ('skip', {'name': 'Int', 'kind': 'SCALAR', 'ofType': None})]
+testing_getConfirmationCode [('email', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'String', 'kind': 'SCALAR'}}), ('type', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'ConfirmationCodeType', 'kind': 'ENUM'}})]
+testing_forceDeleteUser [('email', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'String', 'kind': 'SCALAR'}})]
+voucherInstanceByQR [('qrCode', {'name': None, 'kind': 'NON_NULL', 'ofType': {'name': 'String', 'kind': 'SCALAR'}})]
+getOnlineTicketingBooking [('ticketId', {'name': 'String', 'kind': 'SCALAR', 'ofType': None}), ('referenceUrl', {'name': 'String', 'kind': 'SCALAR', 'ofType': None}), ('ticketProvider', {'name': 'String', 'kind': 'SCALAR', 'ofType': None}), ('bookingId', {'name': 'String', 'kind': 'SCALAR', 'ofType': None}), ('cinemaId', {'name': 'ID', 'kind': 'SCALAR', 'ofType': None}), ('securityKey', {'name': 'String', 'kind': 'SCALAR', 'ofType': None})]
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -s -D /tmp/relay-headers.txt https://data-9fc27eb430.cineplex.de/ -o /tmp/relay-body.txt 2>&1 && cat /tmp/relay-headers.txt && echo "=== BODY ===" && cat /tmp/relay-body.txt failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+Now let me check the specific args on the most sensitive queries and the relay root body:

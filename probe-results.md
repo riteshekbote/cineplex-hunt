@@ -48,3 +48,9 @@ https://data-9fc27eb430.cineplex.de/ -> 200 len=?
 https://data-9fc27eb430.cineplex.de/metrics -> 200 len=114
 https://data-9fc27eb430.cineplex.de/api/ -> HTTP 404
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-04 07:26:46 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://data-9fc27eb430.cineplex.de/ -> 200 len=?
+https://data-9fc27eb430.cineplex.de/health -> 200 len=15
+https://data-9fc27eb430.cineplex.de/.well-known/ -> HTTP 404
