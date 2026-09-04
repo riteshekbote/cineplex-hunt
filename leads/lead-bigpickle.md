@@ -516,3 +516,59 @@ testability: PASSIVE
 [LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 [LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
 [RISK] cineplex: 8/100 — target "api" fully 403-gated at root; the only active attack surface is the franchise relay (`data-9fc27eb430.cineplex.de`, CNAME `cineplex-relay.iocnt.net`) which serves unauthenticated 200 JSON on `/health`, `/`, and now confirmed `/metrics` (115 bytes). The GraphQL production endpoint accepts introspection POST but root GET is WAF-blocked — schema enumeration is confirmed but the actual mutation/IDOR tests require live customer data which the program forbids. JWKS endpoint is 404 so passive JWT analysis is blocked. Remaining live hosts (`profil`, `support`, `mailing`, `vpn-portal`) are third-party managed (Zammad, Mailjet, ntxzone) and carry low inherent risk. Program explicitly forbids exposing customer/employee/financial/auth data during testing, which eliminates the highest-value IDOR/mutation probes without a test/sandbox account or explicit consent. The relay `/metrics` endpoint is the highest-priority immediate probe — 115 bytes of unexamined content on an authless surface may contain internal topology useful for relay SSRF chaining.
+## 2026-09-04 19:07:49 UTC [target] (model bigpickle)
+[NEW] probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/metrics` returned 200 `len=115` (updated from 114 in prior cycle)
+[NEW] probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/status` confirmed 404
+[NEW] probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/debug` confirmed 404
+[NEW] probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/routes` confirmed 404
+[CHANGED] probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/metrics` body length changed from 114 to 115 bytes (new content or timestamp update)
+[CHANGED] probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.cineplex.de/` GET still returns 403 (WAF-gated)
+[CHANGED] probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.staging.cineplex.de/` GET still returns 403 (WAF-gated)
+[PRIO] data-9fc27eb430.cineplex.de,8.2,0.25(8,200 live relay)+0.25(8,internal relay CNAME)+0.15(9,JSON health/wire)+0.15(10,no-auth gate)+0.10(7,google-fronted CDN)+0.10(9,fresh active deploy)
+[PRIO] graphql-api.app.cineplex.de,7.6,0.25(7,POST 200 introspect)+0.25(9,core API)+0.15(10,GraphQL)+0.15(6,gated GET but POST open)+0.10(8,cloud)+0.10(8,fresh)
+[PRIO] graphql-api.app.staging.cineplex.de,6.8,0.25(6,staging untested POST)+0.25(7,shared schema)+0.15(10,GraphQL)+0.15(7,likely same WAF)+0.10(6,cloud)+0.10(6,fresh)
+[PRIO] booking.cineplex.de,5.2,0.25(4,403 all paths)+0.25(8,booking core)+0.15(5,REST)+0.15(3,gated)+0.10(7,cloud)+0.10(6,stale probes)
+[HYP] Relay /metrics endpoint discloses internal service topology or Prometheus stats
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 72
+reasoning: Probe-results confirms `GET /metrics` returns 200 with 115 bytes (updated from 114 in prior cycle). This is the second authless 200 surface on the franchise relay beyond `/health` (len=15) and root (len=?). Metrics endpoints on Node/relay infra commonly expose process info, uptime, route tables, or internal hostnames. The 115-byte response likely contains structured JSON or Prometheus text with service names, route counts, or upstream targets. This is distinct from the REJECTED grafana/metrics-only class because it is a relay-specific endpoint on active CI/CD infra (build header cST-...-prd), not a Grafana dashboard.
+evidence_needed: (1) Content of `/metrics` response body — any internal hostname, route, port, or upstream target; (2) whether `Content-Type` is `text/plain` (Prometheus) or `application/json` (custom); (3) any other paths returning 200 (e.g. `/config`, `/info`, `/env`)
+verify_steps: (1) GET https://data-9fc27eb430.cineplex.de/metrics — capture full body + Content-Type header (read-only, ≤1 rps); (2) GET https://data-9fc27eb430.cineplex.de/config — check for config disclosure; (3) GET https://data-9fc27eb430.cineplex.de/info — check for info endpoint; (4) GET https://data-9fc27eb430.cineplex.de/env — check for environment variables
+impact: Internal relay topology / upstream targets / route table disclosure → footprint for SSRF targeting; medium if only stats, medium-high if upstream hostnames or auth tokens leaked
+testability: PASSIVE
+[HYP] GraphQL introspection POST bypasses WAF to expose full schema with IDOR-capable mutations
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 70
+reasoning: KB marks introspection CONFIRMED (POST 200, full schema, 100+ mutations, PII-exposing queries) from prior sessions. Probe-results only logs GET requests (403). The WAF is method-gated — GET/HEAD blocked, POST with `Content-Type: application/json` passes. Full schema enumeration enables targeted IDOR/BOLA on the 100+ mutations exposed. However, actual mutation/IDOR tests require live customer data which the program forbids, limiting testability to schema-only enumeration.
+evidence_needed: (1) POST https://graphql-api.app.cineplex.de/ with `{"query":"{__schema{queryType{name}}}"}` returning 200 + JSON; (2) schema containing `userById`, `searchUsers`, `adminUsers`, `login` mutation fields confirmed via introspection
+verify_steps: (1) POST https://graphql-api.app.cineplex.de/ — Content-Type: application/json — body: `{"query":"{__schema{queryType{name}}}"}` — read-only introspection, ≤1 rps; (2) if 200, POST with `{"query":"{__schema{mutationType{name}}}"}` to confirm mutation surface; (3) do NOT call userById/order/ticket queries — those expose customer PII per program restrictions
+impact: Full schema enumeration → targeted IDOR/BOLA probes on user/ticket/order mutations → critical if auth bypass confirmed; medium if schema-only disclosure
+testability: PASSIVE
+[HYP] Staging GraphQL endpoint accepts introspection POST with relaxed WAF rules
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: Staging environment mirrors production schema but commonly has weaker WAF/auth rules. Probe-results shows GET returning 403 (same WAF rule as prod) but POST may pass. `graphql-api.app.couat.cineplex.de` also exists as UAT sibling — env confusion likely. If staging introspection succeeds, schema comparison with prod reveals auth-gate differences and potentially exposed test resolvers.
+evidence_needed: POST https://graphql-api.app.staging.cineplex.de/ with introspection query returns 200 with same or different schema as prod
+verify_steps: (1) POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: `{"query":"{__schema{queryType{name}}}"}` — read-only; (2) compare response to prod introspection; (3) if different schema or no auth, report as env confusion
+impact: Staging schema + mutation access without production WAF → easier exploitation path to booking/voucher/user mutations; medium-high
+testability: PASSIVE
+[FINAL] Relay /metrics topology disclosure @ data-9fc27eb430.cineplex.de — conf 72, PASSIVE, second authless 200 surface, 115 bytes unexamined, highest immediate value
+[FINAL] GraphQL introspection via POST @ graphql-api.app.cineplex.de — conf 70, PASSIVE, KB-CONFIRMED, schema-only read-only
+[FINAL] Staging GraphQL introspection @ graphql-api.app.staging.cineplex.de — conf 55, PASSIVE, cheaper than prod, env confusion value
+[NEXT] PROBE: (1) GET https://data-9fc27eb430.cineplex.de/metrics — capture full body + Content-Type header (read-only, ≤1 rps); (2) GET https://data-9fc27eb430.cineplex.de/config — check for config disclosure; (3) GET https://data-9fc27eb430.cineplex.de/info — check for info endpoint; (4) GET https://data-9fc27eb430.cineplex.de/env — check for environment variables
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+[LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+[LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+[LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[LEARN] REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+[LEARN] REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+[LEARN] REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+[LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+[RISK] cineplex: 8/100 — target "api" fully 403-gated at root; the only active attack surface is the franchise relay (`data-9fc27eb430.cineplex.de`, CNAME `cineplex-relay.iocnt.net`) which serves unauthenticated 200 JSON on `/health`, `/`, and now confirmed `/metrics` (115 bytes). The GraphQL production endpoint accepts introspection POST but root GET is WAF-blocked — schema enumeration is confirmed but the actual mutation/IDOR tests require live customer data which the program forbids. JWKS endpoint is 404 so passive JWT analysis is blocked. Remaining live hosts (`profil`, `support`, `mailing`, `vpn-portal`) are third-party managed (Zammad, Mailjet, ntxzone) and carry low inherent risk. Program explicitly forbids exposing customer/employee/financial/auth data during testing, which eliminates the highest-value IDOR/mutation probes without a test/sandbox account or explicit consent. The relay `/metrics` endpoint is the highest-priority immediate probe — 115 bytes of unexamined content on an authless surface may contain internal topology useful for relay SSRF chaining.

@@ -269,3 +269,12 @@ wwww.cineplex.de
 - CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
 - NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
 - CHANGED `data-9fc27eb430.cineplex.de` relay host `/health` returns updated build header `X-Powered-By: cST-479f2fb-2609030725-prd` (changed from `cST-84fa11a-2608271446-prd`)
+
+## 2026-09-04 19:10:50 UTC
+- NEW probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/metrics` returned 200 `len=115` (updated from 114 in prior cycle)
+- NEW probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/status` confirmed 404
+- NEW probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/debug` confirmed 404
+- NEW probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/routes` confirmed 404
+- CHANGED probe-results.md 2026-09-04 12:20:49 UTC — `data-9fc27eb430.cineplex.de/metrics` body length changed from 114 to 115 bytes (new content or timestamp update)
+- CHANGED probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.cineplex.de/` GET still returns 403 (WAF-gated)
+- CHANGED probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.staging.cineplex.de/` GET still returns 403 (WAF-gated)
