@@ -602,3 +602,31 @@ impact: Unauthenticated subscription to realtime franchise feed (potential PII/b
 testability: PASSIVE
 [NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Header `Content-Type: application/json` — Body `{"query":"{__schema{queryType{name}}}"}` — read-only introspection, ≤1 rps — then repeat for graphql-api.app.couat.cineplex.de
 [RISK] cineplex: 6/100 — relay HTTP surface is now fully enumerated and low-value (broker queue stats only; all routes 404), so the only confirmed high-value finding (production GraphQL introspection + schema) is LIVE but its exploitation (IDOR via userById/searchUsers) requires a sanctioned account due to program PII restrictions → HUMAN_ONLY. Remaining actionable passive lead is staging/couat env-confusion introspection. No authless SSRF surface found; JWT passive analysis blocked by JWKS 404.
+## 2026-09-04 23:18:46 UTC [target] (model bigpickle)
+[HYP] Testing-only confirmation-code oracle / forced-delete shipped to production GraphQL
+class: AUTH
+asset: graphql-api.app.cineplex.de
+confidence: 72
+reasoning: PROD schema (my live introspection: POST 200, GET?query= 200) exposes `testing_getConfirmationCode(email, ConfirmationCodeType)` where type ∈ LOGIN_CREATION|EMAIL_CHANGE|PASSWORD_RESET, and `testing_forceDeleteUser(email)` — email-arg only, no token arg. If the resolver is wired in the prod Lambda (same `/var/task/graphql.js` monolith, schema identical to staging), an unauthenticated attacker obtains PASSWORD_RESET/EMAIL_CHANGE confirmation codes for any email without mailbox access = silent ATO, and/or deletes arbitrary accounts. Execution was NOT attempted (mutates/looks up auth data → program out-of-scope).
+evidence_needed: anonymous call to `{testing_getConfirmationCode(email:"<sandbox>",type:"PASSWORD_RESET")}` returns a code without session → schema-to-resolver wiring confirmed on prod
+verify_steps: (1) obtain program consent or test/sandbox account — HUMAN step; (2) ONLY with sanctioned test email, POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}` to prod and staging; (3) do NOT use any real customer email; (4) compare response presence vs gate error
+impact: silent ATO via password-reset/email-change code oracle, bulk account destruction; critical if wired, config/disclosure if schema-only
+testability: HUMAN_ONLY
+[HYP] Publicly reachable staging GraphQL with identical schema + test resolvers (env confusion)
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 60
+reasoning: Staging POST introspection 200 with full Query(83)/Mutation(140) surface identical to prod, served on Cloudflare with no IP allow-listing; `testing_*` resolvers present here too. Staging is a sanctioned proving ground — the cheapest place to prove or disprove the testing_* resolver wiring without touching prod customer data (mutations on live customer data still forbidden).
+evidence_needed: same sandbox-email test on staging returns a code → resolver actively resolves in a test env with same codebase as prod
+verify_steps: (1) program consent for staging-only test; (2) POST `testing_getConfirmationCode` with a disposable/sandbox email on staging; (3) if 200+code, report as staging-live + prod-present schema evidence; (4) if gate error, schema-vs-resolver drift is itself the finding
+impact: proves prod backdoor plausibility; staging is externally reachable test tooling with destructive ops; medium-high
+testability: HUMAN_ONLY
+[HYP] IOMB relay metrics queue-depth disclosure
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 35
+reasoning: /metrics body (captured) = `{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":167863188,"messages_dropped":0}}` — 167.8M backlog signals broker saturation but leaks no hostname/route/upstream; single-metric, low sensitivity, borderline descriptive class
+evidence_needed: metrics gaining sensitive fields or authless sub-endpoint (everything else already 404)
+verify_steps: (1) volume vs latency drift on /metrics over cycles; (2) no further value expected — keep parked
+impact: negligible alone; only relevant as a breadcrumb if broker auth is later probed
+testability: PASSIVE

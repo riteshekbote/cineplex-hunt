@@ -1,30 +1,28 @@
-## 2026-09-04 21:34:17 UTC [target] (model bigpickle)
-[HYP] GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
-class: IDOR
+## 2026-09-04 23:18:46 UTC [target] (model bigpickle)
+[HYP] Testing-only confirmation-code oracle / forced-delete shipped to production GraphQL
+class: AUTH
 asset: graphql-api.app.cineplex.de
-confidence: 85
-reasoning: KB CONFIRMED full introspection via POST (200, 200+ types, 100+ Query fields incl. userById/searchUsers/adminUsers/currentUser). User type exposes email, fullName, telephone, birthDate, street, city, zipCode, orders, invoices, vouchers. IDOR/BOLA is explicitly prioritized in directives. No active mutation/query against live data was performed; per program rule exposing customer PII during testing is out of scope.
-evidence_needed: (1) Valid session JWT obtainable (login mutation returns jwt/refreshToken/csrf); (2) userById(id) returns data for an account not belonging to the token's principal; (3) no authorization check between queried id and authenticated user.
-verify_steps: (1) POST / with `{"query":"{__schema{queryType{name}}}"}` → 200 (already confirmed); (2) obtain test/sandbox account or explicit consent — HUMAN step; (3) WITH that account only, POST userById(otherUserId) and check cross-account response; (4) do NOT touch live customer records without consent.
-impact: Cross-tenant PII dump (name, contact, birthDate, bookings, invoices, vouchers) → critical account/data compromise
+confidence: 72
+reasoning: PROD schema (my live introspection: POST 200, GET?query= 200) exposes `testing_getConfirmationCode(email, ConfirmationCodeType)` where type ∈ LOGIN_CREATION|EMAIL_CHANGE|PASSWORD_RESET, and `testing_forceDeleteUser(email)` — email-arg only, no token arg. If the resolver is wired in the prod Lambda (same `/var/task/graphql.js` monolith, schema identical to staging), an unauthenticated attacker obtains PASSWORD_RESET/EMAIL_CHANGE confirmation codes for any email without mailbox access = silent ATO, and/or deletes arbitrary accounts. Execution was NOT attempted (mutates/looks up auth data → program out-of-scope).
+evidence_needed: anonymous call to `{testing_getConfirmationCode(email:"<sandbox>",type:"PASSWORD_RESET")}` returns a code without session → schema-to-resolver wiring confirmed on prod
+verify_steps: (1) obtain program consent or test/sandbox account — HUMAN step; (2) ONLY with sanctioned test email, POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}` to prod and staging; (3) do NOT use any real customer email; (4) compare response presence vs gate error
+impact: silent ATO via password-reset/email-change code oracle, bulk account destruction; critical if wired, config/disclosure if schema-only
 testability: HUMAN_ONLY
-[HYP] Staging GraphQL accepts introspection POST with relaxed WAF
+[HYP] Publicly reachable staging GraphQL with identical schema + test resolvers (env confusion)
 class: MISCONFIG
 asset: graphql-api.app.staging.cineplex.de
-confidence: 55
-reasoning: Prod root GET 403 but GraphQL POST 200 — WAF is method-gated. staging.cineplex.de and couat.cineplex.de exist as UAT siblings; staging env commonly mirrors schema with weaker auth. Same WAF rule likely (GET 403 confirmed) but POST untested on staging.
-evidence_needed: POST with introspection query returns 200 and a schema; compare vs prod schema for auth-gate differences and test resolvers; presence of additional mutation fields not in prod.
-verify_steps: (1) POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — `{"query":"{__schema{queryType{name}}}"}` — read-only ≤1 rps; (2) repeat for graphql-api.app.couat.cineplex.de; (3) diff mutation/query field lists vs prod; (4) read-only only — no mutating queries.
-impact: Schema/env confusion → test-scope exposure aiding targeted exploits in prod; medium if schema-only
-testability: PASSIVE
-[HYP] IOMB relay exposes realtime publish/subscribe channel without auth
+confidence: 60
+reasoning: Staging POST introspection 200 with full Query(83)/Mutation(140) surface identical to prod, served on Cloudflare with no IP allow-listing; `testing_*` resolvers present here too. Staging is a sanctioned proving ground — the cheapest place to prove or disprove the testing_* resolver wiring without touching prod customer data (mutations on live customer data still forbidden).
+evidence_needed: same sandbox-email test on staging returns a code → resolver actively resolves in a test env with same codebase as prod
+verify_steps: (1) program consent for staging-only test; (2) POST `testing_getConfirmationCode` with a disposable/sandbox email on staging; (3) if 200+code, report as staging-live + prod-present schema evidence; (4) if gate error, schema-vs-resolver drift is itself the finding
+impact: proves prod backdoor plausibility; staging is externally reachable test tooling with destructive ops; medium-high
+testability: HUMAN_ONLY
+[HYP] IOMB relay metrics queue-depth disclosure
 class: MISCONFIG
 asset: data-9fc27eb430.cineplex.de
 confidence: 35
-reasoning: /metrics reveals mode IOMB (IO Message Broker), 164M messages queued, active producer. A broker used to stream realtime data (seat/booking/pricing/signage feeds) may expose a WebSocket/stream gateway. HTTP analogues /publish /subscribe /stream /events all 404; server is Google-fronted (via: 1.1 google, alt-svc h3) which typically blocks arbitrary Upgrade/socket routing.
-evidence_needed: WSS handshake success returning non-404 upstream frames; discovery of a stream path via error/redirect message in response body.
-verify_steps: (1) GET / with headers Connection: Upgrade + Upgrade: websocket + Sec-WebSocket-Key → observe response (read-only, no data written); (2) HEAD the same paths already probed; (3) do NOT attempt to publish or subscribe to any channel.
-impact: Unauthenticated subscription to realtime franchise feed (potential PII/booking events) → medium-high if channel exists; none if behind auth
+reasoning: /metrics body (captured) = `{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":167863188,"messages_dropped":0}}` — 167.8M backlog signals broker saturation but leaks no hostname/route/upstream; single-metric, low sensitivity, borderline descriptive class
+evidence_needed: metrics gaining sensitive fields or authless sub-endpoint (everything else already 404)
+verify_steps: (1) volume vs latency drift on /metrics over cycles; (2) no further value expected — keep parked
+impact: negligible alone; only relevant as a breadcrumb if broker auth is later probed
 testability: PASSIVE
-[NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Header `Content-Type: application/json` — Body `{"query":"{__schema{queryType{name}}}"}` — read-only introspection, ≤1 rps — then repeat for graphql-api.app.couat.cineplex.de
-[RISK] cineplex: 6/100 — relay HTTP surface is now fully enumerated and low-value (broker queue stats only; all routes 404), so the only confirmed high-value finding (production GraphQL introspection + schema) is LIVE but its exploitation (IDOR via userById/searchUsers) requires a sanctioned account due to program PII restrictions → HUMAN_ONLY. Remaining actionable passive lead is staging/couat env-confusion introspection. No authless SSRF surface found; JWT passive analysis blocked by JWKS 404.

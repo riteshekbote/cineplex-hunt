@@ -86,3 +86,7 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-04 23:18:59 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115
