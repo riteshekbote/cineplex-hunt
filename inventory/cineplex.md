@@ -245,3 +245,13 @@ wwww.cineplex.de
 - NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
 - CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
 - CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
+
+## 2026-09-04 12:20:37 UTC
+- CHANGED probe-results.md 2026-09-04 07:26:46 UTC — `data-9fc27eb430.cineplex.de/metrics` returned 200 `len=114` (prior cycle logged it but did not act on it; new confirmed surface)
+- CHANGED probe-results.md 2026-09-04 07:26:46 UTC — `data-9fc27eb430.cineplex.de/.well-known/` confirmed 404 (new probe added to probe-results)
+- CHANGED probe-results.md 2026-09-04 07:26:46 UTC — `data-9fc27eb430.cineplex.de/health` body length now measured: `len=15` (was `len=?` in prior cycles)
+- NEW `data-9fc27eb430.cineplex.de/metrics` confirmed 200 with 114 bytes — second authless 200 surface on relay beyond `/health` and `/`; content unexamined
+- NEW `data-9fc27eb430.cineplex.de` relay host `/health` returns updated build header `X-Powered-By: cST-479f2fb-2609030725-prd` (changed from `cST-84fa11a-2608271446-prd`)
+- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
+- CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
