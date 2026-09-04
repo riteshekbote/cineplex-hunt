@@ -229,3 +229,13 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.cineplex.de` root returns 403 but GraphQL POST with introspection query returns 200 with full schema — WAF bypass via GraphQL endpoint
 - NEW Schema exposes sensitive types: `User` (email, fullName, telephone, birthDate, street, city, zipCode, bonusProgramMembership, tickets, orders, subscriptions, invoices, vouchers), `Order`, `Ticket`, `S
 - NEW Dangerous mutations exposed: `login` (returns jwt, refreshToken, csrf), `createAnonymousUser`, `requestLoginCreation`, `requestPasswordReset`, `changePassword`, `updateUserAdminStatus`, `deleteCineple
+
+## 2026-09-04 02:43:23 UTC
+- CHANGED probe-results.md 2026-09-03 23:48:07 UTC — `graphql-api.app.cineplex.de/` GET confirmed 403 (WAF-gated at root); prior introspection CONFIRMED entry in KB remains valid (POST 200, not GET)
+- CHANGED probe-results.md 2026-09-03 23:48:07 UTC — `data-9fc27eb430.cineplex.de/` returns 200 `len=?` (body length unmeasured in probe log)
+- NEW `booking.cineplex.de/api/booking/{id` confirmed 403 in probe-results — session-gated, AUTH_HELPED required
+- NEW GraphQL introspection CONFIRMED on production `graphql-api.app.cineplex.de` — full schema returned (200 OK) with 200+ types, 100+ Query fields (including `userById`, `searchUsers`, `adminUsers`, `curr
+- NEW `User` type exposes PII: `email`, `fullName`, `telephone`, `birthDate`, `street`, `city`, `zipCode`, `bonusProgramMembership`, `tickets`, `orders`, `subscriptions`, `invoices`, `vouchers`, `privileges
+- NEW `graphql-api.app.cineplex.de` root returns 403 but GraphQL POST with introspection query returns 200 — WAF bypass via GraphQL endpoint
+- NEW `data-9fc27eb430.cineplex.de` relay host live at `/health` → `{"status":"ok"}`, `X-Powered-By: cST-479f2fb-2609030725-prd` (build header changed from prior scan)
+- CHANGED `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de` all return HTTP 403 at root → edge WAF blocks "api" surface; pivot to authless 200 surface (relay host) + GraphQ

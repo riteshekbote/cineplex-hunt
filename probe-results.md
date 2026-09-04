@@ -40,3 +40,11 @@ https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
 https://api.cineplex.de/ -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://data-9fc27eb430.cineplex.de/ -> 200 len=?
+
+## 2026-09-04 02:43:33 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
+https://data-9fc27eb430.cineplex.de/ -> 200 len=?
+https://data-9fc27eb430.cineplex.de/metrics -> 200 len=114
+https://data-9fc27eb430.cineplex.de/api/ -> HTTP 404
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
