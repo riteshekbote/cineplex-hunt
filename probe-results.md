@@ -81,3 +81,8 @@ https://data-9fc27eb430.cineplex.de/config -> HTTP 404
 https://data-9fc27eb430.cineplex.de/info -> HTTP 404
 https://data-9fc27eb430.cineplex.de/env -> HTTP 404
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-04 21:34:58 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403

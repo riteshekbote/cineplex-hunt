@@ -572,3 +572,33 @@ testability: PASSIVE
 [LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 [LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
 [RISK] cineplex: 8/100 — target "api" fully 403-gated at root; the only active attack surface is the franchise relay (`data-9fc27eb430.cineplex.de`, CNAME `cineplex-relay.iocnt.net`) which serves unauthenticated 200 JSON on `/health`, `/`, and now confirmed `/metrics` (115 bytes). The GraphQL production endpoint accepts introspection POST but root GET is WAF-blocked — schema enumeration is confirmed but the actual mutation/IDOR tests require live customer data which the program forbids. JWKS endpoint is 404 so passive JWT analysis is blocked. Remaining live hosts (`profil`, `support`, `mailing`, `vpn-portal`) are third-party managed (Zammad, Mailjet, ntxzone) and carry low inherent risk. Program explicitly forbids exposing customer/employee/financial/auth data during testing, which eliminates the highest-value IDOR/mutation probes without a test/sandbox account or explicit consent. The relay `/metrics` endpoint is the highest-priority immediate probe — 115 bytes of unexamined content on an authless surface may contain internal topology useful for relay SSRF chaining.
+## 2026-09-04 21:34:17 UTC [target] (model bigpickle)
+[HYP] GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: KB CONFIRMED full introspection via POST (200, 200+ types, 100+ Query fields incl. userById/searchUsers/adminUsers/currentUser). User type exposes email, fullName, telephone, birthDate, street, city, zipCode, orders, invoices, vouchers. IDOR/BOLA is explicitly prioritized in directives. No active mutation/query against live data was performed; per program rule exposing customer PII during testing is out of scope.
+evidence_needed: (1) Valid session JWT obtainable (login mutation returns jwt/refreshToken/csrf); (2) userById(id) returns data for an account not belonging to the token's principal; (3) no authorization check between queried id and authenticated user.
+verify_steps: (1) POST / with `{"query":"{__schema{queryType{name}}}"}` → 200 (already confirmed); (2) obtain test/sandbox account or explicit consent — HUMAN step; (3) WITH that account only, POST userById(otherUserId) and check cross-account response; (4) do NOT touch live customer records without consent.
+impact: Cross-tenant PII dump (name, contact, birthDate, bookings, invoices, vouchers) → critical account/data compromise
+testability: HUMAN_ONLY
+[HYP] Staging GraphQL accepts introspection POST with relaxed WAF
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: Prod root GET 403 but GraphQL POST 200 — WAF is method-gated. staging.cineplex.de and couat.cineplex.de exist as UAT siblings; staging env commonly mirrors schema with weaker auth. Same WAF rule likely (GET 403 confirmed) but POST untested on staging.
+evidence_needed: POST with introspection query returns 200 and a schema; compare vs prod schema for auth-gate differences and test resolvers; presence of additional mutation fields not in prod.
+verify_steps: (1) POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — `{"query":"{__schema{queryType{name}}}"}` — read-only ≤1 rps; (2) repeat for graphql-api.app.couat.cineplex.de; (3) diff mutation/query field lists vs prod; (4) read-only only — no mutating queries.
+impact: Schema/env confusion → test-scope exposure aiding targeted exploits in prod; medium if schema-only
+testability: PASSIVE
+[HYP] IOMB relay exposes realtime publish/subscribe channel without auth
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 35
+reasoning: /metrics reveals mode IOMB (IO Message Broker), 164M messages queued, active producer. A broker used to stream realtime data (seat/booking/pricing/signage feeds) may expose a WebSocket/stream gateway. HTTP analogues /publish /subscribe /stream /events all 404; server is Google-fronted (via: 1.1 google, alt-svc h3) which typically blocks arbitrary Upgrade/socket routing.
+evidence_needed: WSS handshake success returning non-404 upstream frames; discovery of a stream path via error/redirect message in response body.
+verify_steps: (1) GET / with headers Connection: Upgrade + Upgrade: websocket + Sec-WebSocket-Key → observe response (read-only, no data written); (2) HEAD the same paths already probed; (3) do NOT attempt to publish or subscribe to any channel.
+impact: Unauthenticated subscription to realtime franchise feed (potential PII/booking events) → medium-high if channel exists; none if behind auth
+testability: PASSIVE
+[NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Header `Content-Type: application/json` — Body `{"query":"{__schema{queryType{name}}}"}` — read-only introspection, ≤1 rps — then repeat for graphql-api.app.couat.cineplex.de
+[RISK] cineplex: 6/100 — relay HTTP surface is now fully enumerated and low-value (broker queue stats only; all routes 404), so the only confirmed high-value finding (production GraphQL introspection + schema) is LIVE but its exploitation (IDOR via userById/searchUsers) requires a sanctioned account due to program PII restrictions → HUMAN_ONLY. Remaining actionable passive lead is staging/couat env-confusion introspection. No authless SSRF surface found; JWT passive analysis blocked by JWKS 404.
