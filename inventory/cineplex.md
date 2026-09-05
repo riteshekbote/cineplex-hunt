@@ -358,3 +358,13 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404, passive JWKS fetch blocked for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required
+
+## 2026-09-05 20:47:29 UTC
+- NEW `graphql-api.app.couat.cineplex.de` — SSL handshake failure (SSLv3 alert), resolves to Cloudflare IPs (104.16.22.67, 104.16.23.67) but TLS negotiation fails; previously unprobed GraphQL host in invent
+- NEW `api.cineplex.de/graphql` — HTTP 403 on GET, Cloudflare WAF challenge page on POST; GraphQL endpoint exists but fully WAF-gated
+- NEW `api.cineplex.de/robots.txt` — request timeout
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` — stable 200 with 115 bytes since 2026-09-04 16:31; **body examined**: `{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":3019550
+- CHANGED `graphql-api.app.cineplex.de/` — persistent 403 at root; GraphQL POST introspection CONFIRMED 200 with full schema (83 query fields, 100+ mutations including `login`, `startBookingProcess`, `updateUse
+- CHANGED `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404, passive JWKS fetch blocked for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required
