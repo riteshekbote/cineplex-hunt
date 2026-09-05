@@ -12,3 +12,6 @@
 - 2 lead(s) marked VALID at 2026-09-05 01:09:18 UTC
   - | Q4 Provable | No — requires valid session (AUTH_HELPED); probe confirms 403 |
   - | Q4 Provable | No — requires valid JWT; program forbids exposing customer PII during testing |
+
+- 1 lead(s) marked VALID at 2026-09-05 05:51:22 UTC
+  - | Q4 Provable | No — requires valid session (AUTH_HELPED) |
