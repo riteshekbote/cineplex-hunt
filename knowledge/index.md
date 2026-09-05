@@ -56,3 +56,6 @@
 - 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body now examined and fully understood — internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 273.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
 - 2026-09-05 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data.
 - 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope — reaffirmed for /metrics infra disclosure.
+- 2026-09-05 `/metrics` body fully understood — descriptive infra only (IOMB broker stats), not reportable alone
+- 2026-09-05 `relay_broker_saturation` REJECTED — 273.9M queued over 30k capacity is infra saturation with no exploitable authless manipulation surface
+- 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone

@@ -3236,3 +3236,72 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 35/100 — Metrics surface now fully closed out (IOMB infra disclosure, descriptive-header class, no PII). Confirmed findings remain GraphQL introspection on PROD+STAGING exposing PII-bearing queries (userById, searchUsers, adminUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus) with build-identical test envs reachable. Exploitation (IDOR/BOLA, test resolver/mutation abuse) blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact still hinges on obtaining a test/sandbox account from the program.
+===== ANALYST bigpickle 2026-09-05 18:29:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m✱ [0mGlob "**/*.md"[90m 36 matches[0m
+[0m✱ [0mGlob "art/**/*"[90m 0 matches[0m
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead triage/run-2026-09-05-16-30.md
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead knowledge/index.md
+[0m→ [0mRead reports/hypotheses.md
+[0m→ [0mRead reports/valid-bugs.md
+[0m→ [0mRead leads/lead-nemotron3.md[90m [limit=80][0m
+[0m→ [0mRead recon-notes/DEDICATED-DEEP.md[90m [limit=60][0m
+STEP 1 — DELTA
+- [NEW] `graphql-api.app.staging.cineplex.de` POST introspection never recorded — probe-results.md logs only GET 403 across all 13 cycles; the 2026-09-04/09-05 "POST test needed" HOLD remains open (triage 2026-09-05-16-30 LEAD 2)
+- [CHANGED] Nemotron3's pending `GET /metrics` full-body probe is superseded — KB 2026-09-05 confirms body examined (IOMB broker, mode/writer-queue/273.9M queued, 0 dropped, no PII); surface logically closed, drop that NEXT
+- [CHANGED] Staging is now the only un-executed passive lead; prod (85 IDOR) and auth (45 JWT) both still blocked behind HUMAN/AUTH gating
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.staging.cineplex.de,6.9,0.25(6,unprobed POST mirror)+0.25(6,staging→prod shared schema)+0.15(10,GraphQL)+0.15(8,method-gate likely bypassable)+0.10(6,azure-cloud)+0.10(6,one outstanding probe)
+- [PRIO] graphql-api.app.cineplex.de,8.0,0.25(7,confirmed POST surface)+0.25(9,PII/core)+0.15(10,GraphQL)+0.15(6,POST-open/GET-gated)+0.10(8,cloud)+0.10(8,still hottest for IDOR)
+- [PRIO] data-9fc27eb430.cineplex.de,4.5,0.25(7,200 relay)+0.25(5,infra-only)+0.15(6,JSON wire)+0.15(10,no-auth)+0.10(5,cdn-fronted)+0.10(3,fully enumerated)
+
+STEP 3 — HYPOTHESES
+[HYP] Staging GraphQL WAF method-gate bypass mirrors confirmed prod POST introspection
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 60
+reasoning: Prod introspection confirmed via POST (200, full schema) while GET returns 403 — WAF is method-gated; staging shares the same graphql-api.app.*.cineplex.de build and the identical 403-on-GET posture across all probe cycles, but its POST path has never been tested (gap in probe-results)
+evidence_needed: POST {"query":"{__schema{queryType{name}}}"} to staging returns 200 with parseable JSON schema (not 403)
+verify_steps: (1) POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body {"query":"{__schema{queryType{name}}}"} — read-only schema query, ≤1 rps, identical method/body class to the already-confirmed prod introspection; (2) on 200, request {"query":"{__schema{mutationType{fields{name}}}}"} and diff vs prod for testing_* / env-specific resolvers; (3) do NOT execute mutations or fetch any user/order/ticket records
+impact: schema + testing_* resolver disclosure on a build-identical env; env-confusion breadcrumbs if staging shares secrets/DB endpoints with prod; medium
+testability: PASSIVE
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Introspected schema exposes userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR returning User PII (email, fullName, telephone, street); IDOR/BOLA explicitly prioritized by program; no ownership gate visible at schema level
+evidence_needed: two-account proof — own JWT reading a second sandbox account's record via userById(otherId) returns PII
+verify_steps: (1) obtain program consent + two disposable sandbox accounts; (2) login mutation → JWT; (3) userById(ownId) vs userById(otherId) compare; never touch live customer IDs
+impact: mass cross-tenant PII dump, GDPR breach, account/data-theft primitive; critical
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens (auth / GraphQL)
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken+csrf; JWT alg confusion explicitly prioritized; auth.cineplex.de/.well-known/jwks.json 404 blocks passive key acquisition
+evidence_needed: decode an issued JWT's alg header; a forged HS256/none token accepted by currentUser
+verify_steps: (1) sanctioned test-login → capture token; (2) decode header (alg/kid); (3) if RS256, forge HS256-with-public-key and replay to currentUser — sandbox/consent only
+impact: token forgery → full ATO across app/booking/profil/portal; critical
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Relay metrics queue-depth/monitoring: conf 35 < 40, IOMB broker descriptive-only, no PII, no authless manipulation route — closed (already rejected as relay_broker_saturation)
+- [PARKED] JWT alg confusion @ auth.cineplex.de: conf 45, JWKS 404 + no token passively obtainable; requires SANCTIONED credentials (AUTH_HELPED); rely on consent request
+- [FINAL] Staging GraphQL WAF method-gate bypass @ graphql-api.app.staging.cineplex.de — conf 60, PASSIVE, the single outstanding verifiable lead
+- [FINAL] Production GraphQL IDOR via userById/searchUsers/adminUsers @ graphql-api.app.cineplex.de — conf 85, HUMAN_ONLY, contingent on sandbox accounts/consent
+
+STEP 5 — NEXT ACTION
+[NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body {"query":"{__schema{queryType{name}}}"} — read-only schema introspection, ≤1 rps, same method/body class as the prod-confirmed introspection (triage run-2026-09-05-16-30 LEAD 2 HOLD); record status + body bytes + Content-Type; if 200, follow with mutationType fields diff vs prod and check for testing_* resolvers
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: staging GET 403 is the same method-gate prod exhibits, but staging POST has never been probed — outstanding HOLD, not yet confirmed
+- [LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body fully examined (IOMB broker, queue 30k/273.9M queued, 0 dropped, no PII) — surface closed; supersedes all pending /metrics body probes
+- [LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued > 30k capacity is infra saturation with no authless injection/manipulation route and no sensitive data — not reportable (reaffirmed)
+
+STEP 7 — RISK
+[RISK] cineplex: 35/100 — Confirmed reportable finding stands (prod GraphQL introspection, schema-wide PII/mutation disclosure; 5.3 CVSS). Everything higher-severity (IDOR via userById/searchUsers/adminUsers conf 85, staging testing_* resolver abuse conf ~55, JWT forgery conf 45) is gated by the program's customer-data exclusion and requires consent+tests data that have not yet been requested; relay/JWKS/metrics paths fully closed at low value. Risk jumps materially only if (a) human obtains staging admin/test creds or two sandbox accounts, or (b) staging POST introspection now reveals env-confusion/testing_* mutation reachability.
