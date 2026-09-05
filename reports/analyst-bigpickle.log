@@ -3319,3 +3319,96 @@ mtype: HTTP 200 size=4324 ct=application/json; charset=utf-8
 [93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
 [0m✗ [0mRead /tmp/stg_intro_mtype.txt failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-09-05 22:41:15 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 25 -o /tmp/opencode/staging_introspect.json -w "STAGING_POST HTTP:%{http_code} SIZE:%{size_download} CT:%{content_type}\n" -X POST https://graphql-api.app.staging.cineplex.de/ -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{"query":"{__schema{queryType{name} mutationType{fields{name}}}}"}'
+STAGING_POST HTTP:200 SIZE:4353 CT:application/json; charset=utf-8
+[0m
+[0m$ [0mcat /tmp/opencode/staging_introspect.json | python3 -c "import sys,json; d=json.load(sys.stdin); m=d.get('data',{}).get('__schema',{}).get('mutationType',{}).get('fields',[]); names=[f['name'] for f in m]; print('MUTATIONS:'); print(names); print('COUNT',len(names)); print('TESTING:',[n for n in names if 'test' in n.lower()]); print('DANGEROUS:',[n for n in names if any(k in n.lower() for k in ['delete','updateuser','changepass','reset','force','admin'])])"
+MUTATIONS:
+['a', 'upsertApp', 'updateCinemaOperatingCompanyTargetGroupFilterConfig', 'updateCinemaOperatingCompany', 'createCinemaOperatingCompany', 'updateBonusProgram', 'bookCinemaTicketPoints', 'joinBonusProgram', 'editBonusProgramMembership', 'bookCoupon', 'acceptBonusProgramTerms', 'rejectBonusProgramTerms', 'addInvitedBy', 'claimOrDiscardProvisionalBonusPointBooking', 'processScannedQrCode', 'createGoogleWalletBonusCard', 'createCampaign', 'editCampaign', 'setCampaignStatus', 'editCampaignEmail', 'deleteCampaigns', 'updateCampaignsStatus', 'updateCinema', 'createCinema', 'createCompany', 'editCompany', 'deleteCompanies', 'suggestCinema', 'createIntercomLead', 'submitAppFeedback', 'upsertInterestRating', 'logItems', 'updateForeignMovieMapping', 'upsertNewsItem', 'updateNotificationPreference', 'updateExternalNewsletterPreference', 'startBookingProcess', 'selectSeats', 'cancelBookingProcess', 'selectSeatPricingCategories', 'selectSeatingAreaPricingCategories', 'submitBookingProcess', 'upsertReviewRating', 'upsertQuizReviewRating', 'deleteReviewRating', 'deleteReviewRating_2', 'createOnlineTicketingOutlinkId', 'updateScreening', 'cancelTicket', 'updateTicket', 'openTicket', 'cancelOrder', 'startOrderPreparation', 'createSoonInCinemaItem', 'updateSoonInCinemaItem', 'deleteSoonInCinemaItem', 'acceptAppTerms', 'allowDataUsage', 'allowAppTracking', 'optInToMarketingEmails', 'login', 'socialLogin', 'loginPOS', 'logout', 'refreshLogin', 'createAnonymousUser', 'requestLoginCreation', 'requestEmailChange', 'resendEmailConfirmation', 'confirmEmail', 'requestPasswordReset', 'changePassword', 'updateUserProfile', 'selectCinemas', 'selectCinema', 'deselectCinema', 'increaseUserTestingStatus', 'updateUserAdminStatus', 'deleteUser', 'deleteCineplexUser', 'leaveBonusProgram', 'rememberSkippedOnboardingStep', 'updateUser', 'updateUserSubscription', 'setInitialRatedMovies', 'editUserGroupFilter', 'editUserGroupFilterOnReferencedMovie', 'buyVoucher', 'createVoucherInstances', 'redeemVoucher', 'buyAndRedeemVoucher', 'updateVoucherInstance', 'storeEikonaPreshowData', 'sendNotifications', 'sendTestNotification', 'sendShowtimeAnalyticsCampaign', 'createContentSectionList', 'updateContentSectionList', 'dismissExitPoll', 'storeSeatPlan', 'recordTicketPurchase', 'confirmOnlineTicketingBooking', 'syncTicket', 'startWebBooking', 'storeSDKLogin', 'storeConsent', 'upsertSeenInCinema', 'deleteSeenInCinema', 'subscribeToNewsletter', 'sendTestEmail', 'createTargetGroup', 'editTargetGroup', 'deleteTargetGroups', 'updateTargetGroupsStatus', 'saveImagePath', 'deleteImage', 'subscribe', 'unsubscribe', 'reactivateSubscription', 'reschedulePayment', 'createUserTokenForSubscriptionValidation', 'logUserScreeningInterests', 'validateVoucherCode', 'createAdyenSession', 'startPendingSubscription', 'extendSubscription', 'createSubscriptionByVoucher', 'cancelSubscriptionImmediately', 'requestLinkAccount', 'acceptLinkAccount', 'declineLinkAccount', 'deleteLinkedAccount', 'capturePaypalOrderAndCreateTickets', 'createBeacon', 'updateBeacon', 'deleteBeacon', 'registerBeaconScanned', 'updateCinemaCluster', 'createCinemaCluster', 'deleteCinemaClusters']
+COUNT 140
+TESTING: ['increaseUserTestingStatus', 'sendTestNotification', 'sendTestEmail']
+DANGEROUS: ['deleteCampaigns', 'deleteCompanies', 'deleteReviewRating', 'deleteReviewRating_2', 'deleteSoonInCinemaItem', 'requestPasswordReset', 'changePassword', 'updateUserProfile', 'updateUserAdminStatus', 'deleteUser', 'deleteCineplexUser', 'updateUser', 'updateUserSubscription', 'deleteSeenInCinema', 'deleteTargetGroups', 'deleteImage', 'deleteLinkedAccount', 'deleteBeacon', 'deleteCinemaClusters']
+[0m
+[0m$ [0mcurl -sS --max-time 25 -o /tmp/opencode/staging_query.json -w "STAGING_QUERY HTTP:%{http_code} SIZE:%{size_download}\n" -X POST https://graphql-api.app.staging.cineplex.de/ -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{"query":"{__schema{queryType{fields{name}}}}"}'; python3 -c "
+import json
+d=json.load(open('/tmp/opencode/staging_query.json'))
+f=d['data']['__schema']['queryType']['fields']
+names=[x['name'] for x in f]
+print('QUERY COUNT',len(names))
+print('SENSITIVE:',[n for n in names if any(k in n.lower() for k in ['user','search','admin','voucher','order','ticket','invoice','employee','staff','config','environment','secret','key'])])
+print('TEST-like:',[n for n in names if 'test' in n.lower()])
+"
+STAGING_QUERY HTTP:200 SIZE:2337
+QUERY COUNT 83
+SENSITIVE: ['audioFingerprintingConfig', 'checkVoucherCodes', 'searchCastOrCrewMember', 'searchMovie', 'ticket', 'order', 'onlineTicketingVoucherStats', 'currentUser', 'userByQr', 'userById', 'adminUsers', 'searchUsers', 'searchUsersTotal', 'testing_forceDeleteUser', 'allVoucherClassesOfCinemaOperatingCompany', 'getAvailableVoucherClasses', 'voucherInstanceByQR', 'voucherInstancesByOrderNumber', 'getOnlineTicketingBooking', 'validateSubscriptionUsers', 'invoice']
+TEST-like: ['test', 'testing_getConfirmationCode', 'testing_forceDeleteUser']
+[0m
+[0m$ [0mcurl -sS --max-time 15 -o /tmp/opencode/appstg.root -w "app.staging.cineplex.de GET HTTP:%{http_code} SIZE:%{size_download} CT:%{content_type} REDIR:%{redirect_url}\n" https://app.staging.cineplex.de/ ; curl -sS --max-time 15 -o /dev/null -w "api.cineplex.de/graphql POST HTTP:%{http_code} SIZE:%{size_download}\n" -X POST https://api.cineplex.de/graphql -H 'Content-Type: application/json' -d '{"query":"{__schema{queryType{name}}}"}'
+curl: (35) OpenSSL/3.0.13: error:0A000410:SSL routines::sslv3 alert handshake failure
+app.staging.cineplex.de GET HTTP:000 SIZE:0 CT: REDIR:
+api.cineplex.de/graphql POST HTTP:403 SIZE:115482
+[0m
+## STEP 1 — DELTA
+- NEW `graphql-api.app.staging.cineplex.de` — POST introspection CONFIRMED **200** (mutation schema 4353B, query schema 2337B, `application/json; charset=utf-8`): WAF method-gate bypass identical to prod; 140 mutations / 83 queries incl. `testing_getConfirmationCode`, `testing_forceDeleteUser`, `userById`, `searchUsers`, `adminUsers`, `userByQr`, `voucherInstanceByQR`, `invoice`, `deleteUser`, `deleteCineplexUser`, `updateUserAdminStatus`, `login`, `loginPOS`, `socialLogin`
+- CHANGED Staging `testing_*` hypothesis — resolver presence now **verified in a reachable schema** (previously unverifiable, only schema-level on prod)
+- NEW `app.staging.cineplex.de` — TLS handshake failure (SSLv3 alert); unreachable via standard TLS (mirrors `graphql-api.app.couat.cineplex.de`)
+- CHANGED `api.cineplex.de/graphql` — POST still 403 (115KB Cloudflare WAF challenge); fully gated, low value
+- CHANGED Build-identical staging env holds full prod sensitive surface; only env-specific names are `testing_*` queries + `increaseUserTestingStatus` mutation
+
+## STEP 2 — PRIORITIZE
+- [PRIO] `graphql-api.app.staging.cineplex.de`, **7.2**, attack_surface=8 business=8 tech=10 gate=4 cloud=2 fresh=9 — proven POST bypass, full PII/admin/mutation surface, testing_* oracle reachable
+- [PRIO] `api.cineplex.de/graphql`, **5.2**, WAF-gated on all methods, low gate_ease
+- [PRIO] `app.staging.cineplex.de`, **2.0**, TLS dead
+- [PRIO] `data-9fc27eb430.cineplex.de`, **2.5**, fully enumerated/closable
+
+## STEP 3 — HYPOTHESES (top 3)
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 70
+reasoning: schema now reachable (POST 200, conf 100%); queryType contains `testing_getConfirmationCode` and `testing_forceDeleteUser`; staging builds are routinely deployed without RBAC; no auth directive evident at schema level
+evidence_needed: running `testing_getConfirmationCode` against a fabricated email returns a code (not auth/PERMISSION_DENIED error)
+verify_steps: (1) POST `{"query":"query{testing_getConfirmationCode(email:\"probe-<nonce>@example.com\", type:\"PASSWORD_RESET\")}"}` to `https://graphql-api.app.staging.cineplex.de/` ≤1 rps; (2) response containing a code → RESOLVER UNGATED → escalate to HUMAN for consent before any real-email use; (3) auth error / null → role-gated or inert
+impact: account-takeover primitive via reset-code oracle for any email (staging; prod if parity confirmed); high severity
+testability: HUMAN_ONLY (execution needs consent; fabricated email only)
+
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: prod schema confirmed exposes `userById`/`searchUsers`/`adminUsers`→User PII (email, fullName, telephone, street, birthDate); no ownership gate at schema level; IDOR/BOLA explicitly prioritized
+evidence_needed: two-account proof — own JWT reading a second sandbox account via `userById(otherId)`
+verify_steps: (1) program consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) `userById(ownId)` vs `userById(otherId)` PII comparison; never live customer IDs
+impact: cross-tenant mass PII dump, GDPR breach; critical
+testability: HUMAN_ONLY
+
+[HYP] Staging admin/destructive mutations role-gated weaker than prod
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 50
+reasoning: staging exposes `updateUserAdminStatus`, `deleteUser`, `deleteCineplexUser`, `sendTestNotification`, `saveImagePath` with no auth directive in schema; build-identical envs often share service accounts with laxer RBAC
+evidence_needed: an unauthenticated or low-privilege call to a non-destructive sentinel (`increaseUserTestingStatus` with own id) differing from prod authorization behavior
+verify_steps: (1) obtain staging test JWT (HUMAN consent); (2) call `increaseUserTestingStatus` sentinel, compare status vs prod; (3) only if sentinel passes, ENTITY review of delete/admin surface — no live-data mutation
+impact: admin/user data manipulation, mass deletion on staging that shares backends; high
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] Staging WAF-bypass hypothesis as hypothesis — now CONFIRMED fact (HTTP 200 introspection); folded into DELTA/LEARN, not a standing hypothesis
+- [PARKED] JWT alg/key confusion (conf 45) — JWKS 404 on auth + degraded below top-3 cut; still valid long-arc, no new evidence this cycle
+- [PARKED] `testing_forceDeleteUser` execution as probe — destructive query; do not touch without explicit consent; only schema-presence noted
+- [FINAL] Staging `testing_*` oracle (conf 70) — top automation-reachable; prod userById IDOR (conf 85) — highest impact, HUMAN gate; staging admin-mutation gating (conf 50) — sentinel-then-entity approach
+
+## STEP 5 — NEXT ACTION
+[NEXT] PROBE: POST `https://graphql-api.app.staging.cineplex.de/` — `Content-Type: application/json` — body `{"query":"query{testing_getConfirmationCode(email:\"probe-<urandom-nonce>@example.com\", type:\"PASSWORD_RESET\")}"}` — read-only schema-level check of role gating, fabricated non-existent email only, ≤1 rps; 200-with-code → confirm oracle and escalate to HUMAN for consent; auth/PERMISSION_DENIED/null → role-gated or inert, downgrade hypothesis
+
+## STEP 6 — LEARNING
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-gate bypass (GET 403/POST 200) mirrors prod exactly; no env-specific WAF strength.
+[LEARN] ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR/invoice + testing_getConfirmationCode/testing_forceDeleteUser; PII surface identical to prod at schema level.
+[LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable.
+
+## STEP 7 — RISK
+[RISK] cineplex: **45/100** — Staging GraphQL surface now confirmed reachable with full PII-bearing queries and `testing_*` account-oracle resolvers on a build-identical env, adding a genuinely new exploitable-pipeline candidate. Reportable finding unchanged (prod introspection, 5.3 CVSS). Automation ceiling reached: the two highest-impact paths (conf 85 prod IDOR, conf 70 staging testing_* oracle) both terminate at HUMAN consent + sandbox/test data, which has not yet been requested from bugs.olivermaicher.eu. Risk jumps to 60+ only if consent unlocks either oracle confirmation or two-account IDOR proof.

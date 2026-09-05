@@ -388,3 +388,25 @@
 - LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
 - LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 - LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+
+## RANKED HYPOTHESES 2026-09-05 22:41:15 UTC
+- [85] graphql-api.app.cineplex.de: GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT (from art/lead_nemotron3.txt)
+- [70] graphql-api.app.staging.cineplex.de: Staging testing_* confirmation-code oracle without role gating (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: POST `https://graphql-api.app.staging.cineplex.de/` — `Content-Type: application/json` — body `{"query":"query{testing_getConfirmationCode(email:\"probe-
+- NEXT(hypotheses-nemotron3.txt): PROBE: POST https://api.cineplex.de/graphql — Content-Type: application/json — body: {"query":"{__schema{mutationType{fields{name}}}"}} — read-only introspectio
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-g
+- LEARN: ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR
+- LEARN: REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 1
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUM
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passi
+- LEARN: ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB bro
+- LEARN: REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only l
+- LEARN: ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipu
+- LEARN: REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot pass
+- LEARN: REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope

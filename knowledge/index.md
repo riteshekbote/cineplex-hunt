@@ -59,3 +59,6 @@
 - 2026-09-05 `/metrics` body fully understood — descriptive infra only (IOMB broker stats), not reportable alone
 - 2026-09-05 `relay_broker_saturation` REJECTED — 273.9M queued over 30k capacity is infra saturation with no exploitable authless manipulation surface
 - 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone
+- 2026-09-05 ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-gate bypass (GET 403/POST 200) mirrors prod exactly; no env-specific WAF strength.
+- 2026-09-05 ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR/invoice + testing_getConfirmationCode/testing_forceDeleteUser; PII surface identical to prod at schema level.
+- 2026-09-05 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable.
