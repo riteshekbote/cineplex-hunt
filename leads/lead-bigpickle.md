@@ -630,3 +630,15 @@ evidence_needed: metrics gaining sensitive fields or authless sub-endpoint (ever
 verify_steps: (1) volume vs latency drift on /metrics over cycles; (2) no further value expected — keep parked
 impact: negligible alone; only relevant as a breadcrumb if broker auth is later probed
 testability: PASSIVE
+## 2026-09-05 01:04:57 UTC [target] (model bigpickle)
+[HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 62
+reasoning: POST introspection → 200 (verified again this cycle); query fields 83 and mutation fields 140 are set-equal to prod. Staging surface includes login, requestPasswordReset, changePassword, updateUserAdminStatus, deleteUser, deleteCineplexUser, deleteCompanies, increaseUserTestingStatus, sendTestEmail. Root GET 403 is WAF-only. No client-cert/IP allow-list (introspection answered from this vantage). Same /var/task monolith codebase pattern as prod Lambda.
+evidence_needed: resolver parity proof — a sandbox-email call returning 200 vs a role-gate error on the same mutation on staging
+verify_steps: (1) [DONE] POST `{"query":"{__schema{queryType{fields{name}}}}"}` → 200 83Q set-equal prod; (2) obtain program consent + disposable sandbox email — HUMAN; (3) staging-only: call increaseUserTestingStatus/sendTestEmail/requestPasswordReset with that email; compare gate vs arg error; (4) never on live customer data.
+impact: externally reachable test tooling with destructive/admin mutations sharing prod codebase → env-confusion stepping stone to mass user manipulation if any resolver skips role-gating; medium-high
+testability: HUMAN_ONLY (schema parity PASSIVE-confirmed)
+[NEXT] HUMAN: request program consent + two disposable sandbox accounts from bugs.olivermaicher.eu — then (a) staging-only validation of increaseUserTestingStatus/sendTestEmail/requestPasswordReset / deleteUser on the sandbox email to prove resolver wiring vs role gates, and (b) prod two-account IDOR check of userById/searchUsers with the sanctioned accounts. Passive surface is exhausted; no further high-value read-only probe exists.
+[RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.

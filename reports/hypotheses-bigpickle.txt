@@ -1,28 +1,12 @@
-## 2026-09-04 23:18:46 UTC [target] (model bigpickle)
-[HYP] Testing-only confirmation-code oracle / forced-delete shipped to production GraphQL
-class: AUTH
-asset: graphql-api.app.cineplex.de
-confidence: 72
-reasoning: PROD schema (my live introspection: POST 200, GET?query= 200) exposes `testing_getConfirmationCode(email, ConfirmationCodeType)` where type ∈ LOGIN_CREATION|EMAIL_CHANGE|PASSWORD_RESET, and `testing_forceDeleteUser(email)` — email-arg only, no token arg. If the resolver is wired in the prod Lambda (same `/var/task/graphql.js` monolith, schema identical to staging), an unauthenticated attacker obtains PASSWORD_RESET/EMAIL_CHANGE confirmation codes for any email without mailbox access = silent ATO, and/or deletes arbitrary accounts. Execution was NOT attempted (mutates/looks up auth data → program out-of-scope).
-evidence_needed: anonymous call to `{testing_getConfirmationCode(email:"<sandbox>",type:"PASSWORD_RESET")}` returns a code without session → schema-to-resolver wiring confirmed on prod
-verify_steps: (1) obtain program consent or test/sandbox account — HUMAN step; (2) ONLY with sanctioned test email, POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}` to prod and staging; (3) do NOT use any real customer email; (4) compare response presence vs gate error
-impact: silent ATO via password-reset/email-change code oracle, bulk account destruction; critical if wired, config/disclosure if schema-only
-testability: HUMAN_ONLY
-[HYP] Publicly reachable staging GraphQL with identical schema + test resolvers (env confusion)
+## 2026-09-05 01:04:57 UTC [target] (model bigpickle)
+[HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
 class: MISCONFIG
 asset: graphql-api.app.staging.cineplex.de
-confidence: 60
-reasoning: Staging POST introspection 200 with full Query(83)/Mutation(140) surface identical to prod, served on Cloudflare with no IP allow-listing; `testing_*` resolvers present here too. Staging is a sanctioned proving ground — the cheapest place to prove or disprove the testing_* resolver wiring without touching prod customer data (mutations on live customer data still forbidden).
-evidence_needed: same sandbox-email test on staging returns a code → resolver actively resolves in a test env with same codebase as prod
-verify_steps: (1) program consent for staging-only test; (2) POST `testing_getConfirmationCode` with a disposable/sandbox email on staging; (3) if 200+code, report as staging-live + prod-present schema evidence; (4) if gate error, schema-vs-resolver drift is itself the finding
-impact: proves prod backdoor plausibility; staging is externally reachable test tooling with destructive ops; medium-high
-testability: HUMAN_ONLY
-[HYP] IOMB relay metrics queue-depth disclosure
-class: MISCONFIG
-asset: data-9fc27eb430.cineplex.de
-confidence: 35
-reasoning: /metrics body (captured) = `{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":167863188,"messages_dropped":0}}` — 167.8M backlog signals broker saturation but leaks no hostname/route/upstream; single-metric, low sensitivity, borderline descriptive class
-evidence_needed: metrics gaining sensitive fields or authless sub-endpoint (everything else already 404)
-verify_steps: (1) volume vs latency drift on /metrics over cycles; (2) no further value expected — keep parked
-impact: negligible alone; only relevant as a breadcrumb if broker auth is later probed
-testability: PASSIVE
+confidence: 62
+reasoning: POST introspection → 200 (verified again this cycle); query fields 83 and mutation fields 140 are set-equal to prod. Staging surface includes login, requestPasswordReset, changePassword, updateUserAdminStatus, deleteUser, deleteCineplexUser, deleteCompanies, increaseUserTestingStatus, sendTestEmail. Root GET 403 is WAF-only. No client-cert/IP allow-list (introspection answered from this vantage). Same /var/task monolith codebase pattern as prod Lambda.
+evidence_needed: resolver parity proof — a sandbox-email call returning 200 vs a role-gate error on the same mutation on staging
+verify_steps: (1) [DONE] POST `{"query":"{__schema{queryType{fields{name}}}}"}` → 200 83Q set-equal prod; (2) obtain program consent + disposable sandbox email — HUMAN; (3) staging-only: call increaseUserTestingStatus/sendTestEmail/requestPasswordReset with that email; compare gate vs arg error; (4) never on live customer data.
+impact: externally reachable test tooling with destructive/admin mutations sharing prod codebase → env-confusion stepping stone to mass user manipulation if any resolver skips role-gating; medium-high
+testability: HUMAN_ONLY (schema parity PASSIVE-confirmed)
+[NEXT] HUMAN: request program consent + two disposable sandbox accounts from bugs.olivermaicher.eu — then (a) staging-only validation of increaseUserTestingStatus/sendTestEmail/requestPasswordReset / deleteUser on the sandbox email to prove resolver wiring vs role gates, and (b) prod two-account IDOR check of userById/searchUsers with the sanctioned accounts. Passive surface is exhausted; no further high-value read-only probe exists.
+[RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.

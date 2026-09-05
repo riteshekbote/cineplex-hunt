@@ -2832,3 +2832,148 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 12/100 — the genuinely reportable finding this cycle is the production schema carrying agent backdoor names (`testing_getConfirmationCode`/`testing_forceDeleteUser` with PASSWORD_RESET/EMAIL_CHANGE enum) exposed by unauth introspection behind a trivial WAF gate, on both prod and a publicly reachable staging. Any live proof (code retrieval, force-delete) touches authentication data/live accounts the program bans, so severity rests on schema evidence alone until consent; risk stays low while I remain schema-only read-only. Relay fully enumerated and depleted; no authless SSRF/jwt surface remains; dead ends: couat TLS, JWKS 404, standard relay paths 404.
+===== ANALYST bigpickle 2026-09-05 01:05:23 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -m 20 -o /tmp/opencode/staging_intro.json -w "staging status=%{http_code} size=%{size_download}\n" -X POST https://graphql-api.app.staging.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{queryType{name}}}"}' ; sleep 1.2; curl -sS -m 20 -o /tmp/opencode/couat_intro.json -w "couat status=%{http_code} size=%{size_download}\n" -X POST https://graphql-api.app.couat.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{queryType{name}}}"}'
+staging status=200 size=53
+curl: (35) OpenSSL/3.0.13: error:0A000410:SSL routines::sslv3 alert handshake failure
+couat status=000 size=0
+[0m
+[0m$ [0mcat /tmp/opencode/staging_intro.json; echo; sleep 1; curl -sS -m 20 -o /tmp/opencode/couat_intro2.json -w "couat2 status=%{http_code} size=%{size_download}\n" --resolve graphql-api.app.couat.cineplex.de:443:$(getent hosts graphql-api.app.couat.cineplex.de | awk '{print $1}' | head -1) -k -X POST https://graphql-api.app.couat.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{queryType{name}}}"}'; echo; cat /tmp/opencode/couat_intro2.json 2>/dev/null
+{"data":{"__schema":{"queryType":{"name":"Query"}}}}
+
+curl: (7) Failed to connect to graphql-api.app.couat.cineplex.de port 443 after 0 ms: Couldn't connect to server
+couat2 status=000 size=0
+[0m
+[0m$ [0msleep 1; curl -sS -m 20 -o /tmp/opencode/staging_mut.json -w "status=%{http_code} size=%{size_download}\n" -X POST https://graphql-api.app.staging.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{mutationType{fields{name}}}}"}'
+status=200 size=4324
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/staging_mut.json'))
+f=[x['name'] for x in d['data']['__schema']['mutationType']['fields']]
+print('total mutations:',len(f))
+print('testing_*:',[x for x in f if 'test' in x.lower()])
+print('password/reset/delete:',[x for x in f if any(k in x.lower() for k in ('reset','password','delete','force','admin','code'))])
+"
+total mutations: 140
+testing_*: ['increaseUserTestingStatus', 'sendTestNotification', 'sendTestEmail']
+password/reset/delete: ['processScannedQrCode', 'deleteCampaigns', 'deleteCompanies', 'deleteReviewRating', 'deleteReviewRating_2', 'deleteSoonInCinemaItem', 'requestPasswordReset', 'changePassword', 'updateUserAdminStatus', 'deleteUser', 'deleteCineplexUser', 'deleteSeenInCinema', 'deleteTargetGroups', 'deleteImage', 'validateVoucherCode', 'deleteLinkedAccount', 'deleteBeacon', 'deleteCinemaClusters']
+[0m
+[0m$ [0msleep 1; curl -sS -m 20 -o /tmp/opencode/prod_mut.json -w "status=%{http_code} size=%{size_download}\n" -X POST https://graphql-api.app.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{mutationType{fields{name}}}}"}'
+status=200 size=4324
+[0m
+[0m$ [0mpython3 -c "
+import json
+d=json.load(open('/tmp/opencode/prod_mut.json'))
+f=[x['name'] for x in d['data']['__schema']['mutationType']['fields']]
+print('total prod mutations:',len(f))
+print('testing_*:',[x for x in f if 'test' in x.lower()])
+print('prod==staging list:', f == json.load(open('/tmp/opencode/staging_mut.json'))['data']['__schema']['mutationType']['fields'])
+"
+total prod mutations: 140
+testing_*: ['increaseUserTestingStatus', 'sendTestNotification', 'sendTestEmail']
+prod==staging list: False
+[0m
+[0m$ [0mpython3 -c "
+import json
+p=[x['name'] for x in json.load(open('/tmp/opencode/prod_mut.json'))['data']['__schema']['mutationType']['fields']]
+s=[x['name'] for x in json.load(open('/tmp/opencode/staging_mut.json'))['data']['__schema']['mutationType']['fields']]
+print('only PROD:',sorted(set(p)-set(s)))
+print('only STAGING:',sorted(set(s)-set(p)))
+"
+only PROD: []
+only STAGING: []
+[0m
+[0m$ [0mfor u in https://graphql-api.app.cineplex.de/.well-known/openid-configuration https://graphql-api.app.cineplex.de/.well-known/jwks.json https://auth.cineplex.de/.well-known/openid-configuration; do curl -sS -m 15 -o /tmp/opencode/jw.txt -w "$u -> %{http_code} size=%{size_download}\n" "$u"; head -c 200 /tmp/opencode/jw.txt; echo; sleep 1.2; done
+https://graphql-api.app.cineplex.de/.well-known/openid-configuration -> 400 size=18
+GET query missing.
+https://graphql-api.app.cineplex.de/.well-known/jwks.json -> 400 size=18
+GET query missing.
+https://auth.cineplex.de/.well-known/openid-configuration -> 404 size=153
+<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx/1.25.1</center>
+</body>
+</html>
+[0m
+[0m$ [0mfor h in cineplex staging; do host="graphql-api.app.$h.cineplex.de"; curl -sS -m 20 -o /tmp/opencode/${h}_qry.json -w "$host -> %{http_code} size=%{size_download}\n" -X POST "https://$host/" -H 'Content-Type: application/json' --data '{"query":"{__schema{queryType{fields{name}}}}"}'; sleep 1.2; done; python3 -c "
+import json
+p=[x['name'] for x in json.load(open('/tmp/opencode/cineplex_qry.json'))['data']['__schema']['queryType']['fields']]
+s=[x['name'] for x in json.load(open('/tmp/opencode/staging_qry.json'))['data']['__schema']['queryType']['fields']]
+print('prod queries:',len(p),'staging:',len(s))
+print('only PROD:',sorted(set(p)-set(s)))
+print('only STAGING:',sorted(set(s)-set(p)))
+print('sensitive prod queries present:',[x for x in p if any(k in x for k in ('user','admin','search','current','order','voucher','invoice'))])
+"
+curl: (35) OpenSSL/3.0.13: error:0A000410:SSL routines::sslv3 alert handshake failure
+graphql-api.app.cineplex.cineplex.de -> 000 size=0
+graphql-api.app.staging.cineplex.de -> 200 size=2337
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/opencode/cineplex_qry.json'
+[0m
+[0m$ [0msleep 1; curl -sS -m 20 -o /tmp/opencode/prod_qry.json -w "prod -> %{http_code} size=%{size_download}\n" -X POST https://graphql-api.app.cineplex.de/ -H 'Content-Type: application/json' --data '{"query":"{__schema{queryType{fields{name}}}}"}'
+prod -> 200 size=2337
+[0m
+[0m$ [0mpython3 -c "
+import json
+p=[x['name'] for x in json.load(open('/tmp/opencode/prod_qry.json'))['data']['__schema']['queryType']['fields']]
+s=[x['name'] for x in json.load(open('/tmp/opencode/staging_qry.json'))['data']['__schema']['queryType']['fields']]
+print('prod queries:',len(p),'staging:',len(s))
+print('set-equal:',set(p)==set(s))
+print('only PROD:',sorted(set(p)-set(s)))
+print('only STAGING:',sorted(set(s)-set(p)))
+print('sensitive prod:',[x for x in p if any(k in x for k in ('user','admin','search','current','order','voucher','invoice','upcoming','movie'))])
+"
+prod queries: 83 staging: 83
+set-equal: True
+only PROD: []
+only STAGING: []
+sensitive prod: ['searchCastOrCrewMember', 'currentCinema', 'movie', 'movies', 'searchMovie', 'order', 'movieList', 'movieStatistics', 'currentUser', 'currentPOS', 'userByQr', 'userById', 'adminUsers', 'searchUsers', 'searchUsersTotal', 'voucherInstanceByQR', 'voucherInstancesByOrderNumber', 'moviesToRateToInitializeRecommender', 'invoice']
+[0m
+Run complete. Probes executed: staging/couat introspection, staging+prod schema diff, JWKS/OIDC paths.
+
+STEP 1 — DELTA
+- NEW staging GraphQL introspection CONFIRMED: POST → 200 full schema; 83 queries + 140 mutations set-equal to prod (verified both field lists); test env externally reachable, no allow-list.
+- CHANGED `graphql-api.app.*` is a path-agnostic GraphQL catch-all: any GET without `?query` → 400 `"GET query missing."` (method-based routing, not path-based).
+- NEW couat.cineplex.de NOT live from this network (TLS handshake failure — no service reachable).
+- FALSIFIED prior hyp `testing_getConfirmationCode`/`testing_forceDeleteUser` — real testing_* surface on prod AND staging is only `increaseUserTestingStatus`, `sendTestNotification`, `sendTestEmail`.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.staging.cineplex.de,6.85,gate_ease+freshness (a8 b4 t9 g8 c4 f9; introspectable without auth, mirrors prod schema entirely)
+- [PRIO] graphql-api.app.cineplex.de,6.65,business_value (a9 b9 t9 g2 c4 f1; all high-value exploitation HUMAN_ONLY)
+- [PRIO] data-9fc27eb430.cineplex.de,3.55,- (fully enumerated 404 surface; only /health+/metrics queue stats)
+
+STEP 3 — HYPOTHESES
+[HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 62
+reasoning: POST introspection → 200 (verified again this cycle); query fields 83 and mutation fields 140 are set-equal to prod. Staging surface includes login, requestPasswordReset, changePassword, updateUserAdminStatus, deleteUser, deleteCineplexUser, deleteCompanies, increaseUserTestingStatus, sendTestEmail. Root GET 403 is WAF-only. No client-cert/IP allow-list (introspection answered from this vantage). Same /var/task monolith codebase pattern as prod Lambda.
+evidence_needed: resolver parity proof — a sandbox-email call returning 200 vs a role-gate error on the same mutation on staging
+verify_steps: (1) [DONE] POST `{"query":"{__schema{queryType{fields{name}}}}"}` → 200 83Q set-equal prod; (2) obtain program consent + disposable sandbox email — HUMAN; (3) staging-only: call increaseUserTestingStatus/sendTestEmail/requestPasswordReset with that email; compare gate vs arg error; (4) never on live customer data.
+impact: externally reachable test tooling with destructive/admin mutations sharing prod codebase → env-confusion stepping stone to mass user manipulation if any resolver skips role-gating; medium-high
+testability: HUMAN_ONLY (schema parity PASSIVE-confirmed)
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] testing_* confirmation-code / forced-delete backdoor: falsified — direct introspection on both prod and staging shows no such fields; schema-only presence of harmless test mutations is not evidence of a backdoor.
+- [PARKED] JWT alg confusion via JWKS: auth.cineplex.de OIDC+jwks both 404 (nginx); no passive key material — class blocked without a valid token+issuer.
+- [PARKED] relay websocket/stream channel: all HTTP analogues 404, Google-fronted edge blocks arbitrary Upgrade.
+- [FINAL] Staging prod-identical destructive schema (MISCONFIG 62). Carried unchanged: Prod GraphQL IDOR via userById/searchUsers (85, HUMAN_ONLY, needs sanctioned account).
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: request program consent + two disposable sandbox accounts from bugs.olivermaicher.eu — then (a) staging-only validation of increaseUserTestingStatus/sendTestEmail/requestPasswordReset / deleteUser on the sandbox email to prove resolver wiring vs role gates, and (b) prod two-account IDOR check of userById/searchUsers with the sanctioned accounts. Passive surface is exhausted; no further high-value read-only probe exists.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST 200, 83Q/140M set-equal to prod, externally reachable test env — env-confusion + schema exposure, not rejected, high corroborative value
+- [LEARN] ACCEPTED env_confusion @ graphql-api.app.staging.cineplex.de: test environment sharing the full prod destructive mutation surface with no allow-list is a config/misconfig finding
+- [LEARN] REJECTED testing_backdoor_oracle @ graphql-api.app.cineplex.de: falsified by introspection — testing_getConfirmationCode/testing_forceDeleteUser do not exist; only increaseUserTestingStatus/sendTestEmail/sendTestNotification present; schema-only test-mutation presence is not a finding
+- [LEARN] REJECTED oauth_jwks @ auth.cineplex.de: `.well-known/openid-configuration` 404 (nginx/1.25.1), `.well-known/jwks.json` 404 — no passive key material, JWT passive analysis blocked
+
+STEP 7 — RISK
+[RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.
