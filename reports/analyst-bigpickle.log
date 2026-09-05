@@ -3148,3 +3148,91 @@ testability: PASSIVE
 
 ## STEP 7 — RISK
 [RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.
+===== ANALYST bigpickle 2026-09-05 16:13:27 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -D /tmp/opencode/headers_metrics.txt https://data-9fc27eb430.cineplex.de/metrics -o /tmp/opencode/metrics_body.txt 2>&1 && echo "--- HEADERS ---" && cat /tmp/opencode/headers_metrics.txt && echo "--- BODY ---" && cat /tmp/opencode/metrics_body.txt
+--- HEADERS ---
+HTTP/2 200 
+content-type: application/json
+x-powered-by: cST-479f2fb-2609030725-prd
+date: Sat, 05 Sep 2026 16:08:05 GMT
+content-length: 115
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000
+
+--- BODY ---
+{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":273879398,"messages_dropped":0}}
+[0m
+The `[NEXT]` pending probe was the metrics body capture. Confirmed content: JSON with relay writer queue metrics. Let me check the health endpoint against current state and update.
+[0m$ [0mcurl -sS -D - https://data-9fc27eb430.cineplex.de/health -o /tmp/opencode/health_body.txt 2>&1 | head -20 && echo "--- BODY ---" && cat /tmp/opencode/health_body.txt
+HTTP/2 200 
+content-type: application/json
+x-powered-by: cST-479f2fb-2609030725-prd
+date: Sat, 05 Sep 2026 16:08:09 GMT
+content-length: 15
+via: 1.1 google
+alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+--- BODY ---
+{"status":"ok"}
+[0m
+Metrics content now examined. The `/metrics` body reveals internal relay architecture: IOMB (in/out message broker) mode, writer queue with 273,879,398 messages queued (massive saturation) against capacity 30,000. This is the same internal-architecture disclosure pattern already assessed at confidence 35/REJECTED-lean for /metrics. The values (queue_length 0 but messages_queued 273M) are architecture info, no sensitive data. Per the knowledge base, metrics-only leaks are borderline descriptive-header class — keep parked.
+
+STEP 1 — DELTA
+- [CHANGED] `data-9fc27eb430.cineplex.de/metrics` — body now examined for the first time: JSON `{"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":273879398,"messages_dropped":0}}` — internal broker (IOMB) architecture + 273.9M messages queued vs 30k capacity (severe saturation). No PII/sensitive data.
+- [CHANGED] `data-9fc27eb430.cineplex.de/health` — reverified, stable `{"status":"ok"}`, build header unchanged.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,9.2,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=10
+- [PRIO] graphql-api.app.staging.cineplex.de,8.45,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=10
+- [PRIO] data-9fc27eb430.cineplex.de,4.95,attack_surface=4,business_value=3,tech_exposure=2,gate_ease=10,cloud_surface=6,freshness=8
+
+STEP 3 — HYPOTHESES
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Prod schema includes userById, searchUsers, adminUsers queries returning PII (email, fullName, telephone). IDOR/BOLA explicitly prioritized. Requires valid JWT (HUMAN_ONLY per PII/consent rule).
+evidence_needed: A valid JWT from a test account to query userById with another user's ID.
+verify_steps: (1) Obtain test JWT via login mutation with sanctioned test credentials; (2) POST GraphQL `userById(id:"test-id")` with JWT; (3) If returns other user's PII, IDOR confirmed.
+impact: Mass customer PII exposure; high severity.
+testability: HUMAN_ONLY
+
+[HYP] Staging GraphQL testing_* resolvers active with no role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 60
+reasoning: Staging schema identical to prod, includes testing_getConfirmationCode, testing_forceDeleteUser. Staging may lack access controls.
+evidence_needed: Execution of testing_getConfirmationCode with sandbox email returning a code.
+verify_steps: (1) POST GraphQL `testing_getConfirmationCode(email:"sandbox@test.com", type:"PASSWORD_RESET")` without auth; (2) If 200 with code, resolver active.
+impact: Account takeover via confirmation-code oracle; high severity.
+testability: HUMAN_ONLY
+
+[HYP] Relay broker saturation indicates write-path DoS / message-tampering surface
+class: OTHER
+asset: data-9fc27eb430.cineplex.de
+confidence: 20
+reasoning: /metrics reveals IOMB writer with 273.9M messages queued against 30k capacity — massive overflow suggests broker saturation, but no authless route to inject/drain messages found; /routes /status /debug all 404. No sensitive data exposed.
+evidence_needed: An authless route to read/inject queued message content.
+verify_steps: Passive monitoring only; no active manipulation surface identified.
+impact: None demonstrated; low.
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Relay broker saturation indicates write-path DoS / message-tampering surface: confidence 20 < 40; saturation is infra observation with no exploitable authless route; DoS class may be out of scope; /metrics content is descriptive-internal-info class (borderline REJECTED).
+- [PARKED] Relay metrics queue-depth disclosure: already parked; /metrics content now fully examined, confirms no sensitive data — final.
+- [FINAL] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT (confidence 85, HUMAN_ONLY)
+- [FINAL] Staging GraphQL testing_* resolvers active with no role gating (confidence 60, HUMAN_ONLY)
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Request program consent + two disposable sandbox accounts (or staging admin/test creds) from bugs.olivermaicher.eu to enable staged verification of the two HUMAN_ONLY finals: staging `testing_*` resolvers and prod two-account GraphQL IDOR.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body now examined and fully understood — internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 273.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data.
+[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope — reaffirmed for /metrics infra disclosure.
+
+STEP 7 — RISK
+[RISK] cineplex: 35/100 — Metrics surface now fully closed out (IOMB infra disclosure, descriptive-header class, no PII). Confirmed findings remain GraphQL introspection on PROD+STAGING exposing PII-bearing queries (userById, searchUsers, adminUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus) with build-identical test envs reachable. Exploitation (IDOR/BOLA, test resolver/mutation abuse) blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact still hinges on obtaining a test/sandbox account from the program.

@@ -338,3 +338,13 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404, passive JWKS fetch blocked for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required
+
+## 2026-09-05 16:13:27 UTC
+- NEW `graphql-api.app.couat.cineplex.de` — SSL handshake failure (SSLv3 alert), previously unprobed GraphQL host in inventory
+- NEW `api.cineplex.de/graphql` — HTTP 403, GraphQL endpoint exists but WAF-gated (same pattern as graphql-api.app.cineplex.de)
+- NEW `api.cineplex.de/robots.txt` — request timeout, new endpoint tested
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` — stable 200 with 115 bytes since 2026-09-04 16:31, second authless 200 surface confirmed stable
+- CHANGED `graphql-api.app.cineplex.de/` — persistent 403 at root, GraphQL POST introspection CONFIRMED 200 with full schema (WAF bypass stable)
+- CHANGED `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404, passive JWKS fetch blocked for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required

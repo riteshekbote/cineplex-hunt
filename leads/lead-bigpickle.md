@@ -729,3 +729,36 @@ testability: PASSIVE
 [LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 [LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
 [RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.
+## 2026-09-05 16:08:19 UTC [target] (model bigpickle)
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Prod schema includes userById, searchUsers, adminUsers queries returning PII (email, fullName, telephone). IDOR/BOLA explicitly prioritized. Requires valid JWT (HUMAN_ONLY per PII/consent rule).
+evidence_needed: A valid JWT from a test account to query userById with another user's ID.
+verify_steps: (1) Obtain test JWT via login mutation with sanctioned test credentials; (2) POST GraphQL `userById(id:"test-id")` with JWT; (3) If returns other user's PII, IDOR confirmed.
+impact: Mass customer PII exposure; high severity.
+testability: HUMAN_ONLY
+[HYP] Staging GraphQL testing_* resolvers active with no role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 60
+reasoning: Staging schema identical to prod, includes testing_getConfirmationCode, testing_forceDeleteUser. Staging may lack access controls.
+evidence_needed: Execution of testing_getConfirmationCode with sandbox email returning a code.
+verify_steps: (1) POST GraphQL `testing_getConfirmationCode(email:"sandbox@test.com", type:"PASSWORD_RESET")` without auth; (2) If 200 with code, resolver active.
+impact: Account takeover via confirmation-code oracle; high severity.
+testability: HUMAN_ONLY
+[HYP] Relay broker saturation indicates write-path DoS / message-tampering surface
+class: OTHER
+asset: data-9fc27eb430.cineplex.de
+confidence: 20
+reasoning: /metrics reveals IOMB writer with 273.9M messages queued against 30k capacity — massive overflow suggests broker saturation, but no authless route to inject/drain messages found; /routes /status /debug all 404. No sensitive data exposed.
+evidence_needed: An authless route to read/inject queued message content.
+verify_steps: Passive monitoring only; no active manipulation surface identified.
+impact: None demonstrated; low.
+testability: PASSIVE
+[NEXT] HUMAN: Request program consent + two disposable sandbox accounts (or staging admin/test creds) from bugs.olivermaicher.eu to enable staged verification of the two HUMAN_ONLY finals: staging `testing_*` resolvers and prod two-account GraphQL IDOR.
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body now examined and fully understood — internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 273.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data.
+[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope — reaffirmed for /metrics infra disclosure.
+[RISK] cineplex: 35/100 — Metrics surface now fully closed out (IOMB infra disclosure, descriptive-header class, no PII). Confirmed findings remain GraphQL introspection on PROD+STAGING exposing PII-bearing queries (userById, searchUsers, adminUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus) with build-identical test envs reachable. Exploitation (IDOR/BOLA, test resolver/mutation abuse) blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact still hinges on obtaining a test/sandbox account from the program.

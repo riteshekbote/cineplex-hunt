@@ -53,3 +53,6 @@
 - 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
 - 2026-09-05 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
 - 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body now examined and fully understood — internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 273.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+- 2026-09-05 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data.
+- 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope — reaffirmed for /metrics infra disclosure.
