@@ -2977,3 +2977,66 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.
+===== ANALYST bigpickle 2026-09-05 05:51:12 UTC =====
+[0m
+> build · big-pickle
+[0m
+STEP 1 — DELTA
+- NO_DELTA inventory (132 hosts unchanged)
+- NO_DELTA relay surface (`data-9fc27eb430.cineplex.de` — /health, /metrics only; all other routes 404)
+- NO_DELTA prod + staging GraphQL introspection (200 POST confirmed, schema set-equal, 83Q/140M)
+- NO_DELTA JWKS 404 (`auth.cineplex.de/.well-known/jwks.json`), `booking.cineplex.de/api/booking/{id}` 403
+- [NEW] `graphql-api.app.couat.cineplex.de` introspection status still UNLOGGED — prior NEXT listed it as a repeat target but only staging was confirmed; the couat leg was never executed or recorded
+- [NEW] `api.cineplex.de` surface beyond root GET 403 unexplored — no subpath or POST method test logged for this host
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.couat.cineplex.de, 7.25, a=7 b=7 t=9(GRAPHQL) g=8 h=4 c=4 f=8 via 0.25a+0.25b+0.15t+0.15g+0.10c+0.10f
+- [PRIO] api.cineplex.de, 6.70, a=6 b=7 t=8(gateway) g=8 h=4 c=5 f=7 — only root GET 403 ever confirmed; method-gate bypass pattern (GET 403 / POST 200) observed on both siblings makes this cheap to clear
+- [PRIO] graphql-api.app.staging.cineplex.de, 6.70, already confirmed 200/schema — value now gated on HUMAN sandbox consent
+
+STEP 3 — HYPOTHESES
+[HYP] couat GraphQL accepts introspection POST and exposes schema differing from prod/staging
+class: MISCONFIG
+asset: graphql-api.app.couat.cineplex.de
+confidence: 55
+reasoning: couat is a sibling UAT env of staging (both in inventory); prod and staging both return root GET 403 (WAF) but GraphQL POST 200 with identical 83Q/140M schemas. couat shares the same WAF pattern expectation but POST was never tested and no schema was ever captured. If couat runs an older/newer build, the field diff pinpoints schema→env drift (e.g., `testing_*` fields present/absent).
+evidence_needed: POST introspection returns 200 with a field list; diff vs the 83Q/140M baseline yields adding/removing mutations (notably testing_getConfirmationCode / testing_forceDeleteUser / deleteUser / updateUserAdminStatus density)
+verify_steps: (1) POST https://graphql-api.app.couat.cineplex.de/ — Content-Type: application/json — `{"query":"{__schema{queryType{name}}}"}` — read-only ≤1 rps; (2) if 200, POST `{"query":"{__schema{queryType{fields{name}} mutationType{fields{name}}}}"}` and diff Q/M names vs stored prod/staging list; (3) no mutating calls
+impact: schema/env drift adds evidence of non-prod code in prod (or backdoored fields present in UAT), strengthening the testing_* backdoor report; medium as schema-only, none if 403
+testability: PASSIVE
+
+[HYP] api.cineplex.de root GET 403 is WAF-gated while POST / subpaths reach a live gateway
+class: MISCONFIG
+asset: api.cineplex.de
+confidence: 42
+reasoning: the same edge WAF produced root GET 403 + GraphQL POST 200 on `graphql-api.app.*`; `api.cineplex.de` was only ever logged at root GET 403. As the canonical REST gateway, undirected subpaths (`/v1`, `/v2`, `/graphql`, `/api`, `/swagger`, `/openapi.json`) and POST method could present an authless 200 surface analogous to the sibling bypass. Not yet tested.
+evidence_needed: any non-403 status on POST or a subpath; an OpenAPI/GraphQL schema object; an unauthenticated 200 JSON response
+verify_steps: (1) GET https://api.cineplex.de/robots.txt and GET /v1/ and GET /graphql (read-only, ≤1 rps); (2) POST https://api.cineplex.de/graphql — Content-Type application/json — `{"query":"{__schema{queryType{name}}}"}`; (3) if any 200, enumerate schema exactly as on graphql-api.app; (4) no authentication-required or mutating requests
+impact: if a GraphQL/REST discovery surface exists, broadens IDOR/BOLA reach (same directives); likely none if purely 403
+testability: PASSIVE
+
+[HYP] Production `testing_*` backdoor resolvers remain the top reportable finding, pending sandbox consent
+class: AUTH
+asset: graphql-api.app.cineplex.de
+confidence: 72
+reasoning: prod schema carries testing_getConfirmationCode(email, ConfirmationCodeType) and testing_forceDeleteUser(email) with 83Q/140M surface identical to staging; root GET 403 never blocked POST introspection, so the resolvers are plausibly wired in the same `/var/task/graphql.js` monolith. Execution is blocked to HUMAN_ONLY by program PII/consent rule — a structural gating constraint, not a technical one.
+evidence_needed: sanctioned sandbox email call returning a code (resolver parity) — cannot be gathered passively
+verify_steps: (1) obtain program consent + disposable sandbox email — HUMAN; (2) staging-only first: POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}`; (3) only on proof, prod with consent; never real customer data
+impact: silent ATO via confirmation-code oracle (PASSWORD_RESET/EMAIL_CHANGE) and arbitrary account deletion; critical if wired, config/disclosure if schema-only
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] IOMB relay (`data-9fc27eb430.cineplex.de`): broker queue stats only; all routes enumerated 404; single-metric drift is borderline descriptive-header class — no further passive value
+- [PARKED] JWT alg confusion: JWKS 404 permanently blocks passive verification — HUMAN-only or dead end
+- [FINAL] couat introspection (55, PASSIVE), api.cineplex.de method/subpath gate (42, PASSIVE), prod testing_* backdoor (72, HUMAN_ONLY)
+
+STEP 5 — NEXT ACTION
+- [NEXT] PROBE: POST https://graphql-api.app.couat.cineplex.de/ — Header `Content-Type: application/json` — Body `{"query":"{__schema{queryType{name}}}"}` — read-only, ≤1 rps; if 200, follow with full queryType/mutationType field-name dump and diff vs stored prod/staging lists (the one open passive thread).
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 200 (114-115B, IOMB mode, queue stats) — authless surface confirmed, but self-critiqued to PARKED (metrics-only = borderline descriptive-header class after full enumeration)
+- [LEARN] ACCEPTED env_confusion @ graphql-api.app.staging.cineplex.de: staging POST introspection 200, 83Q/140M set-equal to prod — staging public reach confirmed, exploitation HUMAN_ONLY
+- [LEARN] ACCEPTED testing_backdoor @ graphql-api.app.cineplex.de: testing_getConfirmationCode / testing_forceDeleteUser exist in PROD schema (email-arg only, no token) — silent-ATO plausibility confirmed at schema level, resolver test HUMAN_ONLY per program PII rule
+
+STEP 7 — RISK
+- [RISK] cineplex: 35/100 — confirmed findings remain real but schema-level: introspection enabled on prod+staging exposing PII-bearing queries (userById, searchUsers, adminUsers) and destructive mutations (deleteUser, updateUserAdminStatus, testing_forceDeleteUser); exploitation is gated to HUMAN_ONLY by the program's customer-data/consent rule and needs sanctioned sandbox accounts. Passive surface is nearly exhausted — only the couat probe and api.cineplex.de subpath/method test remain actionable without consent; relay and JWKS threads closed.

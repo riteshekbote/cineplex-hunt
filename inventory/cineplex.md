@@ -302,3 +302,11 @@ wwww.cineplex.de
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
 - NEW `graphql-api.app.staging.cineplex.de` root 403 — staging also WAF-gated
+
+## 2026-09-05 05:51:12 UTC
+- NEW `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 115 bytes (stable since 2026-09-04 16:31) — second authless surface beyond `/health`; content unexamined
+- NEW `/config`, `/info`, `/env`, `/status`, `/debug`, `/routes` on relay host all 404 — no Spring Actuator / debug endpoints exposed
+- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+- NEW `graphql-api.app.staging.cineplex.de` root 403 — staging also WAF-gated

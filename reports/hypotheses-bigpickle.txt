@@ -1,12 +1,28 @@
-## 2026-09-05 01:04:57 UTC [target] (model bigpickle)
-[HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
+## 2026-09-05 05:50:23 UTC [target] (model bigpickle)
+[HYP] couat GraphQL accepts introspection POST and exposes schema differing from prod/staging
 class: MISCONFIG
-asset: graphql-api.app.staging.cineplex.de
-confidence: 62
-reasoning: POST introspection → 200 (verified again this cycle); query fields 83 and mutation fields 140 are set-equal to prod. Staging surface includes login, requestPasswordReset, changePassword, updateUserAdminStatus, deleteUser, deleteCineplexUser, deleteCompanies, increaseUserTestingStatus, sendTestEmail. Root GET 403 is WAF-only. No client-cert/IP allow-list (introspection answered from this vantage). Same /var/task monolith codebase pattern as prod Lambda.
-evidence_needed: resolver parity proof — a sandbox-email call returning 200 vs a role-gate error on the same mutation on staging
-verify_steps: (1) [DONE] POST `{"query":"{__schema{queryType{fields{name}}}}"}` → 200 83Q set-equal prod; (2) obtain program consent + disposable sandbox email — HUMAN; (3) staging-only: call increaseUserTestingStatus/sendTestEmail/requestPasswordReset with that email; compare gate vs arg error; (4) never on live customer data.
-impact: externally reachable test tooling with destructive/admin mutations sharing prod codebase → env-confusion stepping stone to mass user manipulation if any resolver skips role-gating; medium-high
-testability: HUMAN_ONLY (schema parity PASSIVE-confirmed)
-[NEXT] HUMAN: request program consent + two disposable sandbox accounts from bugs.olivermaicher.eu — then (a) staging-only validation of increaseUserTestingStatus/sendTestEmail/requestPasswordReset / deleteUser on the sandbox email to prove resolver wiring vs role gates, and (b) prod two-account IDOR check of userById/searchUsers with the sanctioned accounts. Passive surface is exhausted; no further high-value read-only probe exists.
-[RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.
+asset: graphql-api.app.couat.cineplex.de
+confidence: 55
+reasoning: couat is a sibling UAT env of staging (both in inventory); prod and staging both return root GET 403 (WAF) but GraphQL POST 200 with identical 83Q/140M schemas. couat shares the same WAF pattern expectation but POST was never tested and no schema was ever captured. If couat runs an older/newer build, the field diff pinpoints schema→env drift (e.g., `testing_*` fields present/absent).
+evidence_needed: POST introspection returns 200 with a field list; diff vs the 83Q/140M baseline yields adding/removing mutations (notably testing_getConfirmationCode / testing_forceDeleteUser / deleteUser / updateUserAdminStatus density)
+verify_steps: (1) POST https://graphql-api.app.couat.cineplex.de/ — Content-Type: application/json — `{"query":"{__schema{queryType{name}}}"}` — read-only ≤1 rps; (2) if 200, POST `{"query":"{__schema{queryType{fields{name}} mutationType{fields{name}}}}"}` and diff Q/M names vs stored prod/staging list; (3) no mutating calls
+impact: schema/env drift adds evidence of non-prod code in prod (or backdoored fields present in UAT), strengthening the testing_* backdoor report; medium as schema-only, none if 403
+testability: PASSIVE
+[HYP] api.cineplex.de root GET 403 is WAF-gated while POST / subpaths reach a live gateway
+class: MISCONFIG
+asset: api.cineplex.de
+confidence: 42
+reasoning: the same edge WAF produced root GET 403 + GraphQL POST 200 on `graphql-api.app.*`; `api.cineplex.de` was only ever logged at root GET 403. As the canonical REST gateway, undirected subpaths (`/v1`, `/v2`, `/graphql`, `/api`, `/swagger`, `/openapi.json`) and POST method could present an authless 200 surface analogous to the sibling bypass. Not yet tested.
+evidence_needed: any non-403 status on POST or a subpath; an OpenAPI/GraphQL schema object; an unauthenticated 200 JSON response
+verify_steps: (1) GET https://api.cineplex.de/robots.txt and GET /v1/ and GET /graphql (read-only, ≤1 rps); (2) POST https://api.cineplex.de/graphql — Content-Type application/json — `{"query":"{__schema{queryType{name}}}"}`; (3) if any 200, enumerate schema exactly as on graphql-api.app; (4) no authentication-required or mutating requests
+impact: if a GraphQL/REST discovery surface exists, broadens IDOR/BOLA reach (same directives); likely none if purely 403
+testability: PASSIVE
+[HYP] Production `testing_*` backdoor resolvers remain the top reportable finding, pending sandbox consent
+class: AUTH
+asset: graphql-api.app.cineplex.de
+confidence: 72
+reasoning: prod schema carries testing_getConfirmationCode(email, ConfirmationCodeType) and testing_forceDeleteUser(email) with 83Q/140M surface identical to staging; root GET 403 never blocked POST introspection, so the resolvers are plausibly wired in the same `/var/task/graphql.js` monolith. Execution is blocked to HUMAN_ONLY by program PII/consent rule — a structural gating constraint, not a technical one.
+evidence_needed: sanctioned sandbox email call returning a code (resolver parity) — cannot be gathered passively
+verify_steps: (1) obtain program consent + disposable sandbox email — HUMAN; (2) staging-only first: POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}`; (3) only on proof, prod with consent; never real customer data
+impact: silent ATO via confirmation-code oracle (PASSWORD_RESET/EMAIL_CHANGE) and arbitrary account deletion; critical if wired, config/disclosure if schema-only
+testability: HUMAN_ONLY

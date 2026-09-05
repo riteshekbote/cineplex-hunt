@@ -1,5 +1,5 @@
-## 2026-09-05 01:04:19 UTC [target] (model nemotron3)
-[NEW] `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 114→115 bytes (fluctuating) — second authless surface beyond `/health`; content unexamined
+## 2026-09-05 05:50:54 UTC [target] (model nemotron3)
+[NEW] `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 115 bytes (stable since 2026-09-04 16:31) — second authless surface beyond `/health`; content unexamined
 [NEW] `/config`, `/info`, `/env`, `/status`, `/debug`, `/routes` on relay host all 404 — no Spring Actuator / debug endpoints exposed
 [CHANGED] `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
 [CHANGED] `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
@@ -9,6 +9,7 @@
 [PRIO] data-9fc27eb430.cineplex.de,7.8,attack_surface=8,business_value=7,tech_exposure=8,gate_ease=10,cloud_surface=8,freshness=9
 [PRIO] booking.cineplex.de,8.0,attack_surface=9,business_value=9,tech_exposure=7,gate_ease=6,cloud_surface=7,freshness=8
 [PRIO] auth.cineplex.de,7.9,attack_surface=8,business_value=10,tech_exposure=9,gate_ease=5,cloud_surface=5,freshness=8
+[PRIO] graphql-api.app.staging.cineplex.de,7.2,attack_surface=7,business_value=7,tech_exposure=10,gate_ease=8,cloud_surface=5,freshness=6
 [HYP] GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
 class: IDOR
 asset: graphql-api.app.cineplex.de
@@ -27,15 +28,15 @@ evidence_needed: Full /metrics response body showing Prometheus format with inte
 verify_steps: GET https://data-9fc27eb430.cineplex.de/metrics — capture full body + Content-Type header (read-only, ≤1 rps)
 impact: Internal service topology disclosure → attack surface mapping → targeted SSRF/IDOR on internal services → potential credential leakage via metric labels (High)
 testability: PASSIVE
-[HYP] JWT Algorithm Confusion via GraphQL login Mutation — RS256→HS256 Key Confusion
-class: AUTH
-asset: auth.cineplex.de / graphql-api.app.cineplex.de
-confidence: 55
-reasoning: GraphQL login mutation returns `jwt` and `refreshToken`. Central auth serves SSO across app.cineplex.de, booking.cineplex.de, profil.cineplex.de, my.cineplex.de, portal.cineplex.de. JWKS endpoint returns 404 — no passive key fetch. If validation uses public key as HMAC secret for HS256, attacker can forge tokens. Requires capturing real JWT first to analyze algorithm.
-evidence_needed: Valid JWT from GraphQL login showing alg:RS256 in header; forged HS256 token using public key (if discoverable via cert transparency or error messages) accepted by GraphQL Authorization header or profil.cineplex.de/preference
-verify_steps: POST https://graphql-api.app.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{login(email:\"test@test.de\",password:\"test\"){jwt refreshToken}}"} — capture JWT, decode header (check alg); if RS256, attempt to derive public key from cert transparency (crt.sh) for cineplex.de; craft HS256 token with same claims using public key as secret; POST https://graphql-api.app.cineplex.de/ — Authorization: Bearer <forged> — body: {"query":"{currentUser{id email}}"} — test acceptance
-impact: Forge valid JWT for any user ID → full ATO across all Cineplex properties → access to all user data, bookings, payments, subscriptions (Critical)
-testability: AUTH_HELPED
+[HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de
+confidence: 62
+reasoning: Staging endpoint (graphql-api.app.staging.cineplex.de) exists in inventory; production GraphQL introspection confirmed via POST bypassing WAF; staging environments often share schema/resolver code but with weaker WAF/auth. Root GET returns 403 (same WAF) but POST may pass like prod.
+evidence_needed: POST introspection on staging returns 200 with same full schema as production including sensitive mutations (login, startBookingProcess, updateUserAdminStatus, deleteCineplexUser, buyVoucher, etc.)
+verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"{__schema{mutationType{fields{name}}}"}} — read-only, compare mutation surface to prod; if 200, POST {"query":"{__schema{queryType{fields{name}}}"}} — enumerate query surface
+impact: Staging schema + mutation access without production WAF → easier exploitation path to booking/voucher/user mutations; env confusion enables testing destructive mutations safely if staging isolated (Medium-High)
+testability: PASSIVE
 [PARKED] JWT Algorithm Confusion via GraphQL login Mutation: Confidence 55 — JWKS 404 blocks passive key fetch; requires valid credentials for login mutation; lower priority vs confirmed GraphQL IDOR with clear verify steps
 [FINAL] Ranked survivors (by testability × impact):
 [NEXT] PROBE: GET https://data-9fc27eb430.cineplex.de/metrics — capture full body + Content-Type header (read-only, ≤1 rps)
