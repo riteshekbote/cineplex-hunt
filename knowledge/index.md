@@ -52,3 +52,4 @@
 - 2026-09-05 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
 - 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
 - 2026-09-05 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope

@@ -3072,3 +3072,79 @@ Analyze the existing data you've provided:
 1. Document a plan for when Plan Mode is lifted?
 2. Analyze existing findings only?
 3. Something else?
+===== ANALYST bigpickle 2026-09-05 13:18:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+## STEP 1 — DELTA
+[NEW] `graphql-api.app.couat.cineplex.de/` — SSL handshake failure (SSLv3 alert) — new GraphQL host in inventory, previously unprobed
+[NEW] `api.cineplex.de/graphql` — HTTP 403 — GraphQL endpoint exists on api.cineplex.de but WAF-gated (same pattern as graphql-api.app.cineplex.de)
+[NEW] `api.cineplex.de/robots.txt` — request timeout — new endpoint tested
+[CHANGED] `data-9fc27eb430.cineplex.de/metrics` — stable 200 with 115 bytes since 2026-09-04 16:31 — second authless 200 surface confirmed stable
+[CHANGED] `graphql-api.app.cineplex.de/` — persistent 403 at root, GraphQL POST introspection CONFIRMED 200 with full schema (WAF bypass stable)
+[CHANGED] `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
+[CHANGED] `auth.cineplex.de/.well-known/jwks.json` — persistent 404 — passive JWKS fetch blocked for JWT alg confusion
+[CHANGED] `booking.cineplex.de/api/booking/{id}` — persistent 403 — session-gated, AUTH_HELPED required
+
+## STEP 2 — PRIORITIZE
+[PRIO] graphql-api.app.cineplex.de,9.2,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=10
+[PRIO] graphql-api.app.staging.cineplex.de,8.45,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=6,cloud_surface=8,freshness=10
+[PRIO] data-9fc27eb430.cineplex.de,4.95,attack_surface=4,business_value=3,tech_exposure=2,gate_ease=10,cloud_surface=6,freshness=8
+[PRIO] api.cineplex.de,4.9,attack_surface=3,business_value=7,tech_exposure=6,gate_ease=2,cloud_surface=5,freshness=7
+[PRIO] graphql-api.app.couat.cineplex.de,0,attack_surface=0,business_value=0,tech_exposure=0,gate_ease=0,cloud_surface=0,freshness=0
+
+## STEP 3 — HYPOTHESES
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Prod schema includes userById, searchUsers, adminUsers queries that return PII (email, fullName, telephone, etc.). With a valid JWT, an attacker could query other users' data. IDOR/BOLA explicitly prioritized in directives.
+evidence_needed: A valid JWT from a test account to query userById with a different user's ID.
+verify_steps: (1) Obtain a test JWT via login mutation with test credentials; (2) POST GraphQL query `userById(id: "test-user-id")` with the JWT; (3) If returns PII of another user, IDOR confirmed.
+impact: Mass PII exposure of customers; high severity.
+testability: HUMAN_ONLY
+
+[HYP] Staging GraphQL testing_* resolvers active with no role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 60
+reasoning: Staging schema identical to prod, includes testing_getConfirmationCode, testing_forceDeleteUser resolvers. Staging may have weaker access controls, allowing unauthorized execution.
+evidence_needed: Execution of testing_getConfirmationCode with a sandbox email returning a code.
+verify_steps: (1) POST GraphQL mutation `testing_getConfirmationCode(email: "sandbox@test.com", type: "PASSWORD_RESET")` without auth; (2) If 200 and returns code, resolver is active.
+impact: Account takeover via confirmation code oracle; high severity.
+testability: HUMAN_ONLY
+
+[HYP] Relay metrics queue-depth disclosure reveals internal architecture
+class: MISCONFIG
+asset: data-9fc27eb430.cineplex.de
+confidence: 35
+reasoning: /metrics returns JSON with queue_length, queue_capacity, messages_queued, messages_dropped. 167.8M messages queued suggests broker saturation, but no sensitive data.
+evidence_needed: Metrics gaining sensitive fields (hostnames, routes, upstreams).
+verify_steps: (1) Monitor /metrics over time for field changes; (2) No further value expected.
+impact: Low; only relevant as breadcrumb if broker auth is probed.
+testability: PASSIVE
+
+## STEP 4 — SELF-CRITIQUE
+[PARKED] Relay metrics queue-depth disclosure: confidence 35 < 40, impact negligible, no sensitive data exposed.
+[FINAL] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT (confidence 85, HUMAN_ONLY)
+[FINAL] Staging GraphQL testing_* resolvers active with no role gating (confidence 60, HUMAN_ONLY)
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: Request program consent + two disposable sandbox accounts from bugs.olivermaicher.eu for staging-only testing of testing_* resolvers and prod two-account IDOR check.
+
+## STEP 6 — LEARNING
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+[LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114-115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+[LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+[LEARN] REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+[LEARN] REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+[LEARN] REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+[LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+
+## STEP 7 — RISK
+[RISK] cineplex: 35/100 — current confirmed findings are real but schema-level: GraphQL introspection enabled on PROD and STAGING, exposing PII-bearing queries (userById, adminUsers, searchUsers, userByQr, voucherInstanceByQR, invoice) and destructive mutations (deleteUser, updateUserAdminStatus), with build-identical test envs publicly reachable. Exploitation (IDOR/BOLA, test-mutation/resolver abuse) is blocked to HUMAN_ONLY by the program's customer-data/consent rule and requires sanctioned credentials; relay fully enumerated at low value; JWT analysis blocked by JWKS absence. Bulk of reportable impact hinges on obtaining a test/sandbox account.

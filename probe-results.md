@@ -107,3 +107,8 @@ https://api.cineplex.de/graphql -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.couat.cineplex.de/ -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
 https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115
+
+## 2026-09-05 13:18:38 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.couat.cineplex.de/ -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115
