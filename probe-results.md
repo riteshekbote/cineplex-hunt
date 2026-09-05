@@ -102,3 +102,8 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.couat.cineplex.de/ -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
 https://api.cineplex.de/robots.txt -> ERR The read operation timed out
 https://api.cineplex.de/graphql -> HTTP 403
+
+## 2026-09-05 09:56:30 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.couat.cineplex.de/ -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://data-9fc27eb430.cineplex.de/metrics -> 200 len=115

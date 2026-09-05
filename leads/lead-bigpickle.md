@@ -670,3 +670,4 @@ evidence_needed: sanctioned sandbox email call returning a code (resolver parity
 verify_steps: (1) obtain program consent + disposable sandbox email — HUMAN; (2) staging-only first: POST `{"query":"query{testing_getConfirmationCode(email:\"<sandbox>\",type:\"PASSWORD_RESET\")}"}`; (3) only on proof, prod with consent; never real customer data
 impact: silent ATO via confirmation-code oracle (PASSWORD_RESET/EMAIL_CHANGE) and arbitrary account deletion; critical if wired, config/disclosure if schema-only
 testability: HUMAN_ONLY
+## 2026-09-05 09:52:31 UTC [target] (model bigpickle)
