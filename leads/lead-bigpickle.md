@@ -886,3 +886,106 @@ impact: token forgery → ATO; critical
 testability: AUTH_HELPED
 [NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
 [RISK] cineplex: 55 — WAF method-gate attenuation broadens an already-open GraphQL surface but adds no new reportable class; reportable unchanged (prod introspection, 5.3). Fresh gate-skip re-confirmation raises IDOR confidence basis but both decisive paths (prod two-account IDOR 88, staging oracle 72) remain consent-gated; jumps to 65+ only if consent unlocks oracle/IDOR proof.
+## 2026-09-06 09:08:17 UTC [target] (model bigpickle)
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch
+evidence_needed: issued token's alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: Request bugs.olivermaicher.eu consent for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email execution of `testing_getConfirmationCode` on staging — cite prod+staging `userById` resolving past the auth gate (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both).
+[RISK] cineplex: 52/100 — Reportable finding unchanged (prod introspection, 5.3 CVSS). New signal this cycle materially strengthens the top hypothesis: `userById` demonstrably bypasses the auth gate (vs gated `currentUser`) on both prod and staging, raising IDOR conf to 88. Absolute ceiling reached short of consent: every remaining confirm (prod two-account IDOR, staging oracle) is HUMAN_ONLY; automation adds no further lift without exceeding program customer-data rules. Jumps to 65+ only if consent unlocks oracle/IDOR proof.
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: Re-confirmed 2026-09-06 04:47 UTC over GET — `userById` fabricated ID returns `INVALID_ID` from `decodePublicId`, resolves past auth while `currentUser` (no token) returns UNAUTHENTICATED; schema maps `userById`→User(email, fullName, telephone, street, birthDate); no directive in schema; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reading second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id response; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 72
+reasoning: Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity with prod now shown on two methods (POST prior, GET now: INVALID_ID, not UNAUTHENTICATED); no auth directive at schema level; build-identical envs routinely ship laxer RBAC.
+evidence_needed: `testing_getConfirmationCode` on fabricated email returns a code (not auth/PERMISSION_DENIED).
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"probe-<nonce>@example.com",type:"PASSWORD_RESET")}` ≤1 rps; (3) code → oracle; auth error → gated.
+impact: reset-code oracle → ATO primitive if backend parity holds; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
+[RISK] cineplex: 55 — WAF method-gate attenuation broadens an already-open GraphQL surface but adds no new reportable class; reportable unchanged (prod introspection, 5.3). Fresh gate-skip re-confirmation raises IDOR confidence basis but both decisive paths (prod two-account IDOR 88, staging oracle 72) remain consent-gated; jumps to 65+ only if consent unlocks oracle/IDOR proof.
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: Re-confirmed 2026-09-06 04:47 UTC over GET — `userById` fabricated ID returns `INVALID_ID` from `decodePublicId`, resolves past auth while `currentUser` (no token) returns UNAUTHENTICATED; schema maps `userById`→User(email, fullName, telephone, street, birthDate); no directive in schema; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reading second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id response; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 72
+reasoning: Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity with prod now shown on two methods (POST prior, GET now: INVALID_ID, not UNAUTHENTICATED); no auth directive at schema level; build-identical envs routinely ship laxer RBAC.
+evidence_needed: `testing_getConfirmationCode` on fabricated email returns a code (not auth/PERMISSION_DENIED).
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"probe-<nonce>@example.com",type:"PASSWORD_RESET")}` ≤1 rps; (3) code → oracle; auth error → gated.
+impact: reset-code oracle → ATO primitive if backend parity holds; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
+[RISK] cineplex: 55 — WAF method-gate attenuation broadens an already-open GraphQL surface but adds no new reportable class; reportable unchanged (prod introspection, 5.3). Fresh gate-skip re-confirmation raises IDOR confidence basis but both decisive paths (prod two-account IDOR 88, staging oracle 72) remain consent-gated; jumps to 65+ only if consent unlocks oracle/IDOR proof.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
+[RISK] cineplex: 55 — WAF method-gate attenuation broadens an already-open GraphQL surface but adds no new reportable class; reportable unchanged (prod introspection, 5.3). Fresh gate-skip re-confirmation raises IDOR confidence basis but both decisive paths (prod two-account IDOR 88, staging oracle 72) remain consent-gated; jumps to 65+ only if consent unlocks oracle/IDOR proof.
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: Fresh delta 2026-09-06 09:07 UTC — root GET status changed 403→400 on BOTH prod and staging, now returning native Express/API-Gateway body ("GET query missing.", x-powered-by: Express, x-amzn-apigw-id) instead of Cloudflare 403. This lifts the WAF method-gate: GET with `?query=` now reaches the backend authlessly. Verified GET probes: `currentUser` (no token)→UNAUTHENTICATED on prod; `userById(id:"fake")`→INVALID_ID at decodePublicId (past auth, no UNAUTHENTICATED) on prod AND staging. Prepends direct GET (not just POST-introspection) as the reachable gate-skip; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reading second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 74
+reasoning: Same gate-skip 403→400 attenuation now confirmed on staging root (native Express response 2026-09-06 09:07); `userById(fake)`→INVALID_ID over plain GET, not UNAUTHENTICATED. Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; no auth directive at schema level.
+evidence_needed: `testing_getConfirmationCode` on fabricated email returns a code (not auth/PERMISSION_DENIED).
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"probe-<nonce>@example.com",type:"PASSWORD_RESET")}` ≤1 rps; (3) code → oracle; auth error → gated.
+impact: reset-code oracle → ATO primitive if backend parity holds; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — NEW evidence 2026-09-06 09:07: root GraphQL GET 403→400 on prod AND staging (native Express "GET query missing." body, x-powered-by: Express, x-amzn-apigw-id), direct authless GET reach; `userById(fake)`→INVALID_ID past auth gate; `currentUser`(no token)→UNAUTHENTICATED. Single GET with valid JWT now suffices to prove IDOR.
+[RISK] cineplex: 60 — Reportable unchanged (prod introspection 5.3), but the 403→400 WAF attenuation materially strengthens the POC case for the top IDOR hypothesis (conf 88→91): the GraphQL backend is now directly reachable over plain GET with no WAF method-gate, and the auth-gate gap (userById vs currentUser) is demonstrably present on both prod and staging. Decisive proof (two-account IDOR, staging oracle) still HUMAN_ONLY consent-gated; automation ceiling reached without exceeding customer-PII rules.

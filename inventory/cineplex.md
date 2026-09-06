@@ -382,3 +382,9 @@ wwww.cineplex.de
 ## 2026-09-06 00:14:38 UTC
 
 ## 2026-09-06 04:48:47 UTC
+
+## 2026-09-06 09:11:00 UTC
+- NEW `graphql-api.app.staging.cineplex.de` POST introspection CONFIRMED 200 with full schema (140 mutations, 83 queries) — WAF method-gate bypass (GET 403/POST 200) mirrors prod exactly; staging has additi
+- NEW `data-9fc27eb430.cineplex.de/metrics` body fully examined: IOMB broker stats (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped) — descriptive infra only, no PII/sensitive data
+- CHANGED `graphql-api.app.couat.cineplex.de` — SSLv3 handshake failure confirmed dead; resolves to Cloudflare but TLS negotiation fails
+- CHANGED `api.cineplex.de/graphql` — HTTP 403 on GET, Cloudflare WAF challenge on POST; GraphQL endpoint exists but fully WAF-gated
