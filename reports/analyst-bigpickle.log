@@ -3490,3 +3490,130 @@ testability: AUTH_HELPED
 
 ## STEP 7 — RISK
 [RISK] cineplex: 52/100 — Reportable finding unchanged (prod introspection, 5.3 CVSS). New signal this cycle materially strengthens the top hypothesis: `userById` demonstrably bypasses the auth gate (vs gated `currentUser`) on both prod and staging, raising IDOR conf to 88. Absolute ceiling reached short of consent: every remaining confirm (prod two-account IDOR, staging oracle) is HUMAN_ONLY; automation adds no further lift without exceeding program customer-data rules. Jumps to 65+ only if consent unlocks oracle/IDOR proof.
+===== ANALYST bigpickle 2026-09-06 04:48:47 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "prod_root=%{http_code}\n" --max-time 15 https://graphql-api.app.cineplex.de/
+prod_root=400
+[0m
+[0m$ [0mcurl -s --max-time 15 https://data-9fc27eb430.cineplex.de/health; echo; curl -s -o /dev/null -w "metrics=%{http_code} len=%{size_download}\n" --max-time 15 https://data-9fc27eb430.cineplex.de/metrics
+{"status":"ok"}
+metrics=200 len=115
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "prod_root_get=%{http_code}\n" --max-time 15 https://graphql-api.app.cineplex.de/
+curl -s -o /dev/null -w "prod_head=%{http_code}\n" --max-time 15 -I https://graphql-api.app.cineplex.de/
+curl -s -o /dev/null -w "staging_root=%{http_code}\n" --max-time 15 https://graphql-api.app.staging.cineplex.de/
+prod_root_get=400
+prod_head=403
+staging_root=400
+[0m
+[0m$ [0mcurl -s --max-time 15 -D - https://graphql-api.app.cineplex.de/ -o /tmp/opencode/prod400.body; echo "---body---"; cat /tmp/opencode/prod400.body
+HTTP/2 400 
+date: Sun, 06 Sep 2026 04:47:31 GMT
+content-type: text/html; charset=utf-8
+content-length: 18
+x-amzn-requestid: 13196cac-5149-4f59-864f-d67fb77a0234
+x-amzn-remapped-content-length: 18
+x-amz-apigw-id: DQp_qEKpliAEKwA=
+vary: Origin
+etag: W/"12-7JEJwpG8g89ii7CR/6hhfN27Q+k"
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6a9cf063-4876e8493949faa67af25d75;Parent=76f2ff396a6649a7;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a36ad60e0c3fd6f4-IAD
+alt-svc: h3=":443"; ma=86400
+
+---body---
+GET query missing.
+[0m
+[0m$ [0msleep 1; curl -s --max-time 15 -D - --get "https://graphql-api.app.cineplex.de/" --data-urlencode 'query={__typename}' -o /tmp/opencode/prod_typename.body; echo; echo "---body---"; cat /tmp/opencode/prod_typename.body
+HTTP/2 200 
+date: Sun, 06 Sep 2026 04:47:47 GMT
+content-type: application/json; charset=utf-8
+content-length: 32
+x-amzn-requestid: 490462e1-602a-415d-87b2-cb95359261a2
+x-amzn-remapped-content-length: 32
+x-amz-apigw-id: DQqCEHS3liAEGoA=
+vary: Origin
+etag: W/"20-/8NdYwgmGsmmlrq5Nh8mH1T+tAs"
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6a9cf073-0e07461e69af5ebc794aa222;Parent=22e8f07f19e53386;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a36ad66e5deb20a2-IAD
+alt-svc: h3=":443"; ma=86400
+
+
+---body---
+{"data":{"__typename":"Query"}}
+[0m
+[0m$ [0msleep 1; curl -s --max-time 15 --get "https://graphql-api.app.cineplex.de/" --data-urlencode 'query=query{userById(id:"cpx-probe-9f3a2b1c0d"){id,email}}' ; echo
+{"errors":[{"message":"Invalid Id for type: User id: cpx-probe-9f3a2b1c0d","locations":[{"line":1,"column":7}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: cpx-probe-9f3a2b1c0d","    at decodePublicId (/var/task/graphql.js:43450:15)","    at Function.decodePublicId (/var/task/graphql.js:27843:43)","    at Function.<anonymous> (/var/task/graphql.js:27847:31)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:27781:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:27777:12)","    at Function.gen (/var/task/graphql.js:27846:16)","    at /var/task/graphql.js:50100:30","    at Generator.next (<anonymous>)"]}}}],"data":{"userById":null}}
+[0m
+[0m$ [0msleep 1; curl -s --max-time 15 --get "https://graphql-api.app.staging.cineplex.de/" --data-urlencode 'query=query{userById(id:"cpx-probe-1a2b3c4d5e"){id}}' ; echo
+{"errors":[{"message":"Invalid Id for type: User id: cpx-probe-1a2b3c4d5e","locations":[{"line":1,"column":7}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: cpx-probe-1a2b3c4d5e","    at decodePublicId (/var/task/graphql.js:43944:15)","    at Function.decodePublicId (/var/task/graphql.js:28104:43)","    at Function.<anonymous> (/var/task/graphql.js:28108:31)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:28042:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:28038:12)","    at Function.gen (/var/task/graphql.js:28107:16)","    at /var/task/graphql.js:50665:30","    at Generator.next (<anonymous>)"]}}}],"data":{"userById":null}}
+[0m
+No further probes warranted (top paths consent-gated; rate ≤1 rps respected). Output below.
+
+## STEP 1 — DELTA
+- [CHANGED] `graphql-api.app.cineplex.de` + `.staging.` — root GET now 400 `"GET query missing."` (origin Express reached; HEAD still 403). Previously persisted 403-on-GET per KB (2026-09-05 "GET 403/POST 200 mirrors prod exactly"). WAF method-gate attenuated.
+- [CHANGED] Both envs — `GET ?query={...}` now returns 200 and executes resolvers; `userById` with fabricated ID re-confirmed 200 `INVALID_ID` at `decodePublicId` (never UNAUTHENTICATED) on prod AND staging via the new GET route (was POST-only evidence).
+- [UNCHANGED] `data-9fc27eb430.cineplex.de`: `/health` 200 `{"status":"ok"}`, `/metrics` 200 `len=115` — stable.
+- [NEW] Origin fingerprint — `/var/task/graphql.js` stacktraces => AWS Lambda + API Gateway (x-amzn-apigw-id) origin behind Cloudflare; GraphQL builds ~44-50k LOC.
+
+## STEP 2 — PRIORITIZE
+- `graphql-api.app.cineplex.de` — 8.45 (a8+b10+t8+g9+c5+f9) — resolver executes authless on 2 methods now.
+- `graphql-api.app.staging.cineplex.de` — 7.90 (a7+b9+t8+g8+c5+f10) — build-identical, oracle resolvers, no env-specific WAF.
+- `auth.cineplex.de` — 6.40 (a6+b9+t7+g4+c4+f6) — JWT class prioritized but creds-gated.
+
+## STEP 3 — HYPOTHESES
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: Re-confirmed 2026-09-06 04:47 UTC over GET — `userById` fabricated ID returns `INVALID_ID` from `decodePublicId`, resolves past auth while `currentUser` (no token) returns UNAUTHENTICATED; schema maps `userById`→User(email, fullName, telephone, street, birthDate); no directive in schema; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reading second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id response; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 72
+reasoning: Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity with prod now shown on two methods (POST prior, GET now: INVALID_ID, not UNAUTHENTICATED); no auth directive at schema level; build-identical envs routinely ship laxer RBAC.
+evidence_needed: `testing_getConfirmationCode` on fabricated email returns a code (not auth/PERMISSION_DENIED).
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"probe-<nonce>@example.com",type:"PASSWORD_RESET")}` ≤1 rps; (3) code → oracle; auth error → gated.
+impact: reset-code oracle → ATO primitive if backend parity holds; high
+testability: HUMAN_ONLY
+
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] relay_metrics/internal_disclosure @ data-9fc27eb430.cineplex.de: descriptive-infra only, never reportable alone (double REJECTED).
+- [PARKED] JWT alg confusion @ auth.cineplex.de: static 45, JWKS 404 blocks all progress; kept only as prioritized-class placeholder, not actionable this cycle.
+- [PARKED] unauthenticated `searchUsers`/`adminUsers` probe: fabricated nonce could still return real PII rows = live-customer-data exposure (program note); not a passive probe, consent-gated.
+- [FINAL] 1) prod IDOR (88)  2) staging testing_* oracle (72)  3) JWT alg confusion (45).
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED waf_method_gate_shift @ graphql-api.app.cineplex.de/staging: root GET now 400 `"GET query missing."` (HEAD still 403); `?query=` GET executes resolvers → 200; WAF gate attenuated vs documented "GET 403/POST 200"; query-param GET is now a validated vector for both envs.
+- [LEARN] ACCEPTED origin_environ @ graphql-api.app.cineplex.de/staging: `/var/task/graphql.js` + amzn-apigw-id ⇒ AWS Lambda behind API Gateway behind Cloudflare — narrows infra model for future Lambda/event-source hypotheses.
+- [LEARN] REJECTED verbose_error_stacktrace @ graphql-api.app.cineplex.de/staging: `INVALID_ID` responses embed full `decodePublicId` stacktraces — descriptive-error/stack-trace class, no secrets, out of scope (confirmed twice, not reportable).
+
+## STEP 7 — RISK
+[RISK] cineplex: 55 — WAF method-gate attenuation broadens an already-open GraphQL surface but adds no new reportable class; reportable unchanged (prod introspection, 5.3). Fresh gate-skip re-confirmation raises IDOR confidence basis but both decisive paths (prod two-account IDOR 88, staging oracle 72) remain consent-gated; jumps to 65+ only if consent unlocks oracle/IDOR proof.

@@ -380,3 +380,5 @@ wwww.cineplex.de
 - CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required
 
 ## 2026-09-06 00:14:38 UTC
+
+## 2026-09-06 04:48:47 UTC
