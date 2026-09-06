@@ -15,3 +15,12 @@
 
 - 1 lead(s) marked VALID at 2026-09-05 05:51:22 UTC
   - | Q4 Provable | No — requires valid session (AUTH_HELPED) |
+
+- 7 lead(s) marked VALID at 2026-09-06 18:14:31 UTC
+  - | Q7 Reasonable triager accept? | **YES** — GraphQL introspection on production with WAF bypass (GET 403/POST 200) is a valid misconfiguration |
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | **NO** — requires valid JWT from login mutation (AUTH_HELPED) |
+  - | Q4 Provable non-invasively? | **NO** — requires valid session (AUTH_HELPED) |
+  - | GraphQL Introspection (Production) | **VALID** | 7.5 (High) |
+  - | Staging GraphQL WAF Bypass | **VALID** | 6.5 (Medium) |
