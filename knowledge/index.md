@@ -77,3 +77,6 @@
 - 2026-09-06 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 - 2026-09-06 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
 - 2026-09-06 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- 2026-09-06 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
+- 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
+- 2026-09-06 REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
