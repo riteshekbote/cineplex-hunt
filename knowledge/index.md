@@ -80,3 +80,10 @@
 - 2026-09-06 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
 - 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
 - 2026-09-06 REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- 2026-09-06 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves with zero auth on staging (200, hits backend); production gates correctly (FORBIDDEN). Missing environment guard confirmed.
+- 2026-09-06 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+- 2026-09-06 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed; HUMAN_ONLY per program PII rule.
+- 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express; direct backend reach on both envs.
+- 2026-09-06 REJECTED relay_* @ data-9fc27eb430.cineplex.de: descriptive infra only; not reportable alone.
+- 2026-09-06 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+- 2026-09-06 REJECTED app.staging.cineplex.de @ TLS-dead: no web surface.

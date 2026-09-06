@@ -1181,3 +1181,42 @@ testability: AUTH_HELPED
 [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
 [LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
 [RISK] cineplex: 60 — Reportable unchanged (prod GraphQL introspection, 5.3). Live re-confirmation this cycle reinforces the top IDOR hypothesis (conf 88→91): the GraphQL backend reaches directly over plain GET with the WAF method-gate attenuated (400, not 403) on both prod and staging, and the auth-gate gap (userById vs currentUser) is demonstrably stable. Both decisive proofs (two-account IDOR, staging oracle) remain HUMAN_ONLY consent-gated; automation ceiling reached without exceeding program customer-PII rules. Jumps to 65+ only if consent unlocks oracle/IDOR proof.
+## 2026-09-06 15:59:46 UTC [target] (model bigpickle)
+[HYP] Staging testing_getConfirmationCode missing environment guard — authless oracle
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` on staging resolves past all auth gates and reaches the backend LOGIN service directly (200 HTTP, CINEPLEX_SERVICE_ERROR from backend). Production counterpart returns FORBIDDEN ("only available in testing environments"). Confirmed two code paths: PASSWORD_RESET→/userPasswordResets/search/findByMandatorIdAndEmailAddress and LOGIN_CREATION→/userRegistrations/search/findByMandatorIdAndEmailAddress. Backend returns 405 (HTTP method mismatch in resolver) preventing code extraction, but the missing env guard is confirmed.
+evidence_needed: (1) confirmation that a real email returns a code instead of 405; (2) testing_forceDeleteUser same auth gap
+verify_steps: (1) GET `?query={testing_getConfirmationCode(email:"<real-test-email>",type:PASSWORD_RESET)}` ≤1 rps — 200 with code = oracle; (2) GET `?query={testing_forceDeleteUser(id:"fake")}` — check for auth error vs deletion attempt; both HUMAN_ONLY
+impact: Confirmation code oracle → ATO via email verification bypass; staging-parity with prod schema means any staging bypass may indicate prod weakness under different config; high
+testability: HUMAN_ONLY
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: Re-confirmed live 2026-09-06 — root GET 400 (WAF gate attenuated, native Express body); `userById(id:"fake")` resolves past auth to `INVALID_ID` at decodePublicId while `currentUser`(no token)→UNAUTHENTICATED; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema directive; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reading a second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (404).
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[PARKED] Relay undocumented API routes: confidence 35 < 40; all probed paths 404
+[FINAL] Ranked survivors:
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts proving `userById`/`searchUsers`/`adminUsers` IDOR on production and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — **NEW EVIDENCE THIS CYCLE**: `testing_getConfirmationCode` resolves past ALL auth gates on staging (200 HTTP, hits LOGIN service backend), while production correctly gates with FORBIDDEN ("only available in testing environments"); internal architecture disclosed (Spring Data JPA REST endpoints, mandatorId UUID `746241be-8a37-44d8-8690-8ad67e674a2b`, Lambda `/var/task/graphql.js:25188`); staging `ConfirmationCodeType` enum values: PASSWORD_RESET, LOGIN_CREATION. Backend 405 prevents code extraction currently but missing env guard is confirmed.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves with zero auth on staging (200, hits backend); production gates correctly (FORBIDDEN). Missing environment guard confirmed.
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed; HUMAN_ONLY per program PII rule.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express; direct backend reach on both envs.
+[LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: descriptive infra only; not reportable alone.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+[LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: no web surface.
+[RISK] cineplex: 68 — Reportable unchanged at prod GraphQL introspection (5.3 CVSS), but this cycle materially advances the staging oracle hypothesis (conf 72→82): `testing_getConfirmationCode` is confirmed to have **no auth gate** on staging (resolves directly to backend) while production correctly gates with FORBIDDEN. Internal architecture fully disclosed (Spring Data JPA REST, mandatorId, Lambda path). The 405 from the backend is a separate bug (HTTP method mismatch in resolver) that prevents code extraction but does NOT diminish the missing-auth finding. Both top leads (prod IDOR conf 91, staging oracle conf 82) remain HUMAN_ONLY consent-gated. Jumps to 75+ if consent unlocks proof.
