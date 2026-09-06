@@ -87,3 +87,5 @@
 - 2026-09-06 REJECTED relay_* @ data-9fc27eb430.cineplex.de: descriptive infra only; not reportable alone.
 - 2026-09-06 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 - 2026-09-06 REJECTED app.staging.cineplex.de @ TLS-dead: no web surface.
+- 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET 400 native Express reconfirmed live (X-Powered-By: Express, 18B) this cycle; direct authless backend reach + IDOR/staging-oracle testability basis stable.
+- 2026-09-06 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 115B + /health 15B unchanged, IOMB broker stats only; descriptive infra, not reportable alone (reaffirmed).
