@@ -1286,3 +1286,33 @@ evidence_needed: issued token `alg` header; forged HS256-with-public-key accepte
 verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
 impact: token forgery → ATO; critical
 testability: AUTH_HELPED
+## 2026-09-06 20:30:20 UTC [target] (model bigpickle)
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: Re-confirmed live: root GET 400 (native Express, WAF method-gate attenuated) on prod+staging; `userById(id:"fake")` resolves past auth to INVALID_ID (decodePublicId) while `currentUser`(no token)→UNAUTHENTICATED over plain GET; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema directive; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reads a second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` resolves with zero auth on staging (200 HTTP, reaches LOGIN backend), production gates FORBIDDEN; staged introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity (userById→INVALID_ID not UNAUTHENTICATED) on both envs; internal architecture disclosed (Spring Data JPA REST, mandatorId UUID, Lambda path); ConfirmationCodeType enum PASSWORD_RESET/LOGIN_CREATION mapped to userPasswordResets/userRegistrations.
+evidence_needed: real test email returns a code (not 405); testing_forceDeleteUser shows same auth gap.
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; (3) 200-with-code = oracle; auth error = gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (404).
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts proving `userById`/`searchUsers`/`adminUsers` IDOR on production and (b) one fabricated-email `testing_getConfirmationCode` execution on staging. Cite live re-confirmation: root GET 400 (native Express) on prod+staging, `userById(fake)`→INVALID_ID past auth gate while `currentUser`→UNAUTHENTICATED over plain GET; single GET with valid JWT now suffices to prove IDOR; staging testing_* resolves past all gates to backend while prod correctly FORBIDDEN. No further read-only probe exists without exceeding customer-PII consent rules.
+[RISK] cineplex: 68 — Reportable unchanged at prod GraphQL introspection (5.3 CVSS). This cycle is NO_DELTA: both top leads (prod IDOR conf 91, staging oracle conf 82) remain fully characterized and consent-gated as HUMAN_ONLY; staging oracle's missing-env-guard is confirmed (authless resolution vs prod FORBIDDEN) though a backend 405 currently blocks code extraction. No new passive surface, no REJECTED-class confusion. Risk jumps to 75+ only if consent unlocks the decisive two-account IDOR / fabricated-email oracle proofs.
