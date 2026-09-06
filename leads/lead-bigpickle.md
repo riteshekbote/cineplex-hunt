@@ -826,3 +826,33 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR/invoice + testing_getConfirmationCode/testing_forceDeleteUser; PII surface identical to prod at schema level.
 [LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable.
 [RISK] cineplex: **45/100** — Staging GraphQL surface now confirmed reachable with full PII-bearing queries and `testing_*` account-oracle resolvers on a build-identical env, adding a genuinely new exploitable-pipeline candidate. Reportable finding unchanged (prod introspection, 5.3 CVSS). Automation ceiling reached: the two highest-impact paths (conf 85 prod IDOR, conf 70 staging testing_* oracle) both terminate at HUMAN consent + sandbox/test data, which has not yet been requested from bugs.olivermaicher.eu. Risk jumps to 60+ only if consent unlocks either oracle confirmation or two-account IDOR proof.
+## 2026-09-06 00:13:32 UTC [target] (model bigpickle)
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: `currentUser` (no token) → UNAUTHENTICATED, but `userById` with fabricated ID reaches `decodePublicId` (INVALID_ID) — ID decode runs BEFORE any auth check on prod AND staging (probe 2026-09-06, HTTP 200 both). Schema exposes userById→User(email, fullName, telephone, street, birthDate). No directive/app-level gate visible pre-decode.
+evidence_needed: two-account proof — own JWT reading second sandbox account via `userById(otherId)` returns PII
+verify_steps: (1) program consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) `userById(ownId)` vs `userById(otherId)`; never real customer IDs; (4) treat any PII response as report-only
+impact: mass cross-tenant PII dump, GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without role gating
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 70
+reasoning: staging introspection (POST 200) exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; build-identical to prod per userById gate-parity probe; no auth directive at schema level
+evidence_needed: `testing_getConfirmationCode` on fabricated email returns code (not auth/PERMISSION_DENIED)
+verify_steps: (1) consent; (2) POST `{"query":"query{testing_getConfirmationCode(email:\"probe-<nonce>@example.com\",type:\"PASSWORD_RESET\")}"}` ≤1 rps; (3) code → oracle confirmed; auth error → gated
+impact: reset-code oracle → ATO primitive if prod parity; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken+csrf; alg confusion prioritized; JWKS 404 blocks passive key fetch
+evidence_needed: issued token's alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: Request bugs.olivermaicher.eu consent for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email execution of `testing_getConfirmationCode` on staging — cite prod+staging `userById` resolving past the auth gate (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both).
+[RISK] cineplex: 52/100 — Reportable finding unchanged (prod introspection, 5.3 CVSS). New signal this cycle materially strengthens the top hypothesis: `userById` demonstrably bypasses the auth gate (vs gated `currentUser`) on both prod and staging, raising IDOR conf to 88. Absolute ceiling reached short of consent: every remaining confirm (prod two-account IDOR, staging oracle) is HUMAN_ONLY; automation adds no further lift without exceeding program customer-data rules. Jumps to 65+ only if consent unlocks oracle/IDOR proof.

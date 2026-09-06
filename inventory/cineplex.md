@@ -378,3 +378,5 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.staging.cineplex.de/` — persistent 403 at root, staging also WAF-gated
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404, passive JWKS fetch blocked for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403, session-gated, AUTH_HELPED required
+
+## 2026-09-06 00:14:38 UTC
