@@ -406,3 +406,5 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.couat.cineplex.de` — SSLv3 handshake failure confirmed dead; resolves to Cloudflare but TLS negotiation fails
 - CHANGED `api.cineplex.de/graphql` — HTTP 403 on GET, Cloudflare WAF challenge on POST; GraphQL endpoint exists but fully WAF-gated
 - CHANGED `app.staging.cineplex.de` — SSLv3 handshake failure confirmed dead; no web surface reachable
+
+## 2026-09-06 18:25:17 UTC

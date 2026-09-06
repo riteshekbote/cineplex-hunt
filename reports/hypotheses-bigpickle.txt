@@ -1,22 +1,4 @@
-## 2026-09-06 15:59:46 UTC [target] (model bigpickle)
-[HYP] Staging testing_getConfirmationCode missing environment guard — authless oracle
-class: AUTH
-asset: graphql-api.app.staging.cineplex.de
-confidence: 82
-reasoning: `testing_getConfirmationCode` on staging resolves past all auth gates and reaches the backend LOGIN service directly (200 HTTP, CINEPLEX_SERVICE_ERROR from backend). Production counterpart returns FORBIDDEN ("only available in testing environments"). Confirmed two code paths: PASSWORD_RESET→/userPasswordResets/search/findByMandatorIdAndEmailAddress and LOGIN_CREATION→/userRegistrations/search/findByMandatorIdAndEmailAddress. Backend returns 405 (HTTP method mismatch in resolver) preventing code extraction, but the missing env guard is confirmed.
-evidence_needed: (1) confirmation that a real email returns a code instead of 405; (2) testing_forceDeleteUser same auth gap
-verify_steps: (1) GET `?query={testing_getConfirmationCode(email:"<real-test-email>",type:PASSWORD_RESET)}` ≤1 rps — 200 with code = oracle; (2) GET `?query={testing_forceDeleteUser(id:"fake")}` — check for auth error vs deletion attempt; both HUMAN_ONLY
-impact: Confirmation code oracle → ATO via email verification bypass; staging-parity with prod schema means any staging bypass may indicate prod weakness under different config; high
-testability: HUMAN_ONLY
-[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
-class: IDOR
-asset: graphql-api.app.cineplex.de
-confidence: 91
-reasoning: Re-confirmed live 2026-09-06 — root GET 400 (WAF gate attenuated, native Express body); `userById(id:"fake")` resolves past auth to `INVALID_ID` at decodePublicId while `currentUser`(no token)→UNAUTHENTICATED; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema directive; IDOR/BOLA prioritized.
-evidence_needed: two-account proof — own JWT reading a second sandbox account via `userById(otherId)` returns PII.
-verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; never live IDs.
-impact: cross-tenant mass PII dump / GDPR breach; critical
-testability: HUMAN_ONLY
+## 2026-09-06 18:05:49 UTC [target] (model bigpickle)
 [HYP] JWT alg/key confusion on login-issued tokens
 class: AUTH
 asset: auth.cineplex.de
@@ -37,3 +19,48 @@ testability: AUTH_HELPED
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: no web surface.
 [RISK] cineplex: 68 — Reportable unchanged at prod GraphQL introspection (5.3 CVSS), but this cycle materially advances the staging oracle hypothesis (conf 72→82): `testing_getConfirmationCode` is confirmed to have **no auth gate** on staging (resolves directly to backend) while production correctly gates with FORBIDDEN. Internal architecture fully disclosed (Spring Data JPA REST, mandatorId, Lambda path). The 405 from the backend is a separate bug (HTTP method mismatch in resolver) that prevents code extraction but does NOT diminish the missing-auth finding. Both top leads (prod IDOR conf 91, staging oracle conf 82) remain HUMAN_ONLY consent-gated. Jumps to 75+ if consent unlocks proof.
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone
+[LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data
+[LEARN] REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+[LEARN] REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+[LEARN] REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+[LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+[LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
+[LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+[RISK] cineplex: 92 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST. Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks. Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass). Wildcard-dominated DNS increases shared-infra risk.
+[PARKED] Relay undocumented API routes: confidence 35, all probed paths 404 — no new surface.
+[FINAL] Ranked survivors.
+[RISK] cineplex: 68 — Unchanged this cycle. Reportable stands at prod GraphQL introspection (5.3 CVSS, WAF method-gate bypass GET 403/POST 200). Both top leads (prod IDOR conf 91, staging oracle conf 82) are fully characterized and remain HUMAN_ONLY consent-gated; no new passive surface, no REJECTED-class confusion. The decisive proof of both (cross-account PII via userById; authless confirmation-code extraction on staging) requires `bugs.olivermaicher.eu` consent + disposable sandbox accounts. Risk jumps to 75+ only if consent unlocks those proofs.
+[HYP] Staging testing_getConfirmationCode missing environment guard — authless reset-code oracle
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` resolves past ALL auth gates on staging (200 HTTP, reaches backend LOGIN service directly); production counterpart gates with FORBIDDEN ("only available in testing environments"). Two confirmed code paths disclosed (PASSWORD_RESET→userPasswordResets, LOGIN_CREATION→userRegistrations). Backend returns 405 (resolver HTTP-method mismatch) blocking code extraction, but missing env-guard confirmed. Internal architecture + mandatorId UUID + Lambda path disclosed.
+evidence_needed: real test email returns a code (not 405); testing_forceDeleteUser shows same auth gap.
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; (3) 200-with-code = oracle; auth error = gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: Re-confirmed live: root WAF method-gate attenuated (400 native Express, not 403) on prod+staging; `userById(id:"fake")` resolves past auth to INVALID_ID (decodePublicId) while `currentUser`(no token)→UNAUTHENTICATED over plain GET; schema maps userById→User(email, fullName, telephone, birthDate, street); no auth directive; IDOR/BOLA prioritized.
+evidence_needed: two-account proof — own JWT reads a second sandbox account via `userById(otherId)` returns PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (404). No passive path to token header without a test login.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
