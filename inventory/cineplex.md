@@ -419,3 +419,14 @@ wwww.cineplex.de
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` body fully understood — IOMB broker stats only (mode IOMB, writer queue 30k capacity, 301.9M queued, 0 dropped), no PII/sensitive data; descriptive-infra only, no
 - CHANGED `relay_broker_saturation` REJECTED — 273.9M queued over 30k capacity is infra saturation with no exploitable authless manipulation surface
 - CHANGED `app.staging.cineplex.de` — SSLv3 handshake failure confirmed dead; no web surface reachable; not pursuable
+
+## 2026-09-07 00:05:49 UTC
+- NEW `graphql-api.app.cineplex.de` root GET now returns 400 (native Express, X-Powered-By: Express, 18B) not 403 (Cloudflare) — direct backend reach confirmed stable this cycle
+- NEW `graphql-api.app.staging.cineplex.de` root GET now returns 400 (native Express) — WAF gate attenuation mirrors prod exactly
+- NEW `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` resolves with zero auth (200, hits backend); production gates correctly (FORBIDDEN) — missing environment guard confirmed
+- NEW `graphql-api.app.staging.cineplex.de` Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace — int
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` body fully understood — IOMB broker stats only (mode IOMB, writer queue 30k capacity, 301.9M queued, 0 dropped), no PII/sensitive data; descriptive-infra only, no
+- CHANGED `relay_broker_saturation` REJECTED — 273.9M queued over 30k capacity is infra saturation with no exploitable authless manipulation surface
+- CHANGED `app.staging.cineplex.de` — SSLv3 handshake failure confirmed dead; no web surface reachable; not pursuable
+- CHANGED `graphql-api.app.couat.cineplex.de` — SSLv3 handshake failure confirmed dead; resolves to Cloudflare but TLS negotiation fails
+- CHANGED `api.cineplex.de/graphql` — HTTP 403 on GET, Cloudflare WAF challenge on POST; GraphQL endpoint exists but fully WAF-gated
