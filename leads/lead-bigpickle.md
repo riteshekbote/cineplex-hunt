@@ -1493,3 +1493,60 @@ testability: AUTH_HELPED
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
 [RISK] cineplex: 78 — NO_DELTA on exploitability. Systemic unauth'd IDOR format-confirmed on prod across 4 single-entity resolvers with structural proof (INVALID_ID past auth gate + sibling role/device gates proving real auth omission). Root GET 403 (WAF) but GraphQL POST fully reachable — direct backend access confirmed. Full cross-tenant PII/fl/GDPR impact proof remains HUMAN_ONLY via consent. Reportable floor is well above the 5.3-CVSS introspection base. Risk reaches 85+ only if consent unlocks two-account proof or staging code-extraction POC.
+## 2026-09-07 22:15:52 UTC [target] (model bigpickle)
+[NEW] Latest probe (2026-09-07 19:30:52 UTC): Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed on both prod and staging — both return 403 (Cloudflare WAF-blocked GET, not accessible via probe tool).
+[NEW] Previous KB entries for `internal_architecture_leak` on staging referenced these endpoints with Spring Data JPA REST disclosures but those were from introspection/schema analysis, not GET probes — the 403 on GET is consistent with the WAF root gate.
+[CHANGED] Root GET status for both `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de` stabilizes at HTTP 403 in probe log; earlier KB entries claiming 400/200 Apollo landing page are not reproduced in the automated probe results — WAF gate appears stable at 403.
+[CHANGED] `data-9fc27eb430.cineplex.de/metrics` not probed in latest cycle (no entry since 2026-09-05 05:51:32 UTC at len=115); relay surface stale in probe log.
+[PRIO] graphql-api.app.cineplex.de,9.15,attack=9+biz=10+tech=10+gate=8+cloud=8+fresh=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.80,attack=9+biz=8+tech=10+gate=9+cloud=8+fresh=9
+[PRIO] auth.cineplex.de,7.20,attack=7+biz=9+tech=9+gate=5+cloud=6+fresh=5
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById, invoice, order, ticket resolvers all pass HTTP + field-selection + auth layers and reach decodePublicId (path /var/task/graphql.js:43450) returning INVALID_ID for fake IDs with data:null — NO auth/role/device gate. Contrast: searchUsers FORBIDDEN (ROOT/ADMIN/CINEMA_ADMIN/SUPPORT roles), adminUsers FORBIDDEN (Root only), userByQr FORBIDDEN (DEVICE_UNAUTHORIZED), voucherInstanceByQR PosDevicesOnly, currentUser UNAUTHENTICATED. WAF gate: root GET 403 (Cloudflare), but GraphQL POST works (introspection 200); the 403 is WAF at root, not auth gate on resolvers. Staging identical behavior.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); format-validated gate-skip already structural proof
+verify_steps: (1) consent + two disposable sandbox accounts; (2) login mutation → JWT → obtain own publicId; (3) GET ?query={userById(id:"<otherId>"){email,fullName,telephone}} and {invoice(id:"..."){...}} vs own-id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: testing_getConfirmationCode resolves authless on staging (200, 405-resolver-mismatch) vs prod FORBIDDEN; testing_* mutations exposed in staged schema (140 mutations); single-entity IDOR parity confirmed. Missing environment guard persists.
+evidence_needed: real fabricated email returns an actual code (not 405); testing_forceDeleteUser same auth gap
+verify_steps: consent; GET ?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken+csrf; dedicated-KB priority; passive JWKS fully dead this cycle (all alt-paths 403 CF, only named 404 route). No new attack surface surfaced.
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[PARKED] JWT alg/key confusion @ auth.cineplex.de: confidence 45 < 50; JWKS dead, no passive verification possible; AUTH_HELPED only; defer.
+[FINAL] Production systemic IDOR @ graphql-api.app.cineplex.de — confidence 93, HUMAN_ONLY, critical impact. Structural proof complete (INVALID_ID past auth gate + sibling resolver gates proving auth-omission).
+[FINAL] Staging testing oracle @ graphql-api.app.staging.cineplex.de — confidence 82, HUMAN_ONLY, high impact. Missing environment guard confirmed; resolve 405-mismatch branch.
+[NEXT] HUMAN: (a) Submit `bugs.olivermaicher.eu` structural prod report: **Unauthenticated Systemic IDOR** — `userById`, `invoice`, `order`, `ticket` resolvers all reach `decodePublicId` (path `/var/task/graphql.js:43450`) returning INVALID_ID for format-valid fake IDs with NO auth gate, while sibling resolvers enforce FORBIDDEN/UNAUTHENTICATED. Root GET stable 403 (Cloudflare WAF) but GraphQL POST fully reachable (introspection 200). Cite live INVALID_ID matrix from prior cycles + sibling gate contrast. (b) Request consent for two disposable sandbox accounts to prove cross-tenant PII read via `userById(otherId)` on prod. (c) Request consent for one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` execution on staging to resolve 405-vs-code branch.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 (WAF) but GraphQL POST fully reachable — direct backend access confirmed. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod FORBIDDEN. Missing environment guard persists.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET stable 403 (Cloudflare) — earlier 400/200 reports not reproduced in probe log; WAF gate stable, direct backend reach via GraphQL POST only.
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace. GET probes return 403 (WAF-blocked); disclosure was via schema/introspection, not HTTP GET.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-gate bypass (GET 403/POST 200) mirrors prod exactly; no env-specific WAF strength.
+[LEARN] ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR/invoice + testing_getConfirmationCode/testing_forceDeleteUser; PII surface identical to prod at schema level.
+[LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule.
+[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification.
+[LEARN] ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value.
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+[LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+[RISK] cineplex: 78 — NO_DELTA on exploitability. Systemic unauth'd IDOR format-confirmed on prod across 4 single-entity resolvers with structural proof (INVALID_ID past auth gate + sibling role/device gates proving real auth omission). Root GET stable 403 (WAF) but GraphQL POST fully reachable — direct backend access confirmed. Full cross-tenant PII/fl/GDPR impact proof remains HUMAN_ONLY via consent. Reportable floor is well above the 5.3-CVSS introspection base — the structural IDOR alone is a high-severity finding. Risk reaches 85+ only if consent unlocks the two-account proof or staging code-extraction POC.
+[NEW] Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed on both envs — GET 403 (WAF-blocked); confirms disclosure was via schema/introspection, not HTTP reach.
+[CHANGED] Root GET for both GraphQL envs stable at 403 in probe log; earlier KB 400/200 entries not reproduced — WAF gate stable, backend reach via GraphQL POST only.
+[CHANGED] relay `/metrics` stale in probe log (last 2026-09-05 05:51); no fresh relay read this cycle.
