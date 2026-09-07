@@ -24,3 +24,11 @@
   - | Q4 Provable non-invasively? | **NO** — requires valid session (AUTH_HELPED) |
   - | GraphQL Introspection (Production) | **VALID** | 7.5 (High) |
   - | Staging GraphQL WAF Bypass | **VALID** | 6.5 (Medium) |
+
+- 6 lead(s) marked VALID at 2026-09-07 22:16:31 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q2 Reachable? | AUTH_HELPED — requires valid JWT from login mutation |
+  - | Q4 Provable? | NO — requires valid session + querying other users' bookings = PII exposure |
+  - | 1 | Prod GraphQL Introspection | **VALID** | 5.3→8.1 | Report to bugs.olivermaicher.eu |
+  - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 5.3→7.5 | Report to bugs.olivermaicher.eu |
