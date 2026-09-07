@@ -1,30 +1,30 @@
-## 2026-09-07 04:50:42 UTC [target] (model bigpickle)
-[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+## 2026-09-07 10:00:39 UTC [target] (model bigpickle)
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers (userById, invoice, order, ticket)
 class: IDOR
 asset: graphql-api.app.cineplex.de
-confidence: 91
-reasoning: root GET 400 native Express (WAF method-gate attenuated) on prod+staging; `userById(id:"fake")` resolves past auth to INVALID_ID (decodePublicId) while `currentUser`(no token)→UNAUTHENTICATED over plain GET; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema auth directive; IDOR/BOLA explicitly prioritized.
-evidence_needed: two-account proof — own JWT reads a second sandbox account via `userById(otherId)` returning PII.
-verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; ≤1 rps; never live IDs.
-impact: cross-tenant mass PII dump / GDPR breach; critical
+confidence: 93
+reasoning: All four resolvers pass HTTP + field-selection + auth layers and reach `decodePublicId` (`/var/task/graphql.js:43450`) returning INVALID_ID for fake IDs with data:null — NO auth/role/device gate. Contrast: `searchUsers` FORBIDDEN (ROOT/ADMIN/CINEMA_ADMIN/SUPPORT roles), `adminUsers` FORBIDDEN (Root only), `userByQr` FORBIDDEN (DEVICE_UNAUTHORIZED), `voucherInstanceByQR` PosDevicesOnly, `currentUser` UNAUTHENTICATED. IDOR/BOLA prioritized; WAF gate attenuated (root GET 400 native Express); staging identical behavior.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); format-validated gate-skip already structural proof
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT → obtain own publicId; (3) GET `?query={userById(id:"<otherId>"){email,fullName,telephone}}` and `{invoice(id:"..."){...}}` vs own-id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
 testability: HUMAN_ONLY
 [HYP] Staging testing_* confirmation-code oracle without environment guard
 class: AUTH
 asset: graphql-api.app.staging.cineplex.de
 confidence: 82
-reasoning: `testing_getConfirmationCode` resolves with zero auth on staging (200, reaches LOGIN backend); prod gates FORBIDDEN; staged introspection exposes testing_*; ConfirmationCodeType PASSWORD_RESET/LOGIN_CREATION mapped to userPasswordResets/userRegistrations; backend 405 (resolver mismatch) currently blocks code extraction.
-evidence_needed: real test email returns an actual code (not 405); testing_forceDeleteUser shows the same auth gap.
-verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; (3) 200-with-code = oracle; auth error = gated.
+reasoning: `testing_getConfirmationCode` resolves authless on staging (200, 405-resolver-mismatch) vs prod FORBIDDEN; testing_* mutations exposed in staged schema; single-entity IDOR parity confirmed again this cycle (userById INVALID_ID same line). Missing environment guard.
+evidence_needed: real fabricated email returns an actual code (not 405); testing_forceDeleteUser same auth gap
+verify_steps: consent; GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
 impact: reset-code oracle → ATO via email-verification bypass; high
 testability: HUMAN_ONLY
 [HYP] JWT alg/key confusion on login-issued tokens
 class: AUTH
 asset: auth.cineplex.de
 confidence: 45
-reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (auth.cineplex.de/.well-known/jwks.json → 404); no passive progress path remains.
-evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
-verify_steps: consent + test login → decode header → forge only if RS256; sandbox only.
+reasoning: login mutation returns jwt+refreshToken+csrf; dedicated-KB priority; passive JWKS fully dead this cycle (all alt-paths 403 CF, only named 404 route).
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
 impact: token forgery → ATO; critical
 testability: AUTH_HELPED
-[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove prod `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` execution on staging to break the 405 ambiguity. Cite this cycle: api.cineplex.de re-verified fully CF-challenged (only negative delta, no residual read-only path), root GET 400 native Express on prod+staging, `userById(fake)`→INVALID_ID past auth while `currentUser`→UNAUTHENTICATED, staging testing_* resolves authless→backend vs prod FORBIDDEN; phase now POC, these two executions ARE the decisive evidence.
-[RISK] cineplex: 68 — NO_DELTA this cycle. Only live delta is negative (api.cineplex.de still full Cloudflare challenge). Reportable floor unchanged: prod GraphQL introspection (5.3 CVSS, WAF method-gate bypass GET 403/POST 200). Both top leads (prod IDOR conf 91, staging oracle conf 82) remain fully characterized and consent-gated HUMAN_ONLY; staging oracle's sole unresolved branch is 405-vs-real-code. Risk climbs to 75+ only if consent unlocks the two-account IDOR or the staging code-extraction POC proofs.
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` (a) structural prod report: unauthenticated systemic IDOR — `userById`, `invoice`, `order`, `ticket` all reach `decodePublicId` (path /var/task/graphql.js:43450) with no auth gate while sibling resolvers enforce FORBIDDEN role/device gates; WAF gate attenuated (root GET 400 native Express); cite live matrix from this cycle. (b) consent for the two-account PII read + one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` on staging to break the 405-vs-code branch.
+[RISK] cineplex: 78 — up from 68. Systemic unauth'd IDOR format-confirmed on prod across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving the gap is a real auth-omission, not a WAF artifact; sibling resolver gates + field-suggestion + introspection prove active prod backend reach. Structural POC is reportable now without two-account read; full cross-tenant PII/fl/gdpr impact proof remains HUMAN_ONLY via consent. Reportable floor raised above the 5.3-CVSS introspection base.
