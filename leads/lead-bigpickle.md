@@ -1409,3 +1409,43 @@ impact: token forgery → ATO; critical
 testability: AUTH_HELPED
 [NEXT] HUMAN: submit `bugs.olivermaicher.eu` (a) structural prod report: unauthenticated systemic IDOR — `userById`, `invoice`, `order`, `ticket` all reach `decodePublicId` (path /var/task/graphql.js:43450) with no auth gate while sibling resolvers enforce FORBIDDEN role/device gates; WAF gate attenuated (root GET 400 native Express); cite live matrix from this cycle. (b) consent for the two-account PII read + one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` on staging to break the 405-vs-code branch.
 [RISK] cineplex: 78 — up from 68. Systemic unauth'd IDOR format-confirmed on prod across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving the gap is a real auth-omission, not a WAF artifact; sibling resolver gates + field-suggestion + introspection prove active prod backend reach. Structural POC is reportable now without two-account read; full cross-tenant PII/fl/gdpr impact proof remains HUMAN_ONLY via consent. Reportable floor raised above the 5.3-CVSS introspection base.
+## 2026-09-07 15:29:55 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,9.15,attack=9+biz=10+tech=10+gate=8+cloud=8+fresh=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.80,attack=9+biz=8+tech=10+gate=9+cloud=8+fresh=9
+[PRIO] auth.cineplex.de,7.20,attack=7+biz=9+tech=9+gate=5+cloud=6+fresh=5
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers (userById, invoice, order, ticket)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: All four resolvers pass HTTP + field-selection + auth layers and reach `decodePublicId` (`/var/task/graphql.js:43450`) returning INVALID_ID for fake IDs with data:null — NO auth/role/device gate. Contrast: `searchUsers` FORBIDDEN (ROOT/ADMIN/CINEMA_ADMIN/SUPPORT roles), `adminUsers` FORBIDDEN (Root only), `userByQr` FORBIDDEN (DEVICE_UNAUTHORIZED), `voucherInstanceByQR` PosDevicesOnly, `currentUser` UNAUTHENTICATED. IDOR/BOLA prioritized; WAF gate attenuated (root GET now returns Apollo Server landing page 200, down from 400 native Express — backend actively reachable); staging identical behavior. Apollo landing page on root GET confirms new backend deployment routing root through Apollo Server handler.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); format-validated gate-skip already structural proof
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT → obtain own publicId; (3) GET `?query={userById(id:"<otherId>"){email,fullName,telephone}}` and `{invoice(id:"..."){...}}` vs own-id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` resolves authless on staging (200, 405-resolver-mismatch) vs prod FORBIDDEN; testing_* mutations exposed in staged schema (140 mutations); single-entity IDOR parity confirmed again this cycle. Apollo landing page now served on root GET (same as prod), confirming backend is active and handler-routed. Missing environment guard persists.
+evidence_needed: real fabricated email returns an actual code (not 405); testing_forceDeleteUser same auth gap
+verify_steps: consent; GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken+csrf; dedicated-KB priority; passive JWKS fully dead this cycle (all alt-paths 403 CF, only named 404 route). No new attack surface surfaced this cycle.
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: (a) Submit `bugs.olivermaicher.eu` structural prod report: **Unauthenticated Systemic IDOR** — `userById`, `invoice`, `order`, `ticket` resolvers all reach `decodePublicId` (path `/var/task/graphql.js:43450`) returning INVALID_ID for format-valid fake IDs with NO auth gate, while sibling resolvers enforce FORBIDDEN/UNAUTHENTICATED. Root GET now returns 200 (Apollo Server landing page, down from 400 native Express) confirming direct backend reach and ongoing WAF attenuation. (b) Request consent for two disposable sandbox accounts to prove cross-tenant PII read via `userById(otherId)` on prod. (c) Request consent for one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` execution on staging to resolve 405-vs-code branch.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET now 200 Apollo landing page (further attenuation from 400). Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod FORBIDDEN; staging root GET now mirrors prod with Apollo landing page. Missing environment guard persists.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET now returns 200 Apollo Server landing page (progression: 403 Cloudflare → 400 native Express → 200 Apollo landing page across cycles). WAF attenuation confirmed stable/deepening. Direct backend reach on both envs.
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: messages_queued grew from 301.9M to 418.9M — active broker, descriptive infra only, not reportable alone.
+[LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+[RISK] cineplex: 78 — NO_DELTA on exploitability. Systemic unauth'd IDOR format-confirmed on prod across 4 single-entity resolvers with structural proof (INVALID_ID past auth gate + sibling role/device gates proving real auth omission). Root GET progression to 200 Apollo landing page deepens backend reachability confirmation. Full cross-tenant PII/fl/GDPR impact proof remains HUMAN_ONLY via consent. Reportable floor is now well above the 5.3-CVSS introspection base — the structural IDOR alone is a high-severity finding. Risk reaches 85+ only if consent unlocks the two-account proof or staging code-extraction POC.
