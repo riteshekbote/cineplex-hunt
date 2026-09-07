@@ -74,3 +74,12 @@ TARGET_ORG not configured for cineplex; skipping public-org deep scan.
 TARGET_ORG not configured for cineplex; skipping public-org deep scan.
 ## REPOSCAN 2026-09-07 09:51:24 UTC
 TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+## REPOSCAN 2026-09-07 15:25:50 UTC
+[HYP] No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+confidence: 100
+reasoning: The GitHub organization Cineplex-Deutschland (created 2026-05-11) contains zero public repositories. The candidate list confirms "no org candidates" and scope.yml lists no configured GitHub orgs. No source code is publicly exposed on GitHub.
+impact: N/A — no attack surface identified via public GitHub repos. The source-code audit vector is closed.
+verify_steps: Visit https://github.com/Cineplex-Deutschland to confirm zero public repos.
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
