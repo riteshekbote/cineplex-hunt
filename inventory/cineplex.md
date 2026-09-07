@@ -460,3 +460,22 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.couat.cineplex.de` confirmed dead (SSLv3 handshake failure, resolves to Cloudflare IPs 104.16.22.67/23.67 but TLS fails)
 - CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL introspection accessible
 - CHANGED `app.staging.cineplex.de` confirmed dead (SSLv3 handshake failure) — no web surface
+
+## 2026-09-07 19:30:45 UTC
+- CHANGED `graphql-api.app.cineplex.de` root GET: probe-results 2026-09-07 15:36:49 shows HTTP 403; KB has conflicting 403/200 entries this cycle — WAF state may be cycling or probe-method difference (automated
+- CHANGED `graphql-api.app.staging.cineplex.de` root GET: same 403 as prod in latest probe; prior KB entries logged 200 Apollo landing page — inconsistency flagged.
+- CHANGED `graphql-api.app.cineplex.de` root GET fluctuates: 2026-09-06 22:20 showed HTTP 400 (native Express, X-Powered-By: Express, 18B) but 2026-09-07 probes show HTTP 403 again — WAF gate may be cycling or 
+- CHANGED `graphql-api.app.staging.cineplex.de` root GET same fluctuation: 400 on 2026-09-06, 403 on 2026-09-07 — WAF gate attenuation not stable
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only (mode IOMB, writer queue 30k, 301.9M queued, 0 dropped), no PII
+- CHANGED `graphql-api.app.couat.cineplex.de` confirmed dead (SSLv3 handshake failure, resolves to Cloudflare IPs 104.16.22.67/23.67 but TLS fails)
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL introspection accessible
+- CHANGED `app.staging.cineplex.de` confirmed dead (SSLv3 handshake failure) — no web surface
+- CHANGED `graphql-api.app.cineplex.de/` root GET stable HTTP 403 since 2026-09-06 22:20 (probe-results.md) — contradicts lead claim of 400/403 fluctuation; WAF gate appears stable at Cloudflare 403
+- CHANGED `graphql-api.app.staging.cineplex.de/` root GET stable HTTP 403 since 2026-09-06 22:20 — same contradiction; no native Express 400 observed in probe log
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra
+- CHANGED `graphql-api.app.couat.cineplex.de` confirmed dead (SSLv3 handshake failure, resolves to Cloudflare IPs but TLS fails)
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL introspection accessible
+- CHANGED `app.staging.cineplex.de` confirmed dead (SSLv3 handshake failure) — no web surface
+- NEW Staging `testing_getConfirmationCode` auth bypass reported confirmed via POST (200, backend hit) but NOT in probe-results.md (only GET / probed) — verification gap
+- NEW Staging Spring Data JPA REST endpoints disclosed (`userPasswordResets`, `userRegistrations`, `mandatorId` UUID, service `LOGIN`, Lambda path, Apollo stacktrace) — internal_architecture_leak ACCEPTED
+- NEW Production systemic IDOR format-confirmed across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) with adjacent role/device gates proving auth-omission — from bigpickle lead
