@@ -5600,3 +5600,85 @@ stag-root 400 text/html; charset=utf-8 18B
 [93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
 [0m✗ [0mcat /tmp/g_p_root; echo "---"; cat /tmp/g_s_root failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-09-07 04:51:16 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -m 15 -w "ROOT code=%{http_code} bytes=%{size_download}\n" -o /tmp/opencode/cx_root.out -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" https://api.cineplex.de/ ; sleep 1.2 ; curl -sS -m 15 -w "GQL code=%{http_code} bytes=%{size_download}\n" -o /tmp/opencode/cx_gql.out -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" https://api.cineplex.de/graphql ; sleep 1.2 ; curl -sS -m 15 -w "GQL2 code=%{http_code} bytes=%{size_download}\n" -o /tmp/opencode/cx_gql2.out -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -H "Content-Type: application/json" -d '{"query":"{__typename}"}' https://api.cineplex.de/graphql
+ROOT code=403 bytes=115418
+GQL code=403 bytes=115439
+GQL2 code=403 bytes=115525
+[0m
+[0m$ [0mcurl -sS -m 15 -D - -o /dev/null -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" https://api.cineplex.de/ | head -n 15
+HTTP/2 403 
+date: Mon, 07 Sep 2026 04:49:37 GMT
+content-type: text/html; charset=UTF-8
+content-length: 115418
+accept-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cf-mitigated: challenge
+x-frame-options: SAMEORIGIN
+server: cloudflare
+critical-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cross-origin-embedder-policy: require-corp
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+permissions-policy: accelerometer=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=(),xr-spatial-tracking=*
+referrer-policy: same-origin
+[0m
+## 2026-09-07 04:50:00 UTC [target] (model bigpickle)
+
+STEP 1 — DELTA
+- [CHANGED] api.cineplex.de / + /graphql (GET AND POST) still full Cloudflare challenge — `cf-mitigated: challenge`, 403, ~115KB on all three probes; WAF attenuation to native-Express-400 did NOT extend from graphql-api.app.{,staging.} to the canonical api host (negative check, re-probed live this cycle).
+- [NO_DELTA] prod graphql-api.app.cineplex.de root GET 400 native Express stable; staging oracle `testing_getConfirmationCode` authless→backend vs prod FORBIDDEN; relay /health+/metrics IOMB-descriptive-only — all as of 00:03/00:05 this cycle.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,8.05,0.25a(8)+0.25b(9)+0.15t(10)+0.15g(6)+0.10c(6)+0.10f(8) — prod GraphQL IDOR, resolver-gate-absent reconfirmed live
+- [PRIO] graphql-api.app.staging.cineplex.de,8.00,0.25a(7)+0.25b(8)+0.15t(10)+0.15g(9)+0.10c(6)+0.10f(8) — authless testing_* oracle, env-guard missing
+- [PRIO] auth.cineplex.de,5.80,0.25a(5)+0.25b(8)+0.15t(9)+0.15g(2)+0.10c(5)+0.10f(4) — JWT alg confusion, directive-prioritized, no passive progress path
+
+STEP 3 — HYPOTHESES
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: root GET 400 native Express (WAF method-gate attenuated) on prod+staging; `userById(id:"fake")` resolves past auth to INVALID_ID (decodePublicId) while `currentUser`(no token)→UNAUTHENTICATED over plain GET; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema auth directive; IDOR/BOLA explicitly prioritized.
+evidence_needed: two-account proof — own JWT reads a second sandbox account via `userById(otherId)` returning PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; ≤1 rps; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` resolves with zero auth on staging (200, reaches LOGIN backend); prod gates FORBIDDEN; staged introspection exposes testing_*; ConfirmationCodeType PASSWORD_RESET/LOGIN_CREATION mapped to userPasswordResets/userRegistrations; backend 405 (resolver mismatch) currently blocks code extraction.
+evidence_needed: real test email returns an actual code (not 405); testing_forceDeleteUser shows the same auth gap.
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; (3) 200-with-code = oracle; auth error = gated.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (auth.cineplex.de/.well-known/jwks.json → 404); no passive progress path remains.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge only if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] api.cineplex.de WAF-gate surface: re-probed this cycle — /, /graphql (GET+POST) all 403 `cf-mitigated: challenge` (~115KB); attenuation is host-scoped to graphql-api.app.{,staging.}; no read-only reach without solving challenge; not pursuable passively.
+- [PARKED] relay_* @ data-9fc27eb430.cineplex.de: /health+/metrics IOMB-descriptive-only, REJECTED class reaffirmed; no new exploitable branch this cycle.
+- [FINAL] survivors ranked: (1) prod IDOR 91 — decisive consent-gated proof; (2) staging oracle 82 — one consent-gated request breaks 405-vs-code; (3) JWT alg confusion 45 — AUTH_HELPED only, lowest priority.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove prod `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` execution on staging to break the 405 ambiguity. Cite this cycle: api.cineplex.de re-verified fully CF-challenged (only negative delta, no residual read-only path), root GET 400 native Express on prod+staging, `userById(fake)`→INVALID_ID past auth while `currentUser`→UNAUTHENTICATED, staging testing_* resolves authless→backend vs prod FORBIDDEN; phase now POC, these two executions ARE the decisive evidence.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: attenuation is host-scoped — canonical api.cineplex.de retains full Cloudflare challenge (`cf-mitigated: challenge`, 403, ~115KB, GET+POST /graphql) while graphql-api.app root is native Express 400; direct-backend-reach surface does not extend to api.cineplex.de.
+- [LEARN] REJECTED api.cineplex.de @ direct backend reach: re-probed this cycle, still fully WAF-challenged on / + /graphql (GET+POST); no attenuation mirror; no new surface; not pursuable passively.
+
+STEP 7 — RISK
+[RISK] cineplex: 68 — NO_DELTA this cycle. Only live delta is negative (api.cineplex.de still full Cloudflare challenge). Reportable floor unchanged: prod GraphQL introspection (5.3 CVSS, WAF method-gate bypass GET 403/POST 200). Both top leads (prod IDOR conf 91, staging oracle conf 82) remain fully characterized and consent-gated HUMAN_ONLY; staging oracle's sole unresolved branch is 405-vs-real-code. Risk climbs to 75+ only if consent unlocks the two-account IDOR or the staging code-extraction POC proofs.

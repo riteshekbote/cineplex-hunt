@@ -173,3 +173,7 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 ## 2026-09-07 00:05:52 UTC
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 04:51:19 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403

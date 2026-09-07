@@ -1349,3 +1349,33 @@ testability: AUTH_HELPED
 [LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 115B + /health 15B unchanged, IOMB broker stats only; descriptive infra, not reportable alone (reaffirmed).
 [RISK] cineplex: 68 — NO_DELTA surface. Reportable unchanged at prod GraphQL introspection (5.3 CVSS, WAF method-gate bypass GET 403/POST 200). Both top leads (prod IDOR conf 91, staging oracle conf 82) re-characterized with the gate condition re-live-confirmed but remain HUMAN_ONLY consent-gated; staging oracle's only unresolved branch is 405-vs-code. No new passive surface, no REJECTED-class confusion. Risk jumps to 75+ only if consent unlocks the two-account IDOR or staging code-extraction proof.
 ## 2026-09-07 00:03:15 UTC [target] (model bigpickle)
+## 2026-09-07 04:50:42 UTC [target] (model bigpickle)
+[HYP] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 91
+reasoning: root GET 400 native Express (WAF method-gate attenuated) on prod+staging; `userById(id:"fake")` resolves past auth to INVALID_ID (decodePublicId) while `currentUser`(no token)→UNAUTHENTICATED over plain GET; schema maps userById→User(email, fullName, telephone, street, birthDate); no schema auth directive; IDOR/BOLA explicitly prioritized.
+evidence_needed: two-account proof — own JWT reads a second sandbox account via `userById(otherId)` returning PII.
+verify_steps: (1) consent + two disposable sandbox accounts; (2) `login` mutation → JWT; (3) GET `?query={userById(id:"<otherId>"){email,fullName}}` vs own-id; ≤1 rps; never live IDs.
+impact: cross-tenant mass PII dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: `testing_getConfirmationCode` resolves with zero auth on staging (200, reaches LOGIN backend); prod gates FORBIDDEN; staged introspection exposes testing_*; ConfirmationCodeType PASSWORD_RESET/LOGIN_CREATION mapped to userPasswordResets/userRegistrations; backend 405 (resolver mismatch) currently blocks code extraction.
+evidence_needed: real test email returns an actual code (not 405); testing_forceDeleteUser shows the same auth gap.
+verify_steps: (1) consent; (2) GET `?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; (3) 200-with-code = oracle; auth error = gated.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: `login` mutation returns jwt+refreshToken+csrf; alg confusion prioritized; passive JWKS fetch blocked (auth.cineplex.de/.well-known/jwks.json → 404); no passive progress path remains.
+evidence_needed: issued token `alg` header; forged HS256-with-public-key accepted by `currentUser`.
+verify_steps: consent + test login → decode header → forge only if RS256; sandbox only.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove prod `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` execution on staging to break the 405 ambiguity. Cite this cycle: api.cineplex.de re-verified fully CF-challenged (only negative delta, no residual read-only path), root GET 400 native Express on prod+staging, `userById(fake)`→INVALID_ID past auth while `currentUser`→UNAUTHENTICATED, staging testing_* resolves authless→backend vs prod FORBIDDEN; phase now POC, these two executions ARE the decisive evidence.
+[RISK] cineplex: 68 — NO_DELTA this cycle. Only live delta is negative (api.cineplex.de still full Cloudflare challenge). Reportable floor unchanged: prod GraphQL introspection (5.3 CVSS, WAF method-gate bypass GET 403/POST 200). Both top leads (prod IDOR conf 91, staging oracle conf 82) remain fully characterized and consent-gated HUMAN_ONLY; staging oracle's sole unresolved branch is 405-vs-real-code. Risk climbs to 75+ only if consent unlocks the two-account IDOR or the staging code-extraction POC proofs.
