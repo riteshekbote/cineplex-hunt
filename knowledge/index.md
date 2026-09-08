@@ -175,3 +175,4 @@
 - 2026-09-08 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
 - 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
 - 2026-09-08 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
+- 2026-09-08 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution confirmed live; missing env guard persists

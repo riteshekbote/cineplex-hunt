@@ -558,3 +558,13 @@ wwww.cineplex.de
 - CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 - CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+
+## 2026-09-08 23:09:37 UTC
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- NEW Probe-results.md verification gap: KB claims confirmed GraphQL introspection (prod+staging), systemic IDOR (4 resolvers), staging testing_getConfirmationCode auth bypass, but probe-results.md contains
+- CHANGED Root GET on graphql-api.app.{,staging.}cineplex.de consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED data-9fc27eb430.cineplex.de/metrics fresh read: messages_queued 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; queue_length 0, dropped 0, build header cST-479f2fb-2609030725-prd
+- CHANGED graphql-api.app.couat.cineplex.de + app.staging.cineplex.de confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED api.cineplex.de/graphql confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
