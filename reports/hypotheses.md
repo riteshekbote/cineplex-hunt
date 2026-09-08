@@ -860,3 +860,13 @@
 - LEARN: REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
 - LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
 - LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), man
+
+## RANKED HYPOTHESES 2026-09-08 00:47:41 UTC
+- [93] graphql-api.app.cineplex.de: Production systemic unauthenticated IDOR via single-entity resolvers (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit structural prod report to `bugs.olivermaicher.eu` — **Unauthenticated Systemic IDOR** on `userById`/`invoice`/`order`/`ticket` (all reach `decodeP
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: curl HTTP/2 root GET = 400 native Express both envs (X-Powered-By: Express, cf-ca
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read messages_queued 553,564,053 (from 418.9M), queue_length 0, dropped 0, build header stable cST-4
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sen
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.

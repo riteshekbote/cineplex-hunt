@@ -132,3 +132,9 @@
 - 2026-09-07 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification.
 - 2026-09-07 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value.
 - 2026-09-07 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+- 2026-09-08 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: curl HTTP/2 root GET = 400 native Express both envs (X-Powered-By: Express, cf-cache-status DYNAMIC) while automated urllib = 403 CF — WAF client-differentiated; origin direct reach confirmed both via GET(400) and GraphQL POST(200).
+- 2026-09-08 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read messages_queued 553,564,053 (from 418.9M), queue_length 0, dropped 0, build header stable cST-479f2fb-2609030725-prd — active accelerating broker; descriptive infra only, not reportable alone.
+- 2026-09-08 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sensitive data.
+- 2026-09-08 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
+- 2026-09-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
+- 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
