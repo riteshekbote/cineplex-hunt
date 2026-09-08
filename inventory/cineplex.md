@@ -512,3 +512,10 @@ wwww.cineplex.de
 - CHANGED Probe-results.md shows **only GET/HEAD root probes** — no POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging.
 
 ## 2026-09-08 10:06:09 UTC
+
+## 2026-09-08 14:08:14 UTC
+- CHANGED `graphql-api.app.cineplex.de` + `graphql-api.app.staging.cineplex.de` root GET now returns HTTP 400 native Express (X-Powered-By: Express, cf-cache-status: DYNAMIC) via curl HTTP/2 — direct origin rea
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- CHANGED Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` TLS-dead (SSLv3 handshake failure) — no web surface

@@ -1626,3 +1626,4 @@ verify_steps: consent + test login → decode header → forge if RS256; sandbox
 impact: token forgery → ATO; critical
 testability: AUTH_HELPED
 ## 2026-09-08 09:46:10 UTC [target] (model bigpickle)
+## 2026-09-08 14:05:04 UTC [target] (model bigpickle)
