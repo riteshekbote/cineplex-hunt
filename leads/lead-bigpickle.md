@@ -1597,3 +1597,31 @@ testability: AUTH_HELPED
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
 [RISK] cineplex: 78 — NO_DELTA on exploitability. Structural unauth'd IDOR (4 resolvers, INVALID_ID past auth gate + sibling-role/device gates) + introspection (validated 8.1) + origin direct reach reconfirmed (400 Express, cf DYNAMIC). Reportable floor solidly high; rises to 85+ only if consent unlocks two-account cross-tenant PII proof or staging code-extraction POC.
+## 2026-09-08 05:11:02 UTC [target] (model bigpickle)
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) → INVALID_ID for fake IDs with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission. Origin direct reach reconfirmed prior cycle (curl HTTP/2 root GET 400 native Express both envs, cf DYNAMIC) while GraphQL POST introspection returns 200. WAF is client-differentiated bot-gate, not auth.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login mutation → JWT → own publicId; GET ?query={userById(id:"<otherId>"){email,fullName,telephone}} vs own id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; staging origin reach same as prod; missing environment guard persists.
+evidence_needed: fabricated email returns actual code (not error); testing_forceDeleteUser same auth gap
+verify_steps: consent; POST ?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken; JWKS .well-known/jwks.json 404; all alt-path probes 403 CF; no new surface this cycle.
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED

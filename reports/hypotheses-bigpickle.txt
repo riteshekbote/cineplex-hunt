@@ -1,26 +1,19 @@
-## 2026-09-08 00:29:34 UTC [target] (model bigpickle)
-[NEW] Live probe this cycle: root GET on both GraphQL envs returns 400 native Express via curl over HTTP/2 (`X-Powered-By: Express`, `cf-cache-status: DYNAMIC`) — origin directly reachable, contradicting automated probe-results.md "stable 403". WAF is client-differentiated: Python urllib → 403 CF, curl → origin 400.
-[CHANGED] `data-9fc27eb430.cineplex.de/metrics` fresh 200/115B: `messages_queued` 553,564,053 (553.5M) — up from 418.9M (09-07) / 301.9M (09-05), growth ~135M/cycle accelerating; `queue_length` 0, `messages_dropped` 0; build header unchanged `cST-479f2fb-2609030725-prd`. Descriptive infra only.
-[CHANGED] `data-9fc27eb430.cineplex.de/health` unchanged 200/15B `{"status":"ok"}`.
-[PRIO] graphql-api.app.cineplex.de,9.30,attack=9+biz=10+tech=10+gate=9+cloud=8+fresh=9
-[PRIO] graphql-api.app.staging.cineplex.de,8.80,attack=9+biz=8+tech=10+gate=9+cloud=8+fresh=9
-[PRIO] auth.cineplex.de,7.20,attack=7+biz=9+tech=9+gate=5+cloud=6+fresh=5
-[PRIO] data-9fc27eb430.cineplex.de,5.95,attack=3+biz=4+tech=6+gate=10+cloud=9+fresh=9
+## 2026-09-08 05:11:02 UTC [target] (model bigpickle)
 [HYP] Production systemic unauthenticated IDOR via single-entity resolvers
 class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 93
-reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) → INVALID_ID for fake IDs, NO auth/role/device gate; siblings gate (searchUsers FORBIDDEN, userByQr DEVICE_UNAUTHORIZED, currentUser UNAUTHENTICATED). This cycle root GET via curl = 400 native Express (X-Powered-By: Express, cf DYNAMIC) on prod+staging — origin direct reach reconfirmed; GraphQL POST introspection already 200. Client-differentiated WAF (urllib 403 vs curl 400) means gate is bot-detection not auth.
-evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); format-valid INVALID_ID gate-skip is structural proof
-verify_steps: consent + two disposable sandbox accounts; login mutation → JWT → own publicId; GET ?query={userById(id:"<otherId>"){email,fullName,telephone}} and {invoice(id:"..."){...}} vs own-id; ≤1 rps; never live IDs. HUMAN_ONLY.
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) → INVALID_ID for fake IDs with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission. Origin direct reach reconfirmed prior cycle (curl HTTP/2 root GET 400 native Express both envs, cf DYNAMIC) while GraphQL POST introspection returns 200. WAF is client-differentiated bot-gate, not auth.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login mutation → JWT → own publicId; GET ?query={userById(id:"<otherId>"){email,fullName,telephone}} vs own id; ≤1 rps; never live IDs. HUMAN_ONLY.
 impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
 testability: HUMAN_ONLY
 [HYP] Staging testing_* confirmation-code oracle without environment guard
 class: AUTH
 asset: graphql-api.app.staging.cineplex.de
 confidence: 82
-reasoning: testing_getConfirmationCode resolves authless on staging (200, 405-mismatch) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; staging origin reach reconfirmed 400/Express this cycle. Missing environment guard persists.
-evidence_needed: fabricated email returns actual code (not 405); testing_forceDeleteUser same auth gap
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; staging origin reach same as prod; missing environment guard persists.
+evidence_needed: fabricated email returns actual code (not error); testing_forceDeleteUser same auth gap
 verify_steps: consent; POST ?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
 impact: reset-code oracle → ATO via email-verification bypass; high
 testability: HUMAN_ONLY
@@ -33,15 +26,3 @@ evidence_needed: issued token alg header; forged HS256-with-public-key accepted 
 verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
 impact: token forgery → ATO; critical
 testability: AUTH_HELPED
-[PARKED] JWT alg/key confusion @ auth.cineplex.de: confidence 45 < 50; JWKS dead; passive verification impossible; AUTH_HELPED only; defer.
-[PARKED] relay_broker_saturation @ data-9fc27eb430.cineplex.de: 553.5M queued, no authless manipulation surface; descriptive infra only; REJECTED class.
-[FINAL] Production systemic IDOR @ graphql-api.app.cineplex.de — confidence 93, HUMAN_ONLY, critical. Structural proof complete; origin direct reach (400 Express) + POST introspection (200) confirmed this cycle.
-[FINAL] Staging testing oracle @ graphql-api.app.staging.cineplex.de — confidence 82, HUMAN_ONLY, high. Missing env guard confirmed; resolve 405-mismatch branch.
-[NEXT] HUMAN: Submit structural prod report to `bugs.olivermaicher.eu` — **Unauthenticated Systemic IDOR** on `userById`/`invoice`/`order`/`ticket` (all reach `decodePublicId`, `/var/task/graphql.js:43450`, return INVALID_ID with data:null past auth layers; sibling resolvers enforce FORBIDDEN/UNAUTHENTICATED). Include this cycle's live matrix: root GET 400 native Express both envs (X-Powered-By: Express, cf DYNAMIC via curl) proving WAF is client-bot-gate not auth; GraphQL POST 200 introspection reachable. Then request (a) consent for two disposable sandbox accounts for cross-tenant `userById(otherId)` proof, (b) consent for one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` run on staging.
-[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: curl HTTP/2 root GET = 400 native Express both envs (X-Powered-By: Express, cf-cache-status DYNAMIC) while automated urllib = 403 CF — WAF client-differentiated; origin direct reach confirmed both via GET(400) and GraphQL POST(200).
-[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read messages_queued 553,564,053 (from 418.9M), queue_length 0, dropped 0, build header stable cST-479f2fb-2609030725-prd — active accelerating broker; descriptive infra only, not reportable alone.
-[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sensitive data.
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
-[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
-[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
-[RISK] cineplex: 78 — NO_DELTA on exploitability. Structural unauth'd IDOR (4 resolvers, INVALID_ID past auth gate + sibling-role/device gates) + introspection (validated 8.1) + origin direct reach reconfirmed (400 Express, cf DYNAMIC). Reportable floor solidly high; rises to 85+ only if consent unlocks two-account cross-tenant PII proof or staging code-extraction POC.

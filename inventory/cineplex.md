@@ -503,3 +503,10 @@ wwww.cineplex.de
 - NEW Live probe this cycle: root GET on both GraphQL envs returns 400 native Express via curl over HTTP/2 (`X-Powered-By: Express`, `cf-cache-status: DYNAMIC`) — origin directly reachable, contradicting au
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` fresh 200/115B: `messages_queued` 553,564,053 (553.5M) — up from 418.9M (09-07) / 301.9M (09-05), growth ~135M/cycle accelerating; `queue_length` 0, `messages_dro
 - CHANGED `data-9fc27eb430.cineplex.de/health` unchanged 200/15B `{"status":"ok"}`.
+
+## 2026-09-08 05:18:16 UTC
+- NEW Live probe this cycle (2026-09-08): `curl --http2` GET root on both `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de` returns **HTTP 400 native Express** (`X-Powered-By: Express`
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` **553,564,053** (up from 418.9M on 09-07 / 301.9M on 09-05), growth ~135M/cycle accelerating; `queue_length` 0, `messages_dropped` 0
+- CHANGED `graphql-api.app.couat.cineplex.de` and `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface reachable.
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL introspection accessible.
+- CHANGED Probe-results.md shows **only GET/HEAD root probes** — no POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging.

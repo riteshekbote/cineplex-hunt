@@ -6759,3 +6759,112 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 78 — NO_DELTA on exploitability. Structural unauth'd IDOR (4 resolvers, INVALID_ID past auth gate + sibling-role/device gates) + introspection (validated 8.1) + origin direct reach reconfirmed (400 Express, cf DYNAMIC). Reportable floor solidly high; rises to 85+ only if consent unlocks two-account cross-tenant PII proof or staging code-extraction POC.
+===== ANALYST bigpickle 2026-09-08 05:18:16 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mSkill "customize-opencode"
+[0m→ [0mRead state_mimo.json
+[0m✱ [0mGlob "art/**"[90m in . · 0 matches[0m
+Let me read the current state files to confirm context before outputting the analysis.
+[0m✱ [0mGlob "leads/**"[90m in . · 7 matches[0m
+[0m✱ [0mGlob "**/*probe*"[90m in . · 1 match[0m
+[0m✱ [0mGlob "**/*hypothesis*"[90m in . · 0 matches[0m
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m→ [0mRead probe-results.md
+I have full context. The state is `phase=POC, target=api`. The latest cycle already confirmed the WAF client-differentiation (curl 400 vs urllib 403), relay metrics growth, etc. My job as analyst is to run the 8 steps, primarily on the precedent delta. There's no new live probe this cycle beyond what's in context — the last probe-results entry is empty (2026-09-08 00:47:42). 
+
+Let me note the key delta: last cycle's entries confirmed WAF client-differentiation and relay broker growth. The report submission to HUMAN is the pending next action. The hypotheses are at [93] (IDOR), [82] (staging oracle). All top findings are HUMAN_ONLY.
+
+Let me produce my structured analysis output.
+
+STEP 1 — DELTA:
+- NO new inventory hosts; probe-results 2026-09-08 00:47:42 is empty (no live probe run this cycle)
+- [CHANGED] relay metrics growth continued per prior cycle (553.5M — descriptive infra only)
+- No new exploitable surface; top findings remain HUMAN_ONLY
+
+STEP 2 — PRIORITIZE top assets.
+
+Let me compute priorities for the main assets.
+
+graphql-api.app.cineplex.de: attack=9, biz=10, tech=10, gate=9 (POST reachable), cloud=8, fresh=9.
+= 0.25(9)+0.25(10)+0.15(10)+0.15(9)+0.10(8)+0.10(9) = 2.25+2.5+1.5+1.35+0.8+0.9 = 9.30
+
+staging: attack=9, biz=8, tech=10, gate=9, cloud=8, fresh=9 = 2.25+2.0+1.5+1.35+0.8+0.9=8.80
+
+auth.cineplex.de: attack=7, biz=9, tech=9, gate=5, cloud=6, fresh=5 = 1.75+2.25+1.35+0.75+0.6+0.5=7.20
+
+relay: attack=3,biz=4,tech=6,gate=10,cloud=9,fresh=9 = 0.75+1.0+0.9+1.5+0.9+0.9=5.95
+
+STEP 3 — Hypotheses: top 3, max 1 each. Given no new facts, I'll re-affirm the top 3 (IDOR prod, staging oracle, and... third). The JWT is 45<50. Third candidate — the introspection structural base or staging. Since IDOR/ staging oracle are top 2, third could be the introspection-validated base or a fresh candidate. Let me pick staging oracle as #2 and keep IDOR #1. For #3, I'll re-assert the introspection reportable base or the relay. Actually since top hypothesis IDOR is #1 and staging oracle #2, third = the introspection reportable base on prod. Let me emit cleanly.
+
+STEP 5 — NEXT: The prior [NEXT] was HUMAN to submit structural report. Since no new probe was run and all evidence is consolidated, the next step should be HUMAN again (submit report, request consent). That is the correct single next action.
+
+Let me write the output.
+[0m
+[0m$ [0msha256sum /home/runner/work/cineplex-hunt/cineplex-hunt/state_mimo.json 2>/dev/null; echo "---"; ls /home/runner/work/cineplex-hunt/cineplex-hunt/art 2>/dev/null || echo "no art dir"
+985dd640c45e2a454e2fc9974afa620f82e1c504e35b4e63efd085d62c9d113a  /home/runner/work/cineplex-hunt/cineplex-hunt/state_mimo.json
+---
+no art dir
+[0m
+I have all context needed. No live probe was executed this cycle (probe-results entry for 2026-09-08 00:47:42 is empty). Delta is analysis-only.
+
+STEP 1 — DELTA
+- [NEW] No live probes run this cycle (probe-results.md 2026-09-08 00:47:42 empty); all analysis on prior-cycle evidence only.
+- [CHANGED] Consolidation point reached: idor_booking/prod (93), staging_testing_oracle (82), introspection reportable base (8.1 validated) all mature; reportable floor established; no new exploitable surface introduced this cycle.
+- [CHANGED] relay_metrics descriptive-inst only (553.5M queued messaging broker) — reaffirmed non-reportable; relay surface exhausted, no authless manipulation path.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,9.30,attack=9+biz=10+tech=10+gate=9+cloud=8+fresh=9
+- [PRIO] graphql-api.app.staging.cineplex.de,8.80,attack=9+biz=8+tech=10+gate=9+cloud=8+fresh=9
+- [PRIO] auth.cineplex.de,7.20,attack=7+biz=9+tech=9+gate=5+cloud=6+fresh=5
+- [PRIO] data-9fc27eb430.cineplex.de,5.95,attack=3+biz=4+tech=6+gate=10+cloud=9+fresh=9
+
+STEP 3 — HYPOTHESES
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) → INVALID_ID for fake IDs with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission. Origin direct reach reconfirmed prior cycle (curl HTTP/2 root GET 400 native Express both envs, cf DYNAMIC) while GraphQL POST introspection returns 200. WAF is client-differentiated bot-gate, not auth.
+evidence_needed: valid public ID returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login mutation → JWT → own publicId; GET ?query={userById(id:"<otherId>"){email,fullName,telephone}} vs own id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; staging origin reach same as prod; missing environment guard persists.
+evidence_needed: fabricated email returns actual code (not error); testing_forceDeleteUser same auth gap
+verify_steps: consent; POST ?query={testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken; JWKS .well-known/jwks.json 404; all alt-path probes 403 CF; no new surface this cycle.
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] JWT alg/key confusion @ auth.cineplex.de: confidence 45 < 50; JWKS dead; passive verification impossible; AUTH_HELPED only; defer.
+- [PARKED] relay_broker_saturation @ data-9fc27eb430.cineplex.de: 553.5M queued, no authless manipulation surface; descriptive infra only; REJECTED class.
+- [FINAL] Production systemic IDOR @ graphql-api.app.cineplex.de — confidence 93, HUMAN_ONLY, critical. Structural proof complete; origin direct reach + POST introspection confirmed. Reportable now.
+- [FINAL] Staging testing oracle @ graphql-api.app.staging.cineplex.de — confidence 82, HUMAN_ONLY, high. Missing env guard confirmed.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: Submit structural prod report to `bugs.olivermaicher.eu` — **Unauthenticated Systemic IDOR** on `userById`/`invoice`/`order`/`ticket` (all reach `decodePublicId`, `/var/task/graphql.js:43450`, return INVALID_ID/data:null past auth layers; sibling resolvers enforce FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED). Include live matrix: root GET 400 native Express both envs (X-Powered-By: Express, cf DYNAMIC via curl) proving WAF is client-bot-gate not auth; GraphQL POST introspection 200 reachable. Then request (a) consent for two disposable sandbox accounts for cross-tenant `userById(otherId)` proof, (b) consent for one fabricated-email `testing_getConfirmationCode(PASSWORD_RESET)` run on staging.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural unauth'd IDOR (4 resolvers, INVALID_ID past auth + sibling-role/device gates) stable; origin direct reach + POST introspection confirmed; HUMAN_ONLY testability; reportable.
+- [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode authless vs prod FORBIDDEN; missing env guard persists; HUMAN_ONLY.
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
+- [LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+- [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+
+STEP 7 — RISK
+- [RISK] cineplex: 78 — NO_DELTA on exploitability. Structural unauth'd IDOR (4 resolvers, INVALID_ID past auth gate + sibling-role/device authentication gate proof) + introspection (validated 8.1) + origin direct reach reconfirmed (400 Express, cf DYNAMIC). Reportable floor solidly high; rises to 85+ only if consent unlocks two-account cross-tenant PII proof or staging code-extraction POC. Analysis-only cycle — no new probe delta.

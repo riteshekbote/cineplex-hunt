@@ -138,3 +138,24 @@
 - 2026-09-08 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
 - 2026-09-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
 - 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+- 2026-09-08 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-08 ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-gate bypass (GET 403/POST 200) mirrors prod exactly; no env-specific WAF strength
+- 2026-09-08 ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR/invoice + testing_getConfirmationCode/testing_forceDeleteUser; PII surface identical to prod at schema level
+- 2026-09-08 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+- 2026-09-08 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+- 2026-09-08 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-08 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 301.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone
+- 2026-09-08 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-08 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data
+- 2026-09-08 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-08 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-08 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-08 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- 2026-09-08 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-08 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- 2026-09-08 REJECTED graphql-api.app.couat.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- 2026-09-08 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 but GraphQL POST 200. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+- 2026-09-08 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET stable 403 (Cloudflare) — earlier 400 reports not reproduced in probe log; WAF gate stable, direct backend reach via GraphQL POST only.
+- 2026-09-08 REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- 2026-09-08 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod FORBIDDEN; missing environment guard confirmed.
+- 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
