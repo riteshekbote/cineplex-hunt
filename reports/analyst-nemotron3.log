@@ -4316,3 +4316,647 @@ testability: AUTH_HELPED
 ## STEP 7 — RISK
 
 [RISK] cineplex: 92 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST (GET 403/POST 200). Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks. Missing environment guard on testing_getConfirmationCode (staging 200, prod FORBIDDEN). Internal architecture leak via Spring Data JPA REST endpoints on staging. Systemic IDOR format-confirmed across 4 single-entity resolvers on prod. Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass, architecture leak). Wildcard-dominated DNS increases shared-infra risk.
+===== ANALYST nemotron3 2026-09-08 10:06:09 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mcat /home/runner/work/cineplex-hunt/cineplex-hunt/probe-results.md 2>/dev/null | tail -50
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-06 18:25:17 UTC
+
+
+## 2026-09-06 20:30:33 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-06 22:20:00 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 00:05:52 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 04:51:19 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 10:01:38 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 15:36:49 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-07 19:30:52 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/userPasswordResets -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/userRegistrations -> HTTP 403
+https://graphql-api.app.cineplex.de/userPasswordResets -> HTTP 403
+
+## 2026-09-07 22:19:05 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/userPasswordResets -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/userRegistrations -> HTTP 403
+https://graphql-api.app.cineplex.de/userPasswordResets -> HTTP 403
+
+## 2026-09-08 00:47:42 UTC
+
+
+## 2026-09-08 05:18:19 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://graphql-api.app.cineplex.de/" -H "Accept: application/json" 2>&1
+400
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://graphql-api.app.staging.cineplex.de/" -H "Accept: application/json" 2>&1
+400
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{name}}}"}' 2>&1 | head -c 500
+{"data":{"__schema":{"queryType":{"name":"Query"}}}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{name}}}"}' 2>&1 | head -c 500
+{"data":{"__schema":{"queryType":{"name":"Query"}}}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET){code}}"}' 2>&1
+{"errors":[{"message":"Cannot query field \"testing_getConfirmationCode\" on type \"Mutation\". Did you mean \"resendEmailConfirmation\"?","extensions":{"code":"GRAPHQL_VALIDATION_FAILED","exception":{"stacktrace":["GraphQLError: Cannot query field \"testing_getConfirmationCode\" on type \"Mutation\". Did you mean \"resendEmailConfirmation\"?","    at Object.Field (/var/task/node_modules/graphql/validation/rules/FieldsOnCorrectType.js:53:31)","    at Object.enter (/var/task/node_modules/graphql/language/visitor.js:324:29)","    at Object.enter (/var/task/node_modules/graphql/language/visitor.js:375:25)","    at visit (/var/task/node_modules/graphql/language/visitor.js:242:26)","    at validate (/var/task/node_modules/graphql/validation/validate.js:73:24)","    at validate (/var/task/node_modules/apollo-server-core/dist/requestPipeline.js:188:39)","    at processGraphQLRequest (/var/task/node_modules/apollo-server-core/dist/requestPipeline.js:99:38)","    at processTicksAndRejections (node:internal/process/task_queues:95:5)","    at processHTTPRequest (/var/task/node_modules/apollo-server-core/dist/runHttpQuery.js:222:30)"]}}}]}
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{fields{name args{name type{name kind ofType{name kind}}}}}}}"}' 2>&1 | python3 -m json.tool 2>&1 | head -200
+{
+    "data": {
+        "__schema": {
+            "mutationType": {
+                "fields": [
+                    {
+                        "name": "a",
+                        "args": [
+                            {
+                                "name": "id",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "ID",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "upsertApp",
+                        "args": [
+                            {
+                                "name": "id",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "ID",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "fcmToken",
+                                "type": {
+                                    "name": "String",
+                                    "kind": "SCALAR",
+                                    "ofType": null
+                                }
+                            },
+                            {
+                                "name": "os",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "String",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "version",
+                                "type": {
+                                    "name": "String",
+                                    "kind": "SCALAR",
+                                    "ofType": null
+                                }
+                            },
+                            {
+                                "name": "device",
+                                "type": {
+                                    "name": "String",
+                                    "kind": "SCALAR",
+                                    "ofType": null
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "updateCinemaOperatingCompanyTargetGroupFilterConfig",
+                        "args": [
+                            {
+                                "name": "targetGroupFilterConfig",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": null,
+                                        "kind": "LIST"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "updateCinemaOperatingCompany",
+                        "args": [
+                            {
+                                "name": "id",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "ID",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "data",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "CinemaOperatingCompanyData",
+                                        "kind": "INPUT_OBJECT"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "createCinemaOperatingCompany",
+                        "args": [
+                            {
+                                "name": "data",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "CinemaOperatingCompanyData",
+                                        "kind": "INPUT_OBJECT"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "updateBonusProgram",
+                        "args": [
+                            {
+                                "name": "bonusProgramId",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "ID",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "name",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "String",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "legalEntity",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "String",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "termsVersion",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "Int",
+                                        "kind": "SCALAR"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "termsLink",
+                                "type": {
+                                    "name": "String",
+                                    "kind": "SCALAR",
+                                    "ofType": null
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "bookCinemaTicketPoints",
+                        "args": [
+                            {
+                                "name": "amount",
+                                "type": {
+                                    "name": null,
+                                    "kind": "NON_NULL",
+                                    "ofType": {
+                                        "name": "Int",
+                                        "kind": "SCALAR"
+                                    }
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{fields{name}}}"}' 2>&1 | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f['name']) for f in d['data']['__schema']['mutationType']['fields']]" 2>&1
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+KeyError: 'data'
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{fields{name}}}"}' 2>&1
+{"errors":[{"message":"Syntax Error: Expected Name, found <EOF>","extensions":{"code":"GRAPHQL_PARSE_FAILED","exception":{"stacktrace":["GraphQLError: Syntax Error: Expected Name, found <EOF>","    at syntaxError (/var/task/node_modules/graphql/error/syntaxError.js:15:10)","    at Parser.expectToken (/var/task/node_modules/graphql/language/parser.js:1404:40)","    at Parser.parseName (/var/task/node_modules/graphql/language/parser.js:94:22)","    at Parser.parseField (/var/task/node_modules/graphql/language/parser.js:291:28)","    at Parser.parseSelection (/var/task/node_modules/graphql/language/parser.js:280:81)","    at Parser.many (/var/task/node_modules/graphql/language/parser.js:1518:26)","    at Parser.parseSelectionSet (/var/task/node_modules/graphql/language/parser.js:267:24)","    at Parser.parseOperationDefinition (/var/task/node_modules/graphql/language/parser.js:177:28)","    at Parser.parseDefinition (/var/task/node_modules/graphql/language/parser.js:152:19)","    at Parser.many (/var/task/node_modules/graphql/language/parser.js:1518:26)"]}}}]}
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{fields{name}}}}"}' 2>&1 | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f['name']) for f in d['data']['__schema']['mutationType']['fields']]" 2>&1
+a
+upsertApp
+updateCinemaOperatingCompanyTargetGroupFilterConfig
+updateCinemaOperatingCompany
+createCinemaOperatingCompany
+updateBonusProgram
+bookCinemaTicketPoints
+joinBonusProgram
+editBonusProgramMembership
+bookCoupon
+acceptBonusProgramTerms
+rejectBonusProgramTerms
+addInvitedBy
+claimOrDiscardProvisionalBonusPointBooking
+processScannedQrCode
+createGoogleWalletBonusCard
+createCampaign
+editCampaign
+setCampaignStatus
+editCampaignEmail
+deleteCampaigns
+updateCampaignsStatus
+updateCinema
+createCinema
+createCompany
+editCompany
+deleteCompanies
+suggestCinema
+createIntercomLead
+submitAppFeedback
+upsertInterestRating
+logItems
+updateForeignMovieMapping
+upsertNewsItem
+updateNotificationPreference
+updateExternalNewsletterPreference
+startBookingProcess
+selectSeats
+cancelBookingProcess
+selectSeatPricingCategories
+selectSeatingAreaPricingCategories
+submitBookingProcess
+upsertReviewRating
+upsertQuizReviewRating
+deleteReviewRating
+deleteReviewRating_2
+createOnlineTicketingOutlinkId
+updateScreening
+cancelTicket
+updateTicket
+openTicket
+cancelOrder
+startOrderPreparation
+createSoonInCinemaItem
+updateSoonInCinemaItem
+deleteSoonInCinemaItem
+acceptAppTerms
+allowDataUsage
+allowAppTracking
+optInToMarketingEmails
+login
+socialLogin
+loginPOS
+logout
+refreshLogin
+createAnonymousUser
+requestLoginCreation
+requestEmailChange
+resendEmailConfirmation
+confirmEmail
+requestPasswordReset
+changePassword
+updateUserProfile
+selectCinemas
+selectCinema
+deselectCinema
+increaseUserTestingStatus
+updateUserAdminStatus
+deleteUser
+deleteCineplexUser
+leaveBonusProgram
+rememberSkippedOnboardingStep
+updateUser
+updateUserSubscription
+setInitialRatedMovies
+editUserGroupFilter
+editUserGroupFilterOnReferencedMovie
+buyVoucher
+createVoucherInstances
+redeemVoucher
+buyAndRedeemVoucher
+updateVoucherInstance
+storeEikonaPreshowData
+sendNotifications
+sendTestNotification
+sendShowtimeAnalyticsCampaign
+createContentSectionList
+updateContentSectionList
+dismissExitPoll
+storeSeatPlan
+recordTicketPurchase
+confirmOnlineTicketingBooking
+syncTicket
+startWebBooking
+storeSDKLogin
+storeConsent
+upsertSeenInCinema
+deleteSeenInCinema
+subscribeToNewsletter
+sendTestEmail
+createTargetGroup
+editTargetGroup
+deleteTargetGroups
+updateTargetGroupsStatus
+saveImagePath
+deleteImage
+subscribe
+unsubscribe
+reactivateSubscription
+reschedulePayment
+createUserTokenForSubscriptionValidation
+logUserScreeningInterests
+validateVoucherCode
+createAdyenSession
+startPendingSubscription
+extendSubscription
+createSubscriptionByVoucher
+cancelSubscriptionImmediately
+requestLinkAccount
+acceptLinkAccount
+declineLinkAccount
+deleteLinkedAccount
+capturePaypalOrderAndCreateTickets
+createBeacon
+updateBeacon
+deleteBeacon
+registerBeaconScanned
+updateCinemaCluster
+createCinemaCluster
+deleteCinemaClusters
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{mutationType{fields{name}}}}"}' 2>&1 | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f['name']) for f in d['data']['__schema']['mutationType']['fields']]" 2>&1
+a
+upsertApp
+updateCinemaOperatingCompanyTargetGroupFilterConfig
+updateCinemaOperatingCompany
+createCinemaOperatingCompany
+updateBonusProgram
+bookCinemaTicketPoints
+joinBonusProgram
+editBonusProgramMembership
+bookCoupon
+acceptBonusProgramTerms
+rejectBonusProgramTerms
+addInvitedBy
+claimOrDiscardProvisionalBonusPointBooking
+processScannedQrCode
+createGoogleWalletBonusCard
+createCampaign
+editCampaign
+setCampaignStatus
+editCampaignEmail
+deleteCampaigns
+updateCampaignsStatus
+updateCinema
+createCinema
+createCompany
+editCompany
+deleteCompanies
+suggestCinema
+createIntercomLead
+submitAppFeedback
+upsertInterestRating
+logItems
+updateForeignMovieMapping
+upsertNewsItem
+updateNotificationPreference
+updateExternalNewsletterPreference
+startBookingProcess
+selectSeats
+cancelBookingProcess
+selectSeatPricingCategories
+selectSeatingAreaPricingCategories
+submitBookingProcess
+upsertReviewRating
+upsertQuizReviewRating
+deleteReviewRating
+deleteReviewRating_2
+createOnlineTicketingOutlinkId
+updateScreening
+cancelTicket
+updateTicket
+openTicket
+cancelOrder
+startOrderPreparation
+createSoonInCinemaItem
+updateSoonInCinemaItem
+deleteSoonInCinemaItem
+acceptAppTerms
+allowDataUsage
+allowAppTracking
+optInToMarketingEmails
+login
+socialLogin
+loginPOS
+logout
+refreshLogin
+createAnonymousUser
+requestLoginCreation
+requestEmailChange
+resendEmailConfirmation
+confirmEmail
+requestPasswordReset
+changePassword
+updateUserProfile
+selectCinemas
+selectCinema
+deselectCinema
+increaseUserTestingStatus
+updateUserAdminStatus
+deleteUser
+deleteCineplexUser
+leaveBonusProgram
+rememberSkippedOnboardingStep
+updateUser
+updateUserSubscription
+setInitialRatedMovies
+editUserGroupFilter
+editUserGroupFilterOnReferencedMovie
+buyVoucher
+createVoucherInstances
+redeemVoucher
+buyAndRedeemVoucher
+updateVoucherInstance
+storeEikonaPreshowData
+sendNotifications
+sendTestNotification
+sendShowtimeAnalyticsCampaign
+createContentSectionList
+updateContentSectionList
+dismissExitPoll
+storeSeatPlan
+recordTicketPurchase
+confirmOnlineTicketingBooking
+syncTicket
+startWebBooking
+storeSDKLogin
+storeConsent
+upsertSeenInCinema
+deleteSeenInCinema
+subscribeToNewsletter
+sendTestEmail
+createTargetGroup
+editTargetGroup
+deleteTargetGroups
+updateTargetGroupsStatus
+saveImagePath
+deleteImage
+subscribe
+unsubscribe
+reactivateSubscription
+reschedulePayment
+createUserTokenForSubscriptionValidation
+logUserScreeningInterests
+validateVoucherCode
+createAdyenSession
+startPendingSubscription
+extendSubscription
+createSubscriptionByVoucher
+cancelSubscriptionImmediately
+requestLinkAccount
+acceptLinkAccount
+declineLinkAccount
+deleteLinkedAccount
+capturePaypalOrderAndCreateTickets
+createBeacon
+updateBeacon
+deleteBeacon
+registerBeaconScanned
+updateCinemaCluster
+createCinemaCluster
+deleteCinemaClusters
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{fields{name args{name type{name kind ofType{name kind}}}}}}}"}' 2>&1 | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f['name']) for f in d['data']['__schema']['queryType']['fields']]" 2>&1 | grep -i -E "user|admin|invoice|order|ticket|search"
+searchCastOrCrewMember
+searchMovie
+ticket
+order
+onlineTicketingVoucherStats
+currentUser
+userByQr
+userById
+adminUsers
+searchUsers
+searchUsersTotal
+testing_forceDeleteUser
+voucherInstancesByOrderNumber
+getOnlineTicketingBooking
+validateSubscriptionUsers
+invoice
+[0m
+[0m$ [0mcurl -s --max-time 20 "https://graphql-api.app.staging.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{fields{name args{name type{name kind ofType{name kind}}}}}}}"}' 2>&1 | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f['name']) for f in d['data']['__schema']['queryType']['fields']]" 2>&1 | grep -i -E "user|admin|invoice|order|ticket|search|testing"
+searchCastOrCrewMember
+searchMovie
+ticket
+order
+onlineTicketingVoucherStats
+currentUser
+userByQr
+userById
+adminUsers
+searchUsers
+searchUsersTotal
+testing_getConfirmationCode
+testing_forceDeleteUser
+voucherInstancesByOrderNumber
+getOnlineTicketingBooking
+validateSubscriptionUsers
+invoice
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{userById(id:\"1\"){id email fullName}}"}' 2>&1
+{"errors":[{"message":"Invalid Id for type: User id: 1","locations":[{"line":1,"column":2}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: 1","    at decodePublicId (/var/task/graphql.js:43450:15)","    at Function.decodePublicId (/var/task/graphql.js:27843:43)","    at Function.<anonymous> (/var/task/graphql.js:27847:31)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:27781:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:27777:12)","    at Function.gen (/var/task/graphql.js:27846:16)","    at /var/task/graphql.js:50100:30","    at Generator.next (<anonymous>)"]}}}],"data":{"userById":null}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{userById(id:\"2\"){id email fullName}}"}' 2>&1
+{"errors":[{"message":"Invalid Id for type: User id: 2","locations":[{"line":1,"column":2}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: 2","    at decodePublicId (/var/task/graphql.js:43450:15)","    at Function.decodePublicId (/var/task/graphql.js:27843:43)","    at Function.<anonymous> (/var/task/graphql.js:27847:31)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:27781:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:27777:12)","    at Function.gen (/var/task/graphql.js:27846:16)","    at /var/task/graphql.js:50100:30","    at Generator.next (<anonymous>)"]}}}],"data":{"userById":null}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{currentUser{id email fullName}}"}' 2>&1
+{"errors":[{"message":"null","locations":[{"line":1,"column":2}],"path":["currentUser"],"extensions":{"code":"UNAUTHENTICATED","exception":{"stacktrace":["AuthenticationError: null","    at Object.get userId [as userId] (/var/task/graphql.js:40825:23)","    at /var/task/graphql.js:50094:49","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:49675:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:49671:12)","    at Object.currentUser (/var/task/graphql.js:50093:35)","    at field.resolve (/var/task/node_modules/apollo-server-core/dist/utils/schemaInstrumentation.js:56:26)","    at resolveFieldValueOrError (/var/task/node_modules/graphql/execution/execute.js:467:18)","    at resolveField (/var/task/node_modules/graphql/execution/execute.js:434:16)"]}}}],"data":{"currentUser":null}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{invoice(id:\"1\"){id}}"}' 2>&1
+{"errors":[{"message":"Invalid Id for type: Invoice id: 1","locations":[{"line":1,"column":2}],"path":["invoice"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"Invoice","stacktrace":["IdError: Invalid Id for type: Invoice id: 1","    at decodePublicId (/var/task/graphql.js:43450:15)","    at Function.decodePublicId (/var/task/graphql.js:19772:43)","    at Function.<anonymous> (/var/task/graphql.js:19787:41)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:19749:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:19745:12)","    at Function.gen (/var/task/graphql.js:19786:16)","    at /var/task/graphql.js:50224:40","    at Generator.next (<anonymous>)"]}}}],"data":null}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{order(id:\"1\"){id}}"}' 2>&1
+{"errors":[{"message":"Invalid Id for type: Order id: 1","locations":[{"line":1,"column":2}],"path":["order"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"Order","stacktrace":["IdError: Invalid Id for type: Order id: 1","    at decodePublicId (/var/task/graphql.js:43450:15)","    at decodePublicId (/var/task/graphql.js:52949:43)","    at Array.map (<anonymous>)","    at Function.<anonymous> (/var/task/graphql.js:52985:22)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:52928:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:52924:12)","    at Function.genMult (/var/task/graphql.js:52961:16)","    at Function.<anonymous> (/var/task/graphql.js:52953:40)"]}}}],"data":{"order":null}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{ticket(id:\"1\"){id}}"}' 2>&1
+{"errors":[{"message":"Invalid Id for type: Ticket id: 1","locations":[{"line":1,"column":2}],"path":["ticket"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"Ticket","stacktrace":["IdError: Invalid Id for type: Ticket id: 1","    at decodePublicId (/var/task/graphql.js:43450:15)","    at decodePublicId (/var/task/graphql.js:671:43)","    at Array.map (<anonymous>)","    at Function.<anonymous> (/var/task/graphql.js:714:22)","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:646:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:642:12)","    at Function.genMult (/var/task/graphql.js:683:16)","    at Function.<anonymous> (/var/task/graphql.js:675:42)"]}}}],"data":{"ticket":null}}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{searchUsers(query:\"\"){id email fullName}}"}' 2>&1
+{"errors":[{"message":"Unknown argument \"query\" on field \"searchUsers\" of type \"Query\". Did you mean \"queryText\"?","extensions":{"code":"GRAPHQL_VALIDATION_FAILED","exception":{"stacktrace":["GraphQLError: Unknown argument \"query\" on field \"searchUsers\" of type \"Query\". Did you mean \"queryText\"?","    at Object.Argument (/var/task/node_modules/graphql/validation/rules/KnownArgumentNames.js:60:29)","    at Object.enter (/var/task/node_modules/graphql/language/visitor.js:324:29)","    at Object.enter (/var/task/node_modules/graphql/language/visitor.js:375:25)","    at visit (/var/task/node_modules/graphql/language/visitor.js:242:26)","    at validate (/var/task/node_modules/graphql/validation/validate.js:73:24)","    at validate (/var/task/node_modules/apollo-server-core/dist/requestPipeline.js:188:39)","    at processGraphQLRequest (/var/task/node_modules/apollo-server-core/dist/requestPipeline.js:99:38)","    at processTicksAndRejections (node:internal/process/task_queues:95:5)","    at processHTTPRequest (/var/task/node_modules/apollo-server-core/dist/runHttpQuery.js:222:30)"]}}}]}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{__schema{queryType{fields{name args{name type{name kind ofType{name kind}}}}}}}"}' 2>&1 | python3 -c "
+import sys, json
+d=json.load(sys.stdin)
+for f in d['data']['__schema']['queryType']['fields']:
+    if f['name'] in ['searchUsers', 'adminUsers', 'userById', 'invoice', 'order', 'ticket', 'userByQr']:
+        print(f'{f[\"name\"]}: args={[(a[\"name\"], a[\"type\"][\"name\"] if a[\"type\"][\"name\"] else a[\"type\"][\"ofType\"][\"name\"] if a[\"type\"][\"ofType\"] else \"?\") for a in f[\"args\"]]}')
+" 2>&1
+ticket: args=[('id', 'ID')]
+order: args=[('id', 'ID')]
+userByQr: args=[('qrCode', 'String')]
+userById: args=[('id', 'ID')]
+adminUsers: args=[]
+searchUsers: args=[('queryText', 'String'), ('filterActiveSubscriptions', 'Boolean'), ('limit', 'Int'), ('skip', 'Int')]
+invoice: args=[('id', 'ID')]
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{searchUsers(queryText:\"\"){id email fullName}}"}' 2>&1
+{"errors":[{"message":"You must have on of the following roles: ROOT, ADMIN, CINEMA_ADMIN, SUPPORT to search for users","locations":[{"line":1,"column":2}],"path":["searchUsers"],"extensions":{"code":"FORBIDDEN","exception":{"stacktrace":["ForbiddenError: You must have on of the following roles: ROOT, ADMIN, CINEMA_ADMIN, SUPPORT to search for users","    at /var/task/graphql.js:24675:15","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:24664:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:24660:12)","    at searchUsersBaseQuery (/var/task/graphql.js:24672:48)","    at /var/task/graphql.js:24719:27","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:24664:71","    at new Promise (<anonymous>)"]}}}],"data":null}
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://graphql-api.app.cineplex.de/" -X POST -H "Content-Type: application/json" -d '{"query":"{adminUsers{id email fullName privileges{rootRole adminRole}}}"}' 2>&1
+{"errors":[{"message":"Only Root users are allowed to query this.","locations":[{"line":1,"column":2}],"path":["adminUsers"],"extensions":{"code":"FORBIDDEN","exception":{"stacktrace":["ForbiddenError: Only Root users are allowed to query this.","    at /var/task/graphql.js:1438:16","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:1429:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:1425:12)","    at Object.adminUsers (/var/task/graphql.js:1436:37)","    at field.resolve (/var/task/node_modules/apollo-server-core/dist/utils/schemaInstrumentation.js:56:26)","    at resolveFieldValueOrError (/var/task/node_modules/graphql/execution/execute.js:467:18)","    at resolveField (/var/task/node_modules/graphql/execution/execute.js:434:16)","    at executeFields (/var/task/node_modules/graphql/execution/execute.js:275:18)"]}}}],"data":null}
+[0m

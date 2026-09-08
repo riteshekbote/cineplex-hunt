@@ -896,3 +896,5 @@
 - LEARN: REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
 - LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
 - LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), man
+
+## RANKED HYPOTHESES 2026-09-08 10:06:09 UTC

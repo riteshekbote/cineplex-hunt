@@ -1625,3 +1625,4 @@ evidence_needed: issued token alg header; forged HS256-with-public-key accepted 
 verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
 impact: token forgery → ATO; critical
 testability: AUTH_HELPED
+## 2026-09-08 09:46:10 UTC [target] (model bigpickle)

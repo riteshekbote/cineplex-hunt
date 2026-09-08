@@ -510,3 +510,5 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.couat.cineplex.de` and `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface reachable.
 - CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL introspection accessible.
 - CHANGED Probe-results.md shows **only GET/HEAD root probes** — no POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging.
+
+## 2026-09-08 10:06:09 UTC
