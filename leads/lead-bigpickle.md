@@ -1627,3 +1627,49 @@ impact: token forgery → ATO; critical
 testability: AUTH_HELPED
 ## 2026-09-08 09:46:10 UTC [target] (model bigpickle)
 ## 2026-09-08 14:05:04 UTC [target] (model bigpickle)
+## 2026-09-08 17:58:40 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.staging.cineplex.de,9.2,0.25(a=10)+0.25(b=9)+0.15(t=10)+0.15(g=10)+0.10(c=5)+0.10(f=10)
+[PRIO] graphql-api.app.cineplex.de,9.0,0.25(a=10)+0.25(b=10)+0.15(t=10)+0.15(g=9)+0.10(c=6)+0.10(f=10)
+[PRIO] auth.cineplex.de,7.5,0.25(a=7)+0.25(b=10)+0.15(t=9)+0.15(g=4)+0.10(c=5)+0.10(f=8)
+[PRIO] booking.cineplex.de,6.8,0.25(a=8)+0.25(b=9)+0.15(t=6)+0.15(g=4)+0.10(c=7)+0.10(f=8)
+[PRIO] data-9fc27eb430.cineplex.de,3.5,0.25(a=3)+0.25(b=3)+0.15(t=2)+0.15(g=10)+0.10(c=8)+0.10(f=6)
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID for fake IDs with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission. GraphQL POST introspection stable 200. Root GET 403 (automated) / 400 native Express (curl HTTP/2) confirming WAF client-differentiation; origin directly reachable.
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login mutation → JWT → own publicId; POST {userById(id:"<otherId>"){email,fullName,telephone}} vs own id; ≤1 rps; never live IDs. HUMAN_ONLY.
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_* confirmation-code oracle without environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 82
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit, 405-mismatch vs expected code type) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; staging origin reach same as prod. Missing environment guard persists.
+evidence_needed: fabricated email returns actual confirmation code (not error/405); testing_forceDeleteUser same auth gap
+verify_steps: consent; POST {testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] JWT alg/key confusion on login-issued tokens
+class: AUTH
+asset: auth.cineplex.de
+confidence: 45
+reasoning: login mutation returns jwt+refreshToken; JWKS .well-known/jwks.json 404; all alt-path probes 403 CF; no new surface this cycle.
+evidence_needed: issued token alg header; forged HS256-with-public-key accepted by currentUser
+verify_steps: consent + test login → decode header → forge if RS256; sandbox only. AUTH_HELPED.
+impact: token forgery → ATO; critical
+testability: AUTH_HELPED
+[PARKED] JWT alg/key confusion @ auth.cineplex.de: confidence 45 < 50; JWKS dead; passive verification impossible; AUTH_HELPED only; defer.
+[FINAL] Production systemic IDOR @ graphql-api.app.cineplex.de — confidence 93, HUMAN_ONLY, critical. Structural proof complete; function-level reference (/var/task/graphql.js:43450) + INVALID_ID gate-skip + sibling role/device gates proving auth-omission. Reportable floor solidly high; rises to 95+ with two-account cross-tenant PII proof.
+[FINAL] Staging testing oracle @ graphql-api.app.staging.cineplex.de — confidence 82, HUMAN_ONLY, high. Missing env guard confirmed at schema+behavior level. Fabricated-email code resolution is the decisive POC.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET 403 (automated) / 400 Express (curl). Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod FORBIDDEN; missing environment guard confirmed.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET 403 (Cloudflare automated urllib) confirmed stable this cycle; curl HTTP/2 400 native Express confirmed prior cycle — WAF is client-differentiated bot-gate, not auth.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; validated 8.1/7.5 — reportable base.
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path.
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 115B, 553.5M queued, descriptive infra only, not reportable alone.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sensitive data.
+[RISK] cineplex: 78 — NO_DELTA on exploitability. Structural unauth'd IDOR (4 resolvers, INVALID_ID past auth gate + sibling-role/device gates) + introspection (validated 8.1) + staging oracle (validated, missing env guard) + WAF client-differentiation confirmed. Reportable floor solidly high; rises to 85+ only if consent unlocks two-account cross-tenant PII proof or staging code-extraction POC. program rule "exposure of customer data during testing" remains the binding constraint for depth.

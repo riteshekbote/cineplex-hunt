@@ -1,32 +1,36 @@
-## 2026-09-08 14:08:04 UTC [target] (model nemotron3)
-[CHANGED] `graphql-api.app.cineplex.de` + `graphql-api.app.staging.cineplex.de` root GET now returns HTTP 400 native Express (X-Powered-By: Express, cf-cache-status: DYNAMIC) via curl HTTP/2 — direct origin reach confirmed; earlier probe log showed stable 403 (automated urllib), indicating WAF client-differentiation
-[CHANGED] `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-2609030725-prd` stable
+## 2026-09-08 18:06:33 UTC [target] (model nemotron3)
 [CHANGED] Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+[CHANGED] Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+[CHANGED] Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md (only GET / probed) — verification gap
+[CHANGED] Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+[CHANGED] Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+[CHANGED] `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra (NOT reportable alone per KB)
+[CHANGED] `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 [CHANGED] `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
-[CHANGED] `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` TLS-dead (SSLv3 handshake failure) — no web surface
+[NEW] `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-2609030725-prd`
 [PRIO] graphql-api.app.cineplex.de,9.3,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=9,cloud_surface=6,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,9.0,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] auth.cineplex.de,7.5,attack_surface=7,business_value=10,tech_exposure=9,gate_ease=4,cloud_surface=5,freshness=8
 [PRIO] booking.cineplex.de,7.2,attack_surface=8,business_value=9,tech_exposure=6,gate_ease=4,cloud_surface=7,freshness=8
 [PRIO] data-9fc27eb430.cineplex.de,3.5,attack_surface=3,business_value=3,tech_exposure=2,gate_ease=10,cloud_surface=8,freshness=6
-[HYP] Staging Testing Mutation Auth Bypass Oracle
-class: AUTH
-asset: graphql-api.app.staging.cineplex.de
-confidence: 95
-reasoning: Staging introspection confirmed via POST (200 OK, 140 mutations, 83 queries) per KB; schema contains `testing_getConfirmationCode(email: String!, type: ConfirmationCodeType!)` and `testing_forceDeleteUser(email: String!)` mutations absent in production guard logic. WAF method-gate bypass (GET 403, POST 200) mirrors production. Prior KB lead claims `testing_getConfirmationCode` resolves with zero auth on staging (200, hits backend, 405-method-mismatch); production gates correctly (FORBIDDEN). Missing environment guard on `testing_*` mutations. Root GET now 400 native Express (direct backend reach) but GraphQL POST endpoint reachable.
-evidence_needed: POST to `testing_getConfirmationCode` with any email returns 200 with confirmation code; `testing_forceDeleteUser` executes without auth/role check
-verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET){code}}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
-impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
-testability: PASSIVE
 [HYP] Production GraphQL Systemic IDOR via Single-Entity Resolvers
 class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 85
-reasoning: Full introspection confirmed via POST (200 OK) per KB; schema exposes `userById(id: ID!)`, `invoice(id: ID!)`, `order(id: ID!)`, `ticket(id: ID!)`, `searchUsers`, `adminUsers` returning `User` type with email, fullName, telephone, birthDate, street, city, zipCode, tickets, orders, subscriptions, invoices, vouchers. GraphQL POST introspection stable 200 — direct backend reach via GraphQL endpoint confirmed despite root GET 403/400. Bigpickle lead confirms format-level gate-skip across all 4 single-entity resolvers (INVALID_ID vs currentUser UNAUTHENTICATED differentiation) with adjacent role/device gates proving auth-omission pattern.
+reasoning: Full introspection confirmed via POST (200 OK) per KB; schema exposes `userById(id: ID!)`, `invoice(id: ID!)`, `order(id: ID!)`, `ticket(id: ID!)`, `searchUsers`, `adminUsers` returning `User` type with email, fullName, telephone, birthDate, street, city, zipCode, tickets, orders, subscriptions, invoices, vouchers. GraphQL POST introspection stable 200 — direct backend reach via GraphQL endpoint confirmed despite root GET 403. Bigpickle lead confirms format-level gate-skip across all 4 single-entity resolvers (INVALID_ID vs currentUser UNAUTHENTICATED differentiation) with adjacent role/device gates proving auth-omission pattern.
 evidence_needed: Valid JWT from `login` mutation; `userById` with another user's ID returns 200 with PII; `invoice`/`order`/`ticket` with foreign IDs return 200 with data; `searchUsers` returns other users' data; `adminUsers` accessible without admin role
 verify_steps: POST https://graphql-api.app.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{login(email:\"test@test.de\",password:\"test\"){jwt refreshToken}}"} — capture JWT; POST https://graphql-api.app.cineplex.de/ — Authorization: Bearer <jwt> — body: {"query":"{userById(id:\"2\"){id email fullName telephone birthDate tickets{id} orders{id} subscriptions{id} invoices{id} vouchers{id}}}"} — test cross-user access; POST with {"query":"{searchUsers(query:\"\"){id email fullName}}"} — test mass enumeration; POST with {"query":"{adminUsers{id email fullName privileges{rootRole adminRole}}}"} — test admin access
 impact: Full PII dump of all Cineplex users (names, emails, phones, birthdates, addresses, booking history, payment records, subscription data, voucher balances) → GDPR violation + identity theft + booking fraud (Critical)
 testability: AUTH_HELPED
+[HYP] Staging Testing Mutation Auth Bypass Oracle
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 95
+reasoning: Staging introspection confirmed via POST (200 OK, 140 mutations, 83 queries) per KB; schema contains `testing_getConfirmationCode(email: String!, type: ConfirmationCodeType!)` and `testing_forceDeleteUser(email: String!)` mutations absent in production guard logic. WAF method-gate bypass (GET 403, POST 200) mirrors production. Prior KB lead claims `testing_getConfirmationCode` resolves with zero auth on staging (200, hits backend, 405-method-mismatch); production gates correctly (FORBIDDEN). Missing environment guard on `testing_*` mutations. GraphQL POST endpoint reachable.
+evidence_needed: POST to `testing_getConfirmationCode` with any email returns 200 with confirmation code; `testing_forceDeleteUser` executes without auth/role check
+verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET){code}}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
+impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
+testability: PASSIVE
 [HYP] JWT Algorithm Confusion via auth.cineplex.de login Mutation
 class: AUTH
 asset: auth.cineplex.de
