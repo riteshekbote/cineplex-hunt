@@ -530,3 +530,31 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 - CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
 - NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+
+## 2026-09-08 20:51:24 UTC
+- CHANGED Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- CHANGED Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md (only GET / probed) — verification gap
+- CHANGED Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra (NOT reportable alone per KB)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- CHANGED Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- CHANGED Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md (only GET / probed) — verification gap
+- CHANGED Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra (NOT reportable alone per KB)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- NEW Probe-results.md shows ONLY GET/HEAD root probes — zero POST GraphQL introspection/mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- CHANGED Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md — verification gap
+- CHANGED Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access

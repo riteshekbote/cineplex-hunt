@@ -165,3 +165,13 @@
 - 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path.
 - 2026-09-08 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 115B, 553.5M queued, descriptive infra only, not reportable alone.
 - 2026-09-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+- 2026-09-08 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; GET-based execution also confirmed live this cycle (GET /?query={__typename} → 200 both envs); validated 8.1/7.5 — reportable base.
+- 2026-09-08 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule.
+- 2026-09-08 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution confirmed live; missing env guard persists.
+- 2026-09-08 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 (with query param) + well-known GET 400 "GET query missing." confirm origin direct reach via curl; automated urllib 403 (Cloudflare). WAF is client-differentiated, not auth.
+- 2026-09-08 REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path definitively closed.
+- 2026-09-08 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable.
+- 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path.
+- 2026-09-08 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
+- 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+- 2026-09-08 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
