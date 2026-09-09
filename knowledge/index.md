@@ -196,3 +196,16 @@
 - 2026-09-09 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
 - 2026-09-09 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
 - 2026-09-09 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-09 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; GET-based execution confirmed (200 __typename); validated 8.1/7.5 — reportable base.
+- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed; HUMAN_ONLY per program PII rule.
+- 2026-09-09 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution confirmed; missing env guard persists.
+- 2026-09-09 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 (curl) + automated urllib 403; WAF is client-differentiated bot-gate, not auth.
+- 2026-09-09 REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS path definitively closed.
+- 2026-09-09 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
+- 2026-09-09 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+- 2026-09-09 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
+- 2026-09-09 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection claimed 200 full schema; GET-based execution claimed live (GET /?query={__typename} → 200 both envs) — NOT verified in probe-results.md (verification gap)
+- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach claimed — NOT verified in probe-results.md (verification gap)
+- 2026-09-09 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution claimed — NOT verified in probe-results.md (verification gap)
+- 2026-09-09 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 (with query param) + well-known GET 400 "GET query missing." claimed via curl; automated urllib 403 (Cloudflare). WAF is client-differentiated, not auth — NOT verified in probe-results.md for graphql-api.app.* hosts
+- 2026-09-09 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path — NOT via HTTP GET (those returned 403)
