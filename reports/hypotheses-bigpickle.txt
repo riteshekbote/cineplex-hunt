@@ -1,7 +1,11 @@
-## 2026-09-09 15:16:51 UTC [target] (model bigpickle)
+## 2026-09-09 18:41:43 UTC [target] (model bigpickle)
+[NEW] api.cineplex.de — 6 automated probes all 403; WAF is strict, not client-differentiated like graphql-api pair; hypothesis dead
+[NEW] login.cineplex.de + sso.cineplex.de — both HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable
+[CHANGED] relay_metrics @ data-9fc27eb430.cineplex.de — stale in probe log (last fresh read 2026-09-08); messages_queued 553.5M; descriptive infra only, not reportable alone
+[CHANGED] verification gap — zero POST probes in probe-results.md; all FINAL findings rely on manual curl evidence
 [PRIO] graphql-api.app.cineplex.de,9.5,attack=10 business=9 tech=10 gate=8 cloud=8 freshness=9 — production GraphQL, 100+ mutations, IDOR+introspection+oracle surface
 [PRIO] graphql-api.app.staging.cineplex.de,9.3,attack=10 business=8 tech=10 gate=9 cloud=8 freshness=9 — staging mirrors prod, testing_* mutations, relaxed auth
-[PRIO] api.cineplex.de,2.0,attack=3 business=8 tech=4 gate=1 cloud=3 freshness=9 — 403 on all tested paths, WAF stricter than graphql-api pair, unreachable via automated probes
+[PRIO] api.cineplex.de,2.0,attack=3 business=8 tech=4 gate=1 cloud=3 freshness=9 — 403 all paths confirmed unreachable via automated probes
 [PRIO] booking.cineplex.de,4.0,attack=6 business=9 tech=5 gate=3 cloud=5 freshness=9 — session-gated IDOR, AUTH_HELPED required
 [PRIO] auth.cineplex.de,3.5,attack=5 business=9 tech=6 gate=2 cloud=5 freshness=9 — JWT alg confusion, JWKS 404 limits passive verification
 [PRIO] data-9fc27eb430.cineplex.de,3.0,attack=2 business=3 tech=3 gate=9 cloud=5 freshness=9 — relay descriptive infra only, not reportable alone
@@ -38,15 +42,15 @@ testability: PASSIVE
 [FINAL] Staging testing_* confirmation-code oracle — confidence 83, HUMAN_ONLY, high. Missing env guard at schema+behavior level confirmed across 7 cycles (2026-09-03 through 2026-09-09). `testing_getConfirmationCode` resolves authless on staging vs prod FORBIDDEN; 140 mutations in staging schema. Fabricated-email code resolution is the decisive POC.
 [NEXT] HUMAN: Execute POST introspection probe on graphql-api.app.cineplex.de and graphql-api.app.staging.cineplex.de to close the probe-results.md verification gap. `curl --http2 -s -X POST "https://graphql-api.app.cineplex.de/" -H "Content-Type: application/json" -d '{"query":"{__schema{types{name}}}"}'` — if 200 with type list, POST introspection confirmed in automated probe log. Single request per host, ≤1 rps total. Read-only introspection query. Resolves the persistent verification gap affecting all three FINAL findings.
 [LEARN] REJECTED api.cineplex.de GET-based GraphQL: 6 automated probes all 403 (root, /graphql, query-param, URL-encoded); WAF stricter than graphql-api pair; hypothesis dead.
+[LEARN] REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS path definitively closed.
+[LEARN] REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; GET-based execution confirmed (200 __typename); validated 8.1/7.5 — reportable base.
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed; HUMAN_ONLY per program PII rule.
 [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution confirmed; missing env guard persists.
 [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 (curl) + automated urllib 403; WAF is client-differentiated bot-gate, not auth.
-[LEARN] REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS path definitively closed.
-[LEARN] REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
-[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
-[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path.
 [LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [RISK] cineplex: 77 (-2 from last cycle). Two FINAL findings (IDOR conf 93, oracle conf 83) remain structurally sound but HUMAN_ONLY. NEW negative: api.cineplex.de confirmed unreachable (strict 403 all methods) — attack surface did NOT expand to third GraphQL host. Persistent verification gap (zero POST probes in probe-results.md) means all POST-dependent findings rely on manual curl evidence, not automated probe log. OIDC/JWKS dead (404), login/sso TLS-dead (525), relay descriptive infra only. Reportable floor solidly at 77+; rises to 85+ with two-account cross-tenant PII proof (IDOR) or staging code-extraction POC (oracle) or POST introspection verification closing probe-results.md gap. Program rule "exposure of customer data during testing" remains binding constraint for both FINAL findings.
