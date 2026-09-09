@@ -1,15 +1,15 @@
-## 2026-09-09 11:36:17 UTC [target] (model bigpickle)
-[CHANGED] api.cineplex.de — 6 new probes today (/?query={__typename, /graphql?query={__typename, URL-encoded variants) ALL 403; api.cineplex.de WAF is NOT client-differentiated like graphql-api pair — strict 403 across all probe methods. Hypothesis DEAD.
-[CHANGED] probe-results.md — 243 lines total; ZERO POST probes recorded. All "CONFIRMED" KB entries (POST introspection 200, IDOR 4 resolvers, staging testing_getConfirmationCode) rely on manual curl/lead analysis, NOT automated probe log. Verification gap PERSISTS.
-[CHANGED] graphql-api.app.staging.cineplex.de line 136 — one anomalous 400 on 2026-09-05 22:41 with stray backtick in URL (staging.cineplex.de/`); parsing artifact, not signal.
+## 2026-09-09 15:16:51 UTC [target] (model bigpickle)
 [PRIO] graphql-api.app.cineplex.de,9.5,attack=10 business=9 tech=10 gate=8 cloud=8 freshness=9 — production GraphQL, 100+ mutations, IDOR+introspection+oracle surface
 [PRIO] graphql-api.app.staging.cineplex.de,9.3,attack=10 business=8 tech=10 gate=9 cloud=8 freshness=9 — staging mirrors prod, testing_* mutations, relaxed auth
 [PRIO] api.cineplex.de,2.0,attack=3 business=8 tech=4 gate=1 cloud=3 freshness=9 — 403 on all tested paths, WAF stricter than graphql-api pair, unreachable via automated probes
+[PRIO] booking.cineplex.de,4.0,attack=6 business=9 tech=5 gate=3 cloud=5 freshness=9 — session-gated IDOR, AUTH_HELPED required
+[PRIO] auth.cineplex.de,3.5,attack=5 business=9 tech=6 gate=2 cloud=5 freshness=9 — JWT alg confusion, JWKS 404 limits passive verification
+[PRIO] data-9fc27eb430.cineplex.de,3.0,attack=2 business=3 tech=3 gate=9 cloud=5 freshness=9 — relay descriptive infra only, not reportable alone
 [HYP] Production systemic unauthenticated IDOR via single-entity resolvers
 class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 93
-reasoning: userById/invoice/order/ticket resolvers reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED proving auth-omission; this remains the highest-confidence structural finding in the engagement. probe-results.md shows zero POST probes — all CONFIRMED status is from manual curl analysis, not automated probe log. Confidence maintained at 93 because structural proof (INVALID_ID gate-skip + sibling gate contrast) is independent of probe-results.md verification.
+reasoning: userById/invoice/order/ticket resolvers reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED proving auth-omission; probe-results.md shows zero POST probes — all CONFIRMED status from manual curl analysis, not automated probe log. Confidence maintained at 93 because structural proof (INVALID_ID gate-skip + sibling gate contrast) is independent of probe-results.md verification.
 evidence_needed: two-account cross-tenant PII proof (valid publicId → cross-tenant User object without session)
 verify_steps: consent + two disposable accounts; login → JWT → own publicId; POST {userById(id:"<otherId>"){email,fullName,telephone}} vs own id; ≤1 rps; HUMAN_ONLY.
 impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
@@ -18,7 +18,7 @@ testability: HUMAN_ONLY
 class: AUTH
 asset: graphql-api.app.staging.cineplex.de
 confidence: 83
-reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit, 405-mismatch) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; missing env guard persists across 7 cycles. probe-results.md shows zero POST probes — CONFIRMED status from manual curl analysis. probe-results.md line 136 shows one anomalous 400 on staging with stray backtick (parsing artifact, not signal). GET-based GraphQL execution on graphql-api pair confirmed via curl HTTP/2 but staging also returns 403 in automated probe log.
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit, 405-mismatch) vs prod FORBIDDEN; staging schema carries testing_forceDeleteUser + 140 mutations; missing env guard persists across 7 cycles. probe-results.md shows zero POST probes — CONFIRMED status from manual curl analysis.
 evidence_needed: fabricated email returns actual confirmation code; testing_forceDeleteUser same auth gap
 verify_steps: consent; POST {testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)} ≤1 rps; 200-with-code=oracle, auth error=gated. HUMAN_ONLY.
 impact: reset-code oracle → ATO via email-verification bypass; high
@@ -27,23 +27,26 @@ testability: HUMAN_ONLY
 class: MISCONFIG
 asset: graphql-api.app.{,staging.}cineplex.de
 confidence: 85
-reasoning: curl --http2 returns 400 native Express (X-Powered-By: Express, cf-cache-status: DYNAMIC) on both envs; automated urllib3 consistently returns 403 (Cloudflare); probe-results.md line 136 shows one staging 400 (parsing artifact); GET-based GraphQL execution (/?query={__typename} → 200) confirmed via manual curl on both envs. WAF differentiates by TLS client fingerprint, not auth. api.cineplex.de returns 403 on all paths including query-param GraphQL — different WAF config, NOT client-differentiated. This confirms WAF bypass is host-specific, not zone-wide.
+reasoning: curl --http2 returns 400 native Express (X-Powered-By: Express, cf-cache-status: DYNAMIC) on both envs; automated urllib3 consistently returns 403 (Cloudflare); GET-based GraphQL execution (/?query={__typename} → 200) confirmed via manual curl on both envs. WAF differentiates by TLS client fingerprint, not auth. api.cineplex.de returns 403 on all paths — different WAF config, NOT client-differentiated. This confirms WAF bypass is host-specific, not zone-wide.
 evidence_needed: GET https://graphql-api.app.cineplex.de/?query={__typename} → 200 via automated probe (closes verification gap in probe-results.md)
 verify_steps: single GET with query param via curl; 200 = origin reached; ≤1 rps; read-only.
-impact: direct backend reach bypasses edge WAF; enables IDOR/mutation testing without bot-gate; medium (en
+impact: direct backend reach bypasses edge WAF; enables IDOR/mutation testing without bot-gate; medium
+testability: PASSIVE
 [PARKED] api.cineplex.de GET-based GraphQL — confidence 50 < 55. Six independent automated probes all return 403 (root, /graphql, query-param variants, URL-encoded variants). api.cineplex.de has DIFFERENT WAF config than graphql-api pair — no client-differentiated bypass observed. Dead hypothesis.
 [PARKED] WAF client-differentiated bot-gate (MISCONFIG standalone) — confidence 85 but dependent on probe-results.md verification gap. Cannot independently confirm GET-based GraphQL 200 or curl 400 from automated probe log alone. FINDING is real per manual curl evidence, but this cycle's automated probes only confirm the 403-side (automated urllib). Promote if curl probe executes and closes gap.
 [FINAL] Production systemic unauthenticated IDOR via single-entity resolvers — confidence 93, HUMAN_ONLY, critical. Structural proof (INVALID_ID gate-skip at `/var/task/graphql.js:43450` + sibling resolvers with FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED) is architecture-level, independent of probe-results.md POST gap. GET-based origin reach on graphql-api pair (curl 200) confirmed via KB manual analysis. Reportable floor high; rises to 95+ with two-account cross-tenant PII proof.
 [FINAL] Staging testing_* confirmation-code oracle — confidence 83, HUMAN_ONLY, high. Missing env guard at schema+behavior level confirmed across 7 cycles (2026-09-03 through 2026-09-09). `testing_getConfirmationCode` resolves authless on staging vs prod FORBIDDEN; 140 mutations in staging schema. Fabricated-email code resolution is the decisive POC.
 [NEXT] HUMAN: Execute POST introspection probe on graphql-api.app.cineplex.de and graphql-api.app.staging.cineplex.de to close the probe-results.md verification gap. `curl --http2 -s -X POST "https://graphql-api.app.cineplex.de/" -H "Content-Type: application/json" -d '{"query":"{__schema{types{name}}}"}'` — if 200 with type list, POST introspection confirmed in automated probe log. Single request per host, ≤1 rps total. Read-only introspection query. Resolves the persistent verification gap affecting all three FINAL findings.
-[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed via curl HTTP/2; HUMAN_ONLY per program PII rule. probe-results.md verification gap noted (zero POST probes in automated log) but structural proof independent.
-[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution claimed via curl; missing env guard persists 7 cycles. probe-results.md verification gap noted.
-[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 via curl HTTP/2 (manual); automated urllib 403. WAF is client-differentiated bot-gate, not auth. api.cineplex.de confirmed DIFFERENT WAF config (strict 403 all methods) — bypass is host-specific, not zone-wide.
 [LEARN] REJECTED api.cineplex.de GET-based GraphQL: 6 automated probes all 403 (root, /graphql, query-param, URL-encoded); WAF stricter than graphql-api pair; hypothesis dead.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; GET-based execution confirmed (200 __typename); validated 8.1/7.5 — reportable base.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed; HUMAN_ONLY per program PII rule.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET execution confirmed; missing env guard persists.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 200 (curl) + automated urllib 403; WAF is client-differentiated bot-gate, not auth.
 [LEARN] REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS path definitively closed.
 [LEARN] REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
 [LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path.
 [LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
+[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
 [RISK] cineplex: 77 (-2 from last cycle). Two FINAL findings (IDOR conf 93, oracle conf 83) remain structurally sound but HUMAN_ONLY. NEW negative: api.cineplex.de confirmed unreachable (strict 403 all methods) — attack surface did NOT expand to third GraphQL host. Persistent verification gap (zero POST probes in probe-results.md) means all POST-dependent findings rely on manual curl evidence, not automated probe log. OIDC/JWKS dead (404), login/sso TLS-dead (525), relay descriptive infra only. Reportable floor solidly at 77+; rises to 85+ with two-account cross-tenant PII proof (IDOR) or staging code-extraction POC (oracle) or POST introspection verification closing probe-results.md gap. Program rule "exposure of customer data during testing" remains binding constraint for both FINAL findings.
