@@ -591,3 +591,16 @@ wwww.cineplex.de
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch definitively closed for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+
+## 2026-09-09 11:40:51 UTC
+- CHANGED api.cineplex.de — 6 new probes today (/?query={__typename, /graphql?query={__typename, URL-encoded variants) ALL 403; api.cineplex.de WAF is NOT client-differentiated like graphql-api pair — strict 40
+- CHANGED probe-results.md — 243 lines total; ZERO POST probes recorded. All "CONFIRMED" KB entries (POST introspection 200, IDOR 4 resolvers, staging testing_getConfirmationCode) rely on manual curl/lead analy
+- CHANGED graphql-api.app.staging.cineplex.de line 136 — one anomalous 400 on 2026-09-05 22:41 with stray backtick in URL (staging.cineplex.de/`); parsing artifact, not signal.
+- NEW Probe-results.md verification gap confirmed: KB claims POST GraphQL introspection 200 (prod+staging), systemic IDOR across 4 resolvers, staging `testing_getConfirmationCode` auth bypass — but probe-re
+- NEW Root GET on `graphql-api.app.{,staging.}cineplex.de` consistently returns HTTP 403 in probe-results.md (all cycles) — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED `api.cineplex.de/?query={__typename}` and `api.cineplex.de/graphql?query={__typename}` probed 2026-09-08/09 — both return HTTP 403 (WAF-gated); GET-based GraphQL execution NOT confirmed on this third 
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` last fresh read 2026-09-08: `messages_queued` 553,564,053 (accelerating growth), descriptive infra only; relay surface stale in probe log (no fresh probe 2026-09-
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch definitively closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
