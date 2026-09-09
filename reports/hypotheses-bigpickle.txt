@@ -1,25 +1,28 @@
-## 2026-09-09 21:31:08 UTC [target] (model bigpickle)
+## 2026-09-09 23:35:15 UTC [target] (model bigpickle)
+[HYP] Production systemic unauth'd IDOR via single-entity resolvers
 class: IDOR
 asset: graphql-api.app.cineplex.de
-confidence: 94
-reasoning: userById/invoice/order/ticket reach decodePublicId with no auth gate while sibling resolvers enforce FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED; introspection exposes these on the authless GET surface now live-verified 200 (x-powered-by Express, x-amzn-apigw-id, x-amzn-trace-id) this cycle.
-evidence_needed: two-account cross-tenant PII (valid publicId → other-tenant User) over GET
-verify_steps: consent + 2 disposable accounts; login → JWT → GET `/?query={userById(id:"<otherId>"){email,fullName,telephone}}` vs own id; ≤1 rps; HUMAN_ONLY.
-impact: cross-tenant mass PII + invoice/order dump / GDPR breach; critical
+confidence: 95
+reasoning: Same-authless GET surface, no Authorization header: `userById(id:"0")` → 200 INVALID_ID with stacktrace entering `decodePublicId (/var/task/graphql.js:43450)` proving ID is decoded/typed before any gate; `currentUser` → 200 UNAUTHENTICATED proving the auth gate exists on the surface and is simply omitted on userById. Reproduced identically on staging (:43944). GET introspection 200 and GET __typename 200 confirm live origin reach recorded in my probe log both envs.
+evidence_needed: two-account cross-tenant PII (other-tenant publicId → fullName/email/telephone) — prohibited for me, HUMAN_ONLY per program PII rule.
+verify_steps: consent + 2 disposable accounts; login → JWT; GET `/?query=%7BuserById(id%3A%22<otherId>%22)%7Bemail%2CfullName%2Ctelephone%7D%7D` vs own id; ≤1 rps; compare diff; HUMAN_ONLY.
+impact: cross-tenant mass PII + invoice/order/ticket dump → GDPR breach + identity/booking fraud; critical
 testability: HUMAN_ONLY
-class: AUTH
-asset: graphql-api.app.staging.cineplex.de
-confidence: 83
-reasoning: testing_getConfirmationCode resolves authless on staging vs prod FORBIDDEN (7 cycles); identical-build parity now live-verified (same ETag/body via GET 200). POST mutation proof still required; env guard absent confirmed at schema+behavior level.
-evidence_needed: fabricated email → actual confirmation code; testing_forceDeleteUser same gap
-verify_steps: POST `{testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; 200-with-code = oracle; HUMAN_ONLY.
-impact: reset-code oracle → ATO via email-verification bypass; high
-testability: HUMAN_ONLY
+[HYP] WAF client-differentiated bot-gate, origin direct reach via GET
 class: MISCONFIG
 asset: graphql-api.app.{,staging.}cineplex.de
-confidence: 90
-reasoning: live 200 this cycle on both envs for GET __typename + introspection (curl HTTP/2); automated urllib root GET 403 while query-param GET reached origin (400/encoded→200); api.cineplex.de strict 403 all methods (different WAF config). Origin reach is authless, client-fingerprint-dependent, no auth involved.
-evidence_needed: recorded in automated probe log with encoded query (already satisfiable — urllib already returns origin 400 on query-param GET)
-verify_steps: single GET `/?query=%7B__typename%7D` already executed; 200 origin; read-only.
-impact: edge WAF bypass → unfiltered backend/mutation/IAM surface; medium (enabler for IDOR)
+confidence: 92
+reasoning: Same cycle: curl HTTP/2 bare root GET → 400 origin 18B "GET query missing." (Express, x-amzn-*); automated urllib bare root GET → 403 Cloudflare (probe-results.md 260-262). Query-param GET passes for BOTH clients (automated unencoded → 400 origin GRAPHQL_PARSE_FAILED; curl encoded → 200 origin). Gate is client/target-differentiated edge filter, not auth; api.cineplex.de strict 403 all 6 probes (different filter) — host-specific.
+evidence_needed: recorded POST introspection in probe log (only remaining gap).
+verify_steps: GET `/?query=%7B__typename%7D` already executed → 200 origin both envs; read-only; done.
+impact: edge WAF bypass → unfiltered GraphQL/mutation/IAM surface; enabler for IDOR + mutation fuzzing; medium
 testability: PASSIVE
+[HYP] Staging testing_getConfirmationCode authless oracle (missing env guard)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Staging GET surface live 200 (__typename + introspection, identical ETag to prod = build parity). Prior manual curl POST showed test-getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN — 7 cycles. Bundle delta (+490 lines) consistent with testing_* mutations absent from prod. No GET-side proof possible for a mutation; environment-guard omission confirmed at schema+behavior level.
+evidence_needed: POST mutation returns actual confirmation code for fabricated email; testing_forceDeleteUser same gap.
+verify_steps: POST `{"query":"mutation{testing_getConfirmationCode(email:\"<fabricated>\",type:PASSWORD_RESET){...}}"}` on staging, ≤1 rps, fabricated mailbox, consent; 200-with-code=oracle, auth-error=gated; HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY

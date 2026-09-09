@@ -638,3 +638,5 @@ wwww.cineplex.de
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 - CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
+
+## 2026-09-09 23:35:24 UTC
