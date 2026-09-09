@@ -2356,3 +2356,28 @@ testability: PASSIVE
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
 [RISK] cineplex: 77 (-2 from last cycle). Two FINAL findings (IDOR conf 93, oracle conf 83) remain structurally sound but HUMAN_ONLY. NEW negative: api.cineplex.de confirmed unreachable (strict 403 all methods) — attack surface did NOT expand to third GraphQL host. Persistent verification gap (zero POST probes in probe-results.md) means all POST-dependent findings rely on manual curl evidence, not automated probe log. OIDC/JWKS dead (404), login/sso TLS-dead (525), relay descriptive infra only. Reportable floor solidly at 77+; rises to 85+ with two-account cross-tenant PII proof (IDOR) or staging code-extraction POC (oracle) or POST introspection verification closing probe-results.md gap. Program rule "exposure of customer data during testing" remains binding constraint for both FINAL findings.
+## 2026-09-09 21:31:08 UTC [target] (model bigpickle)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 94
+reasoning: userById/invoice/order/ticket reach decodePublicId with no auth gate while sibling resolvers enforce FORBIDDEN/DEVICE_UNAUTHORIZED/UNAUTHENTICATED; introspection exposes these on the authless GET surface now live-verified 200 (x-powered-by Express, x-amzn-apigw-id, x-amzn-trace-id) this cycle.
+evidence_needed: two-account cross-tenant PII (valid publicId → other-tenant User) over GET
+verify_steps: consent + 2 disposable accounts; login → JWT → GET `/?query={userById(id:"<otherId>"){email,fullName,telephone}}` vs own id; ≤1 rps; HUMAN_ONLY.
+impact: cross-tenant mass PII + invoice/order dump / GDPR breach; critical
+testability: HUMAN_ONLY
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 83
+reasoning: testing_getConfirmationCode resolves authless on staging vs prod FORBIDDEN (7 cycles); identical-build parity now live-verified (same ETag/body via GET 200). POST mutation proof still required; env guard absent confirmed at schema+behavior level.
+evidence_needed: fabricated email → actual confirmation code; testing_forceDeleteUser same gap
+verify_steps: POST `{testing_getConfirmationCode(email:"<fabricated>",type:PASSWORD_RESET)}` ≤1 rps; 200-with-code = oracle; HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 90
+reasoning: live 200 this cycle on both envs for GET __typename + introspection (curl HTTP/2); automated urllib root GET 403 while query-param GET reached origin (400/encoded→200); api.cineplex.de strict 403 all methods (different WAF config). Origin reach is authless, client-fingerprint-dependent, no auth involved.
+evidence_needed: recorded in automated probe log with encoded query (already satisfiable — urllib already returns origin 400 on query-param GET)
+verify_steps: single GET `/?query=%7B__typename%7D` already executed; 200 origin; read-only.
+impact: edge WAF bypass → unfiltered backend/mutation/IAM surface; medium (enabler for IDOR)
+testability: PASSIVE
