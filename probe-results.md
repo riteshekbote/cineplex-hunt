@@ -281,3 +281,10 @@ https://graphql-api.app.cineplex.de/?query=%7BsearchUsers(query%3A%22%22 -> HTTP
 https://graphql-api.app.cineplex.de/?query=%7BadminUsers%7Bid%20email%20fullName%20privileges%7BrootRole%20adminRole%7D%7D%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-10 15:51:36 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%222%22 -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BsearchUsers(query%3A%22%22 -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BadminUsers%7Bid%20email%20fullName%20privileges%7BrootRole%20adminRole%7D%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403

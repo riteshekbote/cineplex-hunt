@@ -244,3 +244,8 @@
 - 2026-09-10 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 balanced GET probes incl. live type-__type introspection → 200 origin both envs; api.cineplex.de stays 403 — host-specific bot-gate confirmed.
 - 2026-09-10 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read 641.8M queued (from 553.5M), 10 alt-paths all 404; descriptive infra only, not reportable alone.
 - 2026-09-10 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all methods; hypothesis dead.
+- 2026-09-10 ACCEPTED idor_booking: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-09-10 ACCEPTED waf_method_gate_attenuation: ~10 GET probes incl. introspection → 200; api.cineplex.de stays 403; host-specific bot-gate.
+- 2026-09-10 ACCEPTED staging_testing_oracle: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof.
+- 2026-09-10 REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+- 2026-09-10 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.

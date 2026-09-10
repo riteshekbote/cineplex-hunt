@@ -2552,3 +2552,47 @@ testability: PASSIVE
 [LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all methods; hypothesis dead.
 [LEARN] REJECTED relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope or no exploitable surface.
 [RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group this cycle — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. Surface did not expand: relay alt-paths closed (10×404), 12 new inventory hosts 403/dead, api.cineplex.de strict-403 persists.
+## 2026-09-10 15:44:07 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,9.10,attack_surface9/business10/tech10/gate9/cloud7/fresh8
+[PRIO] graphql-api.app.staging.cineplex.de,7.85,attack_surface8/business6/tech10/gate9/cloud7/fresh8
+[PRIO] api.cineplex.de,4.60,attack_surface6/business8/tech8/gate1/cloud5/fresh5
+[HYP] Production systemic unauth'd IDOR via single-entity resolvers — decoder-before-gate pattern field-introspected on all 3 entity types
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 97
+reasoning: 4/4 resolvers (userById/invoice/order/ticket) GET-verified both envs; decodePublicId fires before auth; currentUser gate exists and fires on same surface; PII-bearing nested projections confirmed via introspection (order.user, ticket.user)
+evidence_needed: cross-tenant PII return — other-tenant publicId → fullName/email/telephone
+verify_steps: consent + 2 disposable accounts; GET `/?query=%7BuserById(id%3A%22<otherId>%22)%7Bemail%2CfullName%2Ctelephone%7D%7D` ≤1 rps; HUMAN_ONLY
+impact: cross-tenant mass PII + order/ticket/invoice dump → GDPR breach + account/booking fraud; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_getConfirmationCode authless oracle — missing environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: 8 cycles: resolves authless (200, backend hit) vs prod FORBIDDEN; schema+behavior parity reconfirmed; only POST mutation extraction can prove oracle
+evidence_needed: POST mutation returns confirmation code for fabricated email
+verify_steps: POST `{"query":"mutation{testing_getConfirmationCode(email:\"<fabricated>\",type:PASSWORD_RESET){...}}"}` staging ≤1 rps; HUMAN_ONLY
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] Edge WAF is client-differentiated bot-gate, not auth — GET origin reach stable
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 96
+reasoning: ~10 balanced URL-encoded GET probes incl. introspection → 200 origin both envs via curl; automated urllib 403; host-specific (api.cineplex.de strict 403)
+evidence_needed: satisfied
+verify_steps: done
+impact: unfiltered GraphQL surface → enabler for IDOR; medium
+testability: PASSIVE
+[FINAL] IDOR @ graphql-api.app.cineplex.de (97) — 4/4 resolvers, decoder-before-gate, field-introspection evidence
+[FINAL] Staging oracle (85) — schema+behavior parity 8 cycles
+[FINAL] WAF misconfig (96) — PASSIVE, confirmed
+[PARKED] api.cineplex.de: strict 403, hypothesis dead
+[PARKED] relay_broker_saturation: no exploitable surface
+[PARKED] JWT alg confusion: JWKS 404, path closed
+[PARKED] TLS-dead hosts: no web surface
+[LEARN] ACCEPTED idor_booking: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof.
+[LEARN] ACCEPTED waf_method_gate_attenuation: ~10 GET probes incl. introspection → 200; api.cineplex.de stays 403; host-specific bot-gate.
+[LEARN] ACCEPTED staging_testing_oracle: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof.
+[LEARN] REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+[LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
+[RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. Surface did not expand: api.cineplex.de strict-403 persists; relay descriptive-only; OIDC/JWKS dead; login/sso TLS-dead.
