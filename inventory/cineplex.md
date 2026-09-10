@@ -654,3 +654,19 @@ wwww.cineplex.de
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 - CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
+
+## 2026-09-10 06:41:46 UTC
+- NEW 4/4 single-entity resolvers (userById/invoice/order/ticket) → 200 INVALID_ID, all with `decodePublicId` stacktrace, NO Authorization header — independently curl-verified this cycle on both prod and st
+- NEW `currentUser` → 200 UNAUTHENTICATED on both envs — auth gate exists and fires on the same GET surface; confirms auth-omission on siblings
+- NEW Automated 403s for invoice/order/ticket on 2026-09-10 01:31:27 were malformed URLs (missing closing brace) + urllib WAF, not backend rejection
+- CHANGED Structural IDOR proof now covers all 4 single-entity resolvers, both envs, fully curl-verified — expanded from userById-only in prior cycle
+- NEW Probe-results.md verification gap CONFIRMED: 272 lines, ZERO POST probes recorded across all cycles (2026-09-03 through 2026-09-09) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims l
+- NEW Live GET proof this cycle (manual curl --http2): `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` on BOTH `graphql-api.app.{,staging.}cineplex.de` — balanced URL-encoded GET reaches o
+- NEW IDOR format-confirmed via GET: `userById(id:"0")` → 200 INVALID_ID vs `currentUser` → 200 UNAUTHENTICATED (no Authorization header) on both envs — auth-omission structural proof
+- NEW Staging `testing_getConfirmationCode` auth bypass: resolves authless (200, backend hit, 405-method-mismatch) vs prod FORBIDDEN — missing environment guard persists 7 cycles
+- CHANGED `api.cineplex.de` WAF confirmed stricter than `graphql-api` pair: 6 probes today all HTTP 403 (root, /graphql, query-param, URL-encoded) — no client-differentiated bypass; hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` last fresh read 2026-09-08: `messages_queued` 553,564,053 (accelerating growth), descriptive infra only; relay surface stale in probe log (no fresh probe 2026-09-
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch definitively closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge

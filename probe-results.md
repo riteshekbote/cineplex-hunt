@@ -270,3 +270,7 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7Binvoice(id%3A%220%22 -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7Border(id%3A%220%22 -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7Bticket(id%3A%220%22 -> HTTP 403
+
+## 2026-09-10 06:41:49 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403

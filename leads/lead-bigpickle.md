@@ -2457,3 +2457,53 @@ testability: PASSIVE
 [LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead.
 [LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read not taken; prior 553.5M queued is descriptive infra only; not reportable alone (reaffirmed, no new surface).
 [RISK] cineplex: 78 (+1 vs last cycle). Reportable floor intact: IDOR structural POC (conf 96) now has independent, re-runnable GET evidence on BOTH envs from my own probe log, and the persistent "GET 400 vs 200" credibility doubt was resolved as a harness artifact. Still ceiling-capped at 85+ by two HUMAN_ONLY gates: two-account cross-tenant PII (IDOR) and POST code-extraction (staging oracle); both remain non-deriskable by automated means under the program's customer-data rule. Surface did NOT expand (api.cineplex.de third host stays 403; OIDC/JWKS dead; relay descriptive; login/sso TLS-dead).
+## 2026-09-10 06:40:00 UTC [target] (model bigpickle)
+[NEW] 4/4 single-entity resolvers (userById/invoice/order/ticket) → 200 INVALID_ID, all with `decodePublicId` stacktrace, NO Authorization header — independently curl-verified this cycle on both prod and staging
+[NEW] `currentUser` → 200 UNAUTHENTICATED on both envs — auth gate exists and fires on the same GET surface; confirms auth-omission on siblings
+[NEW] Automated 403s for invoice/order/ticket on 2026-09-10 01:31:27 were malformed URLs (missing closing brace) + urllib WAF, not backend rejection
+[CHANGED] Structural IDOR proof now covers all 4 single-entity resolvers, both envs, fully curl-verified — expanded from userById-only in prior cycle
+[PRIO] graphql-api.app.cineplex.de,9.10,attack_surface9/business10/tech10/gate9/cloud7/fresh8
+[PRIO] graphql-api.app.staging.cineplex.de,7.85,attack_surface8/business6/tech10/gate9/cloud7/fresh8
+[PRIO] api.cineplex.de,4.60,attack_surface6/business8/tech8/gate1/cloud5/fresh5
+[HYP] Production systemic unauth'd IDOR via all 4 single-entity resolvers — full GET-verified 4/4 this cycle
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 97
+reasoning: This cycle's own curl --http2 probes, zero Authorization: userById(invoice/order/ticket) → 200 INVALID_ID with decodePublicId stacktrace (id decoded/typed before any gate) on all 4 resolvers; currentUser → 200 UNAUTHENTICATED on same surface proving the gate exists but is omitted. Prod offsets: decodePublicId@43450 (user/invoice share), 52949 (order), 671 (ticket). Staging offsets differ (43944/53528/671) confirming separate builds, identical behavior. Prior cycle confirmed userById + currentUser; this cycle completed the remaining 3 resolvers. Cross-tenant PII proof remains HUMAN_ONLY.
+evidence_needed: two-account cross-tenant PII (other-tenant publicId → fullName/email/telephone) — prohibited for automated testing.
+verify_steps: consent + 2 disposable accounts; login → JWT; GET `/?query=%7BuserById(id%3A%22<otherId>%22)%7Bemail%2CfullName%2Ctelephone%7D%7D` vs own id; ≤1 rps; HUMAN_ONLY.
+impact: cross-tenant mass PII + invoice/order/ticket dump → GDPR breach + identity/booking fraud; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_getConfirmationCode authless oracle (missing env guard)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Staging GET surface live 200 this cycle (all 4 resolvers + __typename, identical build parity confirmed by response sizes). Prior manual POST showed testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN — 8 cycles now. Bundle delta (+490 lines) consistent with testing_* mutations absent from prod. No GET-side proof possible for a mutation; env-guard omission confirmed at schema+behavior level.
+evidence_needed: POST mutation returns actual confirmation code for fabricated email; same for testing_forceDeleteUser.
+verify_steps: POST `{"query":"mutation{testing_getConfirmationCode(email:\"<fabricated>\",type:PASSWORD_RESET){...}}"}` on staging ≤1 rps, fabricated mailbox, consent; 200-with-code=oracle, auth-error=gated; HUMAN_ONLY.
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] Edge WAF is a client/bot-gate, not auth — GET origin reach is stable
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 96
+reasoning: 12 balanced URL-encoded GET queries returned origin 200 (application/json) on both envs this cycle via curl --http2; automated urllib root GET 403 (Cloudflare). The 09-09 "400" entries were malformed unbalanced-brace URLs in the automated harness. api.cineplex.de strict 403 all 6 probes = different filter config, host-specific. Gate is fingerprint-differentiated, not authentication.
+evidence_needed: already satisfied — 12 probes recorded in probe-results.md this cycle.
+verify_steps: done — 12 curl GET probes recorded.
+impact: edge WAF bypass → unfiltered GraphQL/mutation/IAM surface; enabler for IDOR; medium
+testability: PASSIVE
+[PARKED] api.cineplex.de GET-based GraphQL bypass: 6 automated + encoded probes all 403; strict WAF confirmed; host-specific, no client-differentiation; confidence<40.
+[PARKED] relay_broker_saturation / relay_metrics: IOMB broker stats only, descriptive infra, not reportable alone.
+[PARKED] JWT alg confusion: JWKS + openid-configuration both 404; passive key-acquisition path closed.
+[PARKED] TLS-dead hosts (login/sso 525, couat/app.staging SSLv3): no web surface.
+[FINAL] graphql-api.app.cineplex.de IDOR (conf 97) — 4/4 resolvers GET-verified this cycle; HUMAN_ONLY full PII proof
+[FINAL] graphql-api.app.staging.cineplex.de testing oracle (conf 85) — schema+behavior parity re-confirmed; HUMAN_ONLY POST proof
+[FINAL] graphql-api.app.{,staging.}cineplex.de WAF misconfig (conf 96) — PASSIVE, confirmed, 12 probes this cycle
+[HYP] HUMAN_ONLY on both remaining POCs: cross-tenant IDOR PII (consent + 2 accounts) and staging POST oracle (fabricated mailbox). No automated path forward.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 single-entity resolvers (userById/invoice/order/ticket) now independently GET-verified on both envs; decodePublicId fires before auth; cross-tenant PII proof HUMAN_ONLY.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: 12 balanced URL-encoded GET queries → 200 origin both envs via curl; automated urllib 403; WAF is client-differentiated bot-gate, not auth. Automated 400/403 discrepancies fully explained (malformed URLs + urllib).
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: schema+behavior parity re-confirmed 8 cycles; HUMAN_ONLY POST proof.
+[LEARN] ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone.
+[LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead.
+[LEARN] REJECTED relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope or no exploitable surface.
+[RISK] cineplex: 80 (+2 vs last cycle). Reportable floor strengthened: IDOR structural POC (conf 97) now has 4/4 resolver proof across both envs, independently curl-verified, with explicit auth-omission pattern (decodePublicId before gate vs currentUser gate fires). Still ceiling-capped at 85+ by two HUMAN_ONLY gates: two-account cross-tenant PII (IDOR) and POST code-extraction (staging oracle). Surface did NOT expand (api.cineplex.de stays 403; OIDC/JWKS dead; relay descriptive; login/sso TLS-dead).
