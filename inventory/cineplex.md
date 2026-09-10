@@ -640,3 +640,17 @@ wwww.cineplex.de
 - CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
 
 ## 2026-09-09 23:35:24 UTC
+
+## 2026-09-10 01:31:20 UTC
+- NEW Live GET proof this cycle (my probes, curl --http2, browser UA, ≤1 rps): `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` (32B) on BOTH `graphql-api.app.{,staging.}cineplex.de`.
+- NEW `?query=%7BuserById(id%3A%220%22)%7Bid%7D%7D` → 200 `INVALID_ID` (`"Invalid Id for type: User id: 0"`, IdError path) with NO Authorization header, both envs (744B identical) — `decodePublicId` typed t
+- NEW `?query=%7BcurrentUser%7Bid%7D%7D` → 200 `UNAUTHENTICATED` with stacktrace `/var/task/graphql.js:40825` (prod) — the auth gate exists and fires on the same GET surface.
+- CHANGED The 400s logged 2026-09-09 11:40/15:25/18:43 explained: the automated URL was malformed and brace-unbalanced (`?query={__typename`, missing closing `}`). Balanced+URL-encoded GET reaches origin 200. P
+- NEW `graphql-api.app.cineplex.de/?query={__typename}` returned HTTP 400 "GET query missing" (not 200) on 2026-09-09 11:40 and 15:25 — GET-based GraphQL execution returns 400, contradicting KB claim of 200
+- NEW `api.cineplex.de` WAF confirmed stricter than `graphql-api` pair: 6 probes today all HTTP 403 (root, /graphql, query-param, URL-encoded) — no client-differentiated bypass
+- NEW Probe-results.md verification gap CONFIRMED: 265 lines, ZERO POST probes recorded across all cycles (2026-09-03 through 2026-09-09) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims l
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` last fresh read 2026-09-08: `messages_queued` 553,564,053 (accelerating growth), descriptive infra only; relay surface stale in probe log (no fresh probe 2026-09-
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch definitively closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge

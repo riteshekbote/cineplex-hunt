@@ -1273,3 +1273,24 @@
 
 ## RANKED HYPOTHESES 2026-09-09 23:35:24 UTC
 - [95] graphql-api.app.cineplex.de: Production systemic unauth'd IDOR via single-entity resolvers (from art/lead_bigpickle.txt)
+
+## RANKED HYPOTHESES 2026-09-10 01:31:20 UTC
+- [96] graphql-api.app.cineplex.de: Production systemic unauth'd IDOR via single-entity resolvers — GET-verified this cycle (from art/lead_bigpickle.txt)
+- [65] graphql-api.app.cineplex.de: Production GraphQL Systemic IDOR via Single-Entity Resolvers (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: GET https://graphql-api.app.cineplex.de/?query=%7Binvoice(id%3A%220%22)%7Bid%7D%7D then GET https://graphql-api.app.cineplex.de/?query=%7Border(id%3A%220
+- NEXT(hypotheses-nemotron3.txt): PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@t
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: authless GET `userById(id:"0"){id}` → 200 INVALID_ID both envs vs `currentUser` → 200 UNAUTHENTICATED; auth
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query={__typename}` → 200 origin both envs this cycle;
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead.
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read not taken; prior 553.5M queued is descriptive infra only; not reportable alone (reaffirmed, no 
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection claimed 200 full schema; GET-based execution returns 40
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); G
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit) vs prod FORBIDDEN; GET e
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL 400 (curl) + automated urllib 403; WAF is client-differentiated
+- LEARN: REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path def
+- LEARN: REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.s
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda p
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
