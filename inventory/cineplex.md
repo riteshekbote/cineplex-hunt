@@ -736,3 +736,16 @@ wwww.cineplex.de
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
+
+## 2026-09-10 23:25:49 UTC
+- NEW Manual curl probes this cycle confirm balanced URL-encoded GET `?query=%7B__typename%7D` → 200 origin on both `graphql-api.app.{,staging.}cineplex.de` (automated urllib gets 403 WAF)
+- NEW 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) independently GET-verified on prod: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header — auth-
+- NEW `currentUser` → 200 `UNAUTHENTICATED` on same GET surface (prod) — auth gate exists and fires on sibling resolver, confirming omission
+- NEW Staging `testing_getConfirmationCode` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/...`) vs prod `FORBIDDEN` "only available in testing 
+- NEW POST introspection → 200 full schema on BOTH `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de` (manual curl) — verification gap closed: KB claims now manually validated
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes today all 403) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only

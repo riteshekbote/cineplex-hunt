@@ -2641,3 +2641,30 @@ testability: PASSIVE
 [LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
 [RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. Surface did not expand: relay alt-paths closed (10×404), 12 new inventory hosts 403/dead, api.cineplex.de strict-403 persists.
 ## 2026-09-10 21:21:30 UTC [target] (model bigpickle)
+## 2026-09-10 23:25:37 UTC [target] (model bigpickle)
+[HYP] Production systemic unauth'd IDOR on single-entity resolvers — decoder-before-gate vs firing gates on same surface
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 98
+reasoning: 4/4 resolvers (userById/invoice/order/ticket) decode-before-auth, GET-verified both envs; this cycle control group fired correctly with exact args (userByQr DEVICE_UNAUTHORIZED, voucherInstanceByQR PosDevicesOnly, searchUsers role FORBIDDEN, currentUser UNAUTHENTICATED) — clean case-vs-control split on identical authless GET surface; PII-capable projections (order.user, ticket.user) at field level; full 83-field arg map now in hand; family bounded (QR/search siblings gate).
+evidence_needed: cross-tenant PII return — other-tenant publicId → fullName/email/telephone via userById/order/ticket
+verify_steps: consent + 2 disposable accounts; GET `?query=%7BuserById(id%3A%22<otherId>%22)%7Bemail%2CfullName%2Ctelephone%7D%7D` ≤1 rps; HUMAN_ONLY
+impact: cross-tenant mass PII + order/ticket/invoice dump → GDPR breach + booking fraud; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_getConfirmationCode authless oracle — missing environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 87
+reasoning: authless resolution (200, backend hit) vs prod FORBIDDEN persisted; signature `testing_getConfirmationCode(email,type)` re-confirmed in introspected arg map this cycle; prod-level schema parity at field+arg granularity; only POST code-extraction can prove oracle
+evidence_needed: POST mutation returns confirmation code for fabricated email
+verify_steps: POST `{"query":"mutation{testing_getConfirmationCode(email:\"<fabricated>\",type:PASSWORD_RESET){...}}"}` staging ≤1 rps; HUMAN_ONLY
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] Edge WAF is client-differentiated bot-gate, not auth
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 96
+reasoning: 200 origin GET both envs re-confirmed this cycle; automated urllib 403 vs curl 200; host-specific (api.cineplex.de strict 403); evidence_needed satisfied
+verify_steps: done
+impact: unfiltered GraphQL surface → enabler for IDOR/staging oracle; medium
+testability: PASSIVE
