@@ -249,3 +249,4 @@
 - 2026-09-10 ACCEPTED staging_testing_oracle: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof.
 - 2026-09-10 REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
 - 2026-09-10 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
+- 2026-09-10 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof.

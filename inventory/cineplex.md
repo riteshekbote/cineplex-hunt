@@ -694,3 +694,32 @@ wwww.cineplex.de
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh read 2026-09-08: 553.5M queued); descriptive infra only
+
+## 2026-09-10 19:07:41 UTC
+- NEW Automated probe log (probe-results.md, 283 lines) confirms ZERO POST GraphQL probes across all cycles (2026-09-03 through 2026-09-10) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims
+- NEW Malformed query probes (`?query={__typename` missing `}`) return HTTP 400 "GET query missing" — balanced URL-encoded GET (`?query=%7B__typename%7D`) reaches origin 200 per manual curl, but automated u
+- NEW 4/4 single-entity resolvers (userById/invoice/order/ticket) return HTTP 403 in automated log for malformed URLs — prior cycle's manual curl 200 INVALID_ID not reproduced in probe-results.md
+- NEW `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes today all 403) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh read 2026-09-08: 553.5M queued); descriptive infra only
+- NEW Automated probe log (probe-results.md, 283 lines) confirms ZERO POST GraphQL probes across all cycles (2026-09-03 through 2026-09-10) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims
+- NEW Malformed query probes (`?query={__typename` missing `}`) return HTTP 400 "GET query missing" — balanced URL-encoded GET (`?query=%7B__typename%7D`) reaches origin 200 per manual curl, but automated u
+- NEW 4/4 single-entity resolvers (userById/invoice/order/ticket) return HTTP 403 in automated log for malformed URLs — prior cycle's manual curl 200 INVALID_ID not reproduced in probe-results.md
+- NEW `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes today all 403) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh read 2026-09-08: 553.5M queued); descriptive infra only
+- NEW Automated probe log (probe-results.md, 283 lines) confirms ZERO POST GraphQL probes across all cycles (2026-09-03 through 2026-09-10) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims
+- NEW Malformed query probes (`?query={__typename` missing `}`) return HTTP 400 "GET query missing" — balanced URL-encoded GET (`?query=%7B__typename%7D`) reaches origin 200 per manual curl, but automated u
+- NEW 4/4 single-entity resolvers (userById/invoice/order/ticket) return HTTP 403 in automated log for malformed URLs — prior cycle's manual curl 200 INVALID_ID not reproduced in probe-results.md
+- NEW `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes today all 403) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh read 2026-09-08: 553.5M queued); descriptive infra only

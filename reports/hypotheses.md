@@ -1362,3 +1362,49 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
 - LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
 - LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
+
+## RANKED HYPOTHESES 2026-09-10 19:07:41 UTC
+- [97] graphql-api.app.cineplex.de: Production systemic unauth'd IDOR via single-entity resolvers — decoder-before-gate pattern field-introspected on all 3 entity types (from art/lead_bigpickle.txt)
+- [85] graphql-api.app.cineplex.de: Production GraphQL Systemic IDOR via Single-Entity Resolvers (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@t
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross
+- LEARN: ACCEPTED waf_method_gate_attenuation: ~10 GET probes incl. introspection → 200; api.cineplex.de stays 403; host-specific bot-gate.
+- LEARN: ACCEPTED staging_testing_oracle: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof.
+- LEARN: REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+- LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection claimed 200 full schema; GET-based execution returns 40
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: authless GET `userById(id:"0"){id}` → 200 INVALID_ID both envs vs `currentUser` → 200 UNAUTHENTICATED; auth
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query={__typename}` → 200 origin both envs this cycle;
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read not taken; prior 553.5M queued is descriptive infra only; not reportable alone (reaffirmed, no 
+- LEARN: REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path def
+- LEARN: REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.s
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda p
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection claimed 200 full schema; GET-based execution returns 40
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: authless GET `userById(id:"0"){id}` → 200 INVALID_ID both envs vs `currentUser` → 200 UNAUTHENTICATED; auth
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query={__typename}` → 200 origin both envs this cycle;
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read not taken; prior 553.5M queued is descriptive infra only; not reportable alone (reaffirmed, no 
+- LEARN: REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path def
+- LEARN: REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.s
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda p
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection claimed 200 full schema; GET-based execution returns 40
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: authless GET `userById(id:"0"){id}` → 200 INVALID_ID both envs vs `currentUser` → 200 UNAUTHENTICATED; auth
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query={__typename}` → 200 origin both envs this cycle;
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read not taken; prior 553.5M queued is descriptive infra only; not reportable alone (reaffirmed, no 
+- LEARN: REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path def
+- LEARN: REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.s
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda p
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data
