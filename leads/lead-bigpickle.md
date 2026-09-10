@@ -2640,3 +2640,4 @@ testability: PASSIVE
 [LEARN] REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
 [LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
 [RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. Surface did not expand: relay alt-paths closed (10×404), 12 new inventory hosts 403/dead, api.cineplex.de strict-403 persists.
+## 2026-09-10 21:21:30 UTC [target] (model bigpickle)

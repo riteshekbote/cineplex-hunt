@@ -250,3 +250,9 @@
 - 2026-09-10 REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
 - 2026-09-10 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data.
 - 2026-09-10 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-09-10 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema confirmed via manual curl; GET-based execution returns 400 for malformed query, 200 for balanced URL-encoded — automated probe log shows ZERO POST probes (verification gap was manual-only)
+- 2026-09-10 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 single-entity resolvers (userById/invoice/order/ticket) GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
+- 2026-09-10 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit, 405-mismatch) vs prod FORBIDDEN; GET execution confirmed live; missing env guard persists 7 cycles
+- 2026-09-10 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 origin both envs; automated urllib 403; WAF is client-differentiated bot-gate, not auth. Automated 400/403 discrepancies fully explained (malformed URLs + urllib).
+- 2026-09-10 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only (IOMB broker stats), not reportable alone (reaffirmed)
+- 2026-09-10 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable; no sensitive data

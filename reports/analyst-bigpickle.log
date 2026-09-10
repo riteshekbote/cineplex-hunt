@@ -10044,3 +10044,53 @@ testability: PASSIVE
 
 ## STEP 7 — RISK
 [RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. Surface did not expand: relay alt-paths closed (10×404), 12 new inventory hosts 403/dead, api.cineplex.de strict-403 persists.
+===== ANALYST bigpickle 2026-09-10 21:33:02 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor host in graphql-api.app.cineplex.de graphql-api.app.staging.cineplex.de; do
+  for q in "%7B__typename%7D" "%7BuserById(id%3A%220%22)%7Bid%7D%7D" "%7BcurrentUser%7Bid%7D%7D"; do
+    echo "=== $host ?query=$q ==="
+    curl -s --http2 -o /tmp/resp.txt -w "HTTP %{http_code} | %{size_download}B\n" \
+      -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36" \
+      --max-time 20 "https://$host/?query=$q"
+    head -c 300 /tmp/resp.txt; echo; sleep 3
+  done
+done
+=== graphql-api.app.cineplex.de ?query=%7B__typename%7D ===
+HTTP 200 | 32B
+{"data":{"__typename":"Query"}}
+
+=== graphql-api.app.cineplex.de ?query=%7BuserById(id%3A%220%22)%7Bid%7D%7D ===
+HTTP 200 | 744B
+{"errors":[{"message":"Invalid Id for type: User id: 0","locations":[{"line":1,"column":2}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: 0","    at decodePublicId (/var/task/graphql.js:43450:15)","    at 
+=== graphql-api.app.cineplex.de ?query=%7BcurrentUser%7Bid%7D%7D ===
+HTTP 200 | 836B
+{"errors":[{"message":"null","locations":[{"line":1,"column":2}],"path":["currentUser"],"extensions":{"code":"UNAUTHENTICATED","exception":{"stacktrace":["AuthenticationError: null","    at Object.get userId [as userId] (/var/task/graphql.js:40825:23)","    at /var/task/graphql.js:50094:49","    at 
+=== graphql-api.app.staging.cineplex.de ?query=%7B__typename%7D ===
+HTTP 200 | 32B
+{"data":{"__typename":"Query"}}
+
+=== graphql-api.app.staging.cineplex.de ?query=%7BuserById(id%3A%220%22)%7Bid%7D%7D ===
+HTTP 200 | 744B
+{"errors":[{"message":"Invalid Id for type: User id: 0","locations":[{"line":1,"column":2}],"path":["userById"],"extensions":{"code":"INVALID_ID","exception":{"failedType":"User","stacktrace":["IdError: Invalid Id for type: User id: 0","    at decodePublicId (/var/task/graphql.js:43944:15)","    at 
+=== graphql-api.app.staging.cineplex.de ?query=%7BcurrentUser%7Bid%7D%7D ===
+HTTP 200 | 836B
+{"errors":[{"message":"null","locations":[{"line":1,"column":2}],"path":["currentUser"],"extensions":{"code":"UNAUTHENTICATED","exception":{"stacktrace":["AuthenticationError: null","    at Object.get userId [as userId] (/var/task/graphql.js:41303:23)","    at /var/task/graphql.js:50659:49","    at
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mfor host in graphql-api.app.cineplex.de graphql-api.app.staging.cineplex.de; do
+  echo "=== $host ?query=%7B__type(name%3A%22User%22)%7Bname%2Cfields%7Bname%7D%7D ==="
+  curl -s --http2 -o /tmp/rt.txt -w "HTTP %{http_code} | %{size_download}B\n" \
+    -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36" \
+    --max-time 20 "https://$host/?query=%7B__type(name%3A%22User%22)%7Bname%2Cfields%7Bname%7D%7D"
+  head -c 500 /tmp/rt.txt; echo; sleep 3
+done
+echo "=== relay /metrics ==="
+curl -s --http2 -o /tmp/m.txt -w "HTTP %{http_code} | %{size_download}B\n" --max-time 20 "https://data-9fc27eb430.cineplex.de/metrics"
+cat /tmp/m.txt; echo
+echo "=== relay /health ==="
+curl -s --http2 -D - -o /tmp/h.txt --max-time 20 "https://data-9fc27eb430.cineplex.de/health" | grep -iE "HTTP/|x-powered-by|content-type"
+cat /tmp/h.txt; echo failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+All 6 GET probes re-confirmed live on both envs this cycle (200 origin, decodePublicId-before-auth vs firing currentUser gate). Now closing the GET-introspection gap + fresh relay read.
