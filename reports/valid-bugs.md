@@ -32,3 +32,7 @@
   - | Q4 Provable? | NO — requires valid session + querying other users' bookings = PII exposure |
   - | 1 | Prod GraphQL Introspection | **VALID** | 5.3→8.1 | Report to bugs.olivermaicher.eu |
   - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 5.3→7.5 | Report to bugs.olivermaicher.eu |
+
+- 2 lead(s) marked VALID at 2026-09-10 11:49:47 UTC
+  - **Verdict: HOLD** — JWKS 404 blocks passive verification. Requires valid credentials for login flow. Reopen when AUTH_HELPED session available.
+  - | Q4 Provable non-invasively? | **NO** — requires valid JWT + querying other users' data = PII exposure, which program explicitly forbids |
