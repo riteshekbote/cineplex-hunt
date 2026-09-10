@@ -670,3 +670,16 @@ wwww.cineplex.de
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
 - CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
+
+## 2026-09-10 11:58:29 UTC
+- NEW probe-results.md verification gap CONFIRMED: 276 lines, ZERO POST probes recorded across all cycles (2026-09-03 through 2026-09-10) — all KB "CONFIRMED" POST introspection/IDOR/staging-oracle claims l
+- NEW Live GET proof this cycle (manual curl --http2): balanced URL-encoded `?query=%7B__typename%7D` → 200 on BOTH `graphql-api.app.{,staging.}cineplex.de`; prior automated 400s were malformed brace-unbala
+- NEW 4/4 single-entity resolvers (userById/invoice/order/ticket) independently GET-verified on both envs: `?query=%7BuserById(id%3A%220%22)%7Bid%7D%7D` → 200 INVALID_ID (decodePublicId stacktrace), NO Auth
+- NEW `currentUser` → 200 UNAUTHENTICATED on both envs — auth gate exists and fires on same GET surface; confirms auth-omission on sibling resolvers
+- NEW Staging `testing_getConfirmationCode` auth bypass: resolves authless (200, backend hit, 405-method-mismatch) vs prod FORBIDDEN — missing environment guard persists 7 cycles
+- CHANGED `api.cineplex.de` WAF confirmed stricter than `graphql-api` pair: 6 probes today all HTTP 403 (root, /graphql, query-param, URL-encoded) — no client-differentiated bypass; hypothesis dead
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `login.cineplex.de` + `sso.cineplex.de` both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge
+- CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch definitively closed for JWT alg confusion
+- CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` last fresh read 2026-09-08: `messages_queued` 553,564,053 (accelerating growth), descriptive infra only; relay surface stale in probe log (no fresh probe 2026-09-
