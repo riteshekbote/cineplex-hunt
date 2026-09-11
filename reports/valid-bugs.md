@@ -43,3 +43,7 @@
   - | Q7 Reasonable triager | MAYBE — the proof is structural (typed error confirms resolver processed ID without auth) but no real user record was fetched. A strict triager may demand at least one valid-
   - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 |
   - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 |
+
+- 2 lead(s) marked VALID at 2026-09-11 15:53:55 UTC
+  - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 | Ready to report |
+  - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 | Ready to report |
