@@ -2876,3 +2876,33 @@ testability: PASSIVE
 [RISK] cineplex: 96 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST (GET 403/POST 200) confirmed; GET-based execution confirmed live via balanced URL-encoded queries. Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks — testing_getConfirmationCode authless 200 confirmed via GET (405-mismatch, backend hit to internal Spring endpoint). Missing environment guard on testing_getConfirmationCode (staging 200, prod FORBIDDEN). Internal architecture leak via Spring Data JPA REST endpoints on staging. Systemic IDOR format-confirmed across 4 single-entity resolvers on prod (GET-verified auth-omission with decodePublicId stacktraces). New dev environment booking-dev.cineplex.de bypasses Cloudflare WAF entirely (self-signed SSL, direct origin). Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass, architecture leak, origin bypass via dev). Wildcard-dominated DNS increases shared-infra risk.
 ## 2026-09-11 18:57:00 UTC [target] (model bigpickle)
 ## 2026-09-11 21:32:45 UTC [target] (model bigpickle)
+## 2026-09-11 23:33:39 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) throw FORBIDDEN — on the identical endpoint, both envs, no Authorization header. Auth-omission isolated to id-resolvers; control set proves gates exist and fire.
+evidence_needed: cross-tenant PII fetch with a real second user's publicId (200 + PII vs 200 INVALID_ID)
+verify_steps: GET ?query={userById(id:"<tenantB publicId>"){email fullName}} with/without user-A token; only id:"0" used so far (non-PII)
+impact: Any unauth'd party enumerates arbitrary users' PII (email/phone/birthDate/address/tickets/orders) → Critical ATO/base
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: authless 200/backend-hit (405-mismatch on /userPasswordResets/...) vs prod FORBIDDEN; persists 8 cycles; staging schema parity incl. testing_forceDeleteUser
+evidence_needed: human POST proving code returned for a seeded reset → account-takeover chain
+verify_steps: PASSIVE re-probe GET staging vs prod already done; POST extraction HUMAN_ONLY
+impact: Email-verification bypass → password reset oracle → ATO; forceDeleteUser → mass deletion → Critical
+testability: HUMAN_ONLY
+[HYP] adminUsers/searchUsers ROOT/ROLE hook firmness
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 55
+reasoning: gates fire authless today; residual risk that a HEADER-conditional path (POS/device header) passes them — no passive evidence either way
+evidence_needed: live authless reach via header spoof (active; not run)
+verify_steps: none passive
+impact: admin user search/list exposure
+testability: AUTH_HELPED
+[NEXT] HUMAN: cross-tenant IDOR proof on graphql-api.app.cineplex.de — accounts A/B; authless GET userById(id: B-publicId){id email fullName} and invoice/order/ticket same id; record 200-with-B-PII alongside id:"0"→INVALID_ID control; lifts structural POC to demonstrated Critical (HUMAN_ONLY per program PII rule).
+[RISK] cineplex: 96 — IDOR structural POC now control-complete (4 omissions vs 4 firing gates, env-parity proven, host-specific WAF bypass via GET, full introspection both envs, staging testing_* env-guard omission). Env-parity probe excludes a staging-only resolver-leak variant, narrowing (not raising) earlier speculative margin. IDOR cross-tenant proof and staging oracle POST remain HUMAN_ONLY under the program's customer-data rule — automated ceiling 96.

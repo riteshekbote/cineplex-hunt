@@ -811,3 +811,21 @@ wwww.cineplex.de
 - CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
 - CHANGED staging.cineplex.de → 200 len=2527 (likely login/landing); prod.cineplex.de/uat.cineplex.de → 403 (115KB WAF challenge)
+
+## 2026-09-11 23:34:42 UTC
+- NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404 on root — dev booking env bypassing edge protection
+- NEW cloud.systems.cineplex.de = Nextcloud 33.0.8; OCS caps exposed unauth; /public.php 500; brute-force delay=0
+- NEW support.systems.cineplex.de = Zammad helpdesk; nginx; API auth-gated (403); CSRF token in HTML
+- NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; /api/ returns 401
+- NEW profil.cineplex.de = Java webapp (JSESSIONID); 302→/preference; "Einstellungen" page with reCAPTCHA; no CSP headers
+- CHANGED graphql-api.app.{,staging.}cineplex.de: GET-based GraphQL execution confirmed via balanced URL-encoded queries (?query=%7B__typename%7D → 200); automated urllib gets 403 (WAF client-differentiated bot
+- CHANGED 4/4 single-entity resolvers (userById/invoice/order/ticket) independently GET-verified on prod: all return 200 INVALID_ID with decodePublicId stacktrace, NO Authorization header
+- CHANGED currentUser → 200 UNAUTHENTICATED on same GET surface (prod) — auth gate exists and fires on sibling resolver, confirming omission
+- CHANGED Staging testing_getConfirmationCode → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint) vs prod FORBIDDEN
+- CHANGED POST introspection → 200 full schema on BOTH graphql-api.app.{,staging.}cineplex.de (manual curl) — verification gap closed
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (6 probes all 403) — separate stricter config; GET-based bypass hypothesis dead
+- CHANGED WAF-gated hosts (booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev) all HTTP 403
+- CHANGED login.cineplex.de + sso.cineplex.de both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
+- CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
+- CHANGED staging.cineplex.de → 200 len=2527 (likely login/landing); prod.cineplex.de/uat.cineplex.de → 403 (115KB WAF challenge)

@@ -11494,3 +11494,218 @@ GET /robots.txt -> 404 len=21
 [93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
 [0m✗ [0mecho "=== headers/root ==="; curl -sk --http2 -m 15 -D - -o /tmp/bd_body "https://booking-dev.cineplex.de/" 2>/dev/null | head -30; echo "=== body ==="; cat /tmp/bd_body; echo; echo "=== cert ==="; echo | openssl s_client -connect booking-dev.cineplex.de:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates 2>/dev/null failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-09-11 23:34:42 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' https://booking-dev.cineplex.de/ ; sleep 1.5; curl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' https://booking-dev.cineplex.de/graphql ; sleep 1.5; curl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' 'https://booking-dev.cineplex.de/?query=%7B__typename%7D'
+default backend - 404
+STATUS:404 SIZE:21 CT:text/plain; charset=utf-8
+default backend - 404
+STATUS:404 SIZE:21 CT:text/plain; charset=utf-8
+default backend - 404
+STATUS:404 SIZE:21 CT:text/plain; charset=utf-8
+[0m
+[0m$ [0mcurl -skI --max-time 20 https://booking-dev.cineplex.de/ ; echo '---'; getent hosts booking-dev.cineplex.de; echo '---'; nslookup booking-dev.cineplex.de 2>/dev/null | tail -5
+HTTP/2 404 
+date: Fri, 11 Sep 2026 23:31:25 GMT
+content-type: text/plain; charset=utf-8
+content-length: 21
+strict-transport-security: max-age=15724800
+
+---
+194.77.169.121  booking-dev.cineplex.de
+---
+
+Non-authoritative answer:
+Name:	booking-dev.cineplex.de
+Address: 194.77.169.121
+[0m
+booking-dev is an empty nginx-ingress default-backend (path-independent 404, direct IP 194.77.169.121, no CF) — no GraphQL surface. Let me check the few remaining un-gated inventory hosts before closing the cycle.
+[0m$ [0mcurl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' https://staging.cineplex.de/ | head -c 800 ; echo; sleep 1.5; curl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' https://account.cineplex.de/ | head -c 400; echo; sleep 1.5; curl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' https://my.cineplex.de/ | head -c 400
+<html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title></title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">body{margin:0;padding:0;background-color:#000;background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/4QE2RXhpZgAATU0AKgAAAAgABwEPAAIAAAAGAAAAYgEQAAIAAAAPAAAAaAEaAAUAAAABAAAAeAEbAAUAAAABAAAAgAEoAAMAAAABAAIAAAEyAAIAAAAUAAAAiIdpAAQAAAABAAAAnAAAAABDYW5vbgBDYW5vbiBFT1MgNTUwRAAAAAABLAAAAAEAAAEsAAAAATIwMjI6MDE6MjcgMTc6MTc6MzMAAAiCmgAFAAAAAQAAAQKCnQAFAAAAAQAAAQqIJwADAAAAAQBkAACQAwACAAAAFAAAARKSCgAFAAAAAQAAASagAQADAAAAAQABAACgAgADAAAAAQeAAACgAwADAAAAAQUAAAAAAAAAAAAAAQAAACgAAAAFAAAAATIwMTc6MTI6MDIgMTg6MTg6NDUAAAAAKAAAAAH/4QuOaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWN
+<html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title></title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">body{margin:0;padding:0;background-color:#000;background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/4QE2RXhpZgAATU0AKgAAAAgABwEPAAIAAAAGAAAAYgEQAAIAAAAPAAAAaAEaAAUAAAA
+<html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title></title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">body{margin:0;padding:0;background-color:#000;background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/4QE2RXhpZgAATU0AKgAAAAgABwEPAAIAAAAGAAAAYgEQAAIAAAAPAAAAaAEaAAUAAAA
+[0m
+Identical dark landing page across staging/account/my — likely a shared catch-all vhost. Let me inspect the full body and status codes.
+[0m$ [0mcurl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} REDIR:%{redirect_url}\n' https://staging.cineplex.de/ -o /tmp/opencode/staging_cp.html; echo '--- headers ---'; curl -skI --max-time 20 https://staging.cineplex.de/ | grep -iE 'server|location|set-cookie|x-|via|powered'; echo '--- links/forms/text ---'; grep -oiE '<(a|form|input|button)[^>]*>' /tmp/opencode/staging_cp.html | head -20; echo '--- visible text ---'; sed 's/<[^>]*>//g' /tmp/opencode/staging_cp.html | grep -vE '^\s*$' | head -20
+...output truncated...
+
+Full output saved to: /home/runner/.local/share/opencode/tool-output/tool_092d01928001vQOhI1hqGnAazR
+
+	Bist du ein Roboter?
+	  Funktionierst du automatik jetzt willst du tanzen mechanik
+          Enable JavaScript and cookies to continue(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'xQLNO6cuzuCp22stdcrMbHwo4UbwqmnNsSdgxeqIZWg-1789169506-1.2.1.1-KlFPkvryF.iHZNdanS_DAljH9s1PonSc5uPXxiQV1ple5zv_DgUSVbBbULJlo1AH',cITimeS: '1789169506',cRay: 'a39a77c7ddbee713',cTplB: '0',cTplC:1,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:"/?__cf_chl_tk=StCCF1yqmUq_D5cN0wLqPrH6A41qrCTnxRsqTBLZXcw-1789169506-1.0.1.1-2NVFmfZ7IXpdBt5niQDPfgDuXLnQr3wv9JTjm1_H9fo",cvId: '3',cZone: 'staging.cineplex.de',fa:"/?__cf_chl_f_tk=StCCF1yqmUq_D5cN0wLqPrH6A41qrCTnxRsqTBLZXcw-1789169506-1.0.1.1-2NVFmfZ7IXpdBt5niQDPfgDuXLnQr3wv9JTjm1_H9fo",md: 'KdeJGsllkjjqdAO_2K0v6R2oBbwr0ay7Cms1uKHeS5I-1789169506-1.2.1.1-ryXmyX6Nz68DRS01xLd0B6HF.zwUaJuSpPvPgnox36U.4cYLmPrMoqT3fSsPwS.kRvQF3.xuC14p7D9_qvNopyHz6XOAdtTYBxttVibrUPlHk53B6caunLW23q32CZcjMvh7uMN8a29gFnDCNOoGF3P4wMqbeZGHj69aCYWiVJRpyDruTFIiNlANnNrCcthuNpBMYChqcnKfLi5NT4.lnOTvEWvcjg5NteKwj48sAinKNBfKXGm9PDgNO11LL5F0OuRH38ZLWE3hvmD7l2G58hyJn.QQ6Hj44d9Spt3pMlwpekX.qnRQ58TAf6_HcGuk0d8LaSzsC4om3JbWM9TXd2kMEMzhoBukoq8lLOtjgsxS_sWZXG51XTwmnVNBpJlQz_WS5pDsemnims9c7Yr3bm1e27RQ0n2o_aUjQd9qJRjPUXaum4Q1g2UqxFoW.mNJAH6AZU9zfS0tuTjNDRsgZPVI73UegeUKCBbOhIDsLESjttAtcYYl1Q3_tAluk9OgWFgq6Jo4eun9QcupNvTpOscsB6ssq_2E9IZMWsOZaOhoaG3rOmG0UUwX_Rfin.UIJlfIRCeblLvUx7kuXDGA0OV_uxuHymtZTTOuS8N_iYgwSGIM92xppOFsxZPY8mGy2r0xnT56U8_nTa9xk2keAD9lMenrnSc1gdtY_2pt7tMplUwWtKvdNrLIf26Qo7rPewT48VVW6k4LBytDJQOhapGm7.wI7dcOSP1QwWNSfVIs7F9yiMUj6kHV_E11F8pl22mH.SZam46u_31wUSshep3IqMg4KidX1OFNTPSyCifzEpE10.EGPKQF1tztlL.ZF1mt1VQZf3fhPCFgwvXDXrSi6YvBLNX_ugfVw8ufKHrGjRgYkloSomMP3AoTOcfRd9rp.Ws0IGMNmQmIs2tPL1.yn0dTweKhjOsEIISfAIPS6K1fyFJYmEF3pcrhmd9UKr1Lir4nKfinwIhdfwucdQmNhuqbNVYc7Q0cMqcUSueFQuvyzt8sWh.R8S_9bHWC0xFcVJ91cBL6qj3HFfuWo6gw4Z3VvIkURGbNdLJqbN4',mdrd: 'cxIhmnoBX7OafLh0ZutkJUh8tT2lOW_LsPrDmY1s9Qk-1789169506-1.2.1.1-qQru.LvD_bkv.F3iKp5Qgre5Eqmy7ezzImKA_6zbrPb3somAFEoY2xhzx31aUz.IECQaOLOV0XmtIN.2W7Pk_zjy0SuJ0vDb_vrpvsPE11_M.gNkz9.wqNa6EkVKFB_mXqgIFfyLU2NeVJHDb_nhQ7jfzxG5PyYjKRVMpKNztbMnNozvpCsvOsLHUkAzSSSHePgCUm._LSBzeoreQHSbFl0cpjtTqOIoKa504PtdJ3o',};var a = document.createElement('script');a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a39a77c7ddbee713';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,"/?__cf_chl_rt_tk=StCCF1yqmUq_D5cN0wLqPrH6A41qrCTnxRsqTBLZXcw-1789169506-1.0.1.1-2NVFmfZ7IXpdBt5niQDPfgDuXLnQr3wv9JTjm1_H9fo"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+  &nbsp;
+[0m
+staging/account/my all return the identical Cloudflare "managed challenge" JS page — WAF-gated, not a catch-all app. One remaining live, non-WAF surface: `profil.cineplex.de` (Java webapp). Checking for Spring Actuator / error-parity surfaces.
+[0m$ [0mcurl -sk --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download} REDIR:%{redirect_url}\n' https://profil.cineplex.de/ -o /tmp/opencode/profil_root.html -D /tmp/opencode/profil_h.txt; grep -iE 'server|set-cookie|powered|x-' /tmp/opencode/profil_h.txt | head; sleep 1.5; for p in /actuator/health /nope-xyz /api/ /preference; do curl -sk --max-time 20 -w "$p STATUS:%{http_code} SIZE:%{size_download} CT:%{content_type}\n" "https://profil.cineplex.de$p" -o /dev/null; sleep 1.5; done
+STATUS:302 SIZE:0 REDIR:https://profil.cineplex.de/preference
+/actuator/health STATUS:404 SIZE:431 CT:text/html;charset=utf-8
+/nope-xyz STATUS:404 SIZE:431 CT:text/html;charset=utf-8
+/api/ STATUS:404 SIZE:431 CT:text/html;charset=utf-8
+/preference STATUS:200 SIZE:103164 CT:text/html;charset=UTF-8
+[0m
+Profil has no actuator/API surface (uniform 431B 404s) — dead for automated depth. The productive gap left: gate-parity across envs for the four auth-gated graphql resolvers. Need exact arg names first via read-only introspection.
+[0m$ [0mH='graphql-api.app.cineplex.de'; Q='%7B__schema%7BqueryType%7Bfields%7Bname%20args%7Bname%20type%7Bname%7D%7D%7D%7D%7D%7D'; curl -sk --http2 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' --max-time 20 -w '\nSTATUS:%{http_code} SIZE:%{size_download}\n' "https://$H/?query=$Q" -o /tmp/opencode/schema.json; python3 -c "
+import json,re
+d=open('/tmp/opencode/schema.json').read()
+try:
+  j=json.loads(d)
+  fields=j['data']['__schema']['queryType']['fields']
+  want={'userByQr','voucherInstanceByQR','searchUsers','adminUsers','userById','invoice','order','ticket'}
+  for f in fields:
+    if f['name'] in want:
+      print(f['name'], [(a['name'],a['type'].get('name')) for a in f['args']])
+except Exception as e:
+  print('PARSE_FAIL',e, d[:200])
+"
+STATUS:200 SIZE:7064
+ticket [('id', None)]
+order [('id', None)]
+userByQr [('qrCode', None)]
+userById [('id', None)]
+adminUsers []
+searchUsers [('queryText', 'String'), ('filterActiveSubscriptions', 'Boolean'), ('limit', 'Int'), ('skip', 'Int')]
+voucherInstanceByQR [('qrCode', None)]
+invoice [('id', None)]
+[0m
+Args confirmed (`qrCode`, `queryText`). Now gate-parity comparison with fabricated input (`"0"`/`"zz"`, no real data) across both envs.
+[0m$ [0mUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+for H in graphql-api.app.cineplex.de graphql-api.app.staging.cineplex.de; do
+  for Q in '%7BuserByQr(qrCode%3A%220%22)%7Bid%7D%7D' '%7BvoucherInstanceByQR(qrCode%3A%220%22)%7Bid%7D%7D' '%7BsearchUsers(queryText%3A%22zz%22)%7Bid%7D%7D'; do
+    echo -n "$H $Q -> "; curl -sk --http2 -A "$UA" --max-time 20 -w 'STATUS:%{http_code}\n' "https://$H/?query=$Q" | tail -c 400; echo; sleep 1.2;
+  done
+done
+graphql-api.app.cineplex.de %7BuserByQr(qrCode%3A%220%22)%7Bid%7D%7D -> .resolve (/var/task/node_modules/apollo-server-core/dist/utils/schemaInstrumentation.js:56:26)","    at resolveFieldValueOrError (/var/task/node_modules/graphql/execution/execute.js:467:18)","    at resolveField (/var/task/node_modules/graphql/execution/execute.js:434:16)","    at executeFields (/var/task/node_modules/graphql/execution/execute.js:275:18)"]}}}],"data":{"userByQr":null}}
+STATUS:200
+
+graphql-api.app.cineplex.de %7BvoucherInstanceByQR(qrCode%3A%220%22)%7Bid%7D%7D -> d to query this endpoint","locations":[{"line":1,"column":2}],"path":["voucherInstanceByQR"],"extensions":{"code":"PosDevicesOnly","exception":{"stacktrace":["Error: Only POS Devices are allowed to query this endpoint","    at /var/task/graphql.js:13825:19","    at Generator.next (<anonymous>)","    at fulfilled (/var/task/graphql.js:13806:58)"]}}}],"data":{"voucherInstanceByQR":null}}
+STATUS:200
+
+graphql-api.app.cineplex.de %7BsearchUsers(queryText%3A%22zz%22)%7Bid%7D%7D -> at Generator.next (<anonymous>)","    at /var/task/graphql.js:24664:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:24660:12)","    at searchUsersBaseQuery (/var/task/graphql.js:24672:48)","    at /var/task/graphql.js:24719:27","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:24664:71","    at new Promise (<anonymous>)"]}}}],"data":null}
+STATUS:200
+
+graphql-api.app.staging.cineplex.de %7BuserByQr(qrCode%3A%220%22)%7Bid%7D%7D -> .resolve (/var/task/node_modules/apollo-server-core/dist/utils/schemaInstrumentation.js:56:26)","    at resolveFieldValueOrError (/var/task/node_modules/graphql/execution/execute.js:467:18)","    at resolveField (/var/task/node_modules/graphql/execution/execute.js:434:16)","    at executeFields (/var/task/node_modules/graphql/execution/execute.js:275:18)"]}}}],"data":{"userByQr":null}}
+STATUS:200
+
+graphql-api.app.staging.cineplex.de %7BvoucherInstanceByQR(qrCode%3A%220%22)%7Bid%7D%7D -> d to query this endpoint","locations":[{"line":1,"column":2}],"path":["voucherInstanceByQR"],"extensions":{"code":"PosDevicesOnly","exception":{"stacktrace":["Error: Only POS Devices are allowed to query this endpoint","    at /var/task/graphql.js:14006:19","    at Generator.next (<anonymous>)","    at fulfilled (/var/task/graphql.js:13987:58)"]}}}],"data":{"voucherInstanceByQR":null}}
+STATUS:200
+
+graphql-api.app.staging.cineplex.de %7BsearchUsers(queryText%3A%22zz%22)%7Bid%7D%7D -> at Generator.next (<anonymous>)","    at /var/task/graphql.js:24872:71","    at new Promise (<anonymous>)","    at __awaiter (/var/task/graphql.js:24868:12)","    at searchUsersBaseQuery (/var/task/graphql.js:24880:48)","    at /var/task/graphql.js:24927:27","    at Generator.next (<anonymous>)","    at /var/task/graphql.js:24872:71","    at new Promise (<anonymous>)"]}}}],"data":null}
+STATUS:200
+[0m
+`userByQr` and `searchUsers` appear to reach resolver execution before any gate on **both** envs — need full error bodies to classify (decode-error vs auth-gate vs DB). Fetching full JSON for `searchUsers` and `userByQr` on prod.
+[0m$ [0mUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64)'; H='graphql-api.app.cineplex.de'
+curl -sk --http2 -A "$UA" --max-time 20 "https://$H/?query=%7BsearchUsers(queryText%3A%22zz%22)%7Bid%7D%7D" -o /tmp/opencode/su.json
+curl -sk --http2 -A "$UA" --max-time 20 "https://$H/?query=%7BuserByQr(qrCode%3A%220%22)%7Bid%7D%7D" -o /tmp/opencode/qr.json
+python3 -c "
+import json
+for f in ['/tmp/opencode/su.json','/tmp/opencode/qr.json']:
+  d=json.load(open(f)); print('==',f)
+  for e in d.get('errors',[]):
+    print(' msg:',e.get('message'))
+    print(' code:',e.get('extensions',{}).get('code'))
+print('su data:', json.load(open('/tmp/opencode/su.json')).get('data'))
+print('qr data:', json.load(open('/tmp/opencode/qr.json')).get('data'))
+"
+== /tmp/opencode/su.json
+ msg: You must have on of the following roles: ROOT, ADMIN, CINEMA_ADMIN, SUPPORT to search for users
+ code: FORBIDDEN
+== /tmp/opencode/qr.json
+ msg: DEVICE_UNAUTHORIZED
+ code: FORBIDDEN
+su data: None
+qr data: {'userByQr': None}
+[0m
+`userByQr` is DEVICE-gated (not an omission) and `searchUsers` is ROLE-gated (FORBIDDEN) — both gates fire authless on **both** envs, confirming env-parity. One gate-sibling left unchecked: `adminUsers`. Quick read-only probe to complete the control group.
+[0m$ [0mUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64)'; H='graphql-api.app.cineplex.de'
+curl -sk --http2 -A "$UA" --max-time 20 "https://$H/?query=%7BadminUsers%7Bid%7D%7D" -o /tmp/opencode/au.json
+python3 -c "
+import json; d=json.load(open('/tmp/opencode/au.json'))
+for e in d.get('errors',[]): print(' msg:',e.get('message')); print(' code:',e.get('extensions',{}).get('code'))
+print('data:',d.get('data'))
+" 2>&1 | tail -6
+msg: Only Root users are allowed to query this.
+ code: FORBIDDEN
+data: None
+[0m
+**adminUsers** gate fires authless (FORBIDDEN, ROOT-only). Control group now complete and decisive.
+
+## STEP 1 — DELTA
+- [CHANGED] booking-dev.cineplex.de: GraphQL-exposure follow-up executed — nginx-ingress "default backend - 404" (21B), path-independent (/, /graphql, ?query=), origin 194.77.169.121 direct (no Cloudflare); no Ingress route → hypothesis dead
+- [CHANGED] staging.cineplex.de / account.cineplex.de / my.cineplex.de: identical body is a Cloudflare **managed** JS challenge (`_cf_chl_opt` cType:managed, "Bist du ein Roboter?") — WAF-gated, not a shared catch-all app; folded into 403 group
+- [CHANGED] profil.cineplex.de: uniform 431B 404 on /actuator/health, /api/, /nope-xyz (no Spring Actuator, no API); /preference 200/103KB reCAPTCHA
+- [NEW] Gate-parity probe (prod=staging, authless GET): searchUsers→FORBIDDEN(role), adminUsers→FORBIDDEN(ROOT), userByQr→DEVICE_UNAUTHORIZED, voucherInstanceByQR→PosDevicesOnly — all 4 gate-armed siblings fire on BOTH envs with no Authorization header
+
+## STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de, 8.45, a=9 b=9 t=9 g=8 c=5 f=9
+- [PRIO] graphql-api.app.staging.cineplex.de, 7.65, a=7 b=7 t=10 g=9 c=5 f=8
+- [PRIO] profil.cineplex.de, 3.10, a=3 b=4 t=3 g=2 c=1 f=5
+- [PRIO] booking-dev.cineplex.de, 2.50, dead (empty ingress, no app, no CF value)
+
+## STEP 3 — HYPOTHESES
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) throw FORBIDDEN — on the identical endpoint, both envs, no Authorization header. Auth-omission isolated to id-resolvers; control set proves gates exist and fire.
+evidence_needed: cross-tenant PII fetch with a real second user's publicId (200 + PII vs 200 INVALID_ID)
+verify_steps: GET ?query={userById(id:"<tenantB publicId>"){email fullName}} with/without user-A token; only id:"0" used so far (non-PII)
+impact: Any unauth'd party enumerates arbitrary users' PII (email/phone/birthDate/address/tickets/orders) → Critical ATO/base
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: authless 200/backend-hit (405-mismatch on /userPasswordResets/...) vs prod FORBIDDEN; persists 8 cycles; staging schema parity incl. testing_forceDeleteUser
+evidence_needed: human POST proving code returned for a seeded reset → account-takeover chain
+verify_steps: PASSIVE re-probe GET staging vs prod already done; POST extraction HUMAN_ONLY
+impact: Email-verification bypass → password reset oracle → ATO; forceDeleteUser → mass deletion → Critical
+testability: HUMAN_ONLY
+[HYP] adminUsers/searchUsers ROOT/ROLE hook firmness
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 55
+reasoning: gates fire authless today; residual risk that a HEADER-conditional path (POS/device header) passes them — no passive evidence either way
+evidence_needed: live authless reach via header spoof (active; not run)
+verify_steps: none passive
+impact: admin user search/list exposure
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] booking-dev GraphQL: dead (default-backend 404, path-independent)
+- [PARKED] staging/account/my WAF: Cloudflare managed challenge; no automated access
+- [PARKED] profil actuator/api: no surface (uniform 431B 404); needs auth-flow/deep HTML analysis only
+- [PARKED] relay_metrics/broker_saturation, api.cineplex.de bypass, openid_oidc_jwks, login/sso TLS-dead, cloud(Zammad/VPN/Nextcloud): unchanged prior REJECTED/PARKED
+- [PARKED] adminUsers ROOT-gate spoof: no passive verify step → confidence <60
+- [FINAL] 1.prod IDOR structural POC (95, reportable, HUMAN_ONLY cross-tenant) 2. staging env-guard oracle (85, HUMAN_ONLY POST) 3. graphql_introspection+waf_method_gate base findings (validated)
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: cross-tenant IDOR proof on graphql-api.app.cineplex.de — accounts A/B; authless GET userById(id: B-publicId){id email fullName} and invoice/order/ticket same id; record 200-with-B-PII alongside id:"0"→INVALID_ID control; lifts structural POC to demonstrated Critical (HUMAN_ONLY per program PII rule).
+
+## STEP 6 — LEARNING
+- [LEARN] REJECTED booking-dev GraphQL/WAF-bypass @ booking-dev.cineplex.de: path-independent nginx default-backend 404 on /, /graphql, ?query=; empty ingress, no app, direct origin adds no surface
+- [LEARN] REJECTED profil actuator/api @ profil.cineplex.de: uniform 431B 404 (/actuator/health, /api/); /preference reCAPTCHA-gated; no passive surface
+- [LEARN] ACCEPTED gate-parity control group @ graphql-api.app.{,staging.}cineplex.de: 4/4 gate siblings fire authless on BOTH envs (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE_UNAUTHORIZED, voucherInstanceByQR POS) while 4 id-resolvers skip auth — control set complete, no staging-only resolver leak variant
+- [LEARN] REJECTED staging/account/my catch-all @ *: Cloudflare managed JS challenge (not app) — WAF-gated
+- [LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only, not reportable alone (reaffirmed)
+
+## STEP 7 — RISK
+[RISK] cineplex: 96 — IDOR structural POC now control-complete (4 omissions vs 4 firing gates, env-parity proven, host-specific WAF bypass via GET, full introspection both envs, staging testing_* env-guard omission). Env-parity probe excludes a staging-only resolver-leak variant, narrowing (not raising) earlier speculative margin. IDOR cross-tenant proof and staging oracle POST remain HUMAN_ONLY under the program's customer-data rule — automated ceiling 96.
