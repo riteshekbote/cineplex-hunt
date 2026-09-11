@@ -36,3 +36,10 @@
 - 2 lead(s) marked VALID at 2026-09-10 11:49:47 UTC
   - **Verdict: HOLD** — JWKS 404 blocks passive verification. Requires valid credentials for login flow. Reopen when AUTH_HELPED session available.
   - | Q4 Provable non-invasively? | **NO** — requires valid JWT + querying other users' data = PII exposure, which program explicitly forbids |
+
+- 5 lead(s) marked VALID at 2026-09-11 11:50:08 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager | MAYBE — the proof is structural (typed error confirms resolver processed ID without auth) but no real user record was fetched. A strict triager may demand at least one valid-
+  - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 |
+  - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 |
