@@ -2735,3 +2735,48 @@ testability: PASSIVE (500 body check) then HUMAN_ONLY (authenticated testing)
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead
 [RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. New surface explored (Nextcloud, Zammad, VPN portal, profil, booking-dev) but none yielded exploitable unauthenticated findings. Relay alt-paths closed (10×404). WAF-gated hosts remain impenetrable via automated probes.
+## 2026-09-11 06:36:46 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,9.6,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=9,cloud_surface=6,freshness=10
+[PRIO] graphql-api.app.staging.cineplex.de,9.4,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
+[PRIO] cloud.systems.cineplex.de,7.8,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=6,cloud_surface=5,freshness=9
+[HYP] Production systemic unauth'd IDOR on single-entity resolvers — decoder-before-gate vs firing gates on same surface
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 98
+reasoning: 4/4 resolvers (userById/invoice/order/ticket) decode-before-auth, GET-verified both envs; control group (userByQr/voucherInstanceByQR/searchUsers/currentUser) fires correctly with exact args; PII-capable projections (order.user, ticket.user) at field level; full 83-field arg map in hand; family bounded (QR/search siblings gate).
+evidence_needed: cross-tenant PII return — other-tenant publicId → fullName/email/telephone via userById/order/ticket
+verify_steps: consent + 2 disposable accounts; GET `?query=%7BuserById(id%3A%22<otherId>%22)%7Bemail%2CfullName%2Ctelephone%7D%7D` ≤1 rps; HUMAN_ONLY
+impact: cross-tenant mass PII + order/ticket/invoice dump → GDPR breach + booking fraud; critical
+testability: HUMAN_ONLY
+[HYP] Staging testing_getConfirmationCode authless oracle — missing environment guard
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 87
+reasoning: authless resolution (200, backend hit) vs prod FORBIDDEN persisted 8 cycles; signature `testing_getConfirmationCode(email,type)` confirmed in introspected arg map; prod-level schema parity at field+arg granularity; only POST code-extraction can prove oracle.
+evidence_needed: POST mutation returns confirmation code for fabricated email
+verify_steps: POST `{"query":"mutation{testing_getConfirmationCode(email:\"<fabricated>\",type:PASSWORD_RESET){...}}"}` staging ≤1 rps; HUMAN_ONLY
+impact: reset-code oracle → ATO via email-verification bypass; high
+testability: HUMAN_ONLY
+[HYP] Nextcloud 33.0.8 on cloud.systems.cineplex.de — /public.php 500 server error + brute-force delay=0
+class: MISCONFIG
+asset: cloud.systems.cineplex.de
+confidence: 42
+reasoning: Nextcloud 33.0.8 "Cineplex-Cloud"; /public.php returns 500 (server-side error, may mean sharing disabled); OCS caps exposed standard; brute-force delay=0 exploitable only with valid usernames; no public shares accessible; 500 may not leak stack trace.
+evidence_needed: authenticated Nextcloud account to test sharing/DAV for IDOR; or confirmation that /public.php 500 leaks stack trace
+verify_steps: GET https://cloud.systems.cineplex.de/public.php — capture full 500 response body for stack trace
+impact: if 500 leaks stack trace → info disclosure; if authenticated sharing has IDOR → file access; medium
+testability: PASSIVE then HUMAN_ONLY
+[PARKED] Nextcloud /public.php 500: confidence 42 < 50 threshold; 500 may be expected when sharing disabled; OCS caps is standard Nextcloud; not enough to report alone.
+[FINAL] IDOR @ graphql-api.app.cineplex.de (98) — structural POC complete; HUMAN_ONLY cross-tenant proof
+[FINAL] Staging oracle (87) — schema+behavior parity 8 cycles; HUMAN_ONLY POST proof
+[FINAL] WAF misconfig (96) — PASSIVE, confirmed
+[NEXT] HUMAN: Top 3 actions for manual testing session:
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 GET probes → 200; api.cineplex.de stays 403; host-specific bot-gate
+[LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+[LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+[LEARN] REJECTED all WAF-gated hosts: all HTTP 403
+[LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope
+[RISK] cineplex: 82 (+0 vs last cycle). Two HUMAN_ONLY gates remain ceiling: cross-tenant PII for IDOR (85+) and POST code-extraction for staging oracle (87). All automated read-only surfaces exhausted. No new assets yielded exploitable findings this cycle. Structural evidence at schema/behavior level is conclusive for triage but cannot progress without human manual testing.

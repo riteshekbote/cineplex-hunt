@@ -769,3 +769,5 @@ wwww.cineplex.de
 - CHANGED `auth.cineplex.de/.well-known/jwks.json` persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED `booking.cineplex.de/api/booking/{id}` persistent 403 — session-gated, AUTH_HELPED required
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
+
+## 2026-09-11 06:38:47 UTC

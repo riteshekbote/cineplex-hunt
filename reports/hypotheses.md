@@ -1472,3 +1472,35 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
 - LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
 - LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+
+## RANKED HYPOTHESES 2026-09-11 06:38:47 UTC
+- [98] graphql-api.app.cineplex.de: Production systemic unauth'd IDOR on single-entity resolvers — decoder-before-gate vs firing gates on same surface (from art/lead_bigpickle.txt)
+- [85] booking-dev.cineplex.de: booking-dev.cineplex.de Origin Bypass via No-WAF Dev Environment (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Top 3 actions for manual testing session:
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET https://booking-dev.cineplex.de/ — accept self-signed cert (-k), observe response; then GET https://booking-dev.cineplex.de/graphql; GET https://book
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 GET probes → 200; api.cineplex.de stays 403; host-specific bot-gate
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+- LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- LEARN: REJECTED all WAF-gated hosts: all HTTP 403
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema confirmed via manual curl; GET-based ex
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 single-entity resolvers (userById/invoice/order/ticket) GET-verified both envs; decodePublicId before g
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit, 405-mismatch) vs prod FO
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 origin both envs; automa
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive infra only (IOMB broker stats), not reportable alone (reaffirmed)
+- LEARN: REJECTED openid_oidc_jwks @ auth.cineplex.de: .well-known/openid-configuration + .well-known/jwks.json both 404 live; OIDC/JWKS passive key acquisition path def
+- LEARN: REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.s
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda p
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- LEARN: NEW cloud.systems.cineplex.de = Nextcloud 33.0.8; /public.php 500; OCS caps exposed standard; not reportable alone
+- LEARN: NEW support.systems.cineplex.de = Zammad helpdesk; API auth-gated; no unauthenticated surface
+- LEARN: NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; API 401
+- LEARN: NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
+- LEARN: NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
+- LEARN: REJECTED all WAF-gated hosts (booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev): all HTTP 403

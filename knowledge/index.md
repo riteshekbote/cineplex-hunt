@@ -281,3 +281,6 @@
 - 2026-09-11 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
 - 2026-09-11 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
 - 2026-09-11 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-11 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 GET probes → 200; api.cineplex.de stays 403; host-specific bot-gate
+- 2026-09-11 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-11 REJECTED all WAF-gated hosts: all HTTP 403
