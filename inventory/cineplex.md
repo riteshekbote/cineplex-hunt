@@ -791,3 +791,5 @@ wwww.cineplex.de
 - CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
 
 ## 2026-09-11 15:53:57 UTC
+
+## 2026-09-11 19:02:55 UTC
