@@ -789,3 +789,5 @@ wwww.cineplex.de
 - CHANGED relay_metrics @ data-9fc27eb430.cineplex.de stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
 - CHANGED login.cineplex.de + sso.cineplex.de both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
 - CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
+
+## 2026-09-11 15:53:57 UTC
