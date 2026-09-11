@@ -1,4 +1,4 @@
-## 2026-09-11 06:36:46 UTC [target] (model bigpickle)
+## 2026-09-11 11:47:42 UTC [target] (model bigpickle)
 [PRIO] graphql-api.app.cineplex.de,9.6,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=9,cloud_surface=6,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,9.4,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
 [PRIO] cloud.systems.cineplex.de,7.8,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=6,cloud_surface=5,freshness=9
@@ -32,14 +32,18 @@ testability: PASSIVE then HUMAN_ONLY
 [PARKED] Nextcloud /public.php 500: confidence 42 < 50 threshold; 500 may be expected when sharing disabled; OCS caps is standard Nextcloud; not enough to report alone.
 [FINAL] IDOR @ graphql-api.app.cineplex.de (98) — structural POC complete; HUMAN_ONLY cross-tenant proof
 [FINAL] Staging oracle (87) — schema+behavior parity 8 cycles; HUMAN_ONLY POST proof
-[FINAL] WAF misconfig (96) — PASSIVE, confirmed
 [NEXT] HUMAN: Top 3 actions for manual testing session:
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
 [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: schema+behavior parity 8 cycles; HUMAN_ONLY POST proof
-[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 GET probes → 200; api.cineplex.de stays 403; host-specific bot-gate
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: ~10 GET probes incl. introspection → 200; api.cineplex.de stays 403; host-specific bot-gate
 [LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
 [LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
 [LEARN] REJECTED all WAF-gated hosts: all HTTP 403
 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope
-[RISK] cineplex: 82 (+0 vs last cycle). Two HUMAN_ONLY gates remain ceiling: cross-tenant PII for IDOR (85+) and POST code-extraction for staging oracle (87). All automated read-only surfaces exhausted. No new assets yielded exploitable findings this cycle. Structural evidence at schema/behavior level is conclusive for triage but cannot progress without human manual testing.
+[LEARN] NEW cloud.systems.cineplex.de = Nextcloud 33.0.8; /public.php 500; OCS caps exposed standard; not reportable alone
+[LEARN] NEW support.systems.cineplex.de = Zammad helpdesk; API auth-gated; no unauthenticated surface
+[LEARN] NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; API 401
+[LEARN] NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
+[LEARN] NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
+[RISK] cineplex: 82 (+2 vs last cycle). IDOR structural proof deepened to field-introspection level on all 3 entity types with a firing-gate control group — evidence reads as conclusive to a triager at schema/behavior level. Still ceiling-capped at ~85+ by two HUMAN_ONLY gates (cross-tenant PII for IDOR; POST code-extraction for staging oracle) that no automated read-only probe can bridge under the program's customer-data rule. New surface explored (Nextcloud, Zammad, VPN portal, profil, booking-dev) but none yielded exploitable unauthenticated findings. Relay alt-paths closed (10×404). WAF-gated hosts remain impenetrable via automated probes.

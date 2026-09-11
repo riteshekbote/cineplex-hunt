@@ -1,22 +1,37 @@
-## 2026-09-11 06:38:37 UTC [target] (model nemotron3)
-[PRIO] booking-dev.cineplex.de,8.5,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=10,cloud_surface=7,freshness=10
-[PRIO] graphql-api.app.cineplex.de,9.6,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=9,cloud_surface=6,freshness=10
-[PRIO] graphql-api.app.staging.cineplex.de,9.4,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=5,freshness=10
-[PRIO] cloud.systems.cineplex.de,7.2,attack_surface=8,business_value=6,tech_exposure=7,gate_ease=9,cloud_surface=8,freshness=10
-[PRIO] profil.cineplex.de,6.8,attack_surface=7,business_value=7,tech_exposure=6,gate_ease=8,cloud_surface=6,freshness=10
-[PRIO] auth.cineplex.de,7.0,attack_surface=7,business_value=10,tech_exposure=7,gate_ease=3,cloud_surface=5,freshness=8
+## 2026-09-11 11:53:07 UTC [target] (model nemotron3)
+[NEW] booking-dev.cineplex.de — SSL self-signed cert, origin directly reachable (no Cloudflare WAF), returns 404 on root — dev booking environment bypassing edge protection
+[NEW] cloud.systems.cineplex.de — Nextcloud 33.0.8 ("Cineplex-Cloud"), OCS capabilities fully exposed unauthenticated, /public.php 500, DAV requires auth, brute-force delay=0
+[NEW] support.systems.cineplex.de — Zammad helpdesk ("Cineplex Helpdesk"), nginx, session-cookie auth, API requires auth (403), CSRF token in HTML
+[NEW] vpn-portal.systems.cineplex.de — Nuvotex VPN Portal, Angular SPA, /api/ returns 401, third-party VPN solution
+[NEW] profil.cineplex.de — Java webapp (JSESSIONID), 302→/preference, HTML "Einstellungen" page with reCAPTCHA, no CSP headers
+[CHANGED] WAF-gated hosts confirmed: booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev → all HTTP 403
+[CHANGED] staging.cineplex.de → 200 len=2527 (likely login/landing); prod.cineplex.de/uat.cineplex.de → 403 (115KB WAF challenge)
+[CHANGED] GET-based GraphQL execution confirmed live on graphql-api.app.{,staging.}cineplex.de via balanced URL-encoded queries (?query=%7B__typename%7D → 200)
+[CHANGED] 4/4 single-entity resolvers (userById/invoice/order/ticket) independently GET-verified on prod: all return 200 INVALID_ID with decodePublicId stacktrace, NO Authorization header
+[CHANGED] currentUser → 200 UNAUTHENTICATED on same GET surface (prod) — auth gate exists and fires on sibling resolver
+[CHANGED] Staging testing_getConfirmationCode → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint) vs prod FORBIDDEN
+[CHANGED] POST introspection → 200 full schema on BOTH graphql-api.app.{,staging.}cineplex.de (manual curl) — verification gap closed
+[CHANGED] api.cineplex.de WAF strictly blocks all GraphQL paths (6 probes all 403) — separate stricter config; GET-based bypass hypothesis dead
+[CHANGED] relay_metrics @ data-9fc27eb430.cineplex.de stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only
+[CHANGED] login.cineplex.de + sso.cineplex.de both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+[CHANGED] auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
+[PRIO] graphql-api.app.cineplex.de,9.6,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=6,freshness=10
+[PRIO] booking-dev.cineplex.de,8.2,attack_surface=8,business_value=9,tech_exposure=8,gate_ease=10,cloud_surface=7,freshness=10
+[PRIO] graphql-api.app.staging.cineplex.de,8.8,attack_surface=9,business_value=8,tech_exposure=10,gate_ease=10,cloud_surface=6,freshness=10
 [PRIO] booking.cineplex.de,6.8,attack_surface=8,business_value=9,tech_exposure=5,gate_ease=3,cloud_surface=7,freshness=8
+[PRIO] cloud.systems.cineplex.de,6.5,attack_surface=7,business_value=6,tech_exposure=7,gate_ease=8,cloud_surface=8,freshness=10
+[PRIO] profil.cineplex.de,5.8,attack_surface=6,business_value=6,tech_exposure=6,gate_ease=7,cloud_surface=8,freshness=10
+[PRIO] data-9fc27eb430.cineplex.de,3.5,attack_surface=2,business_value=2,tech_exposure=1,gate_ease=10,cloud_surface=8,freshness=5
 [PRIO] vpn-portal.systems.cineplex.de,5.5,attack_surface=6,business_value=5,tech_exposure=5,gate_ease=6,cloud_surface=8,freshness=10
 [PRIO] support.systems.cineplex.de,4.8,attack_surface=5,business_value=4,tech_exposure=4,gate_ease=5,cloud_surface=7,freshness=10
-[PRIO] data-9fc27eb430.cineplex.de,3.5,attack_surface=2,business_value=2,tech_exposure=1,gate_ease=10,cloud_surface=8,freshness=5
 [PRIO] api.cineplex.de,5.0,attack_surface=6,business_value=8,tech_exposure=6,gate_ease=2,cloud_surface=6,freshness=8
-[HYP] booking-dev.cineplex.de Origin Bypass via No-WAF Dev Environment
+[HYP] Booking-Dev Origin Bypass via No-WAF Dev Environment
 class: MISCONFIG
 asset: booking-dev.cineplex.de
 confidence: 85
 reasoning: booking-dev.cineplex.de has self-signed SSL cert and origin directly reachable (no Cloudflare WAF) per 2026-09-11 discovery; returns 404 on root but booking.cineplex.de production is WAF-gated (403). Dev environment likely shares backend code/schema with prod but lacks edge protection. If GraphQL/booking API endpoints exist on this host, they would be directly accessible without WAF interference.
 evidence_needed: GraphQL endpoint discovery on booking-dev.cineplex.de (e.g., /graphql, /api/graphql, /); successful introspection or mutation execution without WAF block
-verify_steps: GET https://booking-dev.cineplex.de/ — accept self-signed cert; GET https://booking-dev.cineplex.de/graphql; GET https://booking-dev.cineplex.de/api/graphql; GET https://booking-dev.cineplex.de/?query=%7B__typename%7D; POST https://booking-dev.cineplex.de/graphql — Content-Type: application/json — body: {"query":"{__schema{types{name}}}"}
+verify_steps: GET https://booking-dev.cineplex.de/ — accept self-signed cert (-k); GET https://booking-dev.cineplex.de/graphql; GET https://booking-dev.cineplex.de/api/graphql; GET https://booking-dev.cineplex.de/?query=%7B__typename%7D; POST https://booking-dev.cineplex.de/graphql — Content-Type: application/json — body: {"query":"{__schema{types{name}}}"}
 impact: Full GraphQL API access without WAF blocking — enables unrestricted introspection, IDOR testing, mutation abuse on dev backend that may share prod data or have weaker auth; potential PII exposure, booking manipulation (Critical)
 testability: PASSIVE
 [HYP] Production GraphQL Systemic IDOR via Single-Entity Resolvers (GET-Verified)
