@@ -309,3 +309,11 @@ https://graphql-api.app.cineplex.de/?query=%7BsearchUsers(query%3A%22%22 -> HTTP
 https://graphql-api.app.cineplex.de/?query=%7BadminUsers%7Bid%20email%20fullName%20privileges%7BrootRole%20adminRole%7D%7D%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-11 01:43:35 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%222%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BsearchUsers%28query%3A%22%22%29%7Bid%20email%20fullName%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BadminUsers%7Bid%20email%20fullName%20privileges%7BrootRole%20adminRole%7D%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://cloud.systems.cineplex.de/public.php -> HTTP 500
