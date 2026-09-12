@@ -2916,3 +2916,4 @@ evidence_needed: any unauth 200 that is not version-string/descriptive (e.g., /o
 verify_steps: GET /status.php, GET /ocs/v1.php/cloud/capabilities, GET /ocs/v1.php/cloud/apps, GET /remote.php/webdav/, GET /index.php/s/ (HEAD only) — all passive
 impact: version/service disclosure only unless a write/id leak surfaces (low)
 testability: PASSIVE
+## 2026-09-12 06:29:16 UTC [target] (model bigpickle)

@@ -302,3 +302,4 @@
 - 2026-09-12 NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; API 401
 - 2026-09-12 NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
 - 2026-09-12 NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
+- 2026-09-12 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit, 405-method-mismatch) vs prod FORBIDDEN; GET execution confirmed live; missing env guard persists 8 cycles

@@ -11810,3 +11810,50 @@ testability: PASSIVE
 
 **STEP 7 — RISK**
 - [RISK] cineplex: 96 — booking-dev (last non-CF host) is a dead ingress default backend and the origin-bypass chain is null, narrowing the fresh-device speculative margin; core standing case unchanged (introspection + control-complete IDOR + staging env-guard oracle), ceiling held at 96 pending the HUMAN cross-tenant proof.
+===== ANALYST bigpickle 2026-09-12 06:31:01 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor p in "/" "/graphql" "/graphql?query=%7B__typename%7D" "/api" "/api/" "/api/v1/" "/health" "/metrics" "/actuator/health" "/swagger-ui.html" "/v2/api-docs" "/v3/api-docs" "/.well-known/openid-configuration" "/graphiql" "/status" "/version"; do
+  out=$(curl -sk -o /dev/null -w '%{http_code} %{size_download}' --max-time 10 "https://booking-dev.cineplex.de$p")
+  echo "$out  $p"
+  sleep 1
+done
+404 21  /
+404 21  /graphql
+404 21  /graphql?query=%7B__typename%7D
+404 21  /api
+404 21  /api/
+404 21  /api/v1/
+404 21  /health
+404 21  /metrics
+404 21  /actuator/health
+404 21  /swagger-ui.html
+404 21  /v2/api-docs
+404 21  /v3/api-docs
+404 21  /.well-known/openid-configuration
+404 21  /graphiql
+404 21  /status
+404 21  /version
+[0m
+[0m$ [0mecho "=== HEAD / ==="; curl -skI --max-time 10 https://booking-dev.cineplex.de/; echo; echo "=== GET / body ==="; curl -sk --max-time 10 https://booking-dev.cineplex.de/; echo; echo; echo "=== OPTIONS /graphql ==="; curl -sk -o /dev/null -w '%{http_code} %{size_download}\n' -X OPTIONS --max-time 10 https://booking-dev.cineplex.de/graphql; echo "=== GET /deep/path/xyz ==="; curl -sk -o /dev/null -w '%{http_code} %{size_download}\n' --max-time 10 https://booking-dev.cineplex.de/deep/path/xyz; sleep 1
+=== HEAD / ===
+HTTP/2 404 
+date: Sat, 12 Sep 2026 06:28:49 GMT
+content-type: text/plain; charset=utf-8
+content-length: 21
+strict-transport-security: max-age=15724800
+
+
+=== GET / body ===
+default backend - 404
+
+=== OPTIONS /graphql ===
+404 21
+=== GET /deep/path/xyz ===
+404 21
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcurl -sk --max-time 10 -D /tmp/profil_h.txt -o /tmp/profil_body.html https://profil.cineplex.de/preference; echo "=== headers ==="; cat /tmp/profil_h.txt; echo "=== size ==="; wc -c /tmp/profil_body.html failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+All paths on booking-dev hit a uniform 21-byte `default backend - 404` (ingress-nginx default backend, `HTTP/2`, HSTS). No application is bound to that hostname — the "dev booking env bypasses WAF" lead is a dead host, not a live surface. Closing it and re-checking the profil.cineplex.de preference webapp for API endpoints.
