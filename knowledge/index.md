@@ -306,3 +306,18 @@
 - 2026-09-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake certificate, not a live app; no WAF-bypass surface.
 - 2026-09-12 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: /ocs/v1.php/cloud/apps 401, /ocs/v1.php/cloud/capabilities 412 w/o OCS-APIRequest header, only /status.php 200 version string — version-only disclosure, descriptive/known-vuln class OOS.
 - 2026-09-12 ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference + /preference/update (GET 200 renders form, no 405) POST-action form, reCAPTCHA sitekey literal 'false', anonymous JSESSIONID, no CSP — candidate BUSLOGIC/IDOR surface on customer preference app; AUTH_HELPED.
+- 2026-09-12 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 5th firing gate archetype added (errorStatistics → UNAUTHENTICATED on both envs); strengthens control-group from 4/4 to 5/5 siblings proving auth layer functions while id-resolvers omit it.
+- 2026-09-12 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: post+staging POST introspection 200 full schema; GET-based execution confirmed; full mutation arg enumeration confirms no URL/file injection vectors in schema; CVSS 5.3, ready to submit.
+- 2026-09-12 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit, 405-method-mismatch) vs prod FORBIDDEN; persisted 8 cycles; staging schema parity including testing_forceDeleteUser; HUMAN_ONLY POST extraction.
+- 2026-09-12 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate.
+- 2026-09-12 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+- 2026-09-12 ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference/update GET 200 form, reCAPTCHA false, no CSP — AUTH_HELPED candidate.
+- 2026-09-12 NEW `test(inputVal)` field on prod+staging: returns constant "Cineplex" (non-gated debug artifact); no reflect/XSS vector; not reportable standalone.
+- 2026-09-12 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl externalUrl stacktraces), known_vuln_library.
+- 2026-09-12 REJECTED TLS-dead hosts: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de.
+- 2026-09-12 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive infra only (IOMB broker stats), not reportable alone.
+- 2026-09-12 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-12 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-12 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-12 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- 2026-09-12 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
