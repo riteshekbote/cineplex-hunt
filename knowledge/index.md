@@ -328,3 +328,13 @@
 - 2026-09-12 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB stats only; not reportable alone (reaffirmed).
 - 2026-09-12 PARKED profil_preference_surface @ profil.cineplex.de: no passive reflector (static no-user alert); email-presence oracle is OOS-adjacent (enumeration class); client-side `?captcha=` + dead reCAPTCHA is a low-value control finding on a newsletter form; HUMAN_ONLY write proof, business value low — confidence 50→45.
 - 2026-09-12 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead.
+- 2026-09-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-09-12 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
+- 2026-09-12 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 5th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 5/5 proving auth-omission on id-resolvers
+- 2026-09-12 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit
+- 2026-09-12 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 8 cycles; HUMAN_ONLY POST extraction remains only unproven link
+- 2026-09-12 NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+- 2026-09-12 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+- 2026-09-12 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- 2026-09-12 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- 2026-09-12 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone

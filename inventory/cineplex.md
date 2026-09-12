@@ -926,3 +926,12 @@ wwww.cineplex.de
 - CHANGED `externalUrl(appDeepLink)` + `appDeepLink(externalUrl)` — descriptive stacktraces (BAD_USER_INPUT) expose deep-link scheme+host allowlist oracle; rejected class (descriptive errors) (2026-09-12)
 - CHANGED `onboardingContent` subfield-selection resolves authless (200, `{"__typename":"OnboardingContent"}`) — benign marketing content, not gated (2026-09-12)
 - CHANGED booking-dev.cineplex.de — 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake cer
+
+## 2026-09-12 23:20:15 UTC
+- NEW booking-dev.cineplex.de REJECTED: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; no live app surface
+- NEW cloud.systems.cineplex.de REJECTED: Nextcloud 33.0.8; /ocs/v1.php/cloud/apps 401, /ocs/v1.php/cloud/capabilities 412 w/o OCS-APIRequest header, only /status.php 200 version string — version-only discl
+- NEW profil.cineplex.de ACCEPTED: /preference/update GET 200 renders form, reCAPTCHA sitekey='false', no CSP, anonymous JSESSIONID — candidate BUSLOGIC/IDOR surface; AUTH_HELPED (PARKED confidence 45)
+- NEW idor_control_group_expanded @ graphql-api.app.cineplex.de: 5th firing gate (errorStatistics → UNAUTHENTICATED both envs) strengthens control group to 5/5 siblings proving auth layer functions while id
+- NEW graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no URL/file/image/base64/host injection args; CVSS 5.3, ready to submit
+- NEW staging_testing_oracle @ graphql-api.app.staging.cineplex.de: persisted 8 cycles; HUMAN_ONLY POST extraction remains only unproven link
+- NEW test(inputVal) field on prod+staging: returns constant "Cineplex" (non-gated debug artifact); no reflect/XSS vector; not reportable standalone
