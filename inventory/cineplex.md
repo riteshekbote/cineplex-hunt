@@ -908,3 +908,21 @@ wwww.cineplex.de
 ## 2026-09-12 17:18:53 UTC
 
 ## 2026-09-12 19:29:53 UTC
+
+## 2026-09-12 21:43:02 UTC
+- NEW cloud.systems.cineplex.de = Nextcloud 33.0.8 ("Cineplex-Cloud"); OCS capabilities fully exposed unauthenticated; /public.php 500; DAV requires auth; brute-force delay=0; Talk/SIP federation discovered
+- NEW support.systems.cineplex.de = Zammad helpdesk ("Cineplex Helpdesk"); nginx, session-cookie auth, API requires auth (403), CSRF token in HTML (2026-09-11/12)
+- NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; /api/ returns 401; third-party VPN solution (2026-09-11/12)
+- NEW profil.cineplex.de = Java webapp (JSESSIONID); 302→/preference; HTML "Einstellungen" page with reCAPTCHA sitekey='false'; no CSP headers (2026-09-11/12)
+- NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404 on root — dev booking env bypassing edge protection (2026-09-11/12)
+- CHANGED graphql-api.app.{,staging.}cineplex.de — GET-based GraphQL execution confirmed live via balanced URL-encoded queries (`?query=%7B__typename%7D` → 200); automated urllib gets 403 (WAF client-differenti
+- CHANGED 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) independently GET-verified on prod: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header — struc
+- CHANGED `currentUser` → 200 `UNAUTHENTICATED` on same GET surface (prod) — auth gate exists and fires on sibling resolver, confirming omission (reaffirmed 2026-09-12)
+- CHANGED Staging `testing_getConfirmationCode` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/...`) vs prod `FORBIDDEN` — missing environment guard
+- CHANGED POST introspection → 200 full schema on BOTH `graphql-api.app.{,staging.}cineplex.de` (manual curl) — verification gap closed for schema (reaffirmed 2026-09-12)
+- CHANGED `test` query field exists on PRODUCTION `graphql-api.app.cineplex.de` — returns constant `"Cineplex"` ignoring inputVal; leftover debug artifact present in prod schema (2026-09-12)
+- CHANGED `errorStatistics(pastDays:1)` — UNAUTHENTICATED gate fires on both prod+staging; adds 5th firing gate archetype to IDOR control group (after searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucher
+- CHANGED Full mutation argument enumeration complete (35KB): no URL/file/image/base64/host injection args; all args are ID/String/Int/Boolean/Json scalars or named input objects (2026-09-12)
+- CHANGED `externalUrl(appDeepLink)` + `appDeepLink(externalUrl)` — descriptive stacktraces (BAD_USER_INPUT) expose deep-link scheme+host allowlist oracle; rejected class (descriptive errors) (2026-09-12)
+- CHANGED `onboardingContent` subfield-selection resolves authless (200, `{"__typename":"OnboardingContent"}`) — benign marketing content, not gated (2026-09-12)
+- CHANGED booking-dev.cineplex.de — 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake cer

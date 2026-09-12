@@ -321,3 +321,10 @@
 - 2026-09-12 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
 - 2026-09-12 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
 - 2026-09-12 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-12 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST/GET introspection 200 full schema; mutation-arg enumeration confirms SSRF-free; CVSS 5.3, ready to submit.
+- 2026-09-12 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-auth re-verified live this cycle (prod+staging, 744B INVALID_ID identical); 5/5 firing-gate control group intact (errorStatistics UNAUTHENTICATED this cycle); structural POC complete; HUMAN_ONLY cross-tenant PII proof.
+- 2026-09-12 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists; HUMAN_ONLY POST extraction remains the only unproven link.
+- 2026-09-12 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 892.9M queued, growing ~251M/cycle; no exploitable authless surface; DoS class not applicable; infra only.
+- 2026-09-12 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB stats only; not reportable alone (reaffirmed).
+- 2026-09-12 PARKED profil_preference_surface @ profil.cineplex.de: no passive reflector (static no-user alert); email-presence oracle is OOS-adjacent (enumeration class); client-side `?captcha=` + dead reCAPTCHA is a low-value control finding on a newsletter form; HUMAN_ONLY write proof, business value low — confidence 50→45.
+- 2026-09-12 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead.
