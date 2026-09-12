@@ -1,1 +1,33 @@
-## 2026-09-12 06:29:16 UTC [target] (model bigpickle)
+## 2026-09-12 11:16:21 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode authless → 200 INVALID_ID + decodePublicId stacktrace, while 4/4 gate siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) throw FORBIDDEN on the same GET surface, both envs, no Authorization header; currentUser → UNAUTHENTICATED proves gate fires. Auth-omission isolated to id-resolvers.
+evidence_needed: authless GET userById(other-tenant publicId){id email fullName} → 200 with PII vs id:"0" INVALID_ID control.
+verify_steps: GET /?query=%7BuserById(id%3A%22%3CtenantB-publicId%3E%22)%7Bid%20email%20fullName%7D%7D (no Authorization); same on invoice/order/ticket; id:"0" control each.
+impact: any unauth'd party reads arbitrary users' PII (email/phone/birthDate/address/tickets/orders) → Critical ATO/base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search/...) vs prod FORBIDDEN "only available in testing environments"; stable 8 cycles; staging schema parity incl testing_forceDeleteUser.
+evidence_needed: human POST proving confirmation code returned for a seeded reset → ATO chain.
+verify_steps: re-probe GET staging vs prod (done); POST extraction HUMAN_ONLY.
+impact: email-verification bypass → password-reset oracle → ATO; forceDeleteUser → mass deletion → Critical.
+testability: HUMAN_ONLY
+[HYP] profil.cineplex.de preference-update reachable authless with captcha disabled
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference served anonymous (fresh JSESSIONID, no login); POST action /preference/update; GET on it returns 200 form (no 405); reCAPTCHA sitekey literal 'false' (client captcha effectively off, server enforcement unknown); no CSP; showtimeanalytics-hosted app.
+evidence_needed: whether /preference/update processes requests without an authenticated identity/token (needs benign session only — no customer data).
+verify_steps: GET /preference/update (done, 200); enumerate hidden/js inputs + /preference/policy; then HUMAN with an anonymous non-mutating probe per program rule before any POST.
+impact: preference/settings tampering, mass-assignment on profile fields, possibly works without auth → account-data integrity; moderate unless chained to auth.
+testability: AUTH_HELPED
+[NEXT] HUMAN: cross-tenant IDOR proof on graphql-api.app.cineplex.de — accounts A/B; authless GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bid%20email%20fullName%7D%7D` (curl --http2, browser UA) and invoice/order/ticket with same publicId, alongside id:"0" INVALID_ID control; 200-with-B-PII lifts structural POC to demonstrated Critical (HUMAN_ONLY per program customer-data rule).
+[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake certificate, not a live app; no WAF-bypass surface.
+[LEARN] REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: /ocs/v1.php/cloud/apps 401, /ocs/v1.php/cloud/capabilities 412 w/o OCS-APIRequest header, only /status.php 200 version string — version-only disclosure, descriptive/known-vuln class OOS.
+[LEARN] ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference + /preference/update (GET 200 renders form, no 405) POST-action form, reCAPTCHA sitekey literal 'false', anonymous JSESSIONID, no CSP — candidate BUSLOGIC/IDOR surface on customer preference app; AUTH_HELPED.
+[RISK] cineplex: 95 — Core criticals stand: systemic unauth'd IDOR control-complete across 4 resolvers both envs (authless GET; gate siblings prove omission), staging testing_getConfirmationCode env-guard oracle (8 cycles), production+staging full GraphQL introspection, host-specific WAF GET bypass. New this cycle strengthens only due-diligence: booking-dev "origin bypass" debunked (ingress fake cert, dead) so that speculative margin removed; profil preference surface is a fresh moderate (45) candidate. Program ceiling stays 95 because the two decisive proofs (cross-tenant IDOR PII, oracle POST extraction) remain HUMAN_ONLY under the customer/employee/authentication-data rule.

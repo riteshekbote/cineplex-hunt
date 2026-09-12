@@ -865,3 +865,19 @@ wwww.cineplex.de
 - CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only (IOMB broker stats)
 - CHANGED staging.cineplex.de → 200 len=2527 (likely login/landing); prod.cineplex.de/uat.cineplex.de → 403 (115KB WAF challenge)
+
+## 2026-09-12 11:18:23 UTC
+- NEW booking-dev.cineplex.de — SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404 on root — dev booking env bypassing edge protection (confirmed 2026-09-11, reaffirmed 2026-09
+- NEW cloud.systems.cineplex.de — Nextcloud 33.0.8 ("Cineplex-Cloud"); OCS capabilities fully exposed unauthenticated; /public.php 500; DAV requires auth; brute-force delay=0; Talk/SIP federation discovered
+- NEW support.systems.cineplex.de — Zammad helpdesk ("Cineplex Helpdesk"); nginx, session-cookie auth, API requires auth (403), CSRF token in HTML (first seen 2026-09-11)
+- NEW vpn-portal.systems.cineplex.de — Nuvotex VPN Portal; Angular SPA; /api/ returns 401; third-party VPN solution (first seen 2026-09-11)
+- NEW profil.cineplex.de — Java webapp (JSESSIONID); 302→/preference; HTML "Einstellungen" page with reCAPTCHA; no CSP headers (first seen 2026-09-11)
+- CHANGED graphql-api.app.{,staging.}cineplex.de — GET-based GraphQL execution confirmed live via balanced URL-encoded queries (`?query=%7B__typename%7D` → 200); automated urllib gets 403 (WAF client-differenti
+- CHANGED 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) independently GET-verified on prod: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header — struc
+- CHANGED `currentUser` → 200 `UNAUTHENTICATED` on same GET surface (prod) — auth gate exists and fires on sibling resolver, confirming omission
+- CHANGED Staging `testing_getConfirmationCode` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/...`) vs prod `FORBIDDEN` — missing environment guard
+- CHANGED POST introspection → 200 full schema on BOTH `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de` (manual curl) — verification gap closed
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (6 probes all 403) — separate stricter config; GET-based bypass hypothesis dead
+- CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only (IOMB broker stats)
+- CHANGED login.cineplex.de + sso.cineplex.de both HTTP 525 (Cloudflare SSL handshake failed) — TLS-dead at CF edge
+- CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion

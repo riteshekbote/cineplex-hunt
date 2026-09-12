@@ -303,3 +303,6 @@
 - 2026-09-12 NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
 - 2026-09-12 NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
 - 2026-09-12 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode resolves authless (200, backend hit, 405-method-mismatch) vs prod FORBIDDEN; GET execution confirmed live; missing env guard persists 8 cycles
+- 2026-09-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake certificate, not a live app; no WAF-bypass surface.
+- 2026-09-12 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: /ocs/v1.php/cloud/apps 401, /ocs/v1.php/cloud/capabilities 412 w/o OCS-APIRequest header, only /status.php 200 version string — version-only disclosure, descriptive/known-vuln class OOS.
+- 2026-09-12 ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference + /preference/update (GET 200 renders form, no 405) POST-action form, reCAPTCHA sitekey literal 'false', anonymous JSESSIONID, no CSP — candidate BUSLOGIC/IDOR surface on customer preference app; AUTH_HELPED.
