@@ -904,3 +904,5 @@ wwww.cineplex.de
 - CHANGED auth.cineplex.de/.well-known/jwks.json persistent 404 — passive JWKS fetch closed for JWT alg confusion
 - CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive infra only (IOMB broker stats)
 - CHANGED staging.cineplex.de → 200 len=2527 (likely login/landing); prod.cineplex.de/uat.cineplex.de → 403 (115KB WAF challenge)
+
+## 2026-09-12 17:18:53 UTC
