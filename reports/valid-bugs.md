@@ -47,3 +47,9 @@
 - 2 lead(s) marked VALID at 2026-09-11 15:53:55 UTC
   - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 | Ready to report |
   - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 | Ready to report |
+
+- 4 lead(s) marked VALID at 2026-09-12 01:34:53 UTC
+  - | Q7 Reasonable triager? | **YES** — production GraphQL introspection with WAF bypass exposing booking/payment/admin mutations is a valid misconfiguration |
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | **HOLD** — structural proof is strong (control-complete: 4 omissions vs 4 firing gates), but strict triager will demand at least one valid cross-user PII fetch before accept
+  - | 1 | Production GraphQL Introspection (schema exposure + WAF bypass) | **VALID** | 5.3 | bugs.olivermaicher.eu |
