@@ -3103,3 +3103,31 @@ testability: PASSIVE
 [LEARN] REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive infra only (IOMB broker stats), not reportable alone.
 [RISK] cineplex: 95 — Core criticals hold: systemic unauth'd IDOR control-complete across 4 resolvers both envs (5 firing gates, no false negatives); staging testing_getConfirmationCode env-guard oracle (8 cycles); production+staging full GraphQL introspection (VALID, 5.3 CVSS, ready to submit); host-specific WAF GET bypass. This cycle's new data: expanded control-group from 4 to 5 firing-gate archetypes (errorStatistics adds INTERNAL/ROLE); full mutation arg enumeration confirms schema is SSRF-free (all args are ID/String/Int/Boolean scalars, no URL/file upload injection). Ceiling unchanged at 95 — cross-tenant IDOR PII proof and staging oracle POST extraction remain HUMAN_ONLY under the program's customer/employee/authentication-data rule. The program is well-documented for submission with introspection report ready and IDOR/oracle structural proofs fully documented pending human session for live PII confirmation.
 ## 2026-09-12 17:16:09 UTC [target] (model bigpickle)
+## 2026-09-12 19:27:03 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: GET origin reach re-confirmed 200 this cycle; 4/4 id-resolvers (userById/invoice/order/ticket) resolve decodePublicId authless → 200 INVALID_ID, while 5/5 gate-firing siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS, errorStatistics INTERNAL) throw FORBIDDEN/UNAUTHENTICATED same surface, no Authorization header; currentUser → UNAUTHENTICATED proves gate layer functions. Auth-omission isolated to id-resolvers.
+evidence_needed: authless GET userById(other-tenant publicId){id email fullName} → 200 PII vs id:"0" INVALID_ID control.
+verify_steps: GET /?query=%7BuserById(id%3A%22<tenantB-publicId>%22)%7Bid%20email%20fullName%7D%7D (no Authorization); same for invoice/order/ticket; id:"0" control each.
+impact: any unauth'd party reads arbitrary users' PII (email/phone/birthDate/tickets/orders) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; stable 8 cycles; schema parity incl testing_forceDeleteUser.
+evidence_needed: human POST returning confirmation code for a seeded reset → ATO chain.
+verify_steps: re-probe GET staging vs prod (done 8 cycles); POST extraction HUMAN_ONLY.
+impact: email-verification bypass → password-reset oracle → ATO; forceDeleteUser → mass deletion → Critical.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated email-keyed preference write (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 50
+reasoning: /preference + /preference/update GET 200 (~103KB) with anonymous JSESSIONID, no auth field; form keyed by email/firstName/lastName/birth with no visible owner ID — write may be keyed by submitted email; client CAPTCHA gate dead (sitekey 'false', `if (!false) recaptchaCallback()`) signals backend CAPTCHA enforcement likely also off.
+evidence_needed: GET /preference/update reflects a passed email param (keyed lookup, no auth) OR human POST proving arbitrary-email field overwrite.
+verify_steps: GET /preference/update?email=a%40b.c — check reflect/lookup; POST proof HUMAN_ONLY (program customer-data rule).
+impact: unauthenticated overwrite/pollution of customer preference profile keyed by email → data-integrity, basis for targeted manipulation; low-med.
+testability: AUTH_HELPED
