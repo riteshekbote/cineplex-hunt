@@ -2906,3 +2906,13 @@ impact: admin user search/list exposure
 testability: AUTH_HELPED
 [NEXT] HUMAN: cross-tenant IDOR proof on graphql-api.app.cineplex.de — accounts A/B; authless GET userById(id: B-publicId){id email fullName} and invoice/order/ticket same id; record 200-with-B-PII alongside id:"0"→INVALID_ID control; lifts structural POC to demonstrated Critical (HUMAN_ONLY per program PII rule).
 [RISK] cineplex: 96 — IDOR structural POC now control-complete (4 omissions vs 4 firing gates, env-parity proven, host-specific WAF bypass via GET, full introspection both envs, staging testing_* env-guard omission). Env-parity probe excludes a staging-only resolver-leak variant, narrowing (not raising) earlier speculative margin. IDOR cross-tenant proof and staging oracle POST remain HUMAN_ONLY under the program's customer-data rule — automated ceiling 96.
+## 2026-09-12 01:31:53 UTC [target] (model bigpickle)
+[HYP] Nextcloud unauth'd server/app inventory beyond OCS caps
+class: MISCONFIG
+asset: cloud.systems.cineplex.de
+confidence: 45
+reasoning: OCS capabilities + /status.php already shown unauth (33.0.8, app list, brute-force delay 0); /public.php returned 500 (handler registered, erroring). Standard Nextcloud surface may expose further unauth DAV/share endpoints.
+evidence_needed: any unauth 200 that is not version-string/descriptive (e.g., /ocs/v1.php/cloud/capabilities 200 with nonstandard apps, empty public-share enumeration, /remote.php/dav non-401)
+verify_steps: GET /status.php, GET /ocs/v1.php/cloud/capabilities, GET /ocs/v1.php/cloud/apps, GET /remote.php/webdav/, GET /index.php/s/ (HEAD only) — all passive
+impact: version/service disclosure only unless a write/id leak surfaces (low)
+testability: PASSIVE

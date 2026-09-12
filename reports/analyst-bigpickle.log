@@ -11709,3 +11709,104 @@ testability: AUTH_HELPED
 
 ## STEP 7 — RISK
 [RISK] cineplex: 96 — IDOR structural POC now control-complete (4 omissions vs 4 firing gates, env-parity proven, host-specific WAF bypass via GET, full introspection both envs, staging testing_* env-guard omission). Env-parity probe excludes a staging-only resolver-leak variant, narrowing (not raising) earlier speculative margin. IDOR cross-tenant proof and staging oracle POST remain HUMAN_ONLY under the program's customer-data rule — automated ceiling 96.
+===== ANALYST bigpickle 2026-09-12 01:34:45 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor p in "/graphql?query=%7B__typename%7D" "/?query=%7B__typename%7D" "/actuator/health" "/graphql" "/api/v1" "/swagger-ui.html" "/.well-known/openid-configuration"; do echo "=== $p ==="; curl -sk --http2 -o /dev/null -w "%{http_code} %{size_download}B " --max-time 15 "https://booking-dev.cineplex.de$p"; echo; sleep 1.2; done
+=== /graphql?query=%7B__typename%7D ===
+404 21B 
+=== /?query=%7B__typename%7D ===
+404 21B 
+=== /actuator/health ===
+404 21B 
+=== /graphql ===
+404 21B 
+=== /api/v1 ===
+404 21B 
+=== /swagger-ui.html ===
+404 21B 
+=== /.well-known/openid-configuration ===
+404 21B
+[0m
+[0m$ [0mecho "=== root body ==="; curl -sk --http2 --max-time 15 "https://booking-dev.cineplex.de/" | head -c 300; echo; echo "=== headers ==="; curl -sk --http2 -D - -o /dev/null "https://booking-dev.cineplex.de/"; echo "=== IP ==="; getent hosts booking-dev.cineplex.de; echo "=== HTTP port 80 ==="; curl -s --max-time 10 -o /dev/null -w "%{http_code} %{size_download}B\n" "http://booking-dev.cineplex.de/"
+=== root body ===
+default backend - 404
+=== headers ===
+HTTP/2 404 
+date: Sat, 12 Sep 2026 01:31:04 GMT
+content-type: text/plain; charset=utf-8
+content-length: 21
+strict-transport-security: max-age=15724800
+
+=== IP ===
+194.77.169.121  booking-dev.cineplex.de
+=== HTTP port 80 ===
+404 21B
+[0m
+[0m$ [0mecho "=== direct origin 194.77.169.121 with booking.cineplex.de Host ==="; curl -s --http2 --resolve booking.cineplex.de:443:194.77.169.121 -o /dev/null -w "%{http_code} %{size_download}B\n" --max-time 15 "https://booking.cineplex.de/"; echo "=== direct origin api endpoint ==="; curl -s --http2 --resolve booking.cineplex.de:443:194.77.169.121 -o /dev/null -w "%{http_code} %{size_download}B\n" --max-time 15 "https://booking.cineplex.de/api/booking/0"; echo "=== direct origin graphql ==="; curl -s --http2 --resolve booking.cineplex.de:443:194.77.169.121 -o /dev/null -w "%{http_code} %{size_download}B\n" --max-time 15 "https://booking.cineplex.de/graphql?query=%7B__typename%7D"; echo "=== which hosts does 194.77.169.121 serve? ==="; for h in booking.cineplex.de booking-dev.cineplex.de buchung.cineplex.de bookings.cineplex.de; do curl -s --http2 --resolve $h:443:194.77.169.121 -o /dev/null -w "$h %{http_code} %{size_download}B\n" --max-time 12 "https://$h/"; sleep 1; done
+=== direct origin 194.77.169.121 with booking.cineplex.de Host ===
+000 0B
+=== direct origin api endpoint ===
+000 0B
+=== direct origin graphql ===
+000 0B
+=== which hosts does 194.77.169.121 serve? ===
+booking.cineplex.de 000 0B
+booking-dev.cineplex.de 000 0B
+buchung.cineplex.de 000 0B
+bookings.cineplex.de 000 0B
+[0m
+[0m$ [0mecho "=== booking.cineplex.de public IP ==="; getent hosts booking.cineplex.de; echo "=== TLS error detail ==="; curl -s --http2 --resolve booking.cineplex.de:443:194.77.169.121 -o /dev/null -w "%{http_code}\n" --max-time 15 "https://booking.cineplex.de/" 2>&1; curl -sk --http2 --resolve booking.cineplex.de:443:194.77.169.121 -o /dev/null -w "%{http_code} %{size_download}B\n" --max-time 15 "https://booking.cineplex.de/" ; echo "=== booking-dev cert SAN ==="; echo | timeout 10 openssl s_client -connect booking-dev.cineplex.de:443 2>/dev/null | openssl x509 -noout -subject -issuer 2>/dev/null
+=== booking.cineplex.de public IP ===
+2606:4700::6810:1743 booking.cineplex.de
+2606:4700::6810:1643 booking.cineplex.de
+=== TLS error detail ===
+000
+404 21B
+=== booking-dev cert SAN ===
+subject=O = Acme Co, CN = Kubernetes Ingress Controller Fake Certificate
+issuer=O = Acme Co, CN = Kubernetes Ingress Controller Fake Certificate
+[0m
+## 2026-09-12 01:31 UTC — ANALYSIS RUN
+
+**STEP 1 — DELTA**
+- NEW booking-dev.cineplex.de deeply probed: HTTP/2 404 `default backend - 404` (21B, text/plain, HSTS) on root, `/graphql?query={__typename}`, `/actuator/health`, `/api/v1`, `/swagger-ui.html`, `/.well-known/openid-configuration` — Kubernetes nginx-ingress *default backend* with foundry "Kubernetes Ingress Controller Fake Certificate"; no app routed behind it.
+- CHANGED origin-bypass hypothesis CLOSED: booking.cineplex.de resolves only to Cloudflare (2606:4700::/32 IPv6); direct Host probe of `booking.cineplex.de` against origin 194.77.169.121 returns the same default-404 — no app vhost, no WAF bypass.
+- CHANGED data-9fc27eb430 relay surface stale (no fresh read since 09-08 @ 553.5M queued; no new endpoints).
+- NO_DELTA on all 2026-09-11 accepts (Nextcloud/Zammad/Nuvotex/profil fingerprints stand).
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] graphql-api.app.cineplex.de, 9.3, axis=IDOR-control-complete-reportable-awaiting-HUMAN-proof
+- [PRIO] cloud.systems.cineplex.de, 6.8, axis=Nextcloud-33.0.8-selfhosted-public-OCS/status
+- [PRIO] booking-dev.cineplex.de, 3.0, axis=dead-default-backend
+
+**STEP 3 — HYPOTHESES**
+[HYP] Nextcloud unauth'd server/app inventory beyond OCS caps
+class: MISCONFIG
+asset: cloud.systems.cineplex.de
+confidence: 45
+reasoning: OCS capabilities + /status.php already shown unauth (33.0.8, app list, brute-force delay 0); /public.php returned 500 (handler registered, erroring). Standard Nextcloud surface may expose further unauth DAV/share endpoints.
+evidence_needed: any unauth 200 that is not version-string/descriptive (e.g., /ocs/v1.php/cloud/capabilities 200 with nonstandard apps, empty public-share enumeration, /remote.php/dav non-401)
+verify_steps: GET /status.php, GET /ocs/v1.php/cloud/capabilities, GET /ocs/v1.php/cloud/apps, GET /remote.php/webdav/, GET /index.php/s/ (HEAD only) — all passive
+impact: version/service disclosure only unless a write/id leak surfaces (low)
+testability: PASSIVE
+
+(profil.cineplex.de and graphql IDOR hypotheses — see STEP 4/5.)
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] Nextcloud unauth surface: risks collapsing into REJECTED known-vulnerable-library/descriptive-info; only kept at PASSIVE.
+- [PARKED] profil.cineplex.de injection: JSESSIONID + reCAPTCHA preference page; auth+human checks required; confidence <40 passively.
+- [FINAL] graphql-api IDOR structural POC (confidence 95) — unchanged, control-complete, reportable base.
+- [FINAL] booking-dev dead surface — REJECTED, no app behind ingress.
+
+**STEP 5 — NEXT ACTION**
+- NEXT HUMAN: run cross-tenant IDOR proof on graphql-api.app.cineplex.de — accounts A/B; authless GET `?query={userById(id:"<tenantB publicId>"){id email fullName}}` + same id on invoice/order/ticket, record 200-with-B-PII against the id:"0"→INVALID_ID control; lifts structural POC to demonstrated Critical (HUMAN_ONLY under program PII rule).
+
+**STEP 6 — LEARNING**
+- [LEARN] REJECTED booking-dev_origin-bypass @ booking.cineplex.de: CF-only resolution (2606:4700::/32); direct-origin Host probe → default-404; no WAF bypass exists via 194.77.169.121.
+- [LEARN] REJECTED booking-dev_surface @ booking-dev.cineplex.de: nginx-ingress default backend (fake Kubernetes cert, `default backend - 404` on 7 paths); no routed service — dead surface.
+- [LEARN] ACCEPTED booking-dev deconfliction @ booking-dev.cineplex.de: sole reachable non-CF host in inventory is ingress-default, not an app — residual origin-bypass risk now confined to unverified third-party CNAME backends, not direct Cineplex origin IPs.
+
+**STEP 7 — RISK**
+- [RISK] cineplex: 96 — booking-dev (last non-CF host) is a dead ingress default backend and the origin-bypass chain is null, narrowing the fresh-device speculative margin; core standing case unchanged (introspection + control-complete IDOR + staging env-guard oracle), ceiling held at 96 pending the HUMAN cross-tenant proof.
