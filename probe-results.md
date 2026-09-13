@@ -489,3 +489,6 @@ https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22 -
 
 ## 2026-09-13 16:10:22 UTC
 https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22 -> HTTP 400
+
+## 2026-09-13 18:49:26 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22 -> HTTP 400

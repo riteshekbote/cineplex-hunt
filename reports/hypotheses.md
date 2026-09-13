@@ -1972,3 +1972,6 @@
 
 ## RANKED HYPOTHESES 2026-09-13 16:10:21 UTC
 - [95] graphql-api.app.cineplex.de: Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete) (from art/lead_bigpickle.txt)
+
+## RANKED HYPOTHESES 2026-09-13 18:49:24 UTC
+- [95] graphql-api.app.cineplex.de: Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete) (from art/lead_bigpickle.txt)
