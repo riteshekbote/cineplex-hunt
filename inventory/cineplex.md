@@ -993,3 +993,16 @@ wwww.cineplex.de
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
 - CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+
+## 2026-09-13 23:13:50 UTC
+- NEW dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passi
+- NEW REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: getMatomoVersion/getSitesWithViewAccess → "requires view access"; anonymous token zero site access; Installation module closed; tracker benign 
+- NEW REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404, /api/auth/verify 405-on-GET; wildcard ACAO alone descriptive/CORS-without-credentials class
+- NEW REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
+- NEW ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory note; both auth-gated default-secure; only AUTH_HEL
+- NEW REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
+- NEW REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (all 403 across 6+ probes) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+- CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths

@@ -3398,3 +3398,33 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pursuable.
 [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
 [RISK] cineplex: 95 — new Medium-class dangling-CNAME (dev host) found passively, offset by no fresh advances on either Critical lift (cross-tenant PII read, password-reset ATO), both HUMAN_ONLY under the program PII rule; breadth now 30 hosts w/ 3 new non-pursuable, ceiling held.
+## 2026-09-13 23:13:03 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: 9+ cycles curl --http2 browser-UA, NO Authorization: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path) both envs; control group 6/6 firing gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR) → UNAUTHENTICATED/ROLE/ROOT/DEVICE = auth layer functions on siblings only. Probe-log 403/400 = urllib-WAF + malformed-brace artifacts.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID control; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control per resolver; NO Authorization header.
+impact: unauth'd arbitrary-customer PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: 9+ cycles: authless 200 backend-hit (405-method-mismatch on /userPasswordResets/search) vs prod FORBIDDEN; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO; forceDeleteUser mass-delete.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging human-session only; prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
+testability: HUMAN_ONLY
+[HYP] Dangling-CNAME takeover precondition on dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 65
+reasoning: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; target A → Status 3 NXDOMAIN with azure zone SOA (re-confirmed 2nd cycle, stable); host 000 on :80/:443. 17-host dev/test sweep found no other CNAME targets — sole candidate; claimability precondition (Azure env/FQDN reuse) unproven.
+evidence_needed: tester-owned Azure tenant provisioning container-app web in env gentleglacier-dfef6458 (switzerlandnorth) reproducing FQDN → resolves attacker content via web-dev.cineplex.de.
+verify_steps: DoH A re-check next cycle (Status 3 retained); registration proof external.
+impact: full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium.
+testability: PASSIVE
+[NEXT] PROBE: re-check `https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A` for Status 3 (3rd-consecutive NXDOMAIN stability) next cycle; if host 000 persists, write-up the dangling-CNAME finding for web-dev while cross-tenant IDOR and staging-oracle proofs remain HUMAN_ONLY.
+[RISK] cineplex: 95 — dangling-CNAME lead hardened (sole-candidate + 2-cycle stability raises Medium write-up ceiling), but net risk is flat: both Critical lifts (cross-tenant PII read at 95, password-reset ATO at 85) remain HUMAN_ONLY under the program PII rule with no new passive advances; all alternative hunt lines (WAF bypass, relay, Nextcloud, booking-dev) terminally exhausted or rejected.

@@ -366,3 +366,7 @@
 - 2026-09-13 REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pursuable.
 - 2026-09-13 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving auth-omission on id-resolvers
 - 2026-09-13 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- 2026-09-13 REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+- 2026-09-13 REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
+- 2026-09-13 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
+- 2026-09-13 REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve but no HTTP surface (000) — unreachable

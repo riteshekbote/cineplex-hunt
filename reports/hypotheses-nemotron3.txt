@@ -1,19 +1,19 @@
-## 2026-09-13 21:15:08 UTC [target] (model nemotron3)
-[NEW] `graphql-api.app.cineplex.de` — balanced URL-encoded GET `?query=%7B__typename%7D` → 200 origin confirmed live across 9+ cycles via curl --http2 (browser UA); automated urllib consistently 403 (WAF client-differentiated bot-gate, not auth)
-[NEW] 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) GET-verified on prod+staging: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header; `currentUser` → 200 `UNAUTHENTICATED` on same surface — auth gate exists on sibling, omitted on id-resolvers (structural IDOR proof complete)
-[NEW] Staging `testing_getConfirmationCode(email, type)` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress`) vs prod `FORBIDDEN` — missing environment guard persists 9+ cycles
-[NEW] `errorStatistics(pastDays:1)` → `UNAUTHENTICATED` on both envs — 6th firing gate archetype added to IDOR control group (now 6/6: errorStatistics, currentUser, searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS)
-[NEW] Full mutation argument enumeration complete (35KB): no SSRF/file-upload/base64/host injection vectors; all args scalar/named input objects; CVSS 5.3 base ready for submission
-[NEW] `booking-dev.cineplex.de` REJECTED: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl `/graphql` → 404 "default backend - 404"; no live app surface
-[NEW] `cloud.systems.cineplex.de` REJECTED: Nextcloud 33.0.8; only `/status.php` 200 version string — descriptive/known-vuln class OOS
-[NEW] `profil.cineplex.de` PARKED: `/preference/update` GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value
-[CHANGED] `api.cineplex.de` WAF strictly blocks all GraphQL paths (all 403 across 6+ probes) — separate stricter config than `graphql-api` pair; GET-based bypass hypothesis dead
-[CHANGED] `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
-[CHANGED] TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
+## 2026-09-13 23:13:33 UTC [target] (model nemotron3)
+[NEW] dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain
+[NEW] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: getMatomoVersion/getSitesWithViewAccess → "requires view access"; anonymous token zero site access; Installation module closed; tracker benign collector
+[NEW] REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404, /api/auth/verify 405-on-GET; wildcard ACAO alone descriptive/CORS-without-credentials class
+[NEW] REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
+[NEW] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory note; both auth-gated default-secure; only AUTH_HELPED/HUMAN_ONLY value if creds obtained
+[NEW] REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
+[NEW] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable
+[CHANGED] api.cineplex.de WAF strictly blocks all GraphQL paths (all 403 across 6+ probes) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
+[CHANGED] data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
+[CHANGED] TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 [CHANGED] All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 [PRIO] graphql-api.app.cineplex.de,9.15,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,8.95,attack_surface=9,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
 [PRIO] auth.cineplex.de,5.80,attack_surface=8,business_value=10,tech_exposure=7,gate_ease=5,cloud_surface=5,freshness=6
+[PRIO] web-dev.cineplex.de,5.20,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=7,freshness=9
 [PRIO] profil.cineplex.de,4.65,attack_surface=5,business_value=6,tech_exposure=5,gate_ease=8,cloud_surface=4,freshness=8
 [PRIO] data-9fc27eb430.cineplex.de,4.20,attack_surface=5,business_value=4,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=6
 [HYP] Production Cross-Tenant PII Dump via Systemic IDOR on 4 Resolvers
@@ -34,22 +34,29 @@ evidence_needed: POST to testing_getConfirmationCode with any email returns 200 
 verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)"}} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
 impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
 testability: HUMAN_ONLY
-[HYP] GraphQL Introspection Full Schema Exposure — Mutation Attack Surface Enumeration
-class: MISCONFIG
-asset: graphql-api.app.cineplex.de
-confidence: 95
-reasoning: Full introspection enabled on production (POST 200 confirmed via manual curl). Schema contains 100+ mutations including login, startBookingProcess, selectSeats, submitBookingProcess, cancelTicket, cancelOrder, updateUserAdminStatus, deleteCineplexUser, buyVoucher, redeemVoucher, createSubscriptionByVoucher, updateUser, createAnonymousUser, requestLoginCreation, requestPasswordReset, changePassword. Full mutation argument enumeration (35KB) complete — no SSRF/file-upload injection vectors found. CVSS 5.3 base.
-evidence_needed: Introspection response showing Mutation type with all sensitive fields; login mutation returns jwt/refreshToken; booking flow mutations accept unauthenticated input
-verify_steps: POST https://graphql-api.app.cineplex.de/ — Accept: application/json — Content-Type: application/json — body: {"query":"{__schema{mutationType{fields{name args{name type{kind name ofType{name}}}}}}"} — enumerate all mutations and args; POST with {"query":"mutation{login(email:\"test@test.de\",password:\"test\"){jwt refreshToken}}"} — capture JWT structure
-impact: Full API schema enumeration enables targeted mutation abuse (booking manipulation, voucher fraud, subscription hijack, admin privilege escalation) → financial loss + PII access (High)
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io resolves to NXDOMAIN (DoH Status 3) while zone SOA present — subdomain takeover precondition confirmed. Host returns HTTP 000 (no server). Azure Container Apps namespace available for registration if tenant permits. In-scope dev domain per program scope.
+evidence_needed: Registration of the dangling Azure Container Apps name (gentleglacier-dfef6458) in switzerlandnorth region; HTTP 200 on web-dev.cineplex.de serving attacker content
+verify_steps: DoH A+NXDOMAIN sweep across remaining dev/test inventory hosts for same dangling pattern: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=prelive.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME"
+impact: Full control over scoped dev subdomain → serve malicious content, phishing, cookie theft via parent domain scope, supply chain to staging/prod if shared infra (High)
 testability: PASSIVE
 [PARKED] JWT Algorithm Confusion via GraphQL login Mutation: confidence 55 but no passive JWKS fetch possible (auth.cineplex.de/.well-known/jwks.json 404); requires active token capture (AUTH_HELPED) and offline crypto analysis — lower priority than PASSIVE staging probes
-[PARKED] Unauthenticated Preference Modification via /preference/update POST with IDOR on User Identifier: confidence 45 < 50; no passive reflector (static no-user alert); email-presence oracle is OOS-adjacent (enumeration class); client-side `?captcha=` + dead reCAPTCHA is a low-value control finding on a newsletter form; HUMAN_ONLY write proof, business value low
+[PARKED] Unauthenticated Preference Modification via /preference/update POST with IDOR on User Identifier: confidence 45 < 50; no passive reflector (static no-user alert); email-presence oracle is OOS-adjacent (enumeration class); client-side ?captcha= + dead reCAPTCHA is a low-value control finding on a newsletter form; HUMAN_ONLY write proof, business value low
 [PARKED] Relay Broker Saturation DoS @ data-9fc27eb430.cineplex.de: REJECTED class (DoS), no exploitable authless manipulation surface, no sensitive data
 [PARKED] api.cineplex.de GET-based GraphQL Bypass: confidence <40 — 6+ probes all 403, stricter WAF config, hypothesis dead
 [PARKED] cloud.systems.cineplex.de Nextcloud OCS/Brute-force: OCS caps standard, /public.php 500 not exploitable alone, account-lockout DoS out of scope; no PII exposure confirmed
 [FINAL] Ranked survivors (by testability × impact):
 [NEXT] HUMAN: Cross-tenant IDOR PII proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22<B-public-id%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D` with valid JWT from login mutation; then repeat for invoice/order/ticket resolvers on B's publicId with per-resolver `id:"0"` INVALID_ID control; searchUsers/adminUsers enumeration
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain
+[LEARN] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+[LEARN] REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
+[LEARN] REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
+[LEARN] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
+[LEARN] REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
+[LEARN] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve but no HTTP surface (000) — unreachable
 [LEARN] ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving auth-omission on id-resolvers
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit
 [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven link
