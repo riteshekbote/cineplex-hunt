@@ -66,3 +66,16 @@
   - | 1 | Prod GraphQL Introspection | **VALID** | 5.3 | Report to bugs.olivermaicher.eu |
   - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 6.5 | Report (bundle with #1) |
   - **VALID leads ready for report: 2** (Leads 1+2). Recommend bundling into a single report covering production + staging GraphQL introspection with WAF bypass.
+
+- 11 lead(s) marked VALID at 2026-09-13 23:14:16 UTC
+  - | Q7 Reasonable triager? | **YES** — GraphQL introspection enabled in production with WAF method-gate bypass is a valid misconfiguration; prior triages at 09-04, 09-06, 09-07, 09-10, 09-11, 09-12, 09-
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | **YES** — staging environment exposed to internet with same or expanded production schema is valid; prior triages at 09-04, 09-06, 09-07, 09-10, 09-11, 09-12, 09-13 all mark
+  - **Verdict: VALID**
+  - | Q4 Provable? | **NO** — JWKS 404 blocks passive verification; requires valid credentials to login via GraphQL mutation, capture JWT, decode header, forge HS256, replay. AUTH_HELPED required. Program
+  - | Q2 Reachable? | **PARTIAL** — GraphQL endpoint reachable; resolvers confirmed in schema; but cross-user query requires valid JWT | ⚠️ |
+  - | Q4 Provable? | **NO** — requires valid JWT + querying other users' data = PII exposure, which program explicitly forbids during testing | ❌ |
+  - | Q7 Reasonable triager? | **HOLD** — structural proof from schema analysis is strong (4 auth-omission resolvers vs 4 firing-gate resolvers), but strict triager demands at least one valid cross-user P
+  - | 1 | Prod GraphQL Introspection (WAF bypass) | **VALID** | 7.5 High | bugs.olivermaicher.eu |
+  - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 6.5 Medium | bugs.olivermaicher.eu (bundle w/ #1) |
+  - **Valid leads ready for report: 2** (Leads 1+2). Recommend bundling into a single report covering production + staging GraphQL introspection with WAF method-gate bypass (GET 403 / POST 200).
