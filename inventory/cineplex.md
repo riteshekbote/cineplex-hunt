@@ -975,3 +975,5 @@ wwww.cineplex.de
 - CHANGED `profil.cineplex.de` PARKED: `/preference/update` GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`
+
+## 2026-09-13 16:10:21 UTC

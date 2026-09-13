@@ -3306,3 +3306,31 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
 [LEARN] REJECTED api.cineplex.de GET bypass, booking-dev origin, nextcloud_unauth_inventory: dead/OOS — unchanged.
 [RISK] cineplex: 95 — Breadth exhausted (29 hosts, both new analytics instances auth-gated/OOS; nothing new passive this cycle). Core findings live as of 06:17 (IDOR control 6/6, staging oracle 9+ cycles, introspection validated 5.3, WAF model stable). Ceiling holds at 95: the two Critical lifts (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the customer/authentication-data rule and cannot be advanced passively; recommended action is human cross-tenant proof then submission.
+## 2026-09-13 15:52:32 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Re-confirmed 9+ cycles via curl --http2 browser-UA, no Authorization header: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path, id:"0" control) both envs; control group 6/6 firing gates (errorStatistics/currentUser/searchUsers ROLE/adminUsers ROOT/userByQr DEVICE/voucherInstanceByQR POS → UNAUTHENTICATED) proves auth layer functions while id-resolvers omit it. WAF is client-differentiated bot-gate (curl→origin, urllib→403); probe-log 403/400 are artifacts. No new surface this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID control; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control per resolver; no Authorization header.
+impact: any unauth'd party enumerates arbitrary customers' PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Persisted 9+ cycles: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; GET origin reach stable. No new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO chain; forceDeleteUser mass-delete.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging; human session only; prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated email-keyed preference overwrite (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference + /preference/update (200 ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA disabled (sitekey 'false'); no passive reflector; no new evidence this cycle.
+evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned emails).
+verify_steps: human POST with tester-owned email only; A/B shared-key check.
+impact: unauth overwrite of communication preferences → data-integrity low-med; email-presence oracle OOS-adjacent.
+testability: HUMAN_ONLY

@@ -1969,3 +1969,6 @@
 - LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+
+## RANKED HYPOTHESES 2026-09-13 16:10:21 UTC
+- [95] graphql-api.app.cineplex.de: Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete) (from art/lead_bigpickle.txt)

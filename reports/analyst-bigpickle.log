@@ -15757,3 +15757,98 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 95 — Breadth exhausted (29 hosts, both new analytics instances auth-gated/OOS; nothing new passive this cycle). Core findings live as of 06:17 (IDOR control 6/6, staging oracle 9+ cycles, introspection validated 5.3, WAF model stable). Ceiling holds at 95: the two Critical lifts (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the customer/authentication-data rule and cannot be advanced passively; recommended action is human cross-tenant proof then submission.
+===== ANALYST bigpickle 2026-09-13 16:10:21 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "web-dev HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -I https://web-dev.cineplex.de/ 2>&1; curl -s -o /dev/null -w "web-dev GET %{http_code} %{size_download}B %{content_type}\n" --max-time 12 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" https://web-dev.cineplex.de/ 2>&1
+web-dev HEAD 000 0B 
+web-dev GET 000 0B
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "talk.tho HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0" -I https://talk.tho.cineplex.de/ 2>&1; curl -s -o /dev/null -w "jira.systems HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0" -I https://jira.systems.cineplex.de/ 2>&1; curl -s -o /dev/null -w "rds.systems HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0" -I https://rds.systems.cineplex.de/ 2>&1
+talk.tho HEAD 000 0B 
+jira.systems HEAD 403 0B 104.16.22.67
+rds.systems HEAD 000 0B
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "web-dev :80 GET %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0" http://web-dev.cineplex.de/ 2>&1; curl -sk -o /dev/null -w "web-dev https-insecure GET %{http_code} %{size_download}B\n" --max-time 12 -A "Mozilla/5.0" https://web-dev.cineplex.de/ 2>&1; nslookup web-dev.cineplex.de 2>&1 | tail -5
+web-dev :80 GET 000 0B 
+web-dev https-insecure GET 000 0B
+Server:		127.0.0.53
+Address:	127.0.0.53#53
+
+** server can't find web-dev.cineplex.de: NXDOMAIN
+[0m
+[0m$ [0mcurl -s -o /dev/null -w "talk.tho :80 GET %{http_code} %{size_download}B %{remote_ip}\n" --max-time 12 -A "Mozilla/5.0" http://talk.tho.cineplex.de/ 2>&1; curl -sk -o /dev/null -w "talk.tho https-insecure GET %{http_code} %{size_download}B\n" --max-time 12 -A "Mozilla/5.0" https://talk.tho.cineplex.de/ 2>&1
+talk.tho :80 GET 000 0B 
+talk.tho https-insecure GET 000 0B
+[0m
+[0m$ [0mfor h in cpdly-hz-apphost.systems es-hz-apphost.systems hz-apphost.systems; do curl -s -o /dev/null -w "$h HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 8 -A "Mozilla/5.0" -I "https://$h.cineplex.de/" 2>&1; sleep 1; done
+cpdly-hz-apphost.systems HEAD 403 0B 104.16.23.67
+es-hz-apphost.systems HEAD 403 0B 104.16.23.67
+hz-apphost.systems HEAD 403 0B 104.16.22.67
+[0m
+[0m$ [0mfor h in cms.cineplex.de my.cineplex.de account.cineplex.de service.cineplex.de; do curl -s -o /dev/null -w "$h HEAD %{http_code} %{size_download}B %{remote_ip}\n" --max-time 8 -A "Mozilla/5.0" -I "https://$h/" 2>&1; sleep 1; done
+cms.cineplex.de HEAD 000 0B 
+my.cineplex.de HEAD 403 0B 104.16.23.67
+account.cineplex.de HEAD 403 0B 104.16.22.67
+service.cineplex.de HEAD 403 0B 104.16.22.67
+[0m
+STEP 1 — DELTA
+- NEW web-dev.cineplex.de: NXDOMAIN — passive-recon CNAME to azurecontainerapps.io no longer resolves; no dangling record, no takeover; dead.
+- NEW talk.tho.cineplex.de + rds.systems.cineplex.de: 000 on :80/:443 — TLS/conn-dead.
+- NEW jira.systems.cineplex.de + cpdly/es/hz-apphost.systems.cineplex.de + my/account/service.cineplex.de: all 403 Cloudflare WAF (104.16.2x.x); WAF-gated. cms.cineplex.de: conn-dead.
+- CHANGED No new authless 200 surface this cycle; breadth confirmed exhausted (all unexamined inventory hosts resolve to CF WAF 403 or dead).
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,8.4,attack_surface=9/business=10/tech=9(GraphQL)/gate_ease=8/cloud=6(Lambda)/freshness=5
+- [PRIO] graphql-api.app.staging.cineplex.de,6.8,attack_surface=7/business=6/tech=8/gate_ease=8/cloud=5/freshness=6
+- [PRIO] profil.cineplex.de,3.5,attack_surface=5/business=4/tech=5(Java)/gate_ease=5/freshness=2 — parked, no new evidence
+
+STEP 3 — HYPOTHESES
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Re-confirmed 9+ cycles via curl --http2 browser-UA, no Authorization header: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path, id:"0" control) both envs; control group 6/6 firing gates (errorStatistics/currentUser/searchUsers ROLE/adminUsers ROOT/userByQr DEVICE/voucherInstanceByQR POS → UNAUTHENTICATED) proves auth layer functions while id-resolvers omit it. WAF is client-differentiated bot-gate (curl→origin, urllib→403); probe-log 403/400 are artifacts. No new surface this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID control; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control per resolver; no Authorization header.
+impact: any unauth'd party enumerates arbitrary customers' PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Persisted 9+ cycles: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; GET origin reach stable. No new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO chain; forceDeleteUser mass-delete.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging; human session only; prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated email-keyed preference overwrite (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference + /preference/update (200 ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA disabled (sitekey 'false'); no passive reflector; no new evidence this cycle.
+evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned emails).
+verify_steps: human POST with tester-owned email only; A/B shared-key check.
+impact: unauth overwrite of communication preferences → data-integrity low-med; email-presence oracle OOS-adjacent.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] profil_preference_surface — conf 45; no passive reflector; whatever-disabled reCAPTCHA is a dead control finding; low business value; kept only above floor. Unchanged.
+- [FINAL] IDOR userById/invoice/order/ticket @ graphql-api.app.cineplex.de — conf 95; control-complete structural POC; reportable now as structural Critical; cross-tenant PII lift HUMAN_ONLY.
+- [FINAL] testing_getConfirmationCode env-guard @ staging — conf 85; 9+ cycles stable; HUMAN_ONLY POST proof.
+- [FINAL] Introspection CVSS 5.3 — submission-ready, validated; no further passive work.
+- New probes this cycle (web-dev/talk/jira/hz-apphost/cms/my/account/service) all dead or WAF-403 — nothing above floor.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: cross-tenant IDOR proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D`, repeat invoice/order/ticket on B's publicId with per-resolver `id:"0"` INVALID_ID control, NO Authorization header; 200-with-B-PII vs INVALID_ID lifts the structural POC to demonstrated Critical and unblocks submission.
+
+STEP 6 — LEARNING
+- [LEARN] REJECTED web-dev_azure_origin @ web-dev.cineplex.de: NXDOMAIN — CNAME to azurecontainerapps.io no longer resolves; not a dangling record (removed entirely); no origin/WAF-bypass surface.
+- [LEARN] REJECTED talk.tho/rds.systems @ *.cineplex.de: conn/TLS-dead (000) both ports; join TLS-dead list.
+- [LEARN] REJECTED jira.systems + cpdly/es/hz-apphost.systems + my/account/service.cineplex.de: all 403 Cloudflare WAF; no authless surface.
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-auth control-complete re-affirmed; model unchanged; breadth now exhausted (every unexamined inventory host probed).
+- [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+
+STEP 7 — RISK
+- [RISK] cineplex: 95 — Core findings live; breadth now conclusively exhausted (probed remaining unexamined inventory hosts web-dev/talk.tho/jira/rds/cpdly/es/hz-apphost/cms/my/account/service — all NXDOMAIN, TLS-dead, or CF-WAF-403). Ceiling holds at 95: the two Critical lifts (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the customer/authentication-data rule and cannot be advanced passively; recommended action is human cross-tenant proof then submission of IDOR + introspection.
