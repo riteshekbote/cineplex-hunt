@@ -355,3 +355,9 @@
 - 2026-09-13 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - 2026-09-13 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
 - 2026-09-13 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- 2026-09-13 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-auth control-complete re-affirmed; automated 403/400 entries are urllib-WAF + malformed-brace artifacts, model unchanged.
+- 2026-09-13 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: probe log 06:17:55 re-confirms 403 (urllib) / 400 (unbalanced template braces) without contradicting prior curl 200 __typename model.
+- 2026-09-13 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+- 2026-09-13 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
+- 2026-09-13 REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
+- 2026-09-13 REJECTED api.cineplex.de GET bypass, booking-dev origin, nextcloud_unauth_inventory: dead/OOS — unchanged.

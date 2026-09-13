@@ -3263,3 +3263,46 @@ impact: unauth overwrite of communication preferences → data-integrity low-med
 testability: HUMAN_ONLY
 [NEXT] HUMAN: cross-tenant IDOR proof — accounts A/B; authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D` plus invoice/order/ticket on B's publicId with per-resolver `id:"0"` INVALID_ID control, no Authorization header; 200-with-B-PII vs INVALID_ID lifts the structural POC to demonstrated Critical.
 [RISK] cineplex: 95 — Core findings re-confirmed live this cycle (IDOR control pair 200/200 both envs-identical, control gate UNAUTHENTICATED; path-agnostic WAF reach stable). No new exploitable surface from staging JPA paths (internal-only). Ceiling holds at 95: the two Critical jumps (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the program's customer/authentication-data rule and cannot be advanced passively.
+## 2026-09-13 11:59:28 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,8.4,attack_surface=9/business=10/tech=9(GraphQL)/gate_ease=8/cloud=6(Lambda)/freshness=5
+[PRIO] graphql-api.app.staging.cineplex.de,6.8,attack_surface=7/business=6/tech=8/gate_ease=8/cloud=5/freshness=6
+[PRIO] profil.cineplex.de,3.5,attack_surface=5/business=4/tech=5(Java)/gate_ease=5/freshness=2 — parked, no new evidence
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Re-confirmed live this cycle via curl --http2 browser-UA, no Authorization header: `userById(id:"0"){id}` → 200 INVALID_ID (744B, decodePublicId path); `currentUser{id}` → 200 UNAUTHENTICATED (836B) same surface. Control group 6/6 firing gates (errorStatistics, currentUser, searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) prove auth layer functions while the 4 id-resolvers omit it. WAF is client-differentiated bot-gate (curl→origin 200/400, urllib→403), not auth. Automated probe log shows only 403/400 (urllib/malformed-brace artifacts), consistent with manual model.
+evidence_needed: authless GET `userById(<tenantB publicId>){id email fullName}` → 200 with B's PII; per-resolver id:"0" INVALID_ID control; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D`; same for invoice/order/ticket; id:"0" control per resolver; no Authorization header.
+impact: any unauth'd party enumerates arbitrary customers' PII (email/phone/birthDate/tickets/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Persisted 9+ cycles: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; GET origin reach stable. No new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO chain; forceDeleteUser mass-delete.
+verify_steps: POST `testing_getConfirmationCode(email:"<seed>")` staging; human session only; prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated email-keyed preference overwrite (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference + /preference/update (200 ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA dead (sitekey 'false'); no passive reflector; no new evidence this cycle.
+evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned emails).
+verify_steps: human POST with tester-owned email only; A/B shared-key check.
+impact: unauth overwrite of communication preferences → data-integrity low-med; email-presence oracle OOS-adjacent.
+testability: HUMAN_ONLY
+[FINAL] userById/invoice/order/ticket IDOR @ graphql-api.app.cineplex.de — conf 95; control-complete structural POC; only cross-tenant PII proof HUMAN_ONLY. Reportable now as structural Critical; severity proof pending human.
+[FINAL] testing_getConfirmationCode env-guard @ staging — conf 85; 9+ cycles stable; HUMAN_ONLY POST proof.
+[PARKED] profil_preference_surface — conf 45; no passive reflector; low business value; unchanged (kept, not dropped — above floor, but idle).
+[PARKED] introspection CVSS 5.3 — submission-ready base, already validated; no further passive work.
+[NEXT] HUMAN: cross-tenant IDOR proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D`, repeat invoice/order/ticket on B's publicId with per-resolver `id:"0"` INVALID_ID control, NO Authorization header; 200-with-B-PII vs INVALID_ID lifts structural POC to demonstrated Critical and unblocks submission.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-auth control-complete re-affirmed; automated 403/400 entries are urllib-WAF + malformed-brace artifacts, model unchanged.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: probe log 06:17:55 re-confirms 403 (urllib) / 400 (unbalanced template braces) without contradicting prior curl 200 __typename model.
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+[LEARN] REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
+[LEARN] REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
+[LEARN] REJECTED api.cineplex.de GET bypass, booking-dev origin, nextcloud_unauth_inventory: dead/OOS — unchanged.
+[RISK] cineplex: 95 — Breadth exhausted (29 hosts, both new analytics instances auth-gated/OOS; nothing new passive this cycle). Core findings live as of 06:17 (IDOR control 6/6, staging oracle 9+ cycles, introspection validated 5.3, WAF model stable). Ceiling holds at 95: the two Critical lifts (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the customer/authentication-data rule and cannot be advanced passively; recommended action is human cross-tenant proof then submission.

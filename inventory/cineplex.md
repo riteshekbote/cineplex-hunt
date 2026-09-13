@@ -960,3 +960,18 @@ wwww.cineplex.de
 - CHANGED booking-dev.cineplex.de REJECTED: nginx-ingress default backend, fake Acme-Co cert, all paths 404 — no live app surface
 - CHANGED cloud.systems.cineplex.de REJECTED: Nextcloud 33.0.8; only /status.php 200 version string — descriptive/known-vuln class OOS
 - CHANGED profil.cineplex.de PARKED: /preference/update GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value
+
+## 2026-09-13 12:02:40 UTC
+- CHANGED `graphql-api.app.cineplex.de` + `graphql-api.app.staging.cineplex.de`: GET-based GraphQL execution stable via balanced URL-encoded queries (`?query=%7B__typename%7D` → 200); automated urllib blocked b
+- CHANGED 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) GET-verified on prod: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header — structural IDOR pro
+- CHANGED `currentUser` → 200 `UNAUTHENTICATED` on same GET surface — auth gate exists and fires on sibling resolver, confirming omission
+- CHANGED Staging `testing_getConfirmationCode` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint) vs prod `FORBIDDEN` — missing environment guard persists 8+ cycles
+- CHANGED `errorStatistics(pastDays:1)` → `UNAUTHENTICATED` on both envs — 5th firing gate archetype strengthening IDOR control group to 5/5
+- CHANGED Full mutation argument enumeration complete (35KB): no SSRF/file-upload injection vectors; CVSS 5.3 ready to submit
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (all 403) — separate stricter config; GET-based bypass hypothesis dead
+- CHANGED `booking-dev.cineplex.de` REJECTED: nginx-ingress default backend, fake Acme-Co cert, all paths 404 — no live app surface
+- CHANGED `cloud.systems.cineplex.de` REJECTED: Nextcloud 33.0.8; only `/status.php` 200 version string — descriptive/known-vuln class OOS
+- CHANGED `profil.cineplex.de` PARKED: `/preference/update` GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`
