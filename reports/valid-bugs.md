@@ -53,3 +53,16 @@
   - **Verdict: VALID**
   - | Q7 Reasonable triager? | **HOLD** — structural proof is strong (control-complete: 4 omissions vs 4 firing gates), but strict triager will demand at least one valid cross-user PII fetch before accept
   - | 1 | Production GraphQL Introspection (schema exposure + WAF bypass) | **VALID** | 5.3 | bugs.olivermaicher.eu |
+
+- 11 lead(s) marked VALID at 2026-09-13 12:03:51 UTC
+  - | Q5 Novel/unreported? | YES — prior triages at 2026-09-06/07/10/11/12 all marked VALID; not on any rejected list |
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | YES — staging env exposed to public internet with identical prod schema is a valid finding |
+  - **Verdict: VALID**
+  - | Q3 Real impact? | YES — if confirmed with valid data, cross-user PII disclosure (email, phone, address, tickets, orders, subscriptions, invoices) |
+  - | Q7 Reasonable triager? | HOLD — structural proof is strong (control-complete: 4 auth-omission resolvers vs 4 firing-gate resolvers), but strict triager will demand at least one valid cross-user PII 
+  - | Q2 Reachable? | PARTIAL — GraphQL host is reachable; JWKS endpoint returns 404 (no passive key fetch); login mutation exists but requires valid credentials |
+  - | Q4 Provable non-invasively? | NO — requires: (1) valid credentials to trigger login mutation and capture JWT, (2) decode JWT header to confirm RS256, (3) forge HS256 with public key, (4) replay to p
+  - | 1 | Prod GraphQL Introspection | **VALID** | 5.3 | Report to bugs.olivermaicher.eu |
+  - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 6.5 | Report (bundle with #1) |
+  - **VALID leads ready for report: 2** (Leads 1+2). Recommend bundling into a single report covering production + staging GraphQL introspection with WAF bypass.
