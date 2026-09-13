@@ -361,3 +361,8 @@
 - 2026-09-13 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
 - 2026-09-13 REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
 - 2026-09-13 REJECTED api.cineplex.de GET bypass, booking-dev origin, nextcloud_unauth_inventory: dead/OOS — unchanged.
+- 2026-09-13 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain.
+- 2026-09-13 REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only, OOS class unaffected.
+- 2026-09-13 REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pursuable.
+- 2026-09-13 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving auth-omission on id-resolvers
+- 2026-09-13 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven link

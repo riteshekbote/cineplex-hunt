@@ -16221,3 +16221,132 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 95 — Breadth truly exhausted (29 hosts characterized; this cycle's 23 fresh probes add zero origin surface). Core findings live (IDOR control 6/6, staging oracle 9+ cycles, introspection validated 5.3, WAF model stable). Ceiling holds at 95: both Critical lifts (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY and cannot advance passively; recommend human cross-tenant proof then submission.
+===== ANALYST bigpickle 2026-09-13 21:15:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor h in jira.systems.cineplex.de web-dev.cineplex.de talk.tho.cineplex.de rds.systems.cineplex.de info.desireinfotech.bo.cineplex.de; do
+  code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 8 -L -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" "https://$h/" 2>/dev/null)
+  echo "$h -> HTTP ${code:-TIMEOUT/ERR}"
+  sleep 1
+done
+jira.systems.cineplex.de -> HTTP 403
+web-dev.cineplex.de -> HTTP 000
+talk.tho.cineplex.de -> HTTP 000
+rds.systems.cineplex.de -> HTTP 000
+info.desireinfotech.bo.cineplex.de -> HTTP 000
+[0m
+[0m$ [0mfor h in web-dev.cineplex.de talk.tho.cineplex.de rds.systems.cineplex.de info.desireinfotech.bo.cineplex.de jira.systems.cineplex.de; do
+  echo "== $h"
+  getent hosts "$h" || echo "  NXDOMAIN/no-resolve"
+  sleep 0.5
+done
+== web-dev.cineplex.de
+  NXDOMAIN/no-resolve
+== talk.tho.cineplex.de
+185.216.237.198 talk.tho.ntxzone.de talk.tho.cineplex.de
+== rds.systems.cineplex.de
+185.216.237.229 rds.systems.cineplex.de
+== info.desireinfotech.bo.cineplex.de
+2606:4700::6810:1743 info.desireinfotech.bo.cineplex.de
+2606:4700::6810:1643 info.desireinfotech.bo.cineplex.de
+== jira.systems.cineplex.de
+2606:4700::6810:1643 jira.systems.cineplex.de
+2606:4700::6810:1743 jira.systems.cineplex.de
+[0m
+[0m$ [0mfor h in web-dev.cineplex.de; do
+  echo "== $h CNAME query"
+  curl -sS --max-time 8 "https://cloudflare-dns.com/dns-query?name=$h&type=CNAME" -H "accept: application/dns-json"
+  echo
+  echo "== $h A query"
+  curl -sS --max-time 8 "https://cloudflare-dns.com/dns-query?name=$h&type=A" -H "accept: application/dns-json"
+  echo
+done
+== web-dev.cineplex.de CNAME query
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+== web-dev.cineplex.de A query
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":1}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mfor h in talk.systems.cineplex.de vpn-openvpn-cpz.systems.cineplex.de hz-apphost.systems.cineplex.de cpdly-hz-apphost.systems.cineplex.de es-hz-apphost.systems.cineplex.de wildcard.cineplex.de wwww.cineplex.de autodiscover.cineplex.de; do
+  r=$(curl -sS --max-time 8 "https://cloudflare-dns.com/dns-query?name=$h&type=CNAME" -H "accept: application/dns-json")
+  ans=$(echo "$r" | grep -o '"data":"[^"]*"' | head -1)
+  st=$(echo "$r" | grep -o '"Status":[0-9]*')
+  echo "$h :: $st :: $ans"
+  sleep 0.4
+done
+talk.systems.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+vpn-openvpn-cpz.systems.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+hz-apphost.systems.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+cpdly-hz-apphost.systems.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+es-hz-apphost.systems.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+wildcard.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+wwww.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+autodiscover.cineplex.de :: "Status":0 :: "data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414279195 10000 2400 604800 1800"
+[0m
+[0m$ [0mecho "== direct FQDN A"
+curl -sS --max-time 8 "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" -H "accept: application/dns-json"
+echo
+echo "== www variant A"
+curl -sS --max-time 8 "https://cloudflare-dns.com/dns-query?name=www.web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" -H "accept: application/dns-json"
+echo
+echo "== web-dev port 80"
+curl -sS -o /dev/null -w "%{http_code}" --max-time 8 -H "User-Agent: Mozilla/5.0" "http://web-dev.cineplex.de/" 2>/dev/null || echo "000/no-connect"
+== direct FQDN A
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+== www variant A
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"www.web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+== web-dev port 80
+000000/no-connect
+[0m
+[DELTA]
+- NEW web-dev.cineplex.de → CNAME `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` now NXDOMAIN (DoH Status 3, zone SOA served) — dangling CNAME, HTTP 000 on :80/:443; subdomain-takeover precondition never probed before.
+- NEW jira.systems.cineplex.de first live probe → HTTP 403 (Cloudflare WAF) — internal Jira host WAF-gated like the admin cluster.
+- NEW talk.tho.cineplex.de (→185.216.237.198 ntxzone), rds.systems.cineplex.de (→185.216.237.229), info.desireinfotech.bo.cineplex.de (CF/IPv6) resolve but no HTTP surface (000) — unreachable, not pursuable.
+- NO_DELTA core model: graphql-api IDOR control-complete (9+ cycles), staging testing oracle (8+ cycles), WAF client-differentiated bot-gate — unchanged.
+
+[PRIO] web-dev.cineplex.de,6.4,cloud_surface+gate_ease+freshness (dangling-CNAME class, fully passive)
+[PRIO] graphql-api.app.cineplex.de,8.2,business_value+tech_exposure (IDOR control-complete, HUMAN_ONLY proof pending)
+
+[HYP] Dangling-CNAME takeover precondition on dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 60
+reasoning: DoH (2026-09-13): CNAME record present @TTL300 to web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; direct A lookup of target → Status 3 NXDOMAIN with SOA from switzerlandnorth.azurecontainerapps.io zone (target deleted/unprovisioned); host 000 on :80/:443. Company-owned domain, in-scope.
+evidence_needed: tester-owned Azure tenant provisioning container-app `web` in env `gentleglacier-dfef6458` (switzerlandnorth) reproducing the FQDN → resolves to attacker content via web-dev.cineplex.de; DNS record time-stability check first.
+verify_steps: curl DoH `name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A` expect Status 3 (done, stable); re-run next cycle; registration-proof step external to this channel.
+impact: full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium (dangling-CNAME/claimability uncertainty limits ceiling).
+testability: PASSIVE
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: 9+ cycles curl --http2 browser-UA, NO Authorization: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path) both envs; control 6/6 firing gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR → UNAUTHENTICATED) = auth layer functions on siblings only. Probe-log 403/400 are urllib-WAF + malformed-brace artifacts; model unchanged this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control; NO Authorization header.
+impact: unauth'd arbitrary-customer PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: 8+ cycles: authless 200 backend-hit (405-method-mismatch on /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO; forceDeleteUser mass-delete.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging (human session only); prod FORBIDDEN control.
+impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
+testability: HUMAN_ONLY
+
+[SELF-CRITIQUE]
+- [FINAL] IDOR @ graphql-api.app.cineplex.de: 95 — control-complete, only HUMAN_ONLY cross-tenant PII proof missing.
+- [FINAL] testing_oracle @ graphql-api.app.staging.cineplex.de: 85 — 8+ cycles, HUMAN_ONLY POST extraction.
+- [FINAL] dangling-CNAME @ web-dev.cineplex.de: 60 — precondition DNS-proven; claimability (Azure env-name reuse) unproven externally.
+- [PARKED] profil_preference_surface: 45, no passive reflector, OOS-adjacent email-oracle — unchanged.
+- Rejected/web-dev adjacent noise: talk.tho/rds/info.desireinfotech.bo unreachable (000), jira 403 WAF (public-login OOS) — no new exploitable surface.
+
+[NEXT] PROBE: DoH A+NXDOMAIN sweep across remaining dev/test inventory hosts for same dangling pattern: `curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" -H "accept: application/dns-json"` then buchung-dev, booking-dev, web.cineplex.de, m.cineplex.de, mobile.cineplex.de; flag any whose CNAME target returns Status 3.
+
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain.
+[LEARN] REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only, OOS class unaffected.
+[LEARN] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pursuable.
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+
+[RISK] cineplex: 95 — new Medium-class dangling-CNAME (dev host) found passively, offset by no fresh advances on either Critical lift (cross-tenant PII read, password-reset ATO), both HUMAN_ONLY under the program PII rule; breadth now 30 hosts w/ 3 new non-pursuable, ceiling held.

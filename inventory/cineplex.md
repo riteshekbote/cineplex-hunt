@@ -979,3 +979,17 @@ wwww.cineplex.de
 ## 2026-09-13 16:10:21 UTC
 
 ## 2026-09-13 18:49:24 UTC
+
+## 2026-09-13 21:15:20 UTC
+- NEW `graphql-api.app.cineplex.de` — balanced URL-encoded GET `?query=%7B__typename%7D` → 200 origin confirmed live across 9+ cycles via curl --http2 (browser UA); automated urllib consistently 403 (WAF cl
+- NEW 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) GET-verified on prod+staging: all return 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization header; `currentUser
+- NEW Staging `testing_getConfirmationCode(email, type)` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress`) vs pro
+- NEW `errorStatistics(pastDays:1)` → `UNAUTHENTICATED` on both envs — 6th firing gate archetype added to IDOR control group (now 6/6: errorStatistics, currentUser, searchUsers ROLE, adminUsers ROOT, userBy
+- NEW Full mutation argument enumeration complete (35KB): no SSRF/file-upload/base64/host injection vectors; all args scalar/named input objects; CVSS 5.3 base ready for submission
+- NEW `booking-dev.cineplex.de` REJECTED: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl `/graphql` → 404 "default backend - 404"; no live app surface
+- NEW `cloud.systems.cineplex.de` REJECTED: Nextcloud 33.0.8; only `/status.php` 200 version string — descriptive/known-vuln class OOS
+- NEW `profil.cineplex.de` PARKED: `/preference/update` GET 200 form, reCAPTCHA sitekey='false', no CSP — confidence 45, email-presence oracle OOS-adjacent, low business value
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (all 403 across 6+ probes) — separate stricter config than `graphql-api` pair; GET-based bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths

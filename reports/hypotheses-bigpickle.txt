@@ -1,28 +1,36 @@
-## 2026-09-13 18:33:13 UTC [target] (model bigpickle)
+## 2026-09-13 21:09:25 UTC [target] (model bigpickle)
+[PRIO] web-dev.cineplex.de,6.4,cloud_surface+gate_ease+freshness (dangling-CNAME class, fully passive)
+[PRIO] graphql-api.app.cineplex.de,8.2,business_value+tech_exposure (IDOR control-complete, HUMAN_ONLY proof pending)
+[HYP] Dangling-CNAME takeover precondition on dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 60
+reasoning: DoH (2026-09-13): CNAME record present @TTL300 to web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; direct A lookup of target → Status 3 NXDOMAIN with SOA from switzerlandnorth.azurecontainerapps.io zone (target deleted/unprovisioned); host 000 on :80/:443. Company-owned domain, in-scope.
+evidence_needed: tester-owned Azure tenant provisioning container-app `web` in env `gentleglacier-dfef6458` (switzerlandnorth) reproducing the FQDN → resolves to attacker content via web-dev.cineplex.de; DNS record time-stability check first.
+verify_steps: curl DoH `name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A` expect Status 3 (done, stable); re-run next cycle; registration-proof step external to this channel.
+impact: full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium (dangling-CNAME/claimability uncertainty limits ceiling).
+testability: PASSIVE
 [HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
 class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 95
-reasoning: 9+ cycles curl --http2 browser-UA, no Authorization header: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path) both envs; control grou 6/6 firing gates UNAUTHENTICATED prove auth layer functions on siblings only. Probe-log 403/400 = urllib-WAF + malformed-brace artifacts; no new evidence this cycle.
-evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID control; repeat invoice/order/ticket.
-verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control per resolver; NO Authorization header.
-impact: any unauth'd party enumerates arbitrary customers' PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
+reasoning: 9+ cycles curl --http2 browser-UA, NO Authorization: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID (decodePublicId path) both envs; control 6/6 firing gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR → UNAUTHENTICATED) = auth layer functions on siblings only. Probe-log 403/400 are urllib-WAF + malformed-brace artifacts; model unchanged this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B's PII vs id:"0" INVALID_ID; repeat invoice/order/ticket.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; id:"0" control; NO Authorization header.
+impact: unauth'd arbitrary-customer PII (email/phone/birthDate/orders/invoices) → Critical ATO base.
 testability: HUMAN_ONLY
 [HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
 class: AUTH
 asset: graphql-api.app.staging.cineplex.de
 confidence: 85
-reasoning: Persisted 9+ cycles: authless 200 backend-hit (405-method-mismatch on internal /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
-evidence_needed: human POST extracting confirmation code for seeded reset → ATO chain; forceDeleteUser mass-delete.
-verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging; human session only; prod FORBIDDEN control.
+reasoning: 8+ cycles: authless 200 backend-hit (405-method-mismatch on /userPasswordResets/search) vs prod FORBIDDEN "only available in testing environments"; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO; forceDeleteUser mass-delete.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging (human session only); prod FORBIDDEN control.
 impact: email-verification bypass → password-reset oracle → ATO; destructive delete capability.
 testability: HUMAN_ONLY
-[HYP] Unauthenticated email-keyed preference overwrite (profil)
-class: BUSLOGIC
-asset: profil.cineplex.de
-confidence: 45
-reasoning: /preference + /preference/update (200 ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA dead (sitekey 'false'); no passive reflector; no new evidence this cycle.
-evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned emails).
-verify_steps: human POST with tester-owned email only; A/B shared-key check.
-impact: unauth overwrite of communication preferences → data-integrity low-med; email-presence oracle OOS-adjacent.
-testability: HUMAN_ONLY
+[NEXT] PROBE: DoH A+NXDOMAIN sweep across remaining dev/test inventory hosts for same dangling pattern: `curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" -H "accept: application/dns-json"` then buchung-dev, booking-dev, web.cineplex.de, m.cineplex.de, mobile.cineplex.de; flag any whose CNAME target returns Status 3.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain.
+[LEARN] REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only, OOS class unaffected.
+[LEARN] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pursuable.
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+[RISK] cineplex: 95 — new Medium-class dangling-CNAME (dev host) found passively, offset by no fresh advances on either Critical lift (cross-tenant PII read, password-reset ATO), both HUMAN_ONLY under the program PII rule; breadth now 30 hosts w/ 3 new non-pursuable, ceiling held.

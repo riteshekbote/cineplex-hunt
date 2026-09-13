@@ -1975,3 +1975,25 @@
 
 ## RANKED HYPOTHESES 2026-09-13 18:49:24 UTC
 - [95] graphql-api.app.cineplex.de: Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete) (from art/lead_bigpickle.txt)
+
+## RANKED HYPOTHESES 2026-09-13 21:15:20 UTC
+- [98] graphql-api.app.cineplex.de: Production Cross-Tenant PII Dump via Systemic IDOR on 4 Resolvers (from art/lead_nemotron3.txt)
+- [60] web-dev.cineplex.de: Dangling-CNAME takeover precondition on dev host (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: DoH A+NXDOMAIN sweep across remaining dev/test inventory hosts for same dangling pattern: `curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.ci
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Cross-tenant IDOR PII proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7Buse
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only, OOS class unaffected.
+- LEARN: REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable, not pu
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchang
+- LEARN: ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving a
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven l
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+- LEARN: PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
