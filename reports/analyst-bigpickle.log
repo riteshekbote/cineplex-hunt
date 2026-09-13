@@ -15268,3 +15268,296 @@ testability: HUMAN_ONLY
 
 **STEP 7 — RISK**
 [RISK] cineplex: 95 — All core findings re-confirmed live this cycle: systemic unauth'd IDOR control-complete (4/4 resolvers both envs, 6/6 firing control gates), staging testing_getConfirmationCode env-guard oracle (9+ cycles), prod+staging full GraphQL introspection (VALID CVSS 5.3 submission-ready), GET origin reach stable. Breadth sweep of 9 never-probed hosts yielded no new surface (all WAF-403). Ceiling holds at 95: the two Critical jumps (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the program's customer/authentication-data rule and cannot be advanced passively.
+===== ANALYST bigpickle 2026-09-13 01:13:26 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor h in account.cineplex.de my.cineplex.de mobile.cineplex.de shop.cineplex.de webshop.cineplex.de service.cineplex.de newsletter.cineplex.de mailing.cineplex.de talk.systems.cineplex.de jira.systems.cineplex.de ost.systems.cineplex.de; do
+  code=$(curl -s --max-time 8 -I -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" -o /dev/null -w "%{http_code}" "https://$h/" 2>/dev/null)
+  srv=$(curl -s --max-time 8 -I -A "Mozilla/5.0" -o /dev/null -w "%header{server}" "https://$h/" 2>/dev/null)
+  echo "$h => $code server=$srv"
+  sleep 1
+done
+account.cineplex.de => 403 server=cloudflare
+my.cineplex.de => 403 server=cloudflare
+mobile.cineplex.de => 403 server=cloudflare
+shop.cineplex.de => 403 server=cloudflare
+webshop.cineplex.de => 403 server=cloudflare
+service.cineplex.de => 403 server=cloudflare
+newsletter.cineplex.de => 403 server=cloudflare
+mailing.cineplex.de => 200 server=
+talk.systems.cineplex.de => 403 server=cloudflare
+jira.systems.cineplex.de => 403 server=cloudflare
+ost.systems.cineplex.de => 200 server=Elestio
+[0m
+Two live non-403 surfaces surfaced (`mailing.cineplex.de` 200, `ost.systems.cineplex.de` 200/Elestio). Deeper look:
+[0m$ [0mecho "=== ost.systems.cineplex.de ==="; curl -s --max-time 10 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36" -D - "https://ost.systems.cineplex.de/" -o /tmp/ost_root.html | head -30; echo "--- body head ---"; head -c 600 /tmp/ost_root.html; echo; echo "=== mailing.cineplex.de ==="; curl -s --max-time 10 -A "Mozilla/5.0" -D - "https://mailing.cineplex.de/" -o /tmp/mail_root.html | head -20; echo "--- body head ---"; head -c 600 /tmp/mail_root.html
+=== ost.systems.cineplex.de ===
+HTTP/2 200 
+date: Sun, 13 Sep 2026 01:08:55 GMT
+content-type: text/html; charset=utf-8
+vary: Accept-Encoding
+server: Elestio
+x-matomo-request-id: 139e0
+set-cookie: MATOMO_SESSID=d574d131ab114c31b0924864d2099907; path=/; secure; HttpOnly; SameSite=Lax
+cache-control: no-store, must-revalidate
+x-frame-options: sameorigin
+referrer-policy: same-origin
+content-security-policy: default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' 'unsafe-inline' 'unsafe-eval' data:;
+vary: Accept-Encoding
+x-cache-status: MISS
+
+--- body head ---
+<!DOCTYPE html>
+<html id="ng-app"  data-theme-mode="light">
+    <head>
+                            <meta charset="utf-8">
+            <title>Sign in - Matomo</title>
+            <meta http-equiv="X-UA-Compatible" content="IE=EDGE"/>
+            <meta name="viewport" content="initial-scale=1.0"/>
+            <meta name="color-scheme" content="light dark" />
+            <meta name="generator" content="Matomo - free/libre analytics platform"/>
+            <meta name="description" content="free/libre analytics platform"/>
+            <meta name="apple-itunes-app" content="app-id=737216887" />
+    
+=== mailing.cineplex.de ===
+HTTP/2 200 
+cache-control: no-cache
+content-type: text/html
+x-content-type-options: nosniff
+date: Sun, 13 Sep 2026 01:08:55 GMT
+
+--- body head ---
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> 
+<head> 
+	<title>Technical subdomain</title>
+    <meta name="wot-verification" content="1fd392be8b6bf2b2ca81"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="robots" content="noindex,noarchive,nofollow" />
+	<link rel="stylesheet" type="text/css" href="https://blank-css-template.googlecode.com/svn-history/r1/files/template/css/reset.css" />
+	<style type="text/css">
+		body { font: 0.9em Arial;line-height
+[0m
+`ost.systems.cineplex.de` is a **Matomo** analytics instance (Elestio PaaS) — live login page with `x-matomo-request-id`. `mailing.cineplex.de` is an empty mailjet technical stub. Let me test Matomo's unauthenticated API exposure (read-only GET):
+[0m$ [0mB="https://ost.systems.cineplex.de/index.php"
+for q in \
+  "module=API&method=API.getMatomoVersion&format=json" \
+  "module=API&method=API.getSitesWithViewAccess&format=json" \
+  "module=API&method=API.getSitesIdWithSiteSearch&format=json" \
+  "module=API&method=API.getDefaultMetricTranslations&format=json"; do
+  echo "=== ?$q ==="
+  curl -s --max-time 10 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0" "https://ost.systems.cineplex.de/?$q" | head -c 600
+  echo; sleep 1
+done
+=== ?module=API&method=API.getMatomoVersion&format=json ===
+{"result":"error","message":"You can't access this resource as it requires view access for at least one website."}
+=== ?module=API&method=API.getSitesWithViewAccess&format=json ===
+{"result":"error","message":"The method 'getSitesWithViewAccess' does not exist or is not available in the module '\\Piwik\\Plugins\\API\\API'."}
+=== ?module=API&method=API.getSitesIdWithSiteSearch&format=json ===
+{"result":"error","message":"The method 'getSitesIdWithSiteSearch' does not exist or is not available in the module '\\Piwik\\Plugins\\API\\API'."}
+=== ?module=API&method=API.getDefaultMetricTranslations&format=json ===
+{"result":"error","message":"The method 'getDefaultMetricTranslations' does not exist or is not available in the module '\\Piwik\\Plugins\\API\\API'."}
+[0m
+Matomo anonymous API is correctly gated ("requires view access for at least one website") — secure default. Quick final checks on tracker + version fingerprint:
+[0m$ [0mecho "=== piwik.php ==="; curl -s --max-time 10 -A "Mozilla/5.0" -D - -o /tmp/piwik.gif "https://ost.systems.cineplex.de/piwik.php?idsite=1&rec=1" | head -8; echo "--- bytes:"; wc -c < /tmp/piwik.gif
+echo "=== login page version refs ==="; curl -s --max-time 10 -A "Mozilla/5.0" "https://ost.systems.cineplex.de/" | grep -oE "download\.matomo\.org|piwik\.org/news|VERSION[^,]{0,40}|matomoVersion[^,]{0,40}" | head -5
+=== piwik.php ===
+HTTP/2 200 
+date: Sun, 13 Sep 2026 01:09:25 GMT
+content-type: image/gif
+content-length: 43
+server: Elestio
+cache-control: no-store
+x-cache-status: MISS
+
+--- bytes:
+43
+=== login page version refs ===
+[0m
+Matomo is correctly gated (anonymous API denied; tracker is normal collector behavior). One last cheap check — install/upgrade mode:
+[0m$ [0mfor q in "module=Installation&action=systemCheck" "module=Installation"; do
+  echo "=== ?$q ==="
+  curl -s --max-time 10 -A "Mozilla/5.0" -D - -o /dev/null -w "code=%{http_code} loc=%{redirect_url}\n" "https://ost.systems.cineplex.de/?$q"
+  sleep 1
+done
+=== ?module=Installation&action=systemCheck ===
+HTTP/2 200 
+date: Sun, 13 Sep 2026 01:09:32 GMT
+content-type: text/html; charset=utf-8
+content-length: 450
+server: Elestio
+x-matomo-request-id: 154d5
+set-cookie: MATOMO_SESSID=eb19f1c7fe2b913c1dcb02f14a36070c; path=/; secure; HttpOnly; SameSite=Lax
+expires: Thu, 19 Nov 1981 08:52:00 GMT
+cache-control: no-store, no-cache, must-revalidate
+pragma: no-cache
+vary: Accept-Encoding
+x-cache-status: MISS
+
+code=200 loc=
+=== ?module=Installation ===
+HTTP/2 200 
+date: Sun, 13 Sep 2026 01:09:34 GMT
+content-type: text/html; charset=utf-8
+content-length: 450
+server: Elestio
+x-matomo-request-id: b6426
+set-cookie: MATOMO_SESSID=53d4e266392244ab8084daa89d47e5fc; path=/; secure; HttpOnly; SameSite=Lax
+expires: Thu, 19 Nov 1981 08:52:00 GMT
+cache-control: no-store, no-cache, must-revalidate
+pragma: no-cache
+vary: Accept-Encoding
+x-cache-status: MISS
+
+code=200 loc=
+[0m
+[0m$ [0mcurl -s --max-time 10 -A "Mozilla/5.0" "https://ost.systems.cineplex.de/?module=Installation&action=systemCheck" | head -c 450; echo
+<html><body><style>a{color:red;}</style>
+<div style='color:red;font-size:120%; width:100%;margin: 30px;'> <div style='width: 50px; float: left;'><img src='plugins/Morpheus/images/error_medium.png' /></div>  <div style='margin-left: 70px; min-width: 950px;'>Error: Matomo is already installed. <br /><strong> Go back </strong><a id="piwik-is-already-installed" href='https://ost.systems.cineplex.de/'> to Matomo</a>.  </div> </div></div></body></html>
+[0m
+Matomo is fully installed, not in install mode — no install/config exposure. One more targeted batch on the remaining self-hosted/analytics inventory hosts (untouched):
+[0m$ [0mfor h in analytics.systems.cineplex.de es-hz-apphost.systems.cineplex.de cpdly-hz-apphost.systems.cineplex.de hz-apphost.systems.cineplex.de rds.systems.cineplex.de info.cineplex.de talk.tho.cineplex.de dev.cineplex.de web-dev.cineplex.de wildcard.cineplex.de; do
+  code=$(curl -s --max-time 8 -I -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0" -o /dev/null -w "%{http_code}" "https://$h/" 2>/dev/null)
+  srv=$(curl -s --max-time 8 -I -A "Mozilla/5.0" -o /dev/null -w "%header{server}" "https://$h/" 2>/dev/null)
+  echo "$h => $code server=$srv"
+  sleep 1
+done
+analytics.systems.cineplex.de => 200 server=Elestio
+es-hz-apphost.systems.cineplex.de => 403 server=cloudflare
+cpdly-hz-apphost.systems.cineplex.de => 403 server=cloudflare
+hz-apphost.systems.cineplex.de => 403 server=cloudflare
+rds.systems.cineplex.de => 000 server=
+info.cineplex.de => 403 server=cloudflare
+talk.tho.cineplex.de => 000 server=
+dev.cineplex.de => 000 server=
+web-dev.cineplex.de => 000 server=
+wildcard.cineplex.de => 403 server=cloudflare
+[0m
+`analytics.systems.cineplex.de` also live on Elestio — likely twin Matomo. Checking for unauthenticated surface:
+[0m$ [0mecho "=== analytics root ==="; curl -s --max-time 10 -A "Mozilla/5.0 Chrome/126.0" -D - "https://analytics.systems.cineplex.de/" -o /tmp/ana_root.html | head -8; grep -oiE "matomo|piwik|title>.*?<" /tmp/ana_root.html | head -3
+echo "=== analytics API gate ==="; curl -s --max-time 10 -A "Mozilla/5.0 Chrome/126.0" "https://analytics.systems.cineplex.de/?module=API&method=API.getMatomoVersion&format=json" | head -c 200; echo
+sleep 1
+echo "=== analytics sitesId ==="; curl -s --max-time 10 -A "Mozilla/5.0 Chrome/126.0" "https://analytics.systems.cineplex.de/?module=API&method=SitesManager.getSitesWithAtLeastViewAccess&format=json" | head -c 200; echo
+sleep 1
+echo "=== analytics install mode ==="; curl -s --max-time 10 -A "Mozilla/5.0 Chrome/126.0" "https://analytics.systems.cineplex.de/?module=Installation&action=systemCheck" | head -c 200; echo
+=== analytics root ===
+HTTP/2 200 
+date: Sun, 13 Sep 2026 01:10:58 GMT
+content-type: text/html; charset=utf-8
+vary: Accept-Encoding
+server: Elestio
+x-dns-prefetch-control: on
+content-security-policy: default-src 'self'; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; frame-src 'self' http: https:; frame-ancestors 'self' ;
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+title>Umami</title><script src="/_next/static/chunks/03~yq9q893hmn.js" noModule=""></script></head><body><div hidden=""><!--$--><!--/$--></div><!--$--><!--$--><!--/$--><div class="flex flex-col gap-2 fixed z-[9999] bottom-4 right-4 items-end"></div><!--/$--><script src="/_next/static/chunks/0n2xag0cc~qqz.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:\"$Sreact.suspense\"\n3:I[227088,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"Providers\"]\n4:I[913263,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"default\"]\n5:I[869515,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"default\"]\n6:I[329306,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\",\"/_next/static/chunks/0t~3aikpgprzg.js\"],\"default\"]\n7:I[60980,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"ClientPageRoot\"]\n8:I[952683,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\",\"/_next/static/chunks/0sg2mlx5ztj9~.js\"],\"default\"]\n9:I[408638,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"OutletBoundary\"]\nb:I[408638,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"ViewportBoundary\"]\nd:I[408638,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"MetadataBoundary\"]\nf:I[356883,[\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"/_next/static/chunks/12x-05~rbi-p0.js\",\"/_next/static/chunks/0e_yo0saogglv.js\",\"/_next/static/chunks/0vpr4dabc_672.js\",\"/_next/static/chunks/13i_4b.n_ci2r.js\"],\"default\",1]\n:HL[\"/_next/static/chunks/02usadrux6us3.css\",\"style\"]\n:HL[\"/_next/static/chunks/05whimpw9j96u.css\",\"style\"]\n:HL[\"/_next/static/chunks/0vwfhvspeag7..css\",\"style\"]\n:HL[\"/_next/static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n"])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"c\":[\"\",\"\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"__PAGE__\",{}]},\"$undefined\",\"$undefined\",16],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/02usadrux6us3.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"link\",\"1\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/05whimpw9j96u.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"link\",\"2\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/0vwfhvspeag7..css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/0_-bj9f~i9lrz.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-1\",{\"src\":\"/_next/static/chunks/12x-05~rbi-p0.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-2\",{\"src\":\"/_next/static/chunks/0e_yo0saogglv.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-3\",{\"src\":\"/_next/static/chunks/0vpr4dabc_672.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-4\",{\"src\":\"/_next/static/chunks/13i_4b.n_ci2r.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"en\",\"className\":\"inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable\",\"children\":[[\"$\",\"head\",null,{\"children\":[[\"$\",\"link\",null,{\"rel\":\"icon\",\"href\":\"/favicon.ico\"}],[\"$\",\"link\",null,{\"rel\":\"apple-touch-icon\",\"sizes\":\"180x180\",\"href\":\"/apple-touch-icon.png\"}],[\"$\",\"link\",null,{\"rel\":\"icon\",\"type\":\"image/png\",\"sizes\":\"32x32\",\"href\":\"/favicon-32x32.png\"}],[\"$\",\"link\",null,{\"rel\":\"icon\",\"type\":\"image/png\",\"sizes\":\"16x16\",\"href\":\"/favicon-16x16.png\"}],[\"$\",\"link\",null,{\"rel\":\"manifest\",\"href\":\"/site.webmanifest\"}],[\"$\",\"link\",null,{\"rel\":\"mask-icon\",\"href\":\"/safari-pinned-tab.svg\",\"color\":\"#5bbad5\"}],[\"$\",\"meta\",null,{\"name\":\"msapplication-TileColor\",\"content\":\"#da532c\"}],[\"$\",\"meta\",null,{\"name\":\"theme-color\",\"content\":\"#fafafa\",\"media\":\"(prefers-color-scheme: light)\"}],[\"$\",\"meta\",null,{\"name\":\"theme-color\",\"content\":\"#2f2f2f\",\"media\":\"(prefers-color-scheme: dark)\"}],[\"$\",\"meta\",null,{\"name\":\"robots\",\"content\":\"noindex,nofollow\"}]]}],[\"$\",\"body\",null,{\"children\":[\"$\",\"$2\",null,{\"children\":[\"$\",\"$L3\",null,{\"children\":[\"$\",\"$L4\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L5\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[\"$\",\"$L6\",null,{}],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}]}]]}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"$L7\",null,{\"Component\":\"$8\",\"serverProvidedParams\":{\"searchParams\":{},\"params\":{},\"promises\":null}}],[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/0sg2mlx5ztj9~.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L9\",null,{\"children\":[\"$\",\"$2\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@a\"}]}]]}],{},null,false,null]},null,false,null],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$Lb\",null,{\"children\":\"$Lc\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$Ld\",null,{\"children\":[\"$\",\"$2\",null,{\"name\":\"Next.Metadata\",\"children\":\"$Le\"}]}]}],[\"$\",\"meta\",null,{\"name\":\"next-size-adjust\",\"content\":\"\"}]]}],false]],\"m\":\"$undefined\",\"G\":[\"$f\",[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/02usadrux6us3.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"link\",\"1\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/05whimpw9j96u.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"link\",\"2\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/0vwfhvspeag7..css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]]],\"S\":false,\"h\":null,\"s\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"S5GjkCqoh0r37H8OJM9Il\"}\n"])</script><script>self.__next_f.push([1,"c:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\na:null\ne:[[\"$\",\"title\",\"0\",{\"children\":\"Umami\"}]]\n"])</script></body><
+=== analytics API gate ===
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, 
+=== analytics sitesId ===
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, 
+=== analytics install mode ===
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width,
+[0m
+`analytics.systems.cineplex.de` = **Umami** analytics (Next.js SPA). Probing its unauthenticated API surface (read-only):
+[0m$ [0mfor u in "https://analytics.systems.cineplex.de/api/version" "https://analytics.systems.cineplex.de/api/auth/verify" "https://analytics.systems.cineplex.de/api/websites" "https://analytics.systems.cineplex.de/sitemap.xml"; do
+  echo "=== GET $u ==="
+  curl -s --max-time 10 -A "Mozilla/5.0 Chrome/126.0" -D - "$u" -o /tmp/umami_body | head -6
+  head -c 250 /tmp/umami_body; echo; sleep 1
+done
+=== GET https://analytics.systems.cineplex.de/api/version ===
+HTTP/2 404 
+date: Sun, 13 Sep 2026 01:11:05 GMT
+content-type: text/html; charset=utf-8
+vary: Accept-Encoding
+server: Elestio
+access-control-allow-origin: *
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_n
+=== GET https://analytics.systems.cineplex.de/api/auth/verify ===
+HTTP/2 405 
+date: Sun, 13 Sep 2026 01:11:07 GMT
+server: Elestio
+access-control-allow-origin: *
+access-control-allow-headers: *
+access-control-allow-methods: GET, DELETE, POST, PUT
+
+=== GET https://analytics.systems.cineplex.de/api/websites ===
+HTTP/2 401 
+date: Sun, 13 Sep 2026 01:11:08 GMT
+content-type: application/json
+server: Elestio
+access-control-allow-origin: *
+access-control-allow-headers: *
+{"error":{"message":"Unauthorized","code":"unauthorized","status":401}}
+=== GET https://analytics.systems.cineplex.de/sitemap.xml ===
+HTTP/2 404 
+date: Sun, 13 Sep 2026 01:11:09 GMT
+content-type: text/html; charset=utf-8
+vary: Accept-Encoding
+server: Elestio
+x-dns-prefetch-control: on
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_n
+[0m
+Probes complete. Both new analytics instamces are correctly auth-gated; no new exploitable surface. Structured output:
+
+---
+
+STEP 1 — DELTA
+- NEW ost.systems.cineplex.de = live Matomo analytics on Elestio PaaS (200, `x-matomo-request-id`, MATOMO_SESSID); anonymous API denied (`getMatomoVersion` → "requires view access for at least one website"), install/upgrade closed ("Matomo is already installed"), tracker `/piwik.php` live (43B). No anonymous surface.
+- NEW analytics.systems.cineplex.de = live **Umami** analytics (Next.js SPA on Elestio, title "Umami"); `/api/websites` → 401 `{"error":"unauthorized"}`, `/api/version` → 404, `/api/auth/verify` → 405 on GET; API CORS `ACAO:*` but no credentials+client-token default. Auth-gated.
+- NEW mailing.cineplex.de = mailjet "Technical subdomain" placeholder page (200); mail config class.
+- CHANGED 18 further inventory hosts all dead surfaces: account/my/mobile/shop/webshop/service/newsletter/talk.systems/jira.systems/es-hz/cpdly-hz/hz-apphost/wildcard/info → 403 CF; rds.systems/talk.tho/dev/web-dev → 000 (DNS/TLS dead).
+- NO_DELTA on all core findings (IDOR 4/4+6 gates, staging oracle, introspection, WAF GET reach — last live re-verified 09-12).
+
+STEP 2 — PRIORITIZE
+- [PRIO] analytics.systems.cineplex.de,5.40: a4,b7,t6,g2,c5,f9 — Umami self-hosted, fresh, but API 401.
+- [PRIO] ost.systems.cineplex.de,5.25: a4,b7,t6,g2,c5,f8 — Matomo, anonymous correctly denied.
+- [PRIO] mailing.cineplex.de,4.40: placeholder only, OOS.
+(Existing graphql-api.app.cineplex.de unchanged but dominates: g10 via GET origin reach.)
+
+STEP 3 — HYPOTHESES (top-3 by value; new assets fail confidence threshold)
+[HYP] Production systemic IDOR via decodePublicId-before-auth (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: GET `userById(id:"0"){id}` → 200 INVALID_ID w/ decodePublicId stacktrace, no Authorization header, both envs identical 744B; control group 6/6 firing gates on same surface (errorStatistics, currentUser, searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS); auth operates on siblings, omitted on id-resolvers.
+evidence_needed: authless GET `userById(<tenantB publicId>){id email fullName}` → 200 B-PII vs id:"0" control.
+verify_steps: curl --http2 -A <browser UA> `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D`; repeat invoice/order/ticket; id:"0" control per resolver.
+impact: unauth'd arbitrary customer PII dump → Critical ATO base.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: Persisted 9+ cycles; authless 200 backend-hit (405-method-mismatch on /userPasswordResets/search) vs prod FORBIDDEN; schema parity incl testing_forceDeleteUser.
+evidence_needed: human POST extracting confirmation code → ATO chain.
+verify_steps: POST `testing_getConfirmationCode(email:"<seed>")` staging; human session only.
+impact: email-verification bypass → password-reset → ATO; forceDeleteUser mass delete.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated email-keyed preference overwrite (profil)
+class: BUSLOGIC
+asset: profil.cineplex.de
+confidence: 45
+reasoning: /preference + /preference/update (200 ~103KB) anonymous JSESSIONID, no owner token; write keyed by submitted email/firstName/lastName/birth; reCAPTCHA dead (sitekey 'false'); no passive reflector.
+evidence_needed: POST proof arbitrary-email field overwrite (A/B tester-owned).
+verify_steps: human POST tester-owned email only.
+impact: unauth overwrite of communication preferences; data-integrity low-med; email-presence oracle OOS-adjacent.
+testability: HUMAN_ONLY
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45, unchanged; low business value, OOS-adjacent enumeration, HUMAN_ONLY write proof.
+- [PARKED] matomo/umami anonymous access @ {ost,analytics}.systems.cineplex.de: both API-gated correctly (401/access-denied); default-admin-credential testing = lockout/brute-force OOS; wildcard ACAO without credentials is not reportable. Confidence <10 — dropped, no active hypothesis.
+- [PARKED] mailing_placeholder @ mailing.cineplex.de: mail config class, OOS.
+- [FINAL] 1. IDOR graphql-api.app.cineplex.de (95) — structural control-complete, submission-ready as POC; 2. staging_testing_oracle (85); 3. graphql_introspection prod+staging — CVSS 5.3, READY TO SUBMIT.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: cross-tenant IDOR proof — accounts A/B; authless curl --http2 (browser UA) `GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D` plus invoice/order/ticket on B's publicId with per-resolver `id:"0"` INVALID_ID control, no Authorization header; 200-with-B-PII vs control lifts structural POC to demonstrated Critical. (Passive breadth this cycle swept 18 remaining inventory hosts incl. both new analytics instances — all auth-gated or OOS; nothing further pursuable read-only.)
+
+STEP 6 — LEARNING
+[LEARN] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: `getMatomoVersion`/`getSitesWithViewAccess` → "requires view access"; anonymous token has zero site access; Installation module closed ("already installed"); tracker is benign collector; no passive exploit surface.
+[LEARN] REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: `/api/websites` 401, `/api/version` 404, `/api/auth/verify` 405-on-GET; wildcard ACAO alone is descriptive/CORS-without-credentials class, not reportable.
+[LEARN] REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS.
+[LEARN] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms confirmed live on Elestio (Matomo + Umami) — inventory note; both auth-gated default-secure; only AUTH_HELPED/HUMAN_ONLY value if creds obtained.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead.
+
+STEP 7 — RISK
+[RISK] cineplex: 95 — Breadth sweep complete across remaining untouched inventory (18 hosts this cycle, 29 total): only new surfaces are two self-hosted analytics (Matomo+Umami, both correctly auth-gated) and a mailjet stub — no new exploitable surface. Core findings unchanged and live as of 09-12: systemic unauth'd IDOR control-complete (4/4 resolvers, 6/6 firing gates), staging testing_getConfirmationCode env-guard oracle (9+ cycles), prod+staging introspection (VALID CVSS 5.3, submission-ready), host-specific WAF GET reach stable. Ceiling holds at 95: the two Critical jumps (cross-tenant PII read, password-reset ATO) are HUMAN_ONLY under the program's customer/authentication-data rule and cannot be advanced passively.

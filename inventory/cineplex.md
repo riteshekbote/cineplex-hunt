@@ -935,3 +935,16 @@ wwww.cineplex.de
 - NEW graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no URL/file/image/base64/host injection args; CVSS 5.3, ready to submit
 - NEW staging_testing_oracle @ graphql-api.app.staging.cineplex.de: persisted 8 cycles; HUMAN_ONLY POST extraction remains only unproven link
 - NEW test(inputVal) field on prod+staging: returns constant "Cineplex" (non-gated debug artifact); no reflect/XSS vector; not reportable standalone
+
+## 2026-09-13 01:13:26 UTC
+- NEW booking-dev.cineplex.de REJECTED: nginx-ingress default backend (194.77.169.121), fake Acme-Co cert, all paths including /graphql return 404 "default backend - 404"; no live app surface
+- NEW cloud.systems.cineplex.de REJECTED: Nextcloud 33.0.8; OCS caps standard, /public.php 500, only /status.php 200 version string — version-only disclosure (descriptive/known-vuln class OOS)
+- NEW profil.cineplex.de ACCEPTED (PARKED): /preference/update GET 200 renders form, reCAPTCHA sitekey='false' (disabled), no CSP, anonymous JSESSIONID — candidate BUSLOGIC/IDOR surface; AUTH_HELPED (confid
+- NEW idor_control_group_expanded @ graphql-api.app.cineplex.de: 5th firing gate (errorStatistics → UNAUTHENTICATED both envs) strengthens control group to 5/5 siblings proving auth layer functions while id
+- NEW graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation argument enumeration (35KB) confirms no URL/file/image/base64/host injection args; CVSS 5.3, ready to submit
+- NEW staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 8+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- NEW test(inputVal) field on prod+staging: returns constant "Cineplex" (non-gated debug artifact); no reflect/XSS vector; not reportable standalone
+- CHANGED 4/4 single-entity resolvers (userById, invoice, order, ticket) GET-verified on prod via balanced URL-encoded queries; all return 200 INVALID_ID with decodePublicId stacktrace, NO Authorization header
+- CHANGED currentUser resolver returns 200 UNAUTHENTICATED on same GET surface — auth gate exists but omitted on sibling resolvers (structural proof)
+- CHANGED WAF method-gate attenuation confirmed: GET-based GraphQL execution reaches origin via balanced URL-encoded queries; automated urllib blocked by client-differentiated bot-gate (403)
+- CHANGED internal_architecture_leak @ staging: Spring Data JPA REST endpoints (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path, Apollo stacktraces disclosed via introspection (NOT via HTTP

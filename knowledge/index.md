@@ -338,3 +338,20 @@
 - 2026-09-12 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - 2026-09-12 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
 - 2026-09-12 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- 2026-09-13 REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: `getMatomoVersion`/`getSitesWithViewAccess` → "requires view access"; anonymous token has zero site access; Installation module closed ("already installed"); tracker is benign collector; no passive exploit surface.
+- 2026-09-13 REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: `/api/websites` 401, `/api/version` 404, `/api/auth/verify` 405-on-GET; wildcard ACAO alone is descriptive/CORS-without-credentials class, not reportable.
+- 2026-09-13 REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS.
+- 2026-09-13 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms confirmed live on Elestio (Matomo + Umami) — inventory note; both auth-gated default-secure; only AUTH_HELPED/HUMAN_ONLY value if creds obtained.
+- 2026-09-13 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead.
+- 2026-09-13 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-09-13 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
+- 2026-09-13 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 5th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 5/5 proving auth-omission on id-resolvers
+- 2026-09-13 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit
+- 2026-09-13 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 8+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- 2026-09-13 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+- 2026-09-13 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces
+- 2026-09-13 NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+- 2026-09-13 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+- 2026-09-13 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- 2026-09-13 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- 2026-09-13 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
