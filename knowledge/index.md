@@ -389,3 +389,20 @@
 - 2026-09-14 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
 - 2026-09-14 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - 2026-09-14 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
+- 2026-09-14 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4th consecutive cycle NXDOMAIN confirmed; sole candidate; claimability-attestation-required; write-up ready (Medium).
+- 2026-09-14 ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6/6 firing gates stable across cycles.
+- 2026-09-14 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: automated urllib 403 consistent; curl 200 balanced GET consistent; WAF client-differentiated bot-gate confirmed.
+- 2026-09-14 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths.
+- 2026-09-14 REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
+- 2026-09-14 REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
+- 2026-09-14 REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+- 2026-09-14 REJECTED all WAF-gated hosts (booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev): all HTTP 403.
+- 2026-09-14 REJECTED booking-dev, nextcloud_unauth_inventory, relay_broker_saturation: no exploitable surface / OOS.
+- 2026-09-14 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration confirms no injection vectors; CVSS 5.3 ready.
+- 2026-09-14 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles.
+- 2026-09-14 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+- 2026-09-14 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms on Elestio; inventory only.
+- 2026-09-14 REJECTED jira.systems.cineplex.de: live HTTP 403 (WAF) — inventory note only.
+- 2026-09-14 REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: no HTTP surface (000).
+- 2026-09-14 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
+- 2026-09-14 NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.

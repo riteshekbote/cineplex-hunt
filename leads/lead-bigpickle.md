@@ -3458,3 +3458,53 @@ impact: full content control of web-dev.cineplex.de → phishing/cookie surface 
 testability: PASSIVE
 [NEXT] PROBE: 4th-cycle stability — `curl -sS "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" -H "accept: application/dns-json"` expecting Status 3; also re-pull `web-dev.cineplex.de` CNAME. If retained, draft the dangling-CNAME write-up (claimability-attestation-required) as deliverable.
 [RISK] cineplex: 95 — dangling-CNAME write-up is now hardened to passable (Medium, PASSIVE, 3-cycle stable, sole candidate) but remains the only advancing line; both Critical lifts (cross-tenant PII at 95, password-reset ATO at 85) stay HUMAN_ONLY under the program PII rule with zero fresh passive advances and all alternative hunt lines exhausted/rejected.
+## 2026-09-14 06:23:52 UTC [target] (model bigpickle)
+[NEW] Dangling CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` — 4th consecutive cycle Status 3 NXDOMAIN + azure zone SOA present; `web-dev.cineplex.de` CNAME still active TTL 300.
+[CHANGED] probe-results.md 2026-09-14 01:13:20 UTC — automated GraphQL probes consistently 403 (WAF bot-gate); DoH CNAME queries for dev hosts returning 415 (format issue, not signal). No new POST probes.
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: 10+ cycles curl --http2 browser-UA, NO Authorization: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID decodePublicId path both envs; control 6/6 firing gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR) → UNAUTHENTICATED/ROLE/ROOT/DEVICE. No new evidence this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B PII vs id:"0" control.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; NO Authorization.
+impact: unauth'd arbitrary-customer PII → ATO base; Critical.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: 10+ cycles: authless 200 backend-hit (405 on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging, human session; prod FORBIDDEN control.
+impact: email-verification bypass → reset oracle → ATO; forceDeleteUser destructive.
+testability: HUMAN_ONLY
+[HYP] Dangling-CNAME takeover precondition confirmed-stable on sole dev host (4th cycle)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 75
+reasoning: 4th-consecutive cycle: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, target A → Status 3 NXDOMAIN (azure zone SOA), host 000. Sweep of bms-dev/buchung-dev/web/m/mobile → no CNAME → exclusive candidate. Claimability (tester-owned Azure env `gentleglacier-dfef6458` reproducing FQDN in switzerlandnorth) remains the sole unproven link.
+evidence_needed: tester-owned Azure tenant provisioning container-app to claim the FQDN → resolves via web-dev.cineplex.de.
+verify_steps: DoH A re-check next cycle (Status 3 retained); registration-proof external to channel.
+impact: full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium ceiling.
+testability: PASSIVE
+[PARKED] profil_preference_surface @ profil.cineplex.de (confidence 45): no passive reflector, email-presence oracle OOS-adjacent, low business value, HUMAN_ONLY write proof — insufficient for report.
+[NEXT] PROBE: Write dangling-CNAME write-up for web-dev.cineplex.de — 4-cycle stability (NXDOMAIN since 2026-09-13), sole CNAME candidate in dev/test sweep, claimability-attestation-required. Medium severity, PASSIVE. This is the only advancing line outside HUMAN_ONLY gates.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4th consecutive cycle NXDOMAIN confirmed; sole candidate; claimability-attestation-required; write-up ready (Medium).
+[LEARN] ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6/6 firing gates stable across cycles.
+[LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: automated urllib 403 consistent; curl 200 balanced GET consistent; WAF client-differentiated bot-gate confirmed.
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths.
+[LEARN] REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
+[LEARN] REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
+[LEARN] REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+[LEARN] REJECTED all WAF-gated hosts (booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev): all HTTP 403.
+[LEARN] REJECTED booking-dev, nextcloud_unauth_inventory, relay_broker_saturation: no exploitable surface / OOS.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration confirms no injection vectors; CVSS 5.3 ready.
+[LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles.
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+[LEARN] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms on Elestio; inventory only.
+[LEARN] REJECTED jira.systems.cineplex.de: live HTTP 403 (WAF) — inventory note only.
+[LEARN] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: no HTTP surface (000).
+[LEARN] PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
+[LEARN] NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
+[RISK] cineplex: 95 — Dangling-CNAME write-up now at 4-cycle stability (Medium, PASSIVE) and is the only advancing deliverable. Both Critical lifts (cross-tenant IDOR PII at 95, password-reset ATO at 85) remain HUMAN_ONLY under the program PII rule with zero fresh passive advances. All alternative hunt lines (WAF bypass, relay, Nextcloud, booking-dev, api.cineplex.de) terminally exhausted or rejected.

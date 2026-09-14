@@ -2047,3 +2047,45 @@
 - LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+
+## RANKED HYPOTHESES 2026-09-14 06:26:16 UTC
+- [97] graphql-api.app.staging.cineplex.de: Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode (from art/lead_nemotron3.txt)
+- [95] graphql-api.app.cineplex.de: Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete) (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: Write dangling-CNAME write-up for web-dev.cineplex.de — 4-cycle stability (NXDOMAIN since 2026-09-13), sole CNAME candidate in dev/test sweep, claimabili
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&ty
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4th consecutive cycle NXDOMAIN confirmed; sole candidate; claimability-attestation-required; write-up re
+- LEARN: ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6/6 firing gates stable across cycles.
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: automated urllib 403 consistent; curl 200 balanced GET consistent; WAF client-dif
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths.
+- LEARN: REJECTED TLS-dead: app.staging, graphql-api.app.couat, login, sso — unreachable.
+- LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone.
+- LEARN: REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+- LEARN: REJECTED all WAF-gated hosts (booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev): all HTTP 403.
+- LEARN: REJECTED booking-dev, nextcloud_unauth_inventory, relay_broker_saturation: no exploitable surface / OOS.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration confirms no injection vectors; CVSS 5.3 ready.
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles.
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms on Elestio; inventory only.
+- LEARN: REJECTED jira.systems.cineplex.de: live HTTP 403 (WAF) — inventory note only.
+- LEARN: REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: no HTTP surface (000).
+- LEARN: PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
+- LEARN: NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+- LEARN: REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials clas
+- LEARN: REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
+- LEARN: ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-
+- LEARN: REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
+- LEARN: REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve but no HTTP surface (000) — unreachable
+- LEARN: ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving a
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven l
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+- LEARN: PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
