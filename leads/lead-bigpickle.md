@@ -3660,3 +3660,33 @@ impact: Staging-only authless intra-tenant data-operation oracle; Medium when co
 testability: HUMAN_ONLY
 [NEXT] HUMAN: Submit to bugs.olivermaicher.eu the bundled graphql_introspection report (prod+staging, POST 200 full schema, WAF GET-403/POST-200 method-gate, 35KB arg enumeration proving no injection vectors, staging testing-mutation env-confusion as secondary; CVSS 5.3–7.5, triage-validated) — followed by the dangling-CNAME report citing 5th-cycle NXDOMAIN evidence and claimability-attestation steps.
 [RISK] cineplex: 95 — Two passive findings are submission-ready (introspection 7.5/6.5 triage-validated; dangling-CNAME at 5-cycle NXDOMAIN stability) yet valid-bugs.md count remains 0 — deliverable is stalling in "ready" state without emission. The two Critical lifts (cross-tenant IDOR PII, password-reset ATO) stay HUMAN_ONLY under the program PII rule with zero fresh passive advances. All alternative hunt lines are terminally exhausted or rejected; only the CNAME line still advances (claimability external to channel).
+## 2026-09-14 22:15:20 UTC [target] (model bigpickle)
+[HYP] Staging confirmation-code oracle enables intra-tenant ATO
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 80
+reasoning: `testing_getConfirmationCode(email,type)` resolves authless (200, backend hit, 405-mismatch on internal `/userPasswordResets/search/findByMandatorIdAndEmailAddress`) vs prod FORBIDDEN; configurable `userType` arg; paired with `testing_forceDeleteUser` in same schema; env-guard omission persists 10+ cycles; login mutation returns jwt on prod.
+evidence_needed: HUMAN_ONLY POST extraction of a real confirmation code for a known staging user and use against prod reset flow.
+verify_steps: passive contrast already complete; extraction is PROGRAM-RESTRICTED (customer/auth data) — requires authorized account.
+impact: Account-takeover chain if staging code format is accepted by prod reset; Critical but requires authorized-account proof.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME subdomain takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 80
+reasoning: 6th consecutive cycle: CNAME @TTL300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, target A+HTTPS both Status 3 NXDOMAIN (azure zone SOA present); sole dangle in dev sweep (bms-dev/booking-dev now only default-backend A records). Claimability is the only unproven link.
+evidence_needed: Tester Azure container-app in switzerlandnorth serving the exact FQDN → resolves back through web-dev.cineplex.de.
+verify_steps: DoH A/HTTPS re-check next cycle (Status 3 expected); then externally-attested Azure registration proof.
+impact: Full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium (CVSS ~5.3–6.1).
+testability: PASSIVE
+[HYP] Production+staging GraphQL introspection with WAF method-gate bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema (140 mutations/83 queries staging; prod parity); staging adds testing_getConfirmationCode/testing_forceDeleteUser; 35KB arg enumeration shows no injection vectors; 10+ cycle stability; triage-scored 7.5/6.5 VALID.
+evidence_needed: none beyond collected schema dumps (already in write-up).
+verify_steps: verified via manual curl POST introspection both envs (GET WAF-blocked for automated clients; curl GET works).
+impact: Full attack-surface disclosure + env-confusion testing mutations on internet-exposed staging; Medium-High (CVSS 5.3–7.5).
+testability: PASSIVE
+[NEXT] HUMAN: Submit the bundled graphql_introspection finding (prod+staging POST 200 full schema, WAF GET-403/POST-200 gate, 35KB arg enumeration, staging testing-mutations env-confusion as secondary, CVSS 5.3–7.5 triage-validated 7.5/6.5) to bugs.olivermaicher.eu — then the dangling-CNAME report citing 6th-cycle NXDOMAIN with DoH evidence and Azure-claimability attestation steps.
+[RISK] cineplex: 95 — Two PASSIVE findings are submission-ready (introspection triage-validated; dangling CNAME at 6-cycle NXDOMAIN) yet the emission to bugs.olivermaicher.eu has not occurred. Highest-value chain (staging confirmation-code oracle → ATO; cross-tenant IDOR PII) remains HUMAN_ONLY under the program PII rule with no fresh passive advances; all other hunt lines are exhausted or rejected. The only advancing passive line (CNAME claimability) is external to this channel.

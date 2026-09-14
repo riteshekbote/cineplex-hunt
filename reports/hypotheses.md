@@ -2126,3 +2126,17 @@
 - LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
 - LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+
+## RANKED HYPOTHESES 2026-09-14 22:16:06 UTC
+- [97] graphql-api.app.staging.cineplex.de: Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode (from art/lead_nemotron3.txt)
+- [80] graphql-api.app.staging.cineplex.de: Staging confirmation-code oracle enables intra-tenant ATO (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit the bundled graphql_introspection finding (prod+staging POST 200 full schema, WAF GET-403/POST-200 gate, 35KB arg enumeration, staging testing-mut
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&ty
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
