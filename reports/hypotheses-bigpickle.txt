@@ -1,4 +1,6 @@
-## 2026-09-14 13:18:59 UTC [target] (model bigpickle)
+## 2026-09-14 18:44:05 UTC [target] (model bigpickle)
+[LEARN] NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
+[RISK] cineplex: 95 — Dangling-CNAME write-up now at 4-cycle stability (Medium, PASSIVE) and is the only advancing deliverable. Both Critical lifts (cross-tenant IDOR PII at 95, password-reset ATO at 85) remain HUMAN_ONLY under the program PII rule with zero fresh passive advances. All alternative hunt lines (WAF bypass, relay, Nextcloud, booking-dev, api.cineplex.de) terminally exhausted or rejected.
 [HYP] Production GraphQL introspection exposes full schema with 140+ mutations on staging
 class: OTHER
 asset: graphql-api.app.{,staging.}cineplex.de
@@ -33,3 +35,83 @@ testability: PASSIVE
 [LEARN] REJECTED all out-of-scope: unchanged
 [LEARN] PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
 [RISK] cineplex: 95 — graphql_introspection finding ready for submission (Medium, PASSIVE, CVSS 5.3). dangling_cname is the only advancing passive line outside HUMAN_ONLY gates. All other high-value findings (IDOR at 95, password-reset ATO at 85) remain HUMAN_ONLY under program PII rule with zero fresh passive advances.
+[HYP] No public repos available for audit
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+confidence: 100
+reasoning: GitHub org exists with 0 public repositories. No source code is exposed publicly.
+impact: N/A — no attack surface identified via public GitHub repos
+verify_steps: Visit https://github.com/Cineplex-Deutschland to confirm zero public repos
+[HYP] No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+confidence: 100
+reasoning: The GitHub org Cineplex-Deutschland was created 2026-05-11 and contains 0 public repositories. All candidate lists and prior scan logs confirm no org targets are configured. No source code is publicly exposed on GitHub.
+impact: N/A — no attack surface identified via public GitHub repos. The source-code audit vector is closed.
+verify_steps: Visit https://github.com/Cineplex-Deutschland to confirm zero public repos.
+[HYP] No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+[HYP] Production GraphQL introspection exposes full schema with 140+ mutations on staging
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: Full POST introspection returns 200 with complete schema including 140 mutations and 83 queries. Staging adds testing_getConfirmationCode and testing_forceDeleteUser. Both environments reachable via POST (GET blocked by WAF). Schema contains sensitive mutations (login, requestPasswordReset, updateUserAdminStatus) but no URL/file injection args confirmed.
+evidence_needed: Submission-ready CVSS 5.3 write-up with schema dump
+verify_steps: Already verified via manual curl POST introspection both envs
+impact: Information disclosure enabling targeted attack surface mapping; auth-stripping testing surface; Medium (CVSS 5.3)
+testability: PASSIVE
+[HYP] Dangling CNAME subdomain takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 75
+reasoning: 4th consecutive cycle: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, target A → Status 3 NXDOMAIN (azure zone SOA present), host 000. Sole candidate in dev/test sweep. Claimability (tester-owned Azure env reproducing FQDN) remains unproven.
+evidence_needed: Azure tenant provisioning container-app to claim the FQDN
+verify_steps: DoH A re-check next cycle (Status 3 retained); registration-proof external to channel
+impact: Full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium ceiling
+testability: PASSIVE
+[HYP] Internal architecture disclosure via introspection on staging GraphQL
+class: OTHER
+asset: graphql-api.app.staging.cineplex.de
+confidence: 70
+reasoning: Staging introspection discloses Spring Data JPA REST endpoints (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path, Apollo Server stacktrace. These are via schema analysis not HTTP GET (GET returns 403). Combined with testing_getConfirmationCode (env-guard omission) and testing_forceDeleteUser in schema.
+evidence_needed: Write-up documenting internal endpoints exposed via introspection
+verify_steps: Already verified via manual curl POST introspection on staging
+impact: Internal infrastructure disclosure aiding lateral movement; Low-Medium
+testability: PASSIVE
+[NEXT] HUMAN: Submit graphql_introspection finding — CVSS 5.3 write-up ready (Medium severity). Both prod+staging confirmed. Full mutation argument enumeration complete (35KB). No injection vectors in schema. Structured report:
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+[LEARN] REJECTED all out-of-scope: unchanged
+[LEARN] PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+[RISK] cineplex: 95 — graphql_introspection finding ready for submission (Medium, PASSIVE, CVSS 5.3). dangling_cname is the only advancing passive line outside HUMAN_ONLY gates. All other high-value findings (IDOR at 95, password-reset ATO at 85) remain HUMAN_ONLY under program PII rule with zero fresh passive advances.
+[HYP] Dangling CNAME subdomain takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 75
+reasoning: 5th consecutive cycle: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, target A empty (NXDOMAIN, azure SOA present), host 000. Zero other CNAMEs across 12-host dev/test sweep. Claimability (tester-owned Azure env reproducing FQDN in switzerlandnorth) remains the sole unproven link.
+evidence_needed: Tester Azure tenant provisioning a container-app/environment that serves the exact FQDN → resolves via web-dev.cineplex.de.
+verify_steps: dig +short CNAME/A web-dev.cineplex.de @1.1.1.1 (5th-cycle re-confirm done this cycle); claim proof is external-to-channel Azure registration.
+impact: Full content control of web-dev.cineplex.de → phishing/cookie-stealing surface under .cineplex.de; Medium ceiling (CVSS ~5.3–6.1).
+testability: PASSIVE
+[HYP] Production+staging GraphQL introspection with WAF method-gate bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema (prod 200+ types / staging 140 mutations+83 queries); staging adds testing_getConfirmationCode/testing_forceDeleteUser; 35KB mutation-arg enumeration shows no injection vectors; 10+ cycle stability; triage-scored 7.5/6.5 (VALID, bundle recommended).
+evidence_needed: None beyond already-collected schema dumps + arg enumeration.
+verify_steps: Already verified via manual curl POST introspection both envs (GET WAF-blocked).
+impact: Full attack-surface disclosure + env-confusion (testing mutations on internet-exposed staging); Medium-High (CVSS 5.3–7.5).
+testability: PASSIVE
+[HYP] Missing environment guard on staging testing-confirmation oracle
+class: OTHER
+asset: graphql-api.app.staging.cineplex.de
+confidence: 72
+reasoning: testing_getConfirmationCode resolves authless (200, backend hit, 405-mismatch on internal Spring Data JPA /userPasswordResets/search/...) vs prod FORBIDDEN; parity 10+ cycles; pairs with testing_forceDeleteUser in staging schema.
+evidence_needed: HUMAN_ONLY POST extraction of an actual confirmation code to prove operational impact.
+verify_steps: prod/GET contrast already passive-confirmed; extraction is PII-adjacent → program-restricted.
+impact: Staging-only authless intra-tenant data-operation oracle; Medium when combined with env confusion.
+testability: HUMAN_ONLY
+[NEXT] HUMAN: Submit to bugs.olivermaicher.eu the bundled graphql_introspection report (prod+staging, POST 200 full schema, WAF GET-403/POST-200 method-gate, 35KB arg enumeration proving no injection vectors, staging testing-mutation env-confusion as secondary; CVSS 5.3–7.5, triage-validated) — followed by the dangling-CNAME report citing 5th-cycle NXDOMAIN evidence and claimability-attestation steps.
+[RISK] cineplex: 95 — Two passive findings are submission-ready (introspection 7.5/6.5 triage-validated; dangling-CNAME at 5-cycle NXDOMAIN stability) yet valid-bugs.md count remains 0 — deliverable is stalling in "ready" state without emission. The two Critical lifts (cross-tenant IDOR PII, password-reset ATO) stay HUMAN_ONLY under the program PII rule with zero fresh passive advances. All alternative hunt lines are terminally exhausted or rejected; only the CNAME line still advances (claimability external to channel).

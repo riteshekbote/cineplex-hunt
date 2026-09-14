@@ -1030,3 +1030,5 @@ wwww.cineplex.de
 - CHANGED probe-results.md 2026-09-14 01:13:20 UTC — automated GraphQL probes consistently 403 (WAF bot-gate); DoH CNAME queries for dev hosts returning 415 (format issue, not signal). No new POST probes.
 
 ## 2026-09-14 13:38:05 UTC
+
+## 2026-09-14 18:58:59 UTC

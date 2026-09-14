@@ -2098,3 +2098,31 @@
 - LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
 - LEARN: REJECTED all out-of-scope: unchanged
 - LEARN: PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+
+## RANKED HYPOTHESES 2026-09-14 18:58:59 UTC
+- [97] graphql-api.app.staging.cineplex.de: Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode (from art/lead_nemotron3.txt)
+- [85] graphql-api.app.{,staging.}cineplex.de: Production GraphQL introspection exposes full schema with 140+ mutations on staging (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit graphql_introspection finding — CVSS 5.3 write-up ready (Medium severity). Both prod+staging confirmed. Full mutation argument enumeration complet
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&ty
+- LEARN: NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+- LEARN: REJECTED all out-of-scope: unchanged
+- LEARN: PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+- LEARN: REJECTED all out-of-scope: unchanged
+- LEARN: PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
