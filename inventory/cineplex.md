@@ -1028,3 +1028,5 @@ wwww.cineplex.de
 ## 2026-09-14 06:26:16 UTC
 - NEW Dangling CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` — 4th consecutive cycle Status 3 NXDOMAIN + azure zone SOA present; `web-dev.cineplex.de` CNAME still active T
 - CHANGED probe-results.md 2026-09-14 01:13:20 UTC — automated GraphQL probes consistently 403 (WAF bot-gate); DoH CNAME queries for dev hosts returning 415 (format issue, not signal). No new POST probes.
+
+## 2026-09-14 13:38:05 UTC

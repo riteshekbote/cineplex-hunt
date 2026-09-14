@@ -10614,3 +10614,30 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 96 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST (GET 403/POST 200) confirmed; GET-based execution confirmed live via balanced URL-encoded queries. Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks — testing_getConfirmationCode authless 200 confirmed via GET (405-mismatch, backend hit to internal Spring endpoint). Missing environment guard on testing_getConfirmationCode (staging 200, prod FORBIDDEN). Internal architecture leak via Spring Data JPA REST endpoints on staging. Systemic IDOR format-confirmed across 4 single-entity resolvers on prod (GET-verified auth-omission with decodePublicId stacktraces). 6/6 firing-gate control group intact. Large attack surface (132 hosts, 6+ live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass, architecture leak). Wildcard-dominated DNS increases shared-infra risk.
+===== ANALYST nemotron3 2026-09-14 13:38:05 UTC =====
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m$ [0mdate -u +"%Y-%m-%d %H:%M:%S UTC"
+2026-09-14 13:22:01 UTC
+[0m
+[0m$ [0mcurl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=prelive.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME"
+(no output)
+[0m
+[0m$ [0mfor host in bms-dev.cineplex.de booking-dev.cineplex.de buchung-dev.cineplex.de prelive.cineplex.de test.cineplex.de dev.cineplex.de; do echo "=== $host ==="; curl -sS "https://cloudflare-dns.com/dns-query?name=$host&type=CNAME" | jq -r '.Answer[]? | "\(.name) \(.type) \(.data)"' 2>/dev/null || echo "no CNAME or error"; done
+=== bms-dev.cineplex.de ===
+=== booking-dev.cineplex.de ===
+=== buchung-dev.cineplex.de ===
+=== prelive.cineplex.de ===
+=== test.cineplex.de ===
+=== dev.cineplex.de ===
+[0m
+[0m$ [0mecho "=== web-dev.cineplex.de ===" && curl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" | jq -r '.Answer[]? | "\(.name) \(.type) \(.data)"' 2>/dev/null || echo "no CNAME or error"
+=== web-dev.cineplex.de ===
+[0m
+[0m$ [0mcurl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME"
+(no output)
+[0m
+[0m$ [0mcurl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=A" && echo "---" && curl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME"
+---
+[0m

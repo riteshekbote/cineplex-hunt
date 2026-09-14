@@ -3508,3 +3508,38 @@ testability: PASSIVE
 [LEARN] PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
 [LEARN] NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
 [RISK] cineplex: 95 — Dangling-CNAME write-up now at 4-cycle stability (Medium, PASSIVE) and is the only advancing deliverable. Both Critical lifts (cross-tenant IDOR PII at 95, password-reset ATO at 85) remain HUMAN_ONLY under the program PII rule with zero fresh passive advances. All alternative hunt lines (WAF bypass, relay, Nextcloud, booking-dev, api.cineplex.de) terminally exhausted or rejected.
+## 2026-09-14 13:18:59 UTC [target] (model bigpickle)
+[HYP] Production GraphQL introspection exposes full schema with 140+ mutations on staging
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: Full POST introspection returns 200 with complete schema including 140 mutations and 83 queries. Staging adds testing_getConfirmationCode and testing_forceDeleteUser. Both environments reachable via POST (GET blocked by WAF). Schema contains sensitive mutations (login, requestPasswordReset, updateUserAdminStatus) but no URL/file injection args confirmed.
+evidence_needed: Submission-ready CVSS 5.3 write-up with schema dump
+verify_steps: Already verified via manual curl POST introspection both envs
+impact: Information disclosure enabling targeted attack surface mapping; auth-stripping testing surface; Medium (CVSS 5.3)
+testability: PASSIVE
+[HYP] Dangling CNAME subdomain takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 75
+reasoning: 4th consecutive cycle: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, target A → Status 3 NXDOMAIN (azure zone SOA present), host 000. Sole candidate in dev/test sweep. Claimability (tester-owned Azure env reproducing FQDN) remains unproven.
+evidence_needed: Azure tenant provisioning container-app to claim the FQDN
+verify_steps: DoH A re-check next cycle (Status 3 retained); registration-proof external to channel
+impact: Full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium ceiling
+testability: PASSIVE
+[HYP] Internal architecture disclosure via introspection on staging GraphQL
+class: OTHER
+asset: graphql-api.app.staging.cineplex.de
+confidence: 70
+reasoning: Staging introspection discloses Spring Data JPA REST endpoints (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path, Apollo Server stacktrace. These are via schema analysis not HTTP GET (GET returns 403). Combined with testing_getConfirmationCode (env-guard omission) and testing_forceDeleteUser in schema.
+evidence_needed: Write-up documenting internal endpoints exposed via introspection
+verify_steps: Already verified via manual curl POST introspection on staging
+impact: Internal infrastructure disclosure aiding lateral movement; Low-Medium
+testability: PASSIVE
+[NEXT] HUMAN: Submit graphql_introspection finding — CVSS 5.3 write-up ready (Medium severity). Both prod+staging confirmed. Full mutation argument enumeration complete (35KB). No injection vectors in schema. Structured report:
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+[LEARN] REJECTED all out-of-scope: unchanged
+[LEARN] PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+[RISK] cineplex: 95 — graphql_introspection finding ready for submission (Medium, PASSIVE, CVSS 5.3). dangling_cname is the only advancing passive line outside HUMAN_ONLY gates. All other high-value findings (IDOR at 95, password-reset ATO at 85) remain HUMAN_ONLY under program PII rule with zero fresh passive advances.

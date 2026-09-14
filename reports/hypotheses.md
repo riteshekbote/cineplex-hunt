@@ -2089,3 +2089,12 @@
 - LEARN: REJECTED relay/metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+
+## RANKED HYPOTHESES 2026-09-14 13:38:05 UTC
+- [85] graphql-api.app.{,staging.}cineplex.de: Production GraphQL introspection exposes full schema with 140+ mutations on staging (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit graphql_introspection finding — CVSS 5.3 write-up ready (Medium severity). Both prod+staging confirmed. Full mutation argument enumeration complet
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+- LEARN: REJECTED all out-of-scope: unchanged
+- LEARN: PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value

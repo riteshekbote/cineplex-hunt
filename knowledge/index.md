@@ -406,3 +406,8 @@
 - 2026-09-14 REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: no HTTP surface (000).
 - 2026-09-14 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
 - 2026-09-14 NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; not reportable.
+- 2026-09-14 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability
+- 2026-09-14 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 4-cycle NXDOMAIN stability, Medium, PASSIVE
+- 2026-09-14 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed, not HTTP-accessible
+- 2026-09-14 REJECTED all out-of-scope: unchanged
+- 2026-09-14 PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
