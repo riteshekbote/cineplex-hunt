@@ -1006,3 +1006,21 @@ wwww.cineplex.de
 - CHANGED data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+
+## 2026-09-14 01:13:05 UTC
+- NEW dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passi
+- NEW REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+- NEW REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
+- NEW REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
+- NEW ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
+- NEW REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
+- NEW REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve but no HTTP surface (000) — unreachable
+- NEW ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving auth-omission on id-resolvers
+- NEW ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit
+- NEW ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- NEW ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+- NEW ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces
+- NEW NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+- CHANGED relay/metrics @ data-9fc27eb430.cineplex.de: messages_queued grown to ~892.9M (from 553.5M), descriptive IOMB infra only, not reportable alone
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (all 403) — separate stricter config; GET-based bypass hypothesis dead
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable

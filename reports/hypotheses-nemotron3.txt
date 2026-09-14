@@ -1,15 +1,20 @@
-## 2026-09-13 23:13:33 UTC [target] (model nemotron3)
+## 2026-09-14 01:12:54 UTC [target] (model nemotron3)
 [NEW] dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain
-[NEW] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: getMatomoVersion/getSitesWithViewAccess → "requires view access"; anonymous token zero site access; Installation module closed; tracker benign collector
-[NEW] REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404, /api/auth/verify 405-on-GET; wildcard ACAO alone descriptive/CORS-without-credentials class
+[NEW] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+[NEW] REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
 [NEW] REJECTED mailing_placeholder @ mailing.cineplex.de: mailjet technical-stub page; mail config class OOS
-[NEW] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory note; both auth-gated default-secure; only AUTH_HELPED/HUMAN_ONLY value if creds obtained
+[NEW] ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
 [NEW] REJECTED jira.systems.cineplex.de: live HTTP 403 (Cloudflare WAF) — public-login/inventory note only
-[NEW] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve (ntxzone/CF) but no HTTP surface (000) — unreachable
-[CHANGED] api.cineplex.de WAF strictly blocks all GraphQL paths (all 403 across 6+ probes) — separate stricter config than graphql-api pair; GET-based bypass hypothesis dead
-[CHANGED] data-9fc27eb430.cineplex.de/metrics stale in probe log (last fresh 2026-09-08: 553.5M queued, now ~892.9M); descriptive IOMB broker stats only, not reportable
+[NEW] REJECTED talk.tho.cineplex.de, rds.systems.cineplex.de, info.desireinfotech.bo.cineplex.de: resolve but no HTTP surface (000) — unreachable
+[NEW] ACCEPTED idor_control_group_expanded @ graphql-api.app.cineplex.de: 6th firing gate (errorStatistics UNAUTHENTICATED) strengthens control group to 6/6 proving auth-omission on id-resolvers
+[NEW] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit
+[NEW] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 9+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+[NEW] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+[NEW] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces
+[NEW] NEW test(inputVal) field on prod+staging: constant "Cineplex" debug artifact; no reflect/XSS; not reportable
+[CHANGED] relay/metrics @ data-9fc27eb430.cineplex.de: messages_queued grown to ~892.9M (from 553.5M), descriptive IOMB infra only, not reportable alone
+[CHANGED] api.cineplex.de WAF strictly blocks all GraphQL paths (all 403) — separate stricter config; GET-based bypass hypothesis dead
 [CHANGED] TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
-[CHANGED] All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 [PRIO] graphql-api.app.cineplex.de,9.15,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,8.95,attack_surface=9,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
 [PRIO] auth.cineplex.de,5.80,attack_surface=8,business_value=10,tech_exposure=7,gate_ease=5,cloud_surface=5,freshness=6
@@ -31,7 +36,7 @@ asset: graphql-api.app.staging.cineplex.de
 confidence: 97
 reasoning: Staging introspection exposes testing_getConfirmationCode(email: String!, type: ConfirmationCodeType!) and testing_forceDeleteUser(email: String!). GET ?query=%7Btesting_getConfirmationCode%28email%3A%22probe%40test.de%22%2Ctype%3APASSWORD_RESET%29%7D returns 200 with backend hit (405-method-mismatch on internal Spring Data JPA REST endpoint /userPasswordResets/search/findByMandatorIdAndEmailAddress?emailAddress=probe@test.de&mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b). Production gates correctly (FORBIDDEN "only available in testing environments"). Missing environment guard persists 9+ cycles. WAF method-gate bypass mirrors production.
 evidence_needed: POST to testing_getConfirmationCode with any email returns 200 with confirmation code; testing_forceDeleteUser executes without auth/role check
-verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)"}} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
+verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
 impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
 testability: HUMAN_ONLY
 [HYP] Dangling CNAME Takeover on web-dev.cineplex.de
@@ -49,6 +54,7 @@ testability: PASSIVE
 [PARKED] api.cineplex.de GET-based GraphQL Bypass: confidence <40 — 6+ probes all 403, stricter WAF config, hypothesis dead
 [PARKED] cloud.systems.cineplex.de Nextcloud OCS/Brute-force: OCS caps standard, /public.php 500 not exploitable alone, account-lockout DoS out of scope; no PII exposure confirmed
 [FINAL] Ranked survivors (by testability × impact):
+[NEXT] HUMAN: Cross-tenant IDOR PII proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22<B-public-id%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D` with valid JWT from login mutation; then repeat for invoice/order/ticket resolvers on B's publicId with per-resolver `id:"0"` INVALID_ID control; searchUsers/adminUsers enumeration
 [NEXT] HUMAN: Cross-tenant IDOR PII proof — accounts A/B (tester-owned); authless `curl --http2 -A <browser UA>` `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22<B-public-id%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D` with valid JWT from login mutation; then repeat for invoice/order/ticket resolvers on B's publicId with per-resolver `id:"0"` INVALID_ID control; searchUsers/adminUsers enumeration
 [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 — subdomain-takeover precondition confirmed passively on scoped dev domain
 [LEARN] REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface

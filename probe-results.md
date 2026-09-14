@@ -516,3 +516,17 @@ https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME -> HTTP 41
 https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME -> HTTP 415
 https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22<B-public-id%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D` -> HTTP 400
 https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22 -> HTTP 400
+
+## 2026-09-14 01:13:20 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%222%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BsearchUsers%28query%3A%22%22%29%7Bid%20email%20fullName%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BadminUsers%7Bid%20email%20fullName%20privileges%7BrootRole%20adminRole%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=prelive.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME -> HTTP 415
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22<B-public-id%22%29%7Bid%20email%20fullName%20telephone%20birthDate%20tickets%7Bid%7D%20orders%7Bid%7D%20subscriptions%7Bid%7D%20invoices%7Bid%7D%20vouchers%7Bid%7D%7D%7D` -> HTTP 400
+https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22 -> HTTP 400

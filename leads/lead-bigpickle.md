@@ -3428,3 +3428,33 @@ impact: full content control of web-dev.cineplex.de → phishing/cookie surface 
 testability: PASSIVE
 [NEXT] PROBE: re-check `https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A` for Status 3 (3rd-consecutive NXDOMAIN stability) next cycle; if host 000 persists, write-up the dangling-CNAME finding for web-dev while cross-tenant IDOR and staging-oracle proofs remain HUMAN_ONLY.
 [RISK] cineplex: 95 — dangling-CNAME lead hardened (sole-candidate + 2-cycle stability raises Medium write-up ceiling), but net risk is flat: both Critical lifts (cross-tenant PII read at 95, password-reset ATO at 85) remain HUMAN_ONLY under the program PII rule with no new passive advances; all alternative hunt lines (WAF bypass, relay, Nextcloud, booking-dev) terminally exhausted or rejected.
+## 2026-09-14 01:11:27 UTC [target] (model bigpickle)
+[HYP] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: 10+ cycles curl --http2 browser-UA, NO Authorization: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID decodePublicId path both envs; control 6/6 firing gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR) → UNAUTHENTICATED/ROLE/ROOT/DEVICE. No new evidence this cycle.
+evidence_needed: authless GET userById(<tenantB publicId>){id email fullName} → 200 with B PII vs id:"0" control.
+verify_steps: curl --http2 -A <browser UA> GET https://graphql-api.app.cineplex.de/?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bid%20email%20fullName%7D%7D; NO Authorization.
+impact: unauth'd arbitrary-customer PII → ATO base; Critical.
+testability: HUMAN_ONLY
+[HYP] Staging env-guard omission on testing_getConfirmationCode (password-reset oracle)
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 85
+reasoning: 10+ cycles: authless 200 backend-hit (405 on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; schema parity incl testing_forceDeleteUser; no new evidence this cycle.
+evidence_needed: human POST extracting confirmation code for seeded reset → ATO.
+verify_steps: POST testing_getConfirmationCode(email:"<seed>") staging, human session; prod FORBIDDEN control.
+impact: email-verification bypass → reset oracle → ATO; forceDeleteUser destructive.
+testability: HUMAN_ONLY
+[HYP] Dangling-CNAME takeover precondition confirmed-stable on sole dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 70
+reasoning: 3rd-consecutive cycle: CNAME @TTL300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, target A → Status 3 NXDOMAIN (azure zone SOA), host 000 (resolver breaks chain; no attacker content). Sweep of bms-dev/buchung-dev/web/m/mobile → no CNAME → exclusive candidate. Claimability (tester-owned Azure env `gentleglacier-dfef6458` reproducing FQDN in switzerlandnorth) remains the sole unproven link.
+evidence_needed: tester-owned Azure tenant provisioning container-app to claim the FQDN → resolves via web-dev.cineplex.de.
+verify_steps: DoH A re-check next cycle (Status 3 retained); registration-proof external to channel.
+impact: full content control of web-dev.cineplex.de → phishing/cookie surface under .cineplex.de; Medium ceiling (claimability uncertainty).
+testability: PASSIVE
+[NEXT] PROBE: 4th-cycle stability — `curl -sS "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" -H "accept: application/dns-json"` expecting Status 3; also re-pull `web-dev.cineplex.de` CNAME. If retained, draft the dangling-CNAME write-up (claimability-attestation-required) as deliverable.
+[RISK] cineplex: 95 — dangling-CNAME write-up is now hardened to passable (Medium, PASSIVE, 3-cycle stable, sole candidate) but remains the only advancing line; both Critical lifts (cross-tenant PII at 95, password-reset ATO at 85) stay HUMAN_ONLY under the program PII rule with zero fresh passive advances and all alternative hunt lines exhausted/rejected.
