@@ -436,3 +436,8 @@
 - 2026-09-15 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified THIS CYCLE with correct Accept header; Status 3 NXDOMAIN + azure SOA; sole CNAME in 7-host set
 - 2026-09-15 ROOT_CAUSE: all prior automated DoH CNAME probes returned 415 due to missing Accept: application/dns-json header — CNAME evidence was manual-only until this cycle
 - 2026-09-15 ROOT_CAUSE: all automated GraphQL GET probes return 403 (WAF urllib bot-gate) — no POST probes in 576-line probe-results.md; all KB "CONFIRMED" claims rely on manual curl
+- 2026-09-15 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
+- 2026-09-15 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- 2026-09-15 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+- 2026-09-15 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+- 2026-09-15 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data

@@ -3817,3 +3817,4 @@ testability: HUMAN_ONLY
 [LEARN] ROOT_CAUSE: all prior automated DoH CNAME probes returned 415 due to missing Accept: application/dns-json header — CNAME evidence was manual-only until this cycle
 [LEARN] ROOT_CAUSE: all automated GraphQL GET probes return 403 (WAF urllib bot-gate) — no POST probes in 576-line probe-results.md; all KB "CONFIRMED" claims rely on manual curl
 [RISK] cineplex: 94 — Two PASSIVE findings are submission-ready (introspection triage-validated; dangling CNAME now DoH-verified this cycle with correct header, sole dangle in 7-host set, Azure-claimable) yet valid-bugs.md = 0. Emission to bugs.olivermaicher.eu is the ONLY pending action. Highest-value chains (staging code oracle → ATO; cross-tenant IDOR PII) remain HUMAN_ONLY under program PII rule. All alternate hunt lines exhausted or rejected.
+## 2026-09-15 10:55:52 UTC [target] (model bigpickle)

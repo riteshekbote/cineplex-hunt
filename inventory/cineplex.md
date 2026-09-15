@@ -1045,3 +1045,12 @@ wwww.cineplex.de
 - CHANGED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready; 10+ cycle stability
 - CHANGED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
 - CHANGED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+
+## 2026-09-15 11:00:26 UTC
+- NEW Dangling CNAME on `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` confirmed 4-cycle NXDOMAIN (DoH Status 3 + zone SOA) via manual DoH with correct Accept he
+- NEW Automated probe log (587 lines) contains ZERO POST GraphQL probes across all cycles; all "CONFIRMED" KB entries (introspection 200, IDOR 4 resolvers, staging oracle) rely solely on manual curl evidenc
+- NEW `graphql-api.app.cineplex.de/?query=%7Binvoice(id:"0")%7D` automated probe returns 403 (WAF bot-gate), not 200 — contradicts manual curl 200 INVALID_ID; malformed probes return 400 "GET query missing"
+- NEW `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` messages_queued grown to ~892.9M (from 553.5M), descriptive IOMB infra only, not reportable alone
+- CHANGED `graphql-api.app.staging.cineplex.de` staging_testing_oracle persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` WAF method-gate: automated urllib 403 consistent; manual curl balanced GET 200 consistent — client-differentiated bot-gate confirmed
