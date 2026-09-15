@@ -18377,3 +18377,99 @@ web-dev HTTP 000 connect=0.000000s
 [93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
 [0m✗ [0mecho "---PROD---"; curl -sS --max-time 20 -A 'Mozilla/5.0' --http2 'https://graphql-api.app.cineplex.de/?query=%7B__typename%7D' -o /tmp/p1.txt -w 'HTTP %{http_code} %{size_download}B\n'; cat /tmp/p1.txt; echo; sleep 1; echo "---STAGING---"; curl -sS --max-time 20 -A 'Mozilla/5.0' --http2 'https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D' -o /tmp/p2.txt -w 'HTTP %{http_code} %{size_download}B\n'; cat /tmp/p2.txt; echo failed
 [91m[1mError: [0mThe user rejected permission to use this specific tool call.
+===== ANALYST bigpickle 2026-09-15 15:36:05 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m→ [0mRead .
+I'll analyze the current state and provide structured output following the 8-step methodology. Let me first check the relevant files to understand the current context.
+[0m→ [0mRead probe-results.md
+[0m→ [0mRead reports
+[0m→ [0mRead knowledge
+[0m→ [0mRead triage
+[0m→ [0mRead reports/valid-bugs.md
+[0m→ [0mRead reports/hypotheses-bigpickle.txt
+[0m→ [0mRead state_bigpickle.json
+[0m→ [0mRead reports/hypotheses-nemotron3.txt
+I have full context now. Let me run the pending passive DoH sweep — the correct `Accept: application/dns-json` header was never applied in the automated log (all 415s). This is read-only DNS recon.
+[0m
+[0m$ [0mfor name in web-dev bms-dev booking-dev buchung-dev prelive test dev; do echo "=== $name.cineplex.de CNAME ==="; curl -sS --max-time 15 "https://cloudflare-dns.com/dns-query?name=$name.cineplex.de&type=CNAME" -H "Accept: application/dns-json" | head -c 600; echo; done
+=== web-dev.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+=== bms-dev.cineplex.de CNAME ===
+curl: (35) Recv failure: Connection reset by peer
+
+=== booking-dev.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"booking-dev.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+=== buchung-dev.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"buchung-dev.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+=== prelive.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"prelive.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+=== test.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"test.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+=== dev.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"dev.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+[0m
+[0m$ [0mecho "=== bms-dev retry ==="; curl -sS --max-time 15 "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json"; echo; echo "=== web-dev.cineplex.de A (follow CNAME) ==="; curl -sS --max-time 15 "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=A" -H "Accept: application/dns-json"; echo; echo "=== target A records ==="; for t in web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; do echo "--- $t ---"; curl -sS --max-time 15 "https://cloudflare-dns.com/dns-query?name=$t&type=A" -H "Accept: application/dns-json"; echo; done
+=== bms-dev retry ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"bms-dev.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2414876525 10000 2400 604800 1800"}]}
+=== web-dev.cineplex.de A (follow CNAME) ===
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":1}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+=== target A records ===
+--- web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io ---
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+--- gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io ---
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+All probes done. `web-dev` remains the sole CNAME in the 7-host dev/test set (6 others NODATA), and the full Azure env namespace `gentleglacier-dfef6458` is NXDOMAIN — both `web.` prefix and env root vacant. Output:
+
+STEP 1 — DELTA
+- [CHANGED] DoH sweep THIS CYCLE with correct `Accept: application/dns-json` (first automated-log-equivalent run): `bms-dev`, `booking-dev`, `buchung-dev`, `prelive`, `test`, `dev` all Status 0 NODATA (SOA-only, no record) — `web-dev.cineplex.de` is the SOLE CNAME in the 7-host dev/test set
+- [CHANGED] `web-dev.cineplex.de` A-follow / target A: `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` AND env root `gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` both Status 3 NXDOMAIN (azure-dns.com SOA in authority) — whole Azure env namespace vacant, not just the `web` app label
+- [CHANGED] probe-results.md now 597 lines; all automated DoH entries remain 415 (missing `Accept` header root cause persists in automated harness, now bypassed manually)
+- [CHANGED] automated GraphQL probes stay 403 (urllib WAF bot-gate); zero POST probes; KB CONFIRMED entries remain manual-curl-only — known gap, model unchanged
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.{,staging.}cineplex.de,9.0,a=8,t=9,g=7,c=10,f=10 — introspection+IDOR+staging oracle+arch leak; submission-ready
+- [PRIO] web-dev.cineplex.de,7.6,a=6,t=3,g=9,c=10,f=10 — dangling CNAME now full-env NXDOMAIN verified, sole dangle in set, Azure-claimable
+- [PRIO] profil.cineplex.de,4.5,a=3,t=2,g=7,c=8,f=5 — parked, low value
+- [PRIO] data-9fc27eb430.cineplex.de,3.0,a=2,t=2,g=3,c=8,f=3 — descriptive infra only
+
+STEP 3 — HYPOTHESES
+[HYP] Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (full Azure env namespace vacant)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: This cycle DoH (Accept: application/dns-json) re-confirmed CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (Status 0, TTL 300). A-follow of web-dev AND direct A queries for both web.gentleglacier-dfef6458... and the env-root gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io all return Status 3 NXDOMAIN with switzerlandnorth.azurecontainerapps.io SOA (ns1-35.azure-dns.com) in authority — env namespace is registered but both the environment and the app label are vacant. The other 6 dev/test hosts (bms-dev, booking-dev, buchung-dev, prelive, test, dev) are NODATA (no CNAME) — web-dev is the unique dangle. In-scope dev subdomain per program scope.
+evidence_needed: Azure tenant registration of env gentleglacier-dfef6458 + app web in switzerlandnorth yielding HTTP 200 attacker content on web-dev.cineplex.de
+verify_steps: (1) DoH done this cycle; (2) claimability attestation: confirm gentleglacier-dfef6458 env name not registered in another tenant (Azure API/registration attempt = HUMAN_ONLY post-submission)
+impact: Full control of scoped .cineplex.de dev subdomain → phishing, parent-domain cookie scope, supply-chain to staging/prod if shared infra; Medium (CVSS ~5.3-6.1)
+testability: PASSIVE
+[HYP] Production+Staging GraphQL Introspection with WAF Method-Gate Bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema (staging 140 mutations/83 queries, prod parity + testing_getConfirmationCode/testing_forceDeleteUser); 35KB arg enumeration confirms no injection vectors; 10+ cycle stability; triage VALID 7.5/6.5; WAF is client-differentiated bot-gate (curl 200 balanced GET, urllib 403).
+evidence_needed: none beyond collected schema dumps + arg enumeration (write-up done)
+verify_steps: verified; POST reaches origin
+impact: Full attack-surface disclosure + env-confusion testing mutations on internet-exposed staging; Medium-High (CVSS 5.3–7.5)
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] staging_testing_oracle→ATO: HUMAN_ONLY extraction is program-restricted (auth data); passive contrast complete; no new passive progress possible — parked, not final
+- [PARKED] idor_booking 4/4 + 6/6 control group: structural POC complete but cross-tenant proof HUMAN_ONLY under PII rule — parked, not final
+- [PARKED] profil_preference_surface: confidence 45, OOS-adjacent email oracle, low business value
+- [FINAL] 1. web-dev.cineplex.de dangling CNAME (85, PASSIVE, full-env NXDOMAIN re-verified this cycle) 2. graphql-api introspection prod+staging (85, PASSIVE, triage-validated)
+- [FINAL] Both finals already submission-ready; no new exploitable passive surface emerged this cycle; sweep of 6 peer dev hosts closed (all NODATA)
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: Submit the two bundled findings to bugs.olivermaicher.eu — (1) GraphQL introspection prod+staging (POST 200 full schema, WAF GET-403/POST-200 and urllib-vs-curl client-diff gate, 35KB arg enumeration no-injection, staging testing-mutations env confusion; CVSS 5.3–7.5 triage-validated 7.5/6.5); (2) web-dev.cineplex.de dangling CNAME (sole dangle in 7-host dev/test set, full env namespace `gentleglacier-dfef6458` NXDOMAIN vs azure SOA, Azure claimability attestation steps) — then update valid-bugs.md count from 0 to 2
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: this cycle's DoH with correct header shows the OTHER 6 dev/test hosts (bms-dev, booking-dev, buchung-dev, prelive, test, dev) are NODATA (no CNAME) — web-dev is the SOLE dangle; both web. app label AND env root gentleglacier-dfef6458 are NXDOMAIN, strengthening claimability
+- [LEARN] REJECTED dev-peer_cname sweep @ {bms,booking,buchung,prelive,test,dev}-dev.cineplex.de: all NODATA — no additional takeover candidates in dev/test set
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 35KB arg enumeration, CVSS 5.3, triage-validated, submission-ready (reaffirmed)
+- [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
+
+STEP 7 — RISK
+- [RISK] cineplex: 95 — Two PASSIVE findings submission-ready for 11+ cycles (introspection triage-validated; web-dev CNAME full-env NXDOMAIN verified again this cycle, sole dangle in 7-host set) yet valid-bugs.md = 0: deliverable blocked on emission, which is now the ONLY pending action. All alternate hunt lines exhausted or rejected; peer dev-host sweep closed. Highest-value chains (staging code oracle→ATO; cross-tenant IDOR PII) remain HUMAN_ONLY under the program PII rule with zero passive progress.

@@ -3818,3 +3818,22 @@ testability: HUMAN_ONLY
 [LEARN] ROOT_CAUSE: all automated GraphQL GET probes return 403 (WAF urllib bot-gate) — no POST probes in 576-line probe-results.md; all KB "CONFIRMED" claims rely on manual curl
 [RISK] cineplex: 94 — Two PASSIVE findings are submission-ready (introspection triage-validated; dangling CNAME now DoH-verified this cycle with correct header, sole dangle in 7-host set, Azure-claimable) yet valid-bugs.md = 0. Emission to bugs.olivermaicher.eu is the ONLY pending action. Highest-value chains (staging code oracle → ATO; cross-tenant IDOR PII) remain HUMAN_ONLY under program PII rule. All alternate hunt lines exhausted or rejected.
 ## 2026-09-15 10:55:52 UTC [target] (model bigpickle)
+## 2026-09-15 15:27:28 UTC [target] (model bigpickle)
+[HYP] Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (full Azure env namespace vacant)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: This cycle DoH (Accept: application/dns-json) re-confirmed CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (Status 0, TTL 300). A-follow of web-dev AND direct A queries for both web.gentleglacier-dfef6458... and the env-root gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io all return Status 3 NXDOMAIN with switzerlandnorth.azurecontainerapps.io SOA (ns1-35.azure-dns.com) in authority — env namespace is registered but both the environment and the app label are vacant. The other 6 dev/test hosts (bms-dev, booking-dev, buchung-dev, prelive, test, dev) are NODATA (no CNAME) — web-dev is the unique dangle. In-scope dev subdomain per program scope.
+evidence_needed: Azure tenant registration of env gentleglacier-dfef6458 + app web in switzerlandnorth yielding HTTP 200 attacker content on web-dev.cineplex.de
+verify_steps: (1) DoH done this cycle; (2) claimability attestation: confirm gentleglacier-dfef6458 env name not registered in another tenant (Azure API/registration attempt = HUMAN_ONLY post-submission)
+impact: Full control of scoped .cineplex.de dev subdomain → phishing, parent-domain cookie scope, supply-chain to staging/prod if shared infra; Medium (CVSS ~5.3-6.1)
+testability: PASSIVE
+[HYP] Production+Staging GraphQL Introspection with WAF Method-Gate Bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema (staging 140 mutations/83 queries, prod parity + testing_getConfirmationCode/testing_forceDeleteUser); 35KB arg enumeration confirms no injection vectors; 10+ cycle stability; triage VALID 7.5/6.5; WAF is client-differentiated bot-gate (curl 200 balanced GET, urllib 403).
+evidence_needed: none beyond collected schema dumps + arg enumeration (write-up done)
+verify_steps: verified; POST reaches origin
+impact: Full attack-surface disclosure + env-confusion testing mutations on internet-exposed staging; Medium-High (CVSS 5.3–7.5)
+testability: PASSIVE
