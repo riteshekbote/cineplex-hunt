@@ -2233,3 +2233,21 @@
 - LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
 - LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
 - LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+
+## RANKED HYPOTHESES 2026-09-15 22:22:09 UTC
+- [97] graphql-api.app.staging.cineplex.de: Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode (from art/lead_nemotron3.txt)
+- [88] web-dev.cineplex.de: Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (sole dangle in 7-host dev set, env namespace vacant) (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-que
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+- LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
