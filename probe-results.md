@@ -605,3 +605,13 @@ https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=CNAME -> 
 https://cloudflare-dns.com/dns-query?name=prelive.cineplex.de&type=CNAME -> HTTP 415
 https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME -> HTTP 415
 https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME -> HTTP 415
+
+## 2026-09-15 19:14:23 UTC
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7Binvoice%28id%3A%220%22%29%7Bid%20user%7Bemail%20fullName%7D%7D%7D -> HTTP 403
+https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=prelive.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=test.cineplex.de&type=CNAME -> HTTP 415
+https://cloudflare-dns.com/dns-query?name=dev.cineplex.de&type=CNAME -> HTTP 415

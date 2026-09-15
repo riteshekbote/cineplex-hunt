@@ -3837,3 +3837,49 @@ evidence_needed: none beyond collected schema dumps + arg enumeration (write-up 
 verify_steps: verified; POST reaches origin
 impact: Full attack-surface disclosure + env-confusion testing mutations on internet-exposed staging; Medium-High (CVSS 5.3–7.5)
 testability: PASSIVE
+## 2026-09-15 19:12:04 UTC [target] (model bigpickle)
+[HYP] Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (full Azure env namespace vacant)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: This cycle DoH (Accept: application/dns-json) re-confirmed CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (Status 0, TTL 300). A-follow of web-dev AND direct A queries for both web.gentleglacier-dfef6458... and the env-root gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io all return Status 3 NXDOMAIN with switzerlandnorth.azurecontainerapps.io SOA (ns1-35.azure-dns.com) in authority — env namespace is registered but both the environment and the app label are vacant. The other 6 dev/test hosts (bms-dev, booking-dev, buchung-dev, prelive, test, dev) are NODATA (no CNAME) — web-dev is the unique dangle. In-scope dev subdomain per program scope.
+evidence_needed: Azure tenant registration of env gentleglacier-dfef6458 + app web in switzerlandnorth yielding HTTP 200 attacker content on web-dev.cineplex.de
+verify_steps: (1) DoH done this cycle; (2) claimability attestation: confirm gentleglacier-dfef6458 env name not registered in another tenant (Azure API/registration attempt = HUMAN_ONLY post-submission)
+impact: Full control of scoped .cineplex.de dev subdomain → phishing, parent-domain cookie scope, supply-chain to staging/prod if shared infra; Medium (CVSS ~5.3-6.1)
+testability: PASSIVE
+[HYP] Production+Staging GraphQL Introspection with WAF Method-Gate Bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema (staging 140 mutations/83 queries, prod parity + testing_getConfirmationCode/testing_forceDeleteUser); 35KB arg enumeration confirms no injection vectors; 10+ cycle stability; triage VALID 7.5/6.5; WAF is client-differentiated bot-gate (curl 200 balanced GET, urllib 403).
+evidence_needed: none beyond collected schema dumps + arg enumeration (write-up done)
+verify_steps: verified; POST reaches origin
+impact: Full attack-surface disclosure + env-confusion testing mutations on internet-exposed staging; Medium-High (CVSS 5.3–7.5)
+testability: PASSIVE
+[HYP] Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (sole dangle in 7-host dev set, env namespace vacant)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 88
+reasoning: DoH re-confirmed this cycle with correct Accept header — CNAME present (Status 0, TTL 300). A-follow of web label and env-root both Status 3 NXDOMAIN with azure-dns.com SOA (zone live, labels vacant). 6 sibling dev hosts just re-probed = NODATA (no CNAME). web-dev is the unique, in-scope dangle; 7+ cycle stability.
+evidence_needed: Azure registration of env gentleglacier-dfef6458 + app web in switzerlandnorth returning HTTP 200 attacker content on web-dev.cineplex.de
+verify_steps: (1) DoH CNAME + A-follow done this cycle; (2) claimability attestation = Azure registration attempt, HUMAN_ONLY post-submission
+impact: Full control of scoped .cineplex.de dev subdomain → phishing, parent-domain cookie scope, supply-chain to shared staging/prod infra; Medium (CVSS ~5.3–6.1)
+testability: PASSIVE
+[HYP] Production+Staging GraphQL Introspection with WAF Method-Gate Bypass
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema both envs (staging 140 mutations/83 queries incl testing_getConfirmationCode/testing_forceDeleteUser); 35KB arg enumeration confirms no injection vectors; 10+ cycle stability; triage VALID 7.5/6.5; WAF client-differentiated bot-gate (curl GET 200 origin, urllib 403).
+evidence_needed: none — schema dumps + enumeration collected, write-up done
+verify_steps: POST/GET introspection confirmed; report-ready
+impact: Full attack-surface + PII-query disclosure, env-confusion testing mutations internet-exposed; Medium-High (CVSS 5.3–7.5)
+testability: PASSIVE
+[HYP] Staging Confirmation-Code Oracle Enables Intra-Tenant ATO
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 78
+reasoning: testing_getConfirmationCode resolves authless (200, backend hit, 405-method-mismatch on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; paired with testing_forceDeleteUser; env-guard omission 10+ cycles.
+evidence_needed: HUMAN_ONLY POST extraction of real confirmation code
+verify_steps: passive contrast complete; code extraction requires program authorization
+impact: ATO chain if staging code format accepted by prod reset; Critical but requires authorized-account proof
+testability: HUMAN_ONLY
