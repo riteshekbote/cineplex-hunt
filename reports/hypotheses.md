@@ -2162,3 +2162,21 @@
 - LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
 - LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+
+## RANKED HYPOTHESES 2026-09-15 05:45:26 UTC
+- [97] graphql-api.app.staging.cineplex.de: Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode (from art/lead_nemotron3.txt)
+- [85] graphql-api.app.{,staging.}cineplex.de: Production+Staging GraphQL Introspection with WAF Method-Gate Bypass (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit bundled report to bugs.olivermaicher.eu:
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=CNAME" "https://cloudflare-dns.com/dns-query?name=booking-dev.cineplex.de&ty
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready; 10+
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified THIS CYCLE with correct Accept header; Status 3 NXDOMAIN + azure SOA; sole CNAME in 7-ho
+- LEARN: ROOT_CAUSE: all prior automated DoH CNAME probes returned 415 due to missing Accept: application/dns-json header — CNAME evidence was manual-only until this cyc
+- LEARN: ROOT_CAUSE: all automated GraphQL GET probes return 403 (WAF urllib bot-gate) — no POST probes in 576-line probe-results.md; all KB "CONFIRMED" claims rely on m
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to s
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present), host 000 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de

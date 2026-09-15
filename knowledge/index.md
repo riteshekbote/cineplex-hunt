@@ -432,3 +432,7 @@
 - 2026-09-15 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
 - 2026-09-15 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - 2026-09-15 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+- 2026-09-15 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready; 10+ cycle stability
+- 2026-09-15 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified THIS CYCLE with correct Accept header; Status 3 NXDOMAIN + azure SOA; sole CNAME in 7-host set
+- 2026-09-15 ROOT_CAUSE: all prior automated DoH CNAME probes returned 415 due to missing Accept: application/dns-json header — CNAME evidence was manual-only until this cycle
+- 2026-09-15 ROOT_CAUSE: all automated GraphQL GET probes return 403 (WAF urllib bot-gate) — no POST probes in 576-line probe-results.md; all KB "CONFIRMED" claims rely on manual curl

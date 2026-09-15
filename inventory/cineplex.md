@@ -1036,3 +1036,12 @@ wwww.cineplex.de
 ## 2026-09-14 22:16:06 UTC
 
 ## 2026-09-15 00:46:19 UTC
+
+## 2026-09-15 05:45:26 UTC
+- NEW dangling_cname_takeover @ web-dev.cineplex.de: 4th consecutive cycle NXDOMAIN confirmed (DoH Status 3, zone SOA present), sole candidate, claimability-attestation-required
+- NEW idor_control_group_expanded @ graphql-api.app.cineplex.de: 6/6 firing gates stable (errorStatistics UNAUTHENTICATED added as 6th gate archetype) proving auth-omission on 4 id-resolvers
+- NEW waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: automated urllib 403 consistent; curl 200 balanced GET consistent; WAF client-differentiated bot-gate confirmed
+- CHANGED relay_metrics @ data-9fc27eb430.cineplex.de: messages_queued grown to ~892.9M (from 553.5M), descriptive IOMB infra only, not reportable alone
+- CHANGED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready; 10+ cycle stability
+- CHANGED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+- CHANGED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
