@@ -79,3 +79,13 @@
   - | 1 | Prod GraphQL Introspection (WAF bypass) | **VALID** | 7.5 High | bugs.olivermaicher.eu |
   - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 6.5 Medium | bugs.olivermaicher.eu (bundle w/ #1) |
   - **Valid leads ready for report: 2** (Leads 1+2). Recommend bundling into a single report covering production + staging GraphQL introspection with WAF method-gate bypass (GET 403 / POST 200).
+
+- 8 lead(s) marked VALID at 2026-09-15 19:14:38 UTC
+  - | Q5 Novel | **YES** | Prior triages at 09-04, 09-06, 09-07, 09-10, 09-11, 09-12, 09-13 all marked VALID; not on rejected list |
+  - **Verdict: VALID**
+  - | Q4 Provable | **PARTIAL** | Structural proof: `decodePublicId` stacktrace confirms resolver processed ID without auth gate; `currentUser` resolver on same surface returns UNAUTHENTICATED proving gat
+  - | Q7 Reasonable triager | **HOLD** | Control-complete proof (4 omitted gates vs 4 firing gates), but strict triager demands at least one valid cross-user PII fetch before accept |
+  - **Verdict: VALID**
+  - | 1 | Prod+Staging GraphQL Introspection (WAF bypass) | **VALID** | 7.5 | Report to bugs.olivermaicher.eu |
+  - | 4 | Dangling CNAME Takeover (web-dev) | **VALID** | 6.1 | Report to bugs.olivermaicher.eu (separate) |
+  - **VALID leads ready for report: 2** (Leads 1+4). Recommend two separate submissions: (1) GraphQL introspection + staging env-confusion bundle, (2) Dangling CNAME takeover with DoH evidence.
