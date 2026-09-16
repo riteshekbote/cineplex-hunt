@@ -1127,3 +1127,5 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.{,staging.}cineplex.de` balanced-URL-encoded GET `?query=%7B__typename%7D` → 200 both envs reconfirmed live (curl --http2, browser UA)
 - CHANGED Automated probe log (627 lines) continues to show ONLY GET/HEAD root probes + malformed GraphQL GET queries (missing closing brace → HTTP 400) + DoH CNAME probes (HTTP 415). Zero POST GraphQL probes r
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` not probed this cycle (stale since 2026-09-08); `messages_queued` last read 553.5M, now estimated ~892.9M+ (growing ~135M/cycle accelerating)
+
+## 2026-09-16 14:52:19 UTC

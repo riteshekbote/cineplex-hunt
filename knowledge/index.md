@@ -466,3 +466,9 @@
 - 2026-09-16 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
 - 2026-09-16 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
 - 2026-09-16 ACCEPTED web-dev.cineplex.de dangle: 6th-cycle NXDOMAIN stability re-confirmed; sibling dev hosts (bms/booking-dev) definitively not dangles
+- 2026-09-16 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 7th-cycle NXDOMAIN stability re-confirmed; CNAME Status 0 (NOERROR) with A-follow Status 3 NXDOMAIN + azure SOA; sole dangle in 7-host dev set; host HTTP 000.
+- 2026-09-16 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200 (bms-dev 2147B, buchung-dev 2410B); /gateway/booking-session/session + /gateway/auth/oauth/token still 503 "Wartungsarbeiten"; bypass model stable, exploitability gated on backend state.
+- 2026-09-16 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET ?query=%7B__typename%7D → 200 (32B) both envs reconfirmed live; full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready; 10+ cycle stability.
+- 2026-09-16 REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead.
+- 2026-09-16 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable.
+- 2026-09-16 REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable.
