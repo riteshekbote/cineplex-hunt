@@ -459,3 +459,7 @@
 - 2026-09-16 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
 - 2026-09-16 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
 - 2026-09-16 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-16 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 6th-cycle NXDOMAIN stability; DoH CNAME 415s explained (missing Accept header) and closed — full 7-host dev sweep shows web-dev is sole dangle
+- 2026-09-16 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200 this cycle, /gateway/* routes still 503 maintenance; bypass model stable, exploitability gated on backend state
+- 2026-09-16 REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
+- 2026-09-16 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
