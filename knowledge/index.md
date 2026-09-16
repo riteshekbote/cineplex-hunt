@@ -463,3 +463,6 @@
 - 2026-09-16 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200 this cycle, /gateway/* routes still 503 maintenance; bypass model stable, exploitability gated on backend state
 - 2026-09-16 REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
 - 2026-09-16 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+- 2026-09-16 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+- 2026-09-16 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
+- 2026-09-16 ACCEPTED web-dev.cineplex.de dangle: 6th-cycle NXDOMAIN stability re-confirmed; sibling dev hosts (bms/booking-dev) definitively not dangles

@@ -4098,3 +4098,50 @@ testability: AUTH_HELPED
 [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
 [LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 [RISK] cineplex: 46 — no new exploitable surface this cycle (dev gateway backend still down); report-ready items (introspection 7.5, dangle 6.1) pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; 6-cycle stable findings, exploitation risk shift concentrated in submission workflow not live testing.
+## 2026-09-16 10:00:47 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.{,staging.}cineplex.de, 9.05, a9/b9/t9/g9/c6/f8
+[PRIO] web-dev.cineplex.de dangle, 8.30, a9/b6/t5/g10/c9/f8
+[PRIO] buchung-dev/bms-dev origin bypass, 7.40, a6/b7/t9/g10/c4/f9
+[PRIO] graphql-api.app.staging.cineplex.de testing oracle, 7.05, a7/b9/t8/g9/c3/f2
+[PRIO] idor_booking @ graphql-api.app.cineplex.de, 6.95, a8/b9/t9/g6/c3/f3
+[PRIO] internal_architecture_leak @ graphql-api.app.staging.cineplex.de, 5.70, a5/b6/t7/g9/c2/f3
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 92
+reasoning: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present) confirmed 6 consecutive cycles; sole dangle in 7-host dev set; host returns HTTP 000; claimability requires Azure attestation per program rules.
+evidence_needed: claimability confirmation from Azure (requires program authorization to attempt)
+verify_steps: (1) re-verify DoH CNAME this cycle: curl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json"; (2) confirm HTTP 000 on host; (3) check for any A-record changes
+impact: Full control over scoped dev subdomain → serve malicious content, phishing, cookie theft via parent domain scope, supply chain to staging/prod if shared infra (High)
+testability: PASSIVE
+[HYP] Dev origin WAF bypass exposing booking/CMS tier
+class: MISCONFIG
+asset: buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 75
+reasoning: public GET→403 CF challenge vs origin+Host→200 SPA (both dev hosts); /gateway/* routes 503 maintenance; SPA bundle discloses OAuth token/custom-registration/PayOne gateway endpoints; prod not on this origin.
+evidence_needed: any /gateway/* returning non-503; non-SPA route on bms-dev CMS
+verify_steps: (1) re-probe origin /gateway/auth/oauth/authorize next cycle (GET, read-only); (2) re-probe /gateway/booking-session/session for 503→200; (3) human banner-only check of T360 CMS login
+impact: WAF-less reach to dev booking+payment API + internal CMS; backend currently down caps impact (503); Medium-Low (CVSS 3.7–5.3)
+testability: AUTH_HELPED
+[HYP] Staging confirmation-code oracle enables intra-tenant ATO
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 78
+reasoning: testing_getConfirmationCode resolves authless (200, backend hit, 405-mismatch on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; paired testing_forceDeleteUser; env-guard omission 10+ cycles sustained.
+evidence_needed: HUMAN_ONLY POST extraction of real confirmation code (program PII rule blocks passive)
+verify_steps: passive contrast complete; code extraction requires program authorization
+impact: ATO chain if staging code format accepted by prod reset — Critical but requires authorized-account proof
+testability: HUMAN_ONLY
+[PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value — insufficient for submission
+[PARKED] JWT Algorithm/Key Confusion via GraphQL login Mutation: confidence 55; no passive JWKS fetch possible (auth.cineplex.de/.well-known/jwks.json 404); requires active token capture — lower priority than PASSIVE staging probes and CNAME takeover
+[FINAL] Survivors ranked by testability × impact:
+[NEXT] PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json" — re-verify 7th-cycle NXDOMAIN stability for submission confidence; also re-probe buchung-dev origin /gateway/booking-session/session for 503→200 transition
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit; 10+ cycle stability
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 6th-cycle NXDOMAIN stability; DoH CNAME 415s explained (missing Accept header) and closed — full 7-host dev sweep shows web-dev is sole dangle
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200 this cycle, /gateway/* routes still 503 maintenance; bypass model stable, exploitability gated on backend state
+[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
+[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+[RISK] cineplex: 46 — no new exploitable surface this cycle (dev gateway backend still down); report-ready items (introspection 7.5, dangle 6.1) pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; 6-cycle stable findings, exploitation risk shift concentrated in submission workflow not live testing.

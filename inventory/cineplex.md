@@ -1114,3 +1114,16 @@ wwww.cineplex.de
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all HTTP 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
 - CHANGED `graphql-api.app.{,staging.}cineplex.de` WAF method-gate: automated urllib 403 consistent; manual curl balanced GET 200 consistent — client-differentiated bot-gate confirmed
 - CHANGED `graphql-api.app.staging.cineplex.de` staging_testing_oracle persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
+
+## 2026-09-16 10:02:51 UTC
+- NEW `bms-dev.cineplex.de` — live Ticket360 CMS dev admin SPA at direct origin 194.77.169.121 (A-record, no Cloudflare); 200 on `/`, `/graphql`, `/api` (SPA catch-all); bundle discloses API base = `buchung
+- NEW `buchung-dev.cineplex.de` — Cloudflare origin-bypass differential: public GET → 403 (CF challenge, 115KB) vs origin IP+Host GET `/` → 200 "Cineplex Buchung" React SPA (fe-build); `/gateway/*` routes (
+- NEW `/gateway/*` API surface in dev booking bundle: `/gateway/auth/oauth/token`, `/gateway/auth/users/custom/registration`, `/gateway/booking-session/{process,session,ws,redirect/userExternalLogin/}` — au
+- NEW Prod booking/shop hosts (`buchung.cineplex.de`, `booking.cineplex.de`, `shop.cineplex.de`) → 404 default-backend on 194.77.169.121 — bypass is dev-cluster-only; prod not on this origin
+- NEW `dev.cineplex.de` public A → 10.20.0.7 (RFC1918 private IP in public DNS) — info-only, externally unreachable
+- CHANGED `web-dev.cineplex.de` dangle re-verified 6th consecutive cycle — CNAME→azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA, host HTTP 000
+- CHANGED DoH CNAME 415s resolved: full 7-host dev set swept with correct Accept header — ONLY `web-dev` has a CNAME (dangling); automated 415s were header-format artifacts
+- CHANGED `buchung-dev`/`bms-dev` origin SPAs 200 again this cycle; `/gateway/booking-session/session` + `/gateway/auth/oauth/token` at origin still 503 "Wartungsarbeiten"
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` balanced-URL-encoded GET `?query=%7B__typename%7D` → 200 both envs reconfirmed live (curl --http2, browser UA)
+- CHANGED Automated probe log (627 lines) continues to show ONLY GET/HEAD root probes + malformed GraphQL GET queries (missing closing brace → HTTP 400) + DoH CNAME probes (HTTP 415). Zero POST GraphQL probes r
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` not probed this cycle (stale since 2026-09-08); `messages_queued` last read 553.5M, now estimated ~892.9M+ (growing ~135M/cycle accelerating)
