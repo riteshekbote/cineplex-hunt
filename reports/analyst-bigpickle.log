@@ -20267,3 +20267,112 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 44 — all live probes this cycle read-only GET (DoH DNS, 7 origin/graphql GETs, ≤1 rps, no PII, no mutations); two report-ready findings (introspection 7.5-class, dangle 6.1) pending submission; risk now concentrated in submission workflow (claimability attestation, triage) not live testing; origin bypass remains latent (backend 503). Slight decrease from 46 as gateway 6-route 503 confirmation tightens the gated-exploitable model.
+===== ANALYST bigpickle 2026-09-16 21:43:08 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -w "\nHTTP_CODE=%{http_code} SIZE=%{size_download}\n" -o /tmp/opencode/gw_auth.out "https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com" ; echo "---"; head -c 300 /tmp/opencode/gw_auth.out
+curl: (28) Connection timed out after 12002 milliseconds
+head: cannot open '/tmp/opencode/gw_auth.out' for reading: No such file or directory
+
+HTTP_CODE=000 SIZE=0
+---
+[0m
+[0m$ [0mcurl -sS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -w "\nHTTP_CODE=%{http_code} SIZE=%{size_download}\n" -o /tmp/opencode/gw_sess.out "https://buchung-dev.cineplex.de/gateway/booking-session/session" ; echo "---"; head -c 300 /tmp/opencode/gw_sess.out
+curl: (28) Connection timed out after 12002 milliseconds
+head: cannot open '/tmp/opencode/gw_sess.out' for reading: No such file or directory
+
+HTTP_CODE=000 SIZE=0
+---
+[0m
+[0m$ [0msleep 1; curl -sS --max-time 12 -H "Host: bms-dev.cineplex.de" --resolve bms-dev.cineplex.de:443:194.77.169.121 -w "\nHTTP_CODE=%{http_code} SIZE=%{size_download}\n" -o /tmp/opencode/bms_login.out "https://bms-dev.cineplex.de/login" ; echo "---"; head -c 300 /tmp/opencode/bms_login.out
+curl: (28) Connection timed out after 12003 milliseconds
+head: cannot open '/tmp/opencode/bms_login.out' for reading: No such file or directory
+
+HTTP_CODE=000 SIZE=0
+---
+[0m
+[0m$ [0mcurl -sS --max-time 20 --http1.1 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -w "\nHTTP_CODE=%{http_code} SIZE=%{size_download}\n" -o /tmp/opencode/gw_root.out "https://buchung-dev.cineplex.de/" ; echo "---"; head -c 200 /tmp/opencode/gw_root.out 2>/dev/null
+curl: (28) Connection timed out after 20002 milliseconds
+
+HTTP_CODE=000 SIZE=0
+---
+[0m
+[0m$ [0mcurl -sS --max-time 12 -w "\nHTTP_CODE=%{http_code} SIZE=%{size_download}\n" -o /tmp/opencode/pub_buchung.out "https://buchung-dev.cineplex.de/" ; echo "---pub---"; head -c 200 /tmp/opencode/pub_buchung.out 2>/dev/null
+HTTP_CODE=403 SIZE=115384
+---pub---
+<html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title></title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<style t
+[0m
+[0m$ [0mcurl -sS --max-time 12 -H "Accept: application/dns-json" -w "\nHTTP_CODE=%{http_code}\n" -o /tmp/opencode/doh_webdev.json "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" ; cat /tmp/opencode/doh_webdev.json 2>/dev/null
+HTTP_CODE=200
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+[0m
+[0m$ [0mtimeout 5 bash -c 'echo > /dev/tcp/194.77.169.121/443' 2>&1 && echo "TCP:443 OPEN" || echo "TCP:443 CLOSED/TIMEOUT"; timeout 5 bash -c 'echo > /dev/tcp/194.77.169.121/80' 2>&1 && echo "TCP:80 OPEN" || echo "TCP:80 CLOSED/TIMEOUT"
+TCP:443 CLOSED/TIMEOUT
+TCP:80 CLOSED/TIMEOUT
+[0m
+[0m$ [0mcurl -sS --max-time 12 -H "Accept: application/dns-json" -o /tmp/opencode/doh_afollow.json "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" ; cat /tmp/opencode/doh_afollow.json 2>/dev/null; echo; sleep 1; curl -sS --max-time 12 -H "Accept: application/dns-json" -o /tmp/opencode/doh_soa.json "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=SOA" ; echo "---SOA---"; cat /tmp/opencode/doh_soa.json 2>/dev/null
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+---SOA---
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":6}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+STEP 1 — DELTA:
+- [CHANGED] Origin 194.77.169.121:443/80 now TCP-unreachable (timeout, HTTP 000) on both buchung-dev and bms-dev; public CF front still 403/115KB — dev_origin_waf_bypass exploitability link severed this cycle (was 200 SPA 2 cycles ago)
+- [NEW] web-dev.cineplex.de dangle re-verified THIS cycle: CNAME Status 0 (TTL 300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io), A-follow Status 3 NXDOMAIN + azure SOA — 8th consecutive cycle stable
+- [CHANGED] graphql-api.app.{,staging.} not re-probed this cycle; last live 200 __typename verification 2026-09-16 (prior cycle)
+
+STEP 2 — PRIORITIZE:
+- [PRIO] web-dev.cineplex.de dangle, 7.60, a6/b7/t7/g10/c9/f8
+- [PRIO] graphql-api.app.staging oracle, 7.30, a8/b9/t9/g9/c5/f3
+- [PRIO] buchung-dev/bms-dev origin bypass, 5.80, a5/b6/t7/g6/c6/f5
+
+STEP 3 — HYPOTHESES:
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 93
+reasoning: CNAME Status 0 (TTL 300) → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN with switzerlandnorth.azurecontainerapps.io SOA (azure-dns.com) re-read THIS cycle; host HTTP 000; sole CNAME in 7-host dev sweep; 8 consecutive cycles identical (2026-09-13→16)
+evidence_needed: Azure ContainerApps claimability attestation (program-authorized only); no other tenant serves that app name
+verify_steps: (1) DoH CNAME re-read done this cycle (Status 0); (2) A-follow NXDOMAIN re-read done (Status 3 + azure SOA); (3) host HTTP 000 done; (4) attest claim = HUMAN/authorized only
+impact: Attacker claims abandoned azurecontainerapps.io app → serves malicious content under scoped *.cineplex.de, phishing + cookie/scope abuse vs parent domain, supply-chain if dev tooling shares auth; CVSS 6.1 Medium
+testability: PASSIVE
+
+[HYP] Staging confirmation-code oracle enables intra-tenant ATO
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 78
+reasoning: testing_getConfirmationCode resolves authless (200, backend hit, 405-mismatch on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; paired testing_forceDeleteUser; env-guard omission 10+ cycles sustained
+evidence_needed: HUMAN_ONLY POST extraction of real confirmation code (program PII rule blocks passive)
+verify_steps: passive contrast complete; code extraction requires program authorization
+impact: ATO chain if staging code format accepted by prod reset — Critical but requires authorized-account proof
+testability: HUMAN_ONLY
+
+[HYP] Dev origin WAF bypass re-emerges once origin returns
+class: MISCONFIG
+asset: buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 55
+reasoning: differential proven 2 cycles ago (public 403 CF vs origin+Host 200 SPA 2410B/2147B); all probed /gateway/* were 503 maintenance last live cycle; THIS cycle origin TCP-closed (000 timeout) — network link down, not WAF-added, since CF front unchanged
+evidence_needed: origin TCP reachability restored; any /gateway/* returning non-503
+verify_steps: (1) re-resolve buchung-dev/bms-dev A records (origin may have moved); (2) TCP connect 194.77.169.121:443; (3) on return, GET /gateway/auth/oauth/authorize read-only
+impact: WAF-less reach to dev booking+payment API + internal CMS; currently capped (origin down); Medium-Low CVSS 3.7–5.3
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE:
+- [PARKED] dev_origin_waf_bypass: origin TCP-closed this cycle; differential untestable until network link returns; parked (not dead — live 2 cycles ago)
+- [PARKED] profil_preference_surface: confidence 45, no passive reflector, low value — unchanged
+- [PARKED] screening: idor_booking + staging_testing_oracle HUMAN_ONLY per program PII rule; jwt_alg_confusion no passive JWKS (404)
+- [FINAL] survivors ranked: (1) web-dev dangle — PASSIVE, 8-cycle evidence complete, Medium/CVSS 6.1; (2) graphql_introspection — report-ready CVSS 5.3, 10+ cycle stability
+
+STEP 5 — NEXT ACTION:
+[NEXT] PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A" -H "Accept: application/dns-json" (re-resolve origin IP) + TCP connect 194.77.169.121:443; if reachable again, GET /gateway/auth/oauth/authorize read-only for 503→non-503 transition
+
+STEP 6 — LEARNING:
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set
+[LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 now TCP-unreachable (HTTP 000, 20s timeout both ports) while public CF 403 intact — exploitability network-gated; hypothesis on hold, not dead
+[LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead
+
+STEP 7 — RISK:
+[RISK] cineplex: 46 — no new exploitable surface this cycle (dev origin network-down closes the only moving lead); web-dev dangle (6.1) + introspection (5.3) report-ready and pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; exploitation risk shift remains in submission workflow, not live testing

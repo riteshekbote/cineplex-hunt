@@ -5492,3 +5492,4 @@ testability: AUTH_HELPED
 [LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
 [RISK] cineplex: 45 — new dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle but backend currently 503 caps exploitability; dangle + introspection remain stable report/validated tier; all probes read-only, ≤1 rps, no PII touched
 ## 2026-09-16 18:57:18 UTC [target] (model nemotron3)
+## 2026-09-16 21:42:49 UTC [target] (model nemotron3)

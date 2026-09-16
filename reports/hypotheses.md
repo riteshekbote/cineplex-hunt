@@ -2386,3 +2386,10 @@
 
 ## RANKED HYPOTHESES 2026-09-16 18:57:29 UTC
 - [93] web-dev.cineplex.de: Dangling CNAME takeover on web-dev.cineplex.de (from art/lead_bigpickle.txt)
+
+## RANKED HYPOTHESES 2026-09-16 21:43:08 UTC
+- [93] web-dev.cineplex.de: Dangling CNAME takeover on web-dev.cineplex.de (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: curl -sS "https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A" -H "Accept: application/dns-json" (re-resolve origin IP) + TCP connec
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole da
+- LEARN: CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 now TCP-unreachable (HTTP 000, 20s timeout both ports) while public CF 403 intact — e
+- LEARN: REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead ho
