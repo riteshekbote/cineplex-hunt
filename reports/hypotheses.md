@@ -2383,3 +2383,6 @@
 - LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
 - LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
 - LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+
+## RANKED HYPOTHESES 2026-09-16 18:57:29 UTC
+- [93] web-dev.cineplex.de: Dangling CNAME takeover on web-dev.cineplex.de (from art/lead_bigpickle.txt)

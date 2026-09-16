@@ -4188,3 +4188,22 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable.
 [LEARN] REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable.
 [RISK] cineplex: 46 — no new exploitable surface this cycle (dev gateway backend still 503); report-ready items (introspection 7.5, dangle 6.1) pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; 7-cycle stable findings, exploitation risk shift concentrated in submission workflow not live testing.
+## 2026-09-16 18:38:35 UTC [target] (model bigpickle)
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 93
+reasoning: CNAME Status 0 (TTL 300) → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN with switzerlandnorth.azurecontainerapps.io SOA (azure-dns.com); curl resolve-fail → HTTP 000; sole CNAME in 7-host dev sweep; 8 consecutive cycles identical (2026-09-13→16)
+evidence_needed: Azure ContainerApps claimability attestation (requires program authorization); prove no other tenant serves that app name
+verify_steps: (1) DoH CNAME record re-read done this cycle; (2) A-follow NXDOMAIN re-read done; (3) host HTTP 000 re-read done; (4) attempt claim = HUMAN/authorized only
+impact: Attacker claims abandoned azurecontainerapps.io app → serves malicious content under scoped *.cineplex.de, phishing + cookie/scope abuse against parent domain, supply-chain if dev tooling shares auth; CVSS 6.1 Medium
+testability: PASSIVE
+[HYP] Dev origin WAF bypass exposes booking/CMS tier once gateway backend returns
+class: MISCONFIG
+asset: buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 75
+reasoning: public GET → 403 CF challenge vs origin+Host GET → 200 SPA (2410B); all 6 probed /gateway/* routes 503 maintenance this and last cycle; bundle discloses auth/oauth/token + custom-registration + booking-session endpoints; bms-dev T360 CMS 200/2147B SPA catch-all
+evidence_needed: any /gateway/* returning non-503 at origin (backend live state); OAuth/registration route resolving authless
+verify_steps: (1) re-probe /gateway/auth/oauth/authorize + /gateway/auth/users/custom/registration for 503→non-503 (done this cycle: still 503); (2) on transition, GET-based read-only OAuth authorize check; (3) human banner check of T360 CMS login
+impact: WAF-less reach to dev booking+payment API + internal CMS; currently capped (backend 503); Medium-Low CVSS 3.7–5.3
+testability: AUTH_HELPED
