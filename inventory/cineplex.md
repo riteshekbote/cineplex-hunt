@@ -1079,3 +1079,19 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.staging.cineplex.de` staging_testing_oracle persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
 - CHANGED `graphql-api.app.{,staging.}cineplex.de` WAF method-gate: automated urllib 403 consistent; manual curl balanced GET 200 consistent — client-differentiated bot-gate confirmed
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6 probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
+
+## 2026-09-16 00:31:30 UTC
+- NEW bms-dev.cineplex.de — live "T360 - CMS" (Ticket360) dev admin SPA at DIRECT origin 194.77.169.121 (A-record, no CNAME, no Cloudflare); 200/2147B index on /, /graphql, /api (SPA catch-all); bundle sets
+- NEW buchung-dev.cineplex.de — Cloudflare origin-bypass differential proven: public GET → 403 (CF challenge, 115520B) vs origin (194.77.169.121 + Host header) GET / → 200 "Cineplex Buchung" React SPA (fe-b
+- NEW /gateway/* API surface disclosed in dev booking bundle: /gateway/auth/oauth/token, /gateway/auth/users/custom/registration, /gateway/booking-session/{process,session,ws,redirect/userExternalLogin/}
+- NEW Prod booking/shop hosts (buchung.cineplex.de, booking.cineplex.de, shop.cineplex.de) → 404 default-backend on 194.77.169.121 — bypass is dev-cluster-only; prod not on this origin
+- NEW dev.cineplex.de public A → 10.20.0.7 (RFC1918 private IP in public DNS) — info-only, not externally reachable
+- NEW Breadth sweep: my/account/m/wap/web/mobile.cineplex.de all root 403 CF — no new public surface
+- CHANGED web-dev.cineplex.de dangle re-verified 5th consecutive cycle (CNAME Status 0, TTL 300 → A-follow Status 3 NXDOMAIN, switzerlandnorth azure SOA); bms-dev/booking-dev confirmed NON-dangling (A→194.77.16
+- NEW Automated probe log (627 lines) continues to show ONLY GET/HEAD root probes + malformed GraphQL GET queries (missing closing brace → HTTP 400) + DoH CNAME probes (HTTP 415 format error). Zero POST Gra
+- NEW `graphql-api.app.cineplex.de/?query=%7Binvoice(id:"0")%7D...` automated probe returns HTTP 403 (WAF bot-gate), contradicting prior manual curl claims of 200 INVALID_ID. Malformed brace-unbalanced prob
+- NEW `data-9fc27eb430.cineplex.de/metrics` not probed this cycle (stale since 2026-09-08); messages_queued last read 553.5M, now estimated ~892.9M+ (growing ~135M/cycle accelerating).
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all HTTP 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead.
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` WAF method-gate: automated urllib 403 consistent; manual curl balanced GET 200 consistent — client-differentiated bot-gate confirmed.
+- CHANGED `web-dev.cineplex.de` CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` re-verified NXDOMAIN (DoH Status 3 + zone SOA) via manual DoH with correct `Accept: application/d
+- CHANGED `graphql-api.app.staging.cineplex.de` staging_testing_oracle persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link.

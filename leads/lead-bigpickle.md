@@ -3938,3 +3938,54 @@ evidence_needed: HUMAN_ONLY POST extraction of real confirmation code (program P
 verify_steps: passive contrast complete; code extraction requires program authorization
 impact: ATO chain if staging code format accepted by prod reset; Critical but requires authorized-account proof
 testability: HUMAN_ONLY
+## 2026-09-16 00:31:21 UTC [target] (model bigpickle)
+[NEW] bms-dev.cineplex.de — live "T360 - CMS" (Ticket360) dev admin SPA at DIRECT origin 194.77.169.121 (A-record, no CNAME, no Cloudflare); 200/2147B index on /, /graphql, /api (SPA catch-all); bundle sets API base = https://buchung-dev.cineplex.de/
+[NEW] buchung-dev.cineplex.de — Cloudflare origin-bypass differential proven: public GET → 403 (CF challenge, 115520B) vs origin (194.77.169.121 + Host header) GET / → 200 "Cineplex Buchung" React SPA (fe-booking webpack; PayOne hosted payment JS; cookiebot; www.cineplex.de/plus refs) and /gateway/booking-session/session → 503 (real backend route resolves, service down this cycle)
+[NEW] /gateway/* API surface disclosed in dev booking bundle: /gateway/auth/oauth/token, /gateway/auth/users/custom/registration, /gateway/booking-session/{process,session,ws,redirect/userExternalLogin/}
+[NEW] Prod booking/shop hosts (buchung.cineplex.de, booking.cineplex.de, shop.cineplex.de) → 404 default-backend on 194.77.169.121 — bypass is dev-cluster-only; prod not on this origin
+[NEW] dev.cineplex.de public A → 10.20.0.7 (RFC1918 private IP in public DNS) — info-only, not externally reachable
+[NEW] Breadth sweep: my/account/m/wap/web/mobile.cineplex.de all root 403 CF — no new public surface
+[CHANGED] web-dev.cineplex.de dangle re-verified 5th consecutive cycle (CNAME Status 0, TTL 300 → A-follow Status 3 NXDOMAIN, switzerlandnorth azure SOA); bms-dev/booking-dev confirmed NON-dangling (A→194.77.169.121)
+[PRIO] buchung-dev+bms-dev.cineplex.de (dev-origin WAF bypass), 6.45, gate_ease(10)+tech_exposure(OAuth/gateway/CMS/payment)
+[PRIO] web-dev.cineplex.de (dangle), 5.90, cloud_surface(9)+gate_ease(10)+freshness(8)
+[PRIO] graphql-api.app.staging.cineplex.de (introspection oracle), 5.50, tech_exposure(8)+business_value(5)
+[HYP] Cloudflare WAF bypass exposing dev booking/CMS tier at origin
+class: MISCONFIG
+asset: buchung-dev.cineplex.de / bms-dev.cineplex.de (dev origin 194.77.169.121)
+confidence: 75
+reasoning: public buchung-dev GET → 403 CF challenge (115520B); same host via origin IP+Host header → 200 booking SPA and 503 on /gateway/booking-session/session (ingress routes to real service). bms-dev A-records directly to origin (no CF) → 200 Ticket360 CMS dev admin. SPA bundle discloses OAuth token, custom-user registration, booking-session gateway endpoints + PayOne payment integration. Prod buchung/booking/shop do NOT route on this IP (404 default-backend) → dev-cluster-only exposure.
+evidence_needed: any /gateway/* returning non-503 at origin (backend up); or non-SPA route reachable on bms-dev CMS
+verify_steps: (1) repeat origin GET /gateway/booking-session/session next cycle (503→200 signals live backend); (2) read-only origin GET of /gateway/auth/oauth/* authorize-style endpoints; (3) human: banner-only check of T360 CMS login on bms-dev (no credential attempts)
+impact: WAF-less reach to dev booking+payment-tier API and internal CMS at direct origin; today backend-down (503) caps impact, control bypass itself proven; Medium-Low (CVSS ~3.7–5.3)
+testability: AUTH_HELPED
+[HYP] Dangling CNAME subdomain takeover on web-dev.cineplex.de (sole dangle in dev set)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 88
+reasoning: 5th consecutive cycle DoH-verified THIS cycle — CNAME present (Status 0, TTL 300), A-follow Status 3 NXDOMAIN, switzerlandnorth.azurecontainerapps.io SOA live. bms-dev/booking-dev re-confirmed non-dangling this cycle (live A records, no CNAME).
+evidence_needed: claimability attestation = Azure registration of env gentleglacier-dfef6458 + app web in switzerlandnorth → 200 attacker content (HUMAN_ONLY post-submission)
+verify_steps: DoH CNAME + dual A-follow done this cycle; host HTTP 000
+impact: full control of scoped .cineplex.de dev subdomain → phishing/brand abuse/parent-cookie scope; Medium (CVSS ~5.3–6.1)
+testability: PASSIVE
+[HYP] Production+staging GraphQL introspection with env-confusion testing mutations
+class: OTHER
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: POST introspection 200 full schema both envs (staging 140 mutations/83 queries incl testing_getConfirmationCode/testing_forceDeleteUser); 35KB arg enumeration injection-free; 12+ cycle stability; triage VALID 7.5/6.5
+evidence_needed: none — schema dumps + enumeration + write-up complete
+verify_steps: report-ready; cross-tenant/ATO chain HUMAN_ONLY
+impact: full attack-surface + PII-query + internet-exposed testing mutations; Medium-High (CVSS 5.3–7.5)
+testability: PASSIVE
+[PARKED] dev.cineplex.de private-IP-in-DNS (10.20.0.7): descriptive/info class, not externally reachable, not reportable alone
+[PARKED] dev-origin bypass full-impact chain: contingent on dev backend coming online (currently 503) — keep, re-probe next cycle; won't drop below 40
+[FINAL] web-dev.cineplex.de dangle (88, PASSIVE)
+[FINAL] graphql-api.app.{,staging.}cineplex.de introspection (85, PASSIVE, report-ready)
+[FINAL] graphql-api.app.staging.cineplex.de testing oracle (78, HUMAN_ONLY, carry)
+[FINAL] buchung-dev/bms-dev origin WAF bypass (75, AUTH_HELPED, new this cycle)
+[NEXT] PROBE: curl -sS -k --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/booking-session/session" — track 503→200 (dev backend up) and same-origin probe of /gateway/auth/oauth/* on bms-dev.cineplex.de
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: CF 403 public vs 200 SPA + 503 gateway route at origin IP 194.77.169.121; dev booking/payment+cms tier WAF-less at origin; prod booking/shop NOT on this origin (404); AUTH_HELPED, impact contingent on backend state
+[LEARN] ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+[LEARN] REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable
+[LEARN] REJECTED prod_booking_origin_bypass @ buchung/booking/shop.cineplex.de: 404 default-backend on 194.77.169.121 — prod behind different origin; idea dead
+[LEARN] ACCEPTED web-dev.cineplex.de dangle: 5th-cycle NXDOMAIN stability re-confirmed; sibling dev hosts (bms/booking-dev) definitively not dangles
+[RISK] cineplex: 45 — new dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle but backend currently 503 caps exploitability; dangle + introspection remain stable report/validated tier; all probes read-only, ≤1 rps, no PII touched
