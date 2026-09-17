@@ -4407,3 +4407,43 @@ impact: ATO chain if staging code format accepted by prod reset — Critical, re
 testability: HUMAN_ONLY
 [NEXT] PROBE: cycle-track the origin OAuth surface for 503→non-503 transition — GET (read-only, ≤1rps) `curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https%3A%2F%2Fexample.com"`; if it flips from 503, immediately also GET `/gateway/booking-session/session` and record status; do NOT POST credentials
 [RISK] cineplex: 46 — no new exploitable surface this cycle (gateway backend still 503 across all 7 routes; only network link restored); web-dev dangle (CVSS 6.1) + graphql introspection (CVSS 5.3) report-ready pending submission, 10-cycle stable; all probes read-only GET ≤1 rps, no PII touched; risk shift remains in submission workflow, not live testing
+## 2026-09-17 09:53:27 UTC [target] (model bigpickle)
+[PRIO] buchung-dev.cineplex.de origin (194.77.169.121),6.2, attack_surface=7 (WAF-less origin, OAuth+booking gateway), business_value=6 (dev booking+payment tier), tech_exposure=7 (OAuth /authorize + /token + /booking-session), gate_ease=5 (AUTH_HELPED, origin bypasses CF WAF), cloud_surface=2 (bare-metal origin, not cloud), freshness=6 (TCP-down last cycle, re-check needed)
+[PRIO] graphql-api.app.{,staging.}cineplex.de,6.1, attack_surface=6 (introspection+IDOR+staging oracle), business_value=7 (production PII+booking), tech_exposure=8 (GraphQL introspection+mutations), gate_ease=4 (automated 403 WAF, manual 200), cloud_surface=5 (Lambda behind CF), freshness=8 (10+ cycle stability, CVSS 5.3 ready)
+[PRIO] web-dev.cineplex.de,5.9, attack_surface=5 (dangling CNAME, no live host), business_value=5 (dev subdomain, *.cineplex.de scope), tech_exposure=3 (no live HTTP), gate_ease=8 (PASSIVE, no auth), cloud_surface=6 (Azure ContainerApps target), freshness=9 (9 consecutive NXDOMAIN cycles)
+[HYP] Dev origin WAF bypass + OAuth redirect_uri validation gap once gateway backend returns
+class: MISCONFIG
+asset: buchung-dev.cineplex.de origin (194.77.169.121), /gateway/auth/oauth/authorize
+confidence: 55
+reasoning: origin tier was TCP-unreachable last cycle; prior cycles confirmed CF 403 public vs origin 200 SPA + 503 gateway routes; app tier live, gateway/backend tier down
+evidence_needed: origin TCP reachability restored; any /gateway/* returning non-503
+verify_steps: (1) curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/" — check if origin reachable (SPA 200); (2) if reachable, GET /gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https%3A%2F%2Fexample.com — read-only OAuth check
+impact: WAF-less reach to dev booking+payment API + internal CMS; dev OAuth redirect_uri flaw → token theft chain if found; Medium CVSS 3.7–5.3
+testability: AUTH_HELPED
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 93
+reasoning: CNAME Status 0 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN + azure SOA; host HTTP 000; 9 consecutive cycles identical; sole dangle in 7-host dev set
+evidence_needed: Azure ContainerApps claimability attestation (program-authorized only)
+verify_steps: (1) DoH CNAME re-read done (Status 0, TTL 300); (2) A-follow NXDOMAIN re-read done (Status 3 + azure SOA); (3) host HTTP 000 done; (4) attest claim = HUMAN/authorized only
+impact: attacker claims abandoned Azure ContainerApp → serves content under *.cineplex.de, phishing + parent-domain scope/cookie abuse; CVSS 6.1 Medium
+testability: PASSIVE
+[HYP] Staging confirmation-code oracle enables intra-tenant ATO
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 78
+reasoning: testing_getConfirmationCode resolves authless (200, backend hit, 405 on /userPasswordResets/search/findByMandatorIdAndEmailAddress) vs prod FORBIDDEN; env-guard omission persists 10+ cycles
+evidence_needed: HUMAN_ONLY POST extraction of real confirmation code (program PII rule blocks passive)
+verify_steps: passive contrast complete; code extraction requires program authorization
+impact: ATO chain if staging code format accepted by prod reset — Critical, requires authorized-account proof
+testability: HUMAN_ONLY
+[NEXT] PROBE: curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/" — re-check if origin TCP is back up after last cycle's 000 timeout; if 200 SPA, immediately GET /gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https%3A%2F%2Fexample.com via same origin path
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th consecutive cycle NXDOMAIN re-verified; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, ready for submission
+[LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 TCP-unreachable (HTTP 000, 20s timeout both ports) last cycle; exploitability network-gated; re-probe this cycle
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged
+[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: unreachable
+[LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+[LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+[RISK] cineplex: 46 — no new exploitable surface this cycle (dev origin TCP-down closes only active lead); web-dev dangle (CVSS 6.1) + graphql introspection (CVSS 5.3) report-ready pending submission; all probes read-only GET ≤1 rps, no PII touched; exploitation risk shift remains in submission workflow, not live testing
