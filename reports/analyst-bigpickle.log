@@ -20376,3 +20376,91 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] cineplex: 46 — no new exploitable surface this cycle (dev origin network-down closes the only moving lead); web-dev dangle (6.1) + introspection (5.3) report-ready and pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; exploitation risk shift remains in submission workflow, not live testing
+===== ANALYST bigpickle 2026-09-17 00:02:52 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 12 "https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A" -H "Accept: application/dns-json"
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"buchung-dev.cineplex.de","type":1}],"Answer":[{"name":"buchung-dev.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"},{"name":"buchung-dev.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"}]}
+[0m
+[0m$ [0mcurl -sS --max-time 12 "https://cloudflare-dns.com/dns-query?name=bms-dev.cineplex.de&type=A" -H "Accept: application/dns-json"
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"bms-dev.cineplex.de","type":1}],"Answer":[{"name":"bms-dev.cineplex.de","type":1,"TTL":300,"data":"194.77.169.121"}]}
+[0m
+[0m$ [0mcurl -sS --max-time 12 "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json"
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+[0m
+[0m$ [0mtimeout 8 bash -c 'echo > /dev/tcp/194.77.169.121/443' && echo "443 OPEN" || echo "443 CLOSED/UNREACHABLE"
+443 OPEN
+[0m
+[0m$ [0mcurl -sS --max-time 12 "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" -H "Accept: application/dns-json"
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mcurl -sS --max-time 12 -o /dev/null -w "%{http_code} %{size_download}B" -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/" 2>&1 | head -c 300; echo; curl -sS --max-time 12 -o /dev/null -w "%{http_code} %{size_download}B\n" -H "Host: bms-dev.cineplex.de" --resolve bms-dev.cineplex.de:443:194.77.169.121 "https://bms-dev.cineplex.de/" 2>&1 | head -c 300
+curl: (60) SSL certificate problem: certificate has expired
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the we
+200 2147B
+[0m
+Origin 194.77.169.121 is back up (was TCP-dead last cycle). bms-dev SPA 200/2147B again. Probing the dev gateway auth routes read-only for the 503→non-503 transition.
+[0m$ [0mcurl -skS --max-time 12 -o /dev/null -w "session: %{http_code} %{size_download}B\n" -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/booking-session/session"; sleep 1; curl -skS --max-time 12 -o /dev/null -w "oauth-authorize: %{http_code} %{size_download}B\n" -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com"; sleep 1; curl -skS --max-time 12 -o /dev/null -w "registration: %{http_code} %{size_download}B\n" -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration"
+session: 503 1485B
+oauth-authorize: 503 1485B
+registration: 503 1485B
+[0m
+[0m$ [0mcurl -skS --max-time 12 -o /dev/null -w "buchung-dev origin /: %{http_code} %{size_download}B\n" -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/"; sleep 1; curl -skS --max-time 12 -o /dev/null -w "bms-dev gateway/session: %{http_code} %{size_download}B\n" -H "Host: bms-dev.cineplex.de" --resolve bms-dev.cineplex.de:443:194.77.169.121 "https://bms-dev.cineplex.de/gateway/booking-session/session"; sleep 1; curl -sS --max-time 12 -o /dev/null -w "public buchung-dev: %{http_code} %{size_download}B\n" "https://buchung-dev.cineplex.de/"
+buchung-dev origin /: 200 2410B
+bms-dev gateway/session: 503 1485B
+public buchung-dev: 403 115384B
+[0m
+**Probes run (read-only GET/HEAD, ≤1 rps, no PII):** origin 194.77.169.121 TCP-open restored; buchung-dev SPA 200/2410B, bms-dev SPA 200/2147B; /gateway/* all still 503 "Wartungsarbeiten" (1485B); web-dev CNAME A-follow NXDOMAIN 9th cycle.
+
+STEP 1 — DELTA
+- [CHANGED] dev origin 194.77.169.121 back TCP-open this cycle (was HTTP 000 last cycle); buchung-dev (200/2410B) + bms-dev (200/2147B) origin SPAs fully restored
+- [CHANGED] /gateway/* still 503 maintenance on all 3 probe points (booking-session/session, auth/oauth/authorize, auth/users/custom/registration) both dev hosts — backend tier still down, exploitability still gated
+- [CHANGED] buchung-dev.cineplex.de public A now → 104.16.22.67/.23.67 (Cloudflare), public GET 403 CF challenge (115KB) intact; bms-dev A → 194.77.169.121 (direct, no CF)
+- [CHANGED] buchung-dev origin cert now expired (needs `-k`) — ingress cert rotation state differs from prior fake-Acme-Co
+- [CHANGED] web-dev.cineplex.de dangle: CNAME Status 0 → azurecontainerapps.io, A-follow Status 3 + azure SOA, host 000 — 9th consecutive cycle
+
+STEP 2 — PRIORITIZE
+- [PRIO] web-dev.cineplex.de,5.2 (g=10 conflict-free takeover, f=10 stability)
+- [PRIO] buchung-dev/bms-dev origin bypass,4.8 (t=6 OAuth/gateway tier, g=8 WAF-less reach)
+- [PRIO] graphql-api.app.{,staging}.cineplex.de,4.1 (report-ready, passive stable)
+
+STEP 3 — HYPOTHESES
+[HYP] Dev origin WAF bypass + OAuth redirect_uri validation gap once gateway backend returns
+class: MISCONFIG
+asset: buchung-dev.cineplex.de origin (194.77.169.121), /gateway/auth/oauth/authorize
+confidence: 55
+reasoning: origin tier restored this cycle (SPAs 200/2410B-2147B) but every /gateway/* route returns 503 1485B "Wartungsarbeiten" (3 endpoints, both hosts) — app tier live, gateway/backend tier down; public front stays 403 CF challenge, WAF-less origin reach stable; bundle discloses /gateway/auth/oauth/token + /gateway/auth/users/custom/registration
+evidence_needed: any /gateway/* returning non-503; authorize endpoint resolving 200 at origin
+verify_steps: (1) cycle re-probe GET /gateway/booking-session/session, /gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com, /gateway/auth/users/custom/registration via Host+--resolve 194.77.169.121 (done this cycle: all 503); (2) on first non-503, GET-based read-only authorize check for redirect_uri/state handling (OAuth flow class); (3) no POST/mutation until backend live and program-authorized
+impact: WAF-less reach to dev booking+payment API + internal T360 CMS once backend live; dev OAuth redirect_uri flaw → token theft chain if found; Medium CVSS 3.7-5.3
+testability: AUTH_HELPED
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 93
+reasoning: CNAME Status 0 (TTL 300) → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN + switzerlandnorth azure SOA re-read THIS cycle; host HTTP 000; sole CNAME in 7-host dev sweep; 9 consecutive cycles identical (2026-09-13→17)
+evidence_needed: Azure ContainerApps claimability attestation (program-authorized only); no other tenant serves that app name
+verify_steps: (1) DoH CNAME re-read done; (2) A-follow NXDOMAIN re-read done (Status 3); (3) host HTTP 000 done; (4) attest claim = HUMAN/authorized only
+impact: attacker claims abandoned Azure ContainerApp → serves content under *.cineplex.de, phishing + parent-domain scope/cookie abuse; CVSS 6.1 Medium
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] staging_getConfirmationCode oracle, idor_booking, waf_method_gate_attenuation: unchanged, HUMAN_ONLY/structural-complete, no new verification gain this cycle
+- [PARKED] profil_preference_surface (conf 45): low business value, unchanged
+- [FINAL] web-dev dangle (93, PASSIVE, report-ready), graphql_introspection (report-ready), dev_origin_waf_bypass (55, tracking only — 503 gate)
+
+STEP 5 — NEXT ACTION
+[NEXT] PROBE: curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com" — cycle tracking for 503→non-503 transition on the WAF-less dev OAuth surface (read-only GET)
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin 194.77.169.121 network link restored this cycle (SPAs 200/2410B-2147B) but all /gateway/* still 503 (1485B) both hosts — app tier live, backend tier down; WAF-less reach re-confirmed, exploitability still backend-gated
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set
+- [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead
+
+STEP 7 — RISK
+[RISK] cineplex: 46 — no new exploitable surface this cycle (dev gateway backend still 503, only network link restored); web-dev dangle (6.1) + graphql introspection (5.3) report-ready pending submission; all probes read-only GET, ≤1 rps, no PII touched; exploitation-risk shift stays in submission workflow, not live testing

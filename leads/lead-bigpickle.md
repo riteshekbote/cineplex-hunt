@@ -4240,3 +4240,24 @@ testability: AUTH_HELPED
 [LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 now TCP-unreachable (HTTP 000, 20s timeout both ports) while public CF 403 intact — exploitability network-gated; hypothesis on hold, not dead
 [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead
 [RISK] cineplex: 46 — no new exploitable surface this cycle (dev origin network-down closes the only moving lead); web-dev dangle (6.1) + introspection (5.3) report-ready and pending submission; all probes read-only GET/HEAD, ≤1 rps, no PII touched; exploitation risk shift remains in submission workflow, not live testing
+## 2026-09-17 00:02:27 UTC [target] (model bigpickle)
+[HYP] Dev origin WAF bypass + OAuth redirect_uri validation gap once gateway backend returns
+class: MISCONFIG
+asset: buchung-dev.cineplex.de origin (194.77.169.121), /gateway/auth/oauth/authorize
+confidence: 55
+reasoning: origin tier restored this cycle (SPAs 200/2410B-2147B) but every /gateway/* route returns 503 1485B "Wartungsarbeiten" (3 endpoints, both hosts) — app tier live, gateway/backend tier down; public front stays 403 CF challenge, WAF-less origin reach stable; bundle discloses /gateway/auth/oauth/token + /gateway/auth/users/custom/registration
+evidence_needed: any /gateway/* returning non-503; authorize endpoint resolving 200 at origin
+verify_steps: (1) cycle re-probe GET /gateway/booking-session/session, /gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com, /gateway/auth/users/custom/registration via Host+--resolve 194.77.169.121 (done this cycle: all 503); (2) on first non-503, GET-based read-only authorize check for redirect_uri/state handling (OAuth flow class); (3) no POST/mutation until backend live and program-authorized
+impact: WAF-less reach to dev booking+payment API + internal T360 CMS once backend live; dev OAuth redirect_uri flaw → token theft chain if found; Medium CVSS 3.7-5.3
+testability: AUTH_HELPED
+[HYP] Dangling CNAME takeover on web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 93
+reasoning: CNAME Status 0 (TTL 300) → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN + switzerlandnorth azure SOA re-read THIS cycle; host HTTP 000; sole CNAME in 7-host dev sweep; 9 consecutive cycles identical (2026-09-13→17)
+evidence_needed: Azure ContainerApps claimability attestation (program-authorized only); no other tenant serves that app name
+verify_steps: (1) DoH CNAME re-read done; (2) A-follow NXDOMAIN re-read done (Status 3); (3) host HTTP 000 done; (4) attest claim = HUMAN/authorized only
+impact: attacker claims abandoned Azure ContainerApp → serves content under *.cineplex.de, phishing + parent-domain scope/cookie abuse; CVSS 6.1 Medium
+testability: PASSIVE
+[NEXT] PROBE: curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com" — cycle tracking for 503→non-503 transition on the WAF-less dev OAuth surface (read-only GET)
+[RISK] cineplex: 46 — no new exploitable surface this cycle (dev gateway backend still 503, only network link restored); web-dev dangle (6.1) + graphql introspection (5.3) report-ready pending submission; all probes read-only GET, ≤1 rps, no PII touched; exploitation-risk shift stays in submission workflow, not live testing

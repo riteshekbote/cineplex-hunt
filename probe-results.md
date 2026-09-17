@@ -668,3 +668,6 @@ https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&
 
 ## 2026-09-16 21:43:09 UTC
 https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A -> HTTP 415
+
+## 2026-09-17 00:02:53 UTC
+https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com -> HTTP 403

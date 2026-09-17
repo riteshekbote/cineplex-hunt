@@ -2393,3 +2393,7 @@
 - LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole da
 - LEARN: CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 now TCP-unreachable (HTTP 000, 20s timeout both ports) while public CF 403 intact — e
 - LEARN: REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead ho
+
+## RANKED HYPOTHESES 2026-09-17 00:02:52 UTC
+- [55] buchung-dev.cineplex.de: Dev origin WAF bypass + OAuth redirect_uri validation gap once gateway backend returns (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: curl -skS --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/
