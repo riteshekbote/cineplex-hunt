@@ -21028,3 +21028,55 @@ testability: HUMAN_ONLY
 ```
 [RISK] cineplex: 44 — no new exploitable surface this cycle; dev origin TCP-down closes only active lead; web-dev dangle (CVSS 6.1) + graphql introspection (CVSS 7.5) report-ready pending submission (10+ cycle stable); all probes read-only GET ≤1 rps, no PII touched; exploitation risk shift remains in submission workflow, not live testing.
 ```
+===== ANALYST bigpickle 2026-09-17 18:33:45 UTC =====
+[0m
+> build · big-pickle
+[0m
+[STEP 1 — DELTA]
+NO_DELTA — all three prior active leads unchanged in KB this cycle (dev-origin SPAs 200 with /gateway/* 503; web-dev NXDOMAIN 10+ cycles; graphql introspection stable). No new inventory/surface facts beyond already-encoded 2026-09-17 probes.
+
+[STEP 2 — PRIORITIZE]
+[PRIO] graphql-api.app.{,staging.}cineplex.de,6.2, attack_surface=6,business_value=8,tech_exposure=8,gate_ease=4,cloud_surface=5,freshness=8
+[PRIO] web-dev.cineplex.de,5.9, attack_surface=5,business_value=5,tech_exposure=3,gate_ease=8,cloud_surface=6,freshness=9
+[PRIO] buchung-dev/bms-dev.cineplex.de origin,4.6, attack_surface=7,business_value=6,tech_exposure=7,gate_ease=5,cloud_surface=2,freshness=2
+
+[STEP 3 — HYPOTHESES]
+[HYP] Staging confirmation-code oracle enables prod ATO if code format shared across envs
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 75
+reasoning: testing_getConfirmationCode resolves authless on staging (200, backend hit, 405 on userPasswordResets/search) vs prod FORBIDDEN; paired with testing_forceDeleteUser; env-guard omission persists 10+ cycles; extraction requires POST which program PII rules restrict
+evidence_needed: HUMAN_ONLY POST extraction of a real confirmation code (program-authorized)
+verify_steps: passive contrast complete (prod FORBIDDEN vs staging 200); code extraction requires program authorization
+impact: ATO chain if staging code accepted by prod reset — Critical; requires authorized-account proof
+testability: HUMAN_ONLY
+[HYP] Dev-cluster origin bypass still exploitable once gateway backend leaves maintenance
+class: MISCONFIG
+asset: buchung-dev.cineplex.de
+confidence: 55
+reasoning: CF 403 public vs 200 SPA + 503 /gateway at origin 194.77.169.121; backend currently in "Wartungsarbeiten" so no auth/exchange surface reachable; state unchanged across cycles
+evidence_needed: a /gateway/* route returning 2xx at origin (no longer 503)
+verify_steps: PROBE curl -skS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/oauth/token" — if 200, chain into authorize redirect_uri checks
+impact: protocol/oauth and booking-session manipulation on dev tier; AUTH_HELPED, impact gated on backend state — Medium until gateway live
+testability: AUTH_HELPED
+
+[STEP 4 — SELF-CRITIQUE]
+[FINAL] idor_booking @ graphql-api.app.cineplex.de (97) — structural POC complete; HUMAN_ONLY cross-tenant proof pending sandbox accounts
+[FINAL] dangling_cname_takeover @ web-dev.cineplex.de (93) — 10+ cycle NXDOMAIN; PASSIVE; report-ready
+[FINAL] graphql_introspection @ graphql-api.app.{,staging.}cineplex.de (88) — CVSS 5.3/7.5; report-ready
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev (55): gateway AILL 503 "Wartungsarbeiten"; exploitability network/backend-gated; re-probe before each cycle, do not re-report
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de (75): HUMAN_ONLY POST extraction blocked by program PII rule; contrast evidence complete
+
+[STEP 5 — NEXT ACTION]
+[NEXT] HUMAN: Submit two report-ready findings to bugs.olivermaicher.eu — (1) GraphQL introspection bundle: prod+staging POST introspection 200 full schema, GET-based execution 200 via balanced URL-encoded `?query=%7B__typename%7D`, CVSS 5.3 (introspection leak) / escalate 7.5 stacked with WAF-bypass + staging testing mutations; 10+ cycle stability; (2) Dangling CNAME takeover web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (NXDOMAIN 10+ cycles, CVSS 6.1, DoH: CNAME Status 0 / A-follow Status 3, sole dangle in 7-host dev set). Then request two sandbox test accounts for the IDOR cross-tenant PII proof (HUMAN_ONLY).
+
+[STEP 6 — LEARNING]
+[LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 reachable again after last-cycle 000 timeout, but /gateway/* still 503 "Wartungsarbeiten"; model stable, exploitability remains backend-gated
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ cycle NXDOMAIN stability re-confirmed continuously; sole dangle; PASSIVE; report-ready
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3→7.5 stack; POST+GET execution; automated probe log has zero POST probes (all manual-curl verified); report-ready
+[LEARN] REJECTED relay_metrics, relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
+[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: unreachable
+[LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+
+[STEP 7 — RISK]
+[RISK] cineplex: 42 — no new exploitable surface this cycle; two report-ready submissions (dangle CVSS 6.1, introspection CVSS 5.3/7.5) moving to the submission workflow where the real exploitation risk shift occurs, not in live testing; dev-origin lead remains network-gated (gateway 503); all probes read-only GET <=1 rps, no PII touched; IDOR proof remains HUMAN_ONLY pending program authorization.

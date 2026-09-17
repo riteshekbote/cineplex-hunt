@@ -523,3 +523,7 @@
 - 2026-09-17 REJECTED all WAF-gated hosts: booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev — all HTTP 403 via automated urllib.
 - 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, ready for submission
 - 2026-09-17 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200; /gateway/* routes 503 maintenance; bypass model stable, exploitability gated on backend state
+- 2026-09-17 CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 reachable again after last-cycle 000 timeout, but /gateway/* still 503 "Wartungsarbeiten"; model stable, exploitability remains backend-gated
+- 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ cycle NXDOMAIN stability re-confirmed continuously; sole dangle; PASSIVE; report-ready
+- 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3→7.5 stack; POST+GET execution; automated probe log has zero POST probes (all manual-curl verified); report-ready
+- 2026-09-17 REJECTED relay_metrics, relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
