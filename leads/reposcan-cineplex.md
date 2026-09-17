@@ -223,3 +223,12 @@ TARGET_ORG not configured for cineplex; skipping public-org deep scan.
 TARGET_ORG not configured for cineplex; skipping public-org deep scan.
 ## REPOSCAN 2026-09-17 03:58:16 UTC
 TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+## REPOSCAN 2026-09-17 09:15:22 UTC
+[HYP] No In-Scope Repositories Found
+class: OTHER
+asset: N/A
+confidence: 100
+reasoning: Cineplex Deutschland GmbH & Co. KG does not appear to maintain a public GitHub organization. The CINEPASS org belongs to a separate Berlin-based company (Cinepass UG). All cineplex-related repos found are third-party scrapers/clients, not the organization's own code.
+impact: N/A
+verify_steps: N/A - No official repositories to audit
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
