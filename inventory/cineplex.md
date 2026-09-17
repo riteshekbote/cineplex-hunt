@@ -1173,3 +1173,14 @@ wwww.cineplex.de
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 - NEW Automated probe log (670+ lines) still ZERO POST GraphQL probes; all structural findings verified via manual curl only
+
+## 2026-09-17 23:54:13 UTC
+- NEW Automated probe log (710 lines) still contains ZERO POST GraphQL probes; all structural findings (introspection, IDOR, staging oracle) verified via manual curl only
+- NEW `web-dev.cineplex.de` DNS resolution fails (ERR) in automated probes but manual DoH confirms CNAME→Azure NXDOMAIN (9th/10th cycle)
+- NEW `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again after last-cycle timeout; SPAs 200, `/gateway/*` still 503 "Wartungsarbeiten"
+- NEW `bms-dev.cineplex.de` origin (194.77.169.121) live "T360 - CMS" dev admin SPA (2147B) — not probed in recent automated cycles
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` balanced URL-encoded GET `?query=%7B__typename%7D` → 200 both envs reconfirmed via manual curl; automated urllib 403 (WAF client-differentiated bot-gate)
+- CHANGED `api.cineplex.de` strict 403 all GraphQL paths; separate stricter WAF config; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable

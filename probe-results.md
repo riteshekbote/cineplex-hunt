@@ -708,3 +708,8 @@ https://buchung-dev.cineplex.de/gateway/booking-session/session -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://api.cineplex.de/ -> HTTP 403
 https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https%3A%2F%2Fexample.com -> HTTP 403
+
+## 2026-09-17 23:54:17 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://buchung-dev.cineplex.de/gateway/booking-session/session -> HTTP 403
