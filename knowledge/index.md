@@ -527,3 +527,9 @@
 - 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ cycle NXDOMAIN stability re-confirmed continuously; sole dangle; PASSIVE; report-ready
 - 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3→7.5 stack; POST+GET execution; automated probe log has zero POST probes (all manual-curl verified); report-ready
 - 2026-09-17 REJECTED relay_metrics, relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
+- 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-17 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-17 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready

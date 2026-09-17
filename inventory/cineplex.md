@@ -1154,3 +1154,22 @@ wwww.cineplex.de
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
 
 ## 2026-09-17 18:33:45 UTC
+
+## 2026-09-17 21:44:09 UTC
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- NEW data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11
+- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- CHANGED web-dev.cineplex.de: 9th→10th consecutive NXDOMAIN cycle confirmed via manual DoH (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set; PASSIVE report-ready
+- CHANGED buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121): TCP reachable again after last-cycle 000 timeout; origin SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); /gateway/
+- CHANGED graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 both envs reconfirmed live (manual curl); 4/4 IDOR resolvers GET-verified via `id:"0"` → INVALID_ID wit
+- CHANGED graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` authless oracle persists 10+ cycles (200 backend hit 405-mismatch vs prod FORBIDDEN); HUMAN_ONLY POST extraction unproven
+- CHANGED api.cineplex.de: strict 403 all GraphQL paths (6+ probes); separate stricter WAF config; GET-bypass hypothesis dead
+- CHANGED relay_metrics @ data-9fc27eb430.cineplex.de: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+- NEW Automated probe log (670+ lines) still ZERO POST GraphQL probes; all structural findings verified via manual curl only
