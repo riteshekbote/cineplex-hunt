@@ -1,75 +1,65 @@
-## 2026-09-17 09:54:05 UTC [target] (model nemotron3)
-[PRIO] `graphql-api.app.staging.cineplex.de`,9.10,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
-[PRIO] `graphql-api.app.cineplex.de`,8.85,attack_surface=9,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
-[PRIO] `web-dev.cineplex.de`,7.80,attack_surface=9,business_value=6,tech_exposure=8,gate_ease=10,cloud_surface=9,freshness=9
-[PRIO] `buchung-dev.cineplex.de`+`bms-dev.cineplex.de`,6.45,attack_surface=8,business_value=7,tech_exposure=9,gate_ease=10,cloud_surface=6,freshness=9
-[PRIO] `auth.cineplex.de`,5.80,attack_surface=8,business_value=10,tech_exposure=7,gate_ease=5,cloud_surface=5,freshness=6
-[PRIO] `profil.cineplex.de`,4.65,attack_surface=5,business_value=6,tech_exposure=5,gate_ease=8,cloud_surface=4,freshness=8
-[HYP] Dangling CNAME Takeover on web-dev.cineplex.de (Sole Dangle in Dev Set)
-class: MISCONFIG
-asset: web-dev.cineplex.de
-confidence: 93
-reasoning: CNAME→switzerlandnorth.azurecontainerapps.io target NXDOMAIN (DoH Status 3, zone SOA present) confirmed 8 consecutive cycles; sole dangle in 7-host dev set (bms-dev/booking-dev/buchung-dev/prelive/test/dev/web-dev); host returns HTTP 000; claimability requires Azure attestation per program rules
-evidence_needed: claimability confirmation from Azure (requires program authorization to attempt registration of abandoned app `gentleglacier-dfef6458` in switzerlandnorth)
-verify_steps: curl -sS "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json" — re-verify CNAME Status 0 + A-follow Status 3 NXDOMAIN + azure SOA; curl -sSk --max-time 10 "https://web-dev.cineplex.de/" — confirm HTTP 000
-impact: Full control over scoped dev subdomain → serve malicious content, phishing, cookie theft via parent domain scope, supply chain to staging/prod if shared infra (Medium-High, CVSS ~6.1)
-testability: PASSIVE
-[HYP] Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode
-class: AUTH
-asset: graphql-api.app.staging.cineplex.de
-confidence: 97
-reasoning: Staging introspection exposes testing_getConfirmationCode(email: String!, type: ConfirmationCodeType!). GET `?query=%7Btesting_getConfirmationCode%28email%3A%22probe%40test.de%22%2Ctype%3APASSWORD_RESET%29%7D` returns 200 with backend hit (405-method-mismatch on internal Spring Data JPA REST endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress?emailAddress=probe%40test.de&mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`). Production gates correctly (FORBIDDEN "only available in testing environments"). Missing environment guard persists 10+ cycles. WAF method-gate bypass mirrors production.
-evidence_needed: POST to testing_getConfirmationCode with any email returns 200 with confirmation code; testing_forceDeleteUser executes without auth/role check
-verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
-impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
-testability: HUMAN_ONLY
+## 2026-09-17 14:42:52 UTC [target] (model nemotron3)
+[NEW] web-dev.cineplex.de CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` → DoH Status 3 NXDOMAIN + azure-dns.com SOA (9th consecutive cycle confirmed)
+[NEW] buchung-dev.cineplex.de origin (194.77.169.121) TCP-reachable again: GET / → 200 "Cineplex Buchung" React SPA; /gateway/* routes still 503 "Wartungsarbeiten"
+[NEW] bms-dev.cineplex.de origin (194.77.169.121) live: GET / → 200 "T360 - CMS" Ticket360 dev admin SPA
+[NEW] graphql-api.app.{,staging.}cineplex.de balanced URL-encoded GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` both envs (live GET execution confirmed)
+[NEW] graphql-api.app.cineplex.de GET `?query=%7BuserById(id:"0")%7D` → 200 INVALID_ID with `decodePublicId` stacktrace (no auth header); `currentUser` → 200 UNAUTHENTICATED on same surface — auth-omission structural proof live
+[NEW] graphql-api.app.staging.cineplex.de GET `testing_getConfirmationCode` → 200 with 405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress` vs prod FORBIDDEN — env-guard omission persists 10+ cycles
+[CHANGED] Automated probe log (670+ lines) still ZERO POST GraphQL probes; all structural findings verified via manual curl this cycle
+[CHANGED] api.cineplex.de WAF strictly blocks all GraphQL paths (403 all methods) — separate stricter config; GET-bypass hypothesis dead
+[CHANGED] relay_metrics @ data-9fc27eb430.cineplex.de stale in probe log (last fresh 2026-09-08); descriptive IOMB infra only
+[CHANGED] All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+[CHANGED] TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+[PRIO] graphql-api.app.cineplex.de,9.5,attack_surface=10|business_value=10|tech_exposure=10|gate_ease=10|cloud_surface=8|freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,9.0,attack_surface=10|business_value=9|tech_exposure=10|gate_ease=10|cloud_surface=8|freshness=9
+[PRIO] web-dev.cineplex.de,8.5,attack_surface=8|business_value=7|tech_exposure=6|gate_ease=10|cloud_surface=10|freshness=9
+[PRIO] buchung-dev.cineplex.de (origin 194.77.169.121),8.0,attack_surface=9|business_value=8|tech_exposure=8|gate_ease=9|cloud_surface=7|freshness=8
+[PRIO] bms-dev.cineplex.de (origin 194.77.169.121),7.5,attack_surface=8|business_value=7|tech_exposure=8|gate_ease=9|cloud_surface=7|freshness=8
 [HYP] Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before-Gate
 class: IDOR
 asset: graphql-api.app.cineplex.de
-confidence: 95
-reasoning: 4/4 single-entity resolvers (userById, invoice, order, ticket) independently GET-verified on prod via balanced URL-encoded queries: all return 200 INVALID_ID with `decodePublicId` stacktrace, NO Authorization header. `currentUser` → 200 UNAUTHENTICATED on same GET surface — auth gate exists and fires on sibling resolver, confirming omission is decoder-before-gate code defect. Adjacent firing gates (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR DEVICE, errorStatistics UNAUTHENTICATED = 6/6 control group) prove auth layer functions while id-resolvers omit it. Root GET 403 (WAF) does not affect GraphQL POST/GET reach.
+confidence: 97
+reasoning: 4/4 single-entity resolvers (userById, invoice, order, ticket) independently GET-verified on prod via balanced URL-encoded queries: all return 200 INVALID_ID with decodePublicId stacktrace, NO Authorization header. currentUser → 200 UNAUTHENTICATED on same GET surface — auth gate exists and fires on sibling resolver, confirming omission is decoder-before-gate code defect. Adjacent firing gates (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR DEVICE, errorStatistics UNAUTHENTICATED = 6/6 control group) prove auth layer functions while id-resolvers omit it. Root GET 403 (WAF) does not affect GraphQL GET/POST reach.
 evidence_needed: Cross-tenant PII extraction via userById/invoice/order/ticket with valid IDs from another tenant (HUMAN_ONLY)
 verify_steps: GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D — confirm 200 INVALID_ID (structural proof, no PII); repeat for invoice/order/ticket with id:"0"
 impact: Structural IDOR proof complete — auth-omission on decodePublicId path allows cross-tenant PII access (email, fullName, telephone, birthDate, address, tickets, orders, invoices, vouchers) via 4 resolvers; production impact High (CVSS ~7.5–8.5) but cross-tenant proof requires HUMAN_ONLY valid-ID testing
 testability: HUMAN_ONLY
-[PARKED] JWT Algorithm/Key Confusion via GraphQL login Mutation: confidence 55 < 60 threshold; no passive JWKS fetch possible (auth.cineplex.de/.well-known/jwks.json 404); requires active token capture (AUTH_HELPED) and offline crypto analysis — lower priority than PASSIVE staging probes and CNAME takeover
+[HYP] Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de
+confidence: 97
+reasoning: Staging introspection exposes testing_getConfirmationCode(email: String!, type: ConfirmationCodeType!). GET `testing_getConfirmationCode(email:"probe@test.de",type:PASSWORD_RESET)` returns 200 with backend hit (405-method-mismatch on internal Spring Data JPA REST endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress?emailAddress=probe%40test.de&mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`). Production gates correctly (FORBIDDEN "only available in testing environments"). Missing environment guard persists 10+ cycles. WAF method-gate bypass mirrors production (GET execution works).
+evidence_needed: POST to testing_getConfirmationCode with any email returns 200 with confirmation code; testing_forceDeleteUser executes without auth/role check
+verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
+impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 95
+reasoning: CNAME `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` resolves (Status 0) but A-record follow returns Status 3 NXDOMAIN with azure-dns.com SOA present — target container app deleted, CNAME dangling. 9th consecutive cycle confirmed via manual DoH with correct Accept header. Sole dangling CNAME in 7-host dev set (bms-dev/booking-dev/buchung-dev/prelive/test/dev all resolve to 194.77.169.121 A-record). Host HTTP 000 (no web surface).
+evidence_needed: Claimability attestation — register same Azure Container App name in switzerlandnorth region to serve content on web-dev.cineplex.de
+verify_steps: DoH CNAME query for web-dev.cineplex.de (Status 0) → DoH A query for target (Status 3 NXDOMAIN + azure SOA); repeat weekly for stability
+impact: Subdomain takeover on scoped dev domain — attacker serves arbitrary content on web-dev.cineplex.de (Medium, CVSS ~5.3-6.1); PASSIVE verification complete
+testability: PASSIVE
+[PARKED] Dev-Origin WAF Bypass Full-Impact Chain (buchung-dev/bms-dev): contingent on dev backend /gateway/* routes moving from 503 to 200; origin SPAs live but API routes in maintenance; won't drop below confidence 40, re-probe next cycle
+[PARKED] JWT Algorithm/Key Confusion via GraphQL login Mutation: confidence 55 < 60 threshold; no passive JWKS fetch possible (auth.cineplex.de/.well-known/jwks.json 404); requires active token capture (AUTH_HELPED) and offline crypto analysis
 [PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent (username enumeration class); client-side `?captcha=` + dead reCAPTCHA is low-value control finding on newsletter form; HUMAN_ONLY write proof, business value low
 [PARKED] Internal Architecture Leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed only (Spring Data JPA REST endpoints, mandatorId UUID, Lambda path, Apollo stacktraces); NOT HTTP-accessible (GET probes return 403 WAF-blocked); descriptive infra class, not independently reportable
 [PARKED] GraphQL Introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3, ready to submit; 10+ cycle stability — move to submission queue
-[PARKED] Dev-origin bypass full-impact chain: contingent on dev backend coming online (currently 503) — keep, re-probe next cycle; won't drop below 40
 [FINAL] Ranked survivors (by testability × impact):
-[NEXT] PROBE: curl -sS -k --max-time 12 -H "Host: buchung-dev.cineplex.de" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/booking-session/session" — track 503→200 (dev backend up) and same-origin probe of /gateway/auth/oauth/* on bms-dev.cineplex.de
-[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
-[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
-[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN stability re-confirmed; CNAME Status 0 (NOERROR) with A-follow Status 3 NXDOMAIN + azure SOA; sole dangle in 7-host dev set; host HTTP 000.
-[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: CF 403 public vs 200 SPA + 503 gateway route at origin IP 194.77.169.121; dev booking/payment+cms tier WAF-less at origin; prod booking/shop NOT on this origin (404); AUTH_HELPED, impact contingent on backend state
-[LEARN] ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
-[LEARN] REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable
-[LEARN] REJECTED prod_booking_origin_bypass @ buchung/booking/shop.cineplex.de: 404 default-backend on 194.77.169.121 — prod behind different origin; idea dead
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit; 10+ cycle stability
-[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
-[LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged out-of-scope/dead
-[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable.
-[LEARN] REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable.
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set.
-[LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 now TCP-unreachable (HTTP 000, 20s timeout both ports) while public CF 403 intact — exploitability network-gated; hypothesis on hold, not dead
-[LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN stability re-confirmed; CNAME Status 0 (NOERROR) with A-follow Status 3 NXDOMAIN + azure SOA; sole dangle in 7-host dev set; host HTTP 000.
-[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: CF 403 public vs 200 SPA + 503 gateway route at origin IP 194.77.169.121; dev booking/payment+cms tier WAF-less at origin; prod booking/shop NOT on this origin (404); AUTH_HELPED, impact contingent on backend state
-[LEARN] ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
-[LEARN] REJECTED dev.cineplex.de @ private-IP-in-DNS (10.20.0.7): descriptive/info only, externally unreachable
-[LEARN] REJECTED prod_booking_origin_bypass @ buchung/booking/shop.cineplex.de: 404 default-backend on 194.77.169.121 — prod behind different origin; idea dead
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full mutation arg enumeration (35KB) confirms no injection vectors; CVSS 5.3 ready to submit; 10+ cycle stability
-[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
-[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
-[LEARN] REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
-[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
-[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
-[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de
+[NEXT] PROBE: curl -sS -k --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/booking-session/session" — track 503→200 (dev backend up) and same-origin probe of /gateway/auth/oauth/* on bms-dev.cineplex.de
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, ready for submission
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
 [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link
 [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200; /gateway/* routes 503 maintenance; bypass model stable, exploitability gated on backend state
+[LEARN] ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
 [LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+[LEARN] REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+[LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 [LEARN] REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
-[RISK] cineplex: 45 — dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle but backend currently 503/TCP-unreachable caps exploitability; dangle + introspection remain stable report/validated tier; all probes read-only, ≤1 rps, no PII touched
+[RISK] cineplex: 55 — dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle with origin reachable but /gateway/* still 503; dangling CNAME stable reportable; introspection/IDOR/staging-oracle remain validated tier; all probes read-only, ≤1 rps, no PII touched

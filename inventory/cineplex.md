@@ -1139,3 +1139,16 @@ wwww.cineplex.de
 ## 2026-09-17 04:59:21 UTC
 
 ## 2026-09-17 09:54:13 UTC
+
+## 2026-09-17 14:43:04 UTC
+- NEW web-dev.cineplex.de CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` → DoH Status 3 NXDOMAIN + azure-dns.com SOA (9th consecutive cycle confirmed)
+- NEW buchung-dev.cineplex.de origin (194.77.169.121) TCP-reachable again: GET / → 200 "Cineplex Buchung" React SPA; /gateway/* routes still 503 "Wartungsarbeiten"
+- NEW bms-dev.cineplex.de origin (194.77.169.121) live: GET / → 200 "T360 - CMS" Ticket360 dev admin SPA
+- NEW graphql-api.app.{,staging.}cineplex.de balanced URL-encoded GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` both envs (live GET execution confirmed)
+- NEW graphql-api.app.cineplex.de GET `?query=%7BuserById(id:"0")%7D` → 200 INVALID_ID with `decodePublicId` stacktrace (no auth header); `currentUser` → 200 UNAUTHENTICATED on same surface — auth-omission 
+- NEW graphql-api.app.staging.cineplex.de GET `testing_getConfirmationCode` → 200 with 405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/findByMandatorIdAndEmailAddress` v
+- CHANGED Automated probe log (670+ lines) still ZERO POST GraphQL probes; all structural findings verified via manual curl this cycle
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (403 all methods) — separate stricter config; GET-bypass hypothesis dead
+- CHANGED relay_metrics @ data-9fc27eb430.cineplex.de stale in probe log (last fresh 2026-09-08); descriptive IOMB infra only
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de

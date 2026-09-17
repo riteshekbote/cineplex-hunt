@@ -2478,3 +2478,34 @@
 - LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
 - LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
 - LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+
+## RANKED HYPOTHESES 2026-09-17 14:43:04 UTC
+- [97] graphql-api.app.cineplex.de: Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before-Gate (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit two ready-to-go reports to bugs.olivermaicher.eu — (1) GraphQL introspection bundle (prod+staging, WAF bypass, CVSS 5.3/7.5, 10+ cycle stability, 
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS -k --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gatewa
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 10+ cycle stability, CVSS 5.3→7.5, POST introspection + GET-based execution confirmed v
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th consecutive cycle NXDOMAIN; automated resolver confirms Name-not-known; sole dangle in 7-host dev s
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-auth confirmed; 6/6 control group intact; HUMAN_ONLY for cross-tenant PII proof
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: WAF client-differentiated bot-gate confirmed; automated urllib 403 consistent, ma
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stack
+- LEARN: CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin was TCP-unreachable last cycle; current automated probes show CF 403 only; origin re-check needed be
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed).
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable.
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchang
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable.
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead.
+- LEARN: REJECTED all WAF-gated hosts: booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev — all HTTP 403 via automated urllib.
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole da
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200; /gateway/* routes 503 maintenance; bypass model stable, exploitability gated 
+- LEARN: ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API bas
+- LEARN: REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- LEARN: REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+- LEARN: REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data

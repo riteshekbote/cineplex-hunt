@@ -509,3 +509,17 @@
 - 2026-09-17 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths: unchanged
 - 2026-09-17 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: unreachable
 - 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 8th-cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set.
+- 2026-09-17 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 10+ cycle stability, CVSS 5.3→7.5, POST introspection + GET-based execution confirmed via manual curl; automated urllib 403 is WAF bot-gate only; ready for submission.
+- 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th consecutive cycle NXDOMAIN; automated resolver confirms Name-not-known; sole dangle in 7-host dev set; PASSIVE, ready for submission.
+- 2026-09-17 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-auth confirmed; 6/6 control group intact; HUMAN_ONLY for cross-tenant PII proof.
+- 2026-09-17 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link.
+- 2026-09-17 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: WAF client-differentiated bot-gate confirmed; automated urllib 403 consistent, manual curl 200 consistent.
+- 2026-09-17 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+- 2026-09-17 CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin was TCP-unreachable last cycle; current automated probes show CF 403 only; origin re-check needed before next active probe cycle.
+- 2026-09-17 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed).
+- 2026-09-17 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue, no exploitable surface; DoS class not applicable.
+- 2026-09-17 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged.
+- 2026-09-17 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead.
+- 2026-09-17 REJECTED all WAF-gated hosts: booking-ol-prod, admin, jenkins, billing, dashboard, portal, prelive, test, live, buchung-dev — all HTTP 403 via automated urllib.
+- 2026-09-17 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 9th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, ready for submission
+- 2026-09-17 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200; /gateway/* routes 503 maintenance; bypass model stable, exploitability gated on backend state
