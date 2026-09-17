@@ -671,3 +671,13 @@ https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A -> HTTP
 
 ## 2026-09-17 00:02:53 UTC
 https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com -> HTTP 403
+
+## 2026-09-17 04:59:31 UTC
+https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME -> HTTP 415
+https://web-dev.cineplex.de/ -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://buchung-dev.cineplex.de/gateway/booking-session/session -> HTTP 403
+https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https://example.com -> HTTP 403
+https://cloudflare-dns.com/dns-query?name=buchung-dev.cineplex.de&type=A -> HTTP 415
+https://buchung-dev.cineplex.de/gateway/auth/oauth/authorize?response_type=code&client_id=test&redirect_uri=https%3A%2F%2Fexample.com -> HTTP 403
