@@ -4852,3 +4852,31 @@ testability: PASSIVE
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 12+ cycle stability; CVSS 5.3→7.5 stack; POST+GET execution; automated probe log still zero POST probes (manual-curl verified); report-ready.
 [LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead.
 [RISK] cineplex: 8/100 — all high-value items (IDOR, staging ATO oracle, introspection) touch PII or live auth flows the program forbids exposing; investigator remains passive-first, no mutating/auth-bypass probes against customer data; only fresh latency this cycle is dev-tier origin, low residual risk.
+## 2026-09-18 12:40:03 UTC [target] (model bigpickle)
+[HYP] Cross-tenant proof of 4-resolver decode-before-gate IDOR with authorized accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return decodePublicId INVALID_ID before any auth gate on GET surface while 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; auth-omission code-level; only cross-tenant PII fetch unproven
+evidence_needed: account A fetches account B entity by publicId (program sandbox accounts)
+verify_steps: two program-provided sandbox accounts + valid JWT; blocked by program PII rule without authorization
+impact: cross-tenant PII dump (email, phone, address, orders, invoices); High
+testability: HUMAN_ONLY
+[HYP] Dev-origin gateway maintenance lift enables unauth OAuth/booking-session surface
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 50
+reasoning: origin SPAs 200 (bms-dev 2147B / buchung-dev 2410B); /gateway/booking-session/session + /gateway/auth/oauth/token both stale 503 "Wartungsarbeiten!" 10+ cycles (re-verified this cycle); bundle discloses full /gateway/* route map; public CF 403 vs origin 200 = WAF-less origin
+evidence_needed: any /gateway/* route returning non-503 (2xx or 401/4xx error shape) at origin
+verify_steps: curl -k --http2 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session ; contrast 503 vs 401-vs-200; ≤1 rps, GET only
+impact: dev-tier OAuth token endpoint + booking-session manipulation if lift; medium; chained from known WAF-less origin
+testability: AUTH_HELPED
+[HYP] Azure Container Apps claimability attestation for web-dev dangle
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA, host 000, sole dangle in 7-host dev set, 11 consecutive cycles (this cycle 000)
+evidence_needed: name-availability check for switzerlandnorth azure containerapps name (claimability attestation)
+verify_steps: passive name lookup only; no mutation of owner DNS; document 11-cycle DoH records
+impact: subdomain takeover of scoped dev host → phishing/SI inclusion; Medium
+testability: PASSIVE
