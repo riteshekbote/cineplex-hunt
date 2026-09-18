@@ -22951,3 +22951,79 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 8/100 — no new active surface beyond dev-tier origin probes (2 GETs this cycle, 503-gated); all high-value items (IDOR, staging oracle, introspection) remain report-scoped structural or HUMAN_ONLY-guarded; no mutating/auth-bypass or PII exposure performed
+===== ANALYST bigpickle 2026-09-18 16:45:18 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/bd_session.out -w "HTTP=%{http_code} SIZE=%{size_download} TIME=%{time_total}\n" "https://buchung-dev.cineplex.de/gateway/booking-session/session"; echo "---body---"; head -c 300 /tmp/opencode/bd_session.out
+HTTP=503 SIZE=1485 TIME=0.596980
+---body---
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            background-ima
+[0m
+503 maintenance flag still active at origin. One more error-shape check on the OAuth token route to confirm blanket vs per-route gate:
+[0m$ [0mcurl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/bd_token.out -w "HTTP=%{http_code} SIZE=%{size_download}\n" "https://buchung-dev.cineplex.de/gateway/auth/oauth/token"; echo "---body---"; head -c 200 /tmp/opencode/bd_token.out
+HTTP=503 SIZE=1485
+---body---
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+[0m
+STEP 1 — DELTA
+- [CHANGED] buchung-dev origin 194.77.169.121: /gateway/booking-session/session AND /gateway/auth/oauth/token both 503 with identical 1485B "Wartungsarbeiten!" page → blanket route-level maintenance flag, no per-route error-shape differential; model unchanged, exploitability still backend-gated.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,8.7,IDOR/BOLA+introspection (a8 b9 t10 g9 c7 f9)
+- [PRIO] buchung-dev/bms-dev origin 194.77.169.121,7.2,WAF-less dev AP (a7 b6 t7 g9 c7 f8)
+- [PRIO] web-dev.cineplex.de,7.1,dangle claimability (a6 b6 t5 g10 c8 f10)
+
+STEP 3 — HYPOTHESES
+[HYP] Ingress virtual-host enumeration on shared dev origin
+class: MISCONFIG
+asset: 194.77.169.121 (buchung-dev/bms-dev nginx-ingress)
+confidence: 45
+reasoning: two dev hosts routed by Host header on one origin IP (bms-dev "T360 - CMS", buchung-dev "Cineplex Buchung"); prod booking/shop hosts → 404 default-backend on same IP; gateway bundle names auth/booking-session service routes; unpublished vhosts plausibly served behind WAF-less ingress
+evidence_needed: any Host variant returning non-404/non-503 (live app, login, error) on 194.77.169.121
+verify_steps: curl -k -sS --http2 --max-time 10 --resolve HOST:443:194.77.169.121 -H "Host: HOST" "https://HOST/" for auth-dev, cms-dev, gateway, booking-session, grafana — GET root only, ≤1 rps
+impact: discovery of internal dev services → auth/IDOR/SSRF chain starters; medium
+testability: AUTH_HELPED
+[HYP] Dev-gateway maintenance lift enables unauth OAuth/booking-session surface
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: origin SPAs 200; /gateway/* routes still 503 blanket flag this cycle (identical 1485B on session+token, so no error-shape differential yet); public CF 403 vs origin 200 = WAF-less origin; bundle discloses full /gateway/* route map incl /gateway/auth/oauth/token
+evidence_needed: any /gateway/* route returning non-503 (2xx/401/4xx)
+verify_steps: curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration" — GET only, ≤1 rps
+impact: dev-tier OAuth token + registration surface if lifted; medium; chained from WAF-less origin
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] dev-gateway maintenance lift: identical 503 across routes lower differentiation value; confidence steady 45, kept only as trigger-on-lift.
+- [PARKED] Ingress vhost enumeration: plausible but no candidate hit tested yet; rerun after probe.
+- [FINAL] graphql_introspection @ graphql-api.app.{,staging.}cineplex.de — confidence 85, CVSS 5.3→7.5, POST+GET verified, 12+ cycle — report-ready, first submission.
+- [FINAL] idor_booking @ graphql-api.app.cineplex.de — confidence 85 structural (4/4 decode-before-gate, 6/6 control gates firing); cross-tenant PII proof HUMAN_ONLY.
+- [FINAL] dangling_cname_takeover @ web-dev.cineplex.de — confidence 90, 10+ cycle NXDOMAIN, PASSIVE — report-ready.
+- [FINAL] staging_testing_oracle @ graphql-api.app.staging.cineplex.de — confidence 75; code-extraction HUMAN_ONLY.
+
+STEP 5 — NEXT ACTION
+- [NEXT] PROBE: curl -k -sS --http2 --max-time 10 --resolve auth-dev.cineplex.de:443:194.77.169.121 -H "Host: auth-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /dev/null -w "%{http_code} %{size_download}" "https://auth-dev.cineplex.de/" — first vhost candidate on shared dev ingress; any non-404/non-503 result triggers a sweep of remaining candidates (cms-dev, gateway, booking-session, grafana). Read-only, 1 request.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dev_gateway_maintenance_blanket @ buchung-dev/bms-dev.cineplex.de: /gateway/booking-session/session + /gateway/auth/oauth/token both 503 identical 1485B this cycle — blanket route-level flag confirmed, no error-shape differential; exploitability remains backend-gated; model unchanged, NOT dead.
+- [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead.
+
+STEP 7 — RISK
+- [RISK] cineplex: 8/100 — this cycle only dev-tier read-only GET re-probes; no customer data touched; all reportable items structural/PASSIVE and within directive classes.

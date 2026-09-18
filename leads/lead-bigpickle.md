@@ -4880,3 +4880,22 @@ evidence_needed: name-availability check for switzerlandnorth azure containerapp
 verify_steps: passive name lookup only; no mutation of owner DNS; document 11-cycle DoH records
 impact: subdomain takeover of scoped dev host → phishing/SI inclusion; Medium
 testability: PASSIVE
+## 2026-09-18 16:44:19 UTC [target] (model bigpickle)
+[HYP] Ingress virtual-host enumeration on shared dev origin
+class: MISCONFIG
+asset: 194.77.169.121 (buchung-dev/bms-dev nginx-ingress)
+confidence: 45
+reasoning: two dev hosts routed by Host header on one origin IP (bms-dev "T360 - CMS", buchung-dev "Cineplex Buchung"); prod booking/shop hosts → 404 default-backend on same IP; gateway bundle names auth/booking-session service routes; unpublished vhosts plausibly served behind WAF-less ingress
+evidence_needed: any Host variant returning non-404/non-503 (live app, login, error) on 194.77.169.121
+verify_steps: curl -k -sS --http2 --max-time 10 --resolve HOST:443:194.77.169.121 -H "Host: HOST" "https://HOST/" for auth-dev, cms-dev, gateway, booking-session, grafana — GET root only, ≤1 rps
+impact: discovery of internal dev services → auth/IDOR/SSRF chain starters; medium
+testability: AUTH_HELPED
+[HYP] Dev-gateway maintenance lift enables unauth OAuth/booking-session surface
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: origin SPAs 200; /gateway/* routes still 503 blanket flag this cycle (identical 1485B on session+token, so no error-shape differential yet); public CF 403 vs origin 200 = WAF-less origin; bundle discloses full /gateway/* route map incl /gateway/auth/oauth/token
+evidence_needed: any /gateway/* route returning non-503 (2xx/401/4xx)
+verify_steps: curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration" — GET only, ≤1 rps
+impact: dev-tier OAuth token + registration surface if lifted; medium; chained from WAF-less origin
+testability: AUTH_HELPED

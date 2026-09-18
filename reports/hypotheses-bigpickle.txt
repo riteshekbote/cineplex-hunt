@@ -1,28 +1,19 @@
-## 2026-09-18 12:40:03 UTC [target] (model bigpickle)
-[HYP] Cross-tenant proof of 4-resolver decode-before-gate IDOR with authorized accounts
-class: IDOR
-asset: graphql-api.app.cineplex.de
-confidence: 85
-reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return decodePublicId INVALID_ID before any auth gate on GET surface while 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; auth-omission code-level; only cross-tenant PII fetch unproven
-evidence_needed: account A fetches account B entity by publicId (program sandbox accounts)
-verify_steps: two program-provided sandbox accounts + valid JWT; blocked by program PII rule without authorization
-impact: cross-tenant PII dump (email, phone, address, orders, invoices); High
-testability: HUMAN_ONLY
-[HYP] Dev-origin gateway maintenance lift enables unauth OAuth/booking-session surface
+## 2026-09-18 16:44:19 UTC [target] (model bigpickle)
+[HYP] Ingress virtual-host enumeration on shared dev origin
+class: MISCONFIG
+asset: 194.77.169.121 (buchung-dev/bms-dev nginx-ingress)
+confidence: 45
+reasoning: two dev hosts routed by Host header on one origin IP (bms-dev "T360 - CMS", buchung-dev "Cineplex Buchung"); prod booking/shop hosts → 404 default-backend on same IP; gateway bundle names auth/booking-session service routes; unpublished vhosts plausibly served behind WAF-less ingress
+evidence_needed: any Host variant returning non-404/non-503 (live app, login, error) on 194.77.169.121
+verify_steps: curl -k -sS --http2 --max-time 10 --resolve HOST:443:194.77.169.121 -H "Host: HOST" "https://HOST/" for auth-dev, cms-dev, gateway, booking-session, grafana — GET root only, ≤1 rps
+impact: discovery of internal dev services → auth/IDOR/SSRF chain starters; medium
+testability: AUTH_HELPED
+[HYP] Dev-gateway maintenance lift enables unauth OAuth/booking-session surface
 class: AUTH
 asset: buchung-dev.cineplex.de (origin 194.77.169.121)
-confidence: 50
-reasoning: origin SPAs 200 (bms-dev 2147B / buchung-dev 2410B); /gateway/booking-session/session + /gateway/auth/oauth/token both stale 503 "Wartungsarbeiten!" 10+ cycles (re-verified this cycle); bundle discloses full /gateway/* route map; public CF 403 vs origin 200 = WAF-less origin
-evidence_needed: any /gateway/* route returning non-503 (2xx or 401/4xx error shape) at origin
-verify_steps: curl -k --http2 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session ; contrast 503 vs 401-vs-200; ≤1 rps, GET only
-impact: dev-tier OAuth token endpoint + booking-session manipulation if lift; medium; chained from known WAF-less origin
+confidence: 45
+reasoning: origin SPAs 200; /gateway/* routes still 503 blanket flag this cycle (identical 1485B on session+token, so no error-shape differential yet); public CF 403 vs origin 200 = WAF-less origin; bundle discloses full /gateway/* route map incl /gateway/auth/oauth/token
+evidence_needed: any /gateway/* route returning non-503 (2xx/401/4xx)
+verify_steps: curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration" — GET only, ≤1 rps
+impact: dev-tier OAuth token + registration surface if lifted; medium; chained from WAF-less origin
 testability: AUTH_HELPED
-[HYP] Azure Container Apps claimability attestation for web-dev dangle
-class: MISCONFIG
-asset: web-dev.cineplex.de
-confidence: 90
-reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA, host 000, sole dangle in 7-host dev set, 11 consecutive cycles (this cycle 000)
-evidence_needed: name-availability check for switzerlandnorth azure containerapps name (claimability attestation)
-verify_steps: passive name lookup only; no mutation of owner DNS; document 11-cycle DoH records
-impact: subdomain takeover of scoped dev host → phishing/SI inclusion; Medium
-testability: PASSIVE

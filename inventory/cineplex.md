@@ -1220,3 +1220,12 @@ wwww.cineplex.de
 - CHANGED `api.cineplex.de` strict 403 all GraphQL paths (6+ probes); separate stricter WAF config; GET-bypass hypothesis dead
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED Automated probe log (710+ lines) still contains ZERO POST GraphQL probes; all structural findings verified via manual curl only
+
+## 2026-09-18 16:45:18 UTC
+- NEW Automated probe log (732 lines) confirms ZERO POST GraphQL probes across all cycles; all structural findings (introspection, IDOR, staging oracle) rely solely on manual curl evidence
+- NEW `graphql-api.app.{,staging.}cineplex.de` automated GraphQL GET probes (`?query=%7BuserById(id:"0")%7D...`) consistently return HTTP 403 (WAF bot-gate), contradicting manual curl 200 claims — malformed
+- NEW `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now (growing ~135M/cycle); descriptive IOMB infra only
+- CHANGED `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` 10th consecutive cycle NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com
+- CHANGED `buchung-dev/bms-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again this cycle after prior timeout; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` 
+- CHANGED `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` authless oracle persists 10+ cycles (200 backend hit 405-mismatch vs prod FORBIDDEN); HUMAN_ONLY POST extraction unproven
