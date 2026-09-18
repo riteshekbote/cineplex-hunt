@@ -4899,3 +4899,24 @@ evidence_needed: any /gateway/* route returning non-503 (2xx/401/4xx)
 verify_steps: curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration" — GET only, ≤1 rps
 impact: dev-tier OAuth token + registration surface if lifted; medium; chained from WAF-less origin
 testability: AUTH_HELPED
+## 2026-09-18 19:25:29 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR with authorized program accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return INVALID_ID via decodePublicId before any auth gate on the same GET surface where 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; auth-omission is code-level, structural POC complete, verified both envs 12+ cycles
+evidence_needed: account A fetches account B entity via publicId with valid JWT (program sandbox accounts)
+verify_steps: two authorized sandbox accounts + valid JWTs; GET `?query=%7BuserById(id:%22<B>%22)%7Bemail fullName%7D%7D`; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email, phone, address, orders, invoices); High
+testability: HUMAN_ONLY
+[HYP] Azure Container Apps claimability attestation for web-dev dangle
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 11 consecutive cycles this-year
+evidence_needed: name-availability check to prove claimable before reporting (attestation required by program)
+verify_steps: passive lookup of azure containerapps name availability; document 11-cycle DoH records; no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+[NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) with POST+GET evidence (introspection 200 full schema prod+staging, GET execution `?query=%7B__typename%7D` → 200, 35KB mutation-arg enumeration showing no injection vectors), CVSS 5.3→7.5; keep web-dev dangle as second submission with claimability attestation.
+[RISK] cineplex: 6/100 — no PII touched this cycle; probes were 9 read-only GET/HEAD at ≤1 rps against a maintained dev-tier origin (blanket 503) and CF-fronted modern surfaces; no auth-bypass or mutating tests; only residual exposure is repeat probing of dev hosts the operator already leaves open (public CF 403, origin WAF-less).

@@ -23027,3 +23027,101 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 8/100 — this cycle only dev-tier read-only GET re-probes; no customer data touched; all reportable items structural/PASSIVE and within directive classes.
+===== ANALYST bigpickle 2026-09-18 19:25:46 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/sess.txt -w "HTTP %{http_code} | %{size_download}B | %{time_total}s\n" "https://buchung-dev.cineplex.de/gateway/booking-session/session" ; head -c 400 /tmp/opencode/sess.txt
+HTTP 503 | 1485B | 0.511985s
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            background-image: url(https://cdn-app.cineplex.de/app/wartung2.jpg);
+            background-position: top center;
+[0m
+503 still on session route. Checking other disclosed `/gateway/*` routes and vhost variants on the shared dev origin.
+[0m$ [0msleep 1; curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/reg.txt -w "reg  HTTP %{http_code} | %{size_download}B\n" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration"; sleep 1; curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/tok.txt -w "tok  HTTP %{http_code} | %{size_download}B\n" "https://buchung-dev.cineplex.de/gateway/auth/oauth/token"; head -c 200 /tmp/opencode/reg.txt; echo; head -c 200 /tmp/opencode/tok.txt
+reg  HTTP 503 | 1485B
+tok  HTTP 503 | 1485B
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+          
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+[0m
+[0m$ [0mfor h in auth-dev cms-dev gateway booking-session grafana admin-dev; do curl -k -sS --http2 --max-time 10 --resolve "$h.cineplex.de:443:194.77.169.121" -H "Host: $h.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" -o /tmp/opencode/vhost.txt -w "$h HTTP %{http_code} | %{size_download}B\n" "https://$h.cineplex.de/"; sleep 1.2; done; head -c 150 /tmp/opencode/vhost.txt
+auth-dev HTTP 404 | 21B
+cms-dev HTTP 404 | 21B
+gateway HTTP 404 | 21B
+booking-session HTTP 404 | 21B
+grafana HTTP 404 | 21B
+admin-dev HTTP 404 | 21B
+default backend - 404
+[0m
+No change to the gateway wall — all `/gateway/*` routes return the identical 1485B `Wartungsarbeiten` blanket (session/reg/token same size = router-level middleware, not route-specific). Vhost sweep all default-backend 404. That closes the vhost enumeration line.
+
+STEP 1 — DELTA
+- [CHANGED] buchung-dev origin: `/gateway/booking-session/session`, `/gateway/auth/users/custom/registration`, `/gateway/auth/oauth/token` all 503/1485B *identical* → maintenance wall sits at gateway router layer, not per-route; no error-shape differential detectable under the blanket.
+- [NEW] 194.77.169.121 vhost sweep (`auth-dev`,`cms-dev`,`gateway`,`booking-session`,`grafana`,`admin-dev`): all 404/21B default-backend → only bms-dev + buchung-dev vhosts exist on this origin.
+- [UNCHANGED] graphql_introspection (12+ cycles), web-dev dangle (10+ cycles), IDOR structural (4/4), staging_testing_oracle (10+ cycles), api.cineplex.de WAF 403-dead, TLS-dead set.
+
+STEP 2 — PRIORITIZE
+- [PRIO] web-dev.cineplex.de,0.88,passive/misconfig fresh=high (0.25·4+0.25·7+0.15·8+0.15·10+0.10·3+0.10·10)
+- No new assets scored — all other surfaces rate below gate_ease/tech_exposure cut (WAF-403 or HUMAN_ONLY).
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant decode-before-gate IDOR with authorized program accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return INVALID_ID via decodePublicId before any auth gate on the same GET surface where 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; auth-omission is code-level, structural POC complete, verified both envs 12+ cycles
+evidence_needed: account A fetches account B entity via publicId with valid JWT (program sandbox accounts)
+verify_steps: two authorized sandbox accounts + valid JWTs; GET `?query=%7BuserById(id:%22<B>%22)%7Bemail fullName%7D%7D`; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email, phone, address, orders, invoices); High
+testability: HUMAN_ONLY
+[HYP] Azure Container Apps claimability attestation for web-dev dangle
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 11 consecutive cycles this-year
+evidence_needed: name-availability check to prove claimable before reporting (attestation required by program)
+verify_steps: passive lookup of azure containerapps name availability; document 11-cycle DoH records; no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Dev-gateway maintenance lift → confidence 45→35: 3 probes (session/reg/token) all identical 1485B blanket 503 proves router-level wall, no non-503 differential possible until global lift; no exploitation surface while flag down.
+- [PARKED] Vhost enumeration on 194.77.169.121 → dead: 6 candidate Host headers all default-backend 404; only 2 known vhosts exist.
+- [FINAL] graphql_introspection @ graphql-api.app.{,staging.}cineplex.de — conf 85, POST+GET verified, CVSS 5.3→7.5, 12+ cycles, no PII touched, report-ready.
+- [FINAL] dangling_cname_takeover @ web-dev.cineplex.de — conf 90, PASSIVE, 11-cycle NXDOMAIN, report-ready.
+- [FINAL] idor_booking @ graphql-api.app.cineplex.de — conf 85 structural; cross-tenant proof HUMAN_ONLY (program authorization required).
+- [FINAL] staging_testing_oracle @ graphql-api.app.staging.cineplex.de — conf 75; env-guard omission persists; code-extraction HUMAN_ONLY.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) with POST+GET evidence (introspection 200 full schema prod+staging, GET execution `?query=%7B__typename%7D` → 200, 35KB mutation-arg enumeration showing no injection vectors), CVSS 5.3→7.5; keep web-dev dangle as second submission with claimability attestation.
+
+STEP 6 — LEARNING
+- [LEARN] REJECTED vhost-enum @ 194.77.169.121: 6 Host-header candidates all 404 default-backend; only bms-dev/buchung-dev vhosts exist on shared origin; hypothesis dead.
+- [LEARN] ACCEPTED dev_gateway_blanket_503 @ buchung-dev origin: session/reg/token all 503/1485B byte-identical → router-level maintenance middleware, no per-route lift detection possible; model stable, exploitability remains gated.
+- [LEARN] ACCEPTED graphql_introspection, dangling_cname_takeover, idor_booking (structural), staging_testing_oracle: all unchanged/stable — no drift this cycle.
+- [LEARN] REJECTED api.cineplex.de GET bypass (403 all), relay_* (descriptive infra), username_enumeration/ssl_tls/csrf_logout/descriptive_errors/known_vuln_library: unchanged out-of-scope/dead.
+
+STEP 7 — RISK
+[RISK] cineplex: 6/100 — no PII touched this cycle; probes were 9 read-only GET/HEAD at ≤1 rps against a maintained dev-tier origin (blanket 503) and CF-fronted modern surfaces; no auth-bypass or mutating tests; only residual exposure is repeat probing of dev hosts the operator already leaves open (public CF 403, origin WAF-less).
