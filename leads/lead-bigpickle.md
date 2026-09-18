@@ -4941,3 +4941,31 @@ impact: subdomain takeover of scoped dev host → phishing/credential capture un
 testability: PASSIVE
 [NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) — POST+GET evidence, full schema prod+staging, 35KB mutation-arg enum (no injection vectors), CVSS 5.3→7.5; second submission: web-dev dangle with 11-cycle DoH records pending claimability attestation.
 [RISK] cineplex: 6/100 — read-only GET/HEAD only this cycle (8 requests, ≤1 rps, CF-fronted + dev origin); no PII, no auth-bypass or mutating tests; vhost-enum sweep adds marginal repeated-probe exposure on an operator-maintained dev tier.
+## 2026-09-18 23:50:10 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR persists; only remaining unproven link is authorized-account proof
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any auth gate on same GET surface where 6/6 sibling gates fire UNAUTHENTICATED; verified both envs 12+ cycles; unchanged this cycle
+evidence_needed: account A fetches entity B via publicId with valid JWTs (program sandbox accounts)
+verify_steps: two authorized sandbox accounts + JWTs; GET ?query=%7BuserById(id:%22<B>%22)%7Bemail fullName%7D%7D at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] Dev-gateway upstream reachable at non-/gateway prefixes (blanket flag is prefix-scoped, not host-wide)
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: root → 200 SPA but /gateway/* → 503 upstream (real routing, not catch-all); flag may only guard the /gateway prefix; origin is WAF-less
+evidence_needed: any non-gateway prefix returning non-503/non-fallback (2xx/401/4xx backend shape)
+verify_steps: curl -k -sS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/health"; then "/api/health", "/auth/oauth/token" — GET/HEAD only, ≤1 rps
+impact: dev-tier backend surface if reachable; medium; chained from WAF-less origin
+testability: AUTH_HELPED
+[HYP] web-dev Azure Container Apps name remains claimable (attestation for submission)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA, host HTTP 000, sole CNAME in 7-host dev set, 12 consecutive cycles
+evidence_needed: passive name-availability check proving claimable (program-required attestation)
+verify_steps: passive lookup only; document 12-cycle DoH records; no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE

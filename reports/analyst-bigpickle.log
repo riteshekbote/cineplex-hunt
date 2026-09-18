@@ -23195,3 +23195,76 @@ STEP 6 — LEARN
 
 STEP 7 — RISK
 [RISK] cineplex: 6/100 — read-only GET/HEAD only this cycle (8 requests, ≤1 rps, CF-fronted + dev origin); no PII, no auth-bypass or mutating tests; vhost-enum sweep adds marginal repeated-probe exposure on an operator-maintained dev tier.
+===== ANALYST bigpickle 2026-09-18 23:51:13 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 10 -H "Accept: application/dns-json" "https://1.1.1.1/dns-query?name=web-dev.cineplex.de&type=CNAME"; echo; sleep 1; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://1.1.1.1/dns-query?name=web-dev.cineplex.de&type=A"
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":1}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mcurl -k -sS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration" -o /dev/null -w "gw_registration: %{http_code} %{size_download}B\n"; sleep 1; curl -k -sS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/booking-session/session" -o /dev/null -w "gw_session: %{http_code} %{size_download}B\n"; sleep 1; curl -k -sS --max-time 10 --resolve bms-dev.cineplex.de:443:194.77.169.121 -H "Host: bms-dev.cineplex.de" "https://bms-dev.cineplex.de/" -o /dev/null -w "bms-dev_root: %{http_code} %{size_download}B\n"; sleep 1; curl -k -sS --max-time 10 --resolve auth-dev.cineplex.de:443:194.77.169.121 -H "Host: auth-dev.cineplex.de" "https://auth-dev.cineplex.de/" -o /dev/null -w "auth-dev: %{http_code} %{size_download}B\n"; sleep 1; curl -k -sS --max-time 10 --resolve cms-dev.cineplex.de:443:194.77.169.121 -H "Host: cms-dev.cineplex.de" "https://cms-dev.cineplex.de/" -o /dev/null -w "cms-dev: %{http_code} %{size_download}B\n"; sleep 1; curl -k -sS --max-time 10 --resolve gateway.cineplex.de:443:194.77.169.121 -H "Host: gateway.cineplex.de" "https://gateway.cineplex.de/" -o /dev/null -w "gateway: %{http_code} %{size_download}B\n"
+gw_registration: 503 1485B
+gw_session: 503 1485B
+bms-dev_root: 200 2147B
+auth-dev: 404 21B
+cms-dev: 404 21B
+gateway: 404 21B
+[0m
+STEP 1 — DELTA
+- CHANGED `buchung-dev` origin /gateway/*: gateway/auth/users/custom/registration + booking-session/session both still 503 (1485B identical) — blanket maintenance flag never lifted (3+ cycles)
+- CHANGED vhost enum on 194.77.169.121: auth-dev/cms-dev/gateway.cineplex.de → 404 default-backend (21B); only `bms-dev` (200/2147B) + `buchung-dev` (200 SPA) vhosts live on shared dev ingress
+- CHANGED `web-dev.cineplex.de` dangle: DoH live re-verified this cycle — CNAME Status 0 → A-follow Status 3 NXDOMAIN + `switzerlandnorth.azurecontainerapps.io` SOA (12th consecutive cycle), report-ready PASSIVE
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,7.95,tech_exposure(GraphQL)+gate_ease(6)+freshness
+- [PRIO] buchung-dev.cineplex.de (origin 194.77.169.121),6.65,gate_ease(WAF-less origin)+tech(oauth/gateway routes)
+- [PRIO] web-dev.cineplex.de,6.40,gate_ease(9)+freshness(dangle stability)
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant decode-before-gate IDOR persists; only remaining unproven link is authorized-account proof
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any auth gate on same GET surface where 6/6 sibling gates fire UNAUTHENTICATED; verified both envs 12+ cycles; unchanged this cycle
+evidence_needed: account A fetches entity B via publicId with valid JWTs (program sandbox accounts)
+verify_steps: two authorized sandbox accounts + JWTs; GET ?query=%7BuserById(id:%22<B>%22)%7Bemail fullName%7D%7D at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+
+[HYP] Dev-gateway upstream reachable at non-/gateway prefixes (blanket flag is prefix-scoped, not host-wide)
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: root → 200 SPA but /gateway/* → 503 upstream (real routing, not catch-all); flag may only guard the /gateway prefix; origin is WAF-less
+evidence_needed: any non-gateway prefix returning non-503/non-fallback (2xx/401/4xx backend shape)
+verify_steps: curl -k -sS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/health"; then "/api/health", "/auth/oauth/token" — GET/HEAD only, ≤1 rps
+impact: dev-tier backend surface if reachable; medium; chained from WAF-less origin
+testability: AUTH_HELPED
+
+[HYP] web-dev Azure Container Apps name remains claimable (attestation for submission)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA, host HTTP 000, sole CNAME in 7-host dev set, 12 consecutive cycles
+evidence_needed: passive name-availability check proving claimable (program-required attestation)
+verify_steps: passive lookup only; document 12-cycle DoH records; no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Dev-gateway maintenance lift — /gateway/* blanket 503 now 3+ cycles across session+token; no lift signal; keep parked behind prefix-scoped probe
+- [PARKED] Vhoster experiment — auth-dev/cms-dev/gateway.cineplex.de all default-backend 404; vhost enumeration exhausted (only 2 vhosts on origin); drops below threshold
+- [FINAL] 1) graphql_introspection + cross-tenant IDOR structural (report-ready, HUMAN submit) 2) web-dev dangle 12-cycle (report-ready PASSIVE) 3) prefix-scoped gateway probe (AUTH_HELPED)
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: submit graphql_introspection report at bugs.olivermaicher.eu — evidence: POST introspection 200 full schema (prod + staging, GET 403/POST 200 WAF method-gate), balanced URL-encoded GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` both envs, 35KB mutation-arg enumeration showing no injection vectors, 12+ cycle stability; CVSS 5.3→7.5; then second submission: web-dev dangle with 12-cycle DoH records pending claimability attestation.
+
+STEP 6 — LEARNING
+- [LEARN] REJECTED dev_ingress_vhost_enum @ 194.77.169.121: only bms-dev + buchung-dev serve live apps; auth-dev/cms-dev/gateway.cineplex.de → default-backend 404 (21B); uncontrolled-vhost hypothesis dead
+- [LEARN] ACCEPTED web-dev dangle @ web-dev.cineplex.de: 12th consecutive cycle re-verified live (CNAME Status 0 / A-follow Status 3 + switzerlandnorth azure SOA); report-ready PASSIVE
+- [LEARN] CHANGED dev_gateway_lift @ buchung-dev: /gateway/* blanket 503 (1485B identical on session+token) persists 3+ cycles; no lift observed; hypothesis parked, not dead
+- [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead
+
+STEP 7 — RISK
+- [RISK] cineplex: 6/100 — this cycle: 6 read-only GETs at ≤1 rps against operator-maintained dev origin blanket-503 tier + SPA shells, plus 2 passive DoH queries; no PII touched, no auth-bypass or mutating tests; residual exposure only from repeated probes of dev hosts the operator leaves publicly routable.
