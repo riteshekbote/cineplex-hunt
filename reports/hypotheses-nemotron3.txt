@@ -1,11 +1,11 @@
-## 2026-09-18 19:25:28 UTC [target] (model nemotron3)
-[NEW] Automated probe log (732 lines) confirms ZERO POST GraphQL probes across all cycles; all structural findings (introspection, IDOR, staging oracle) rely solely on manual curl evidence
-[NEW] `graphql-api.app.{,staging.}cineplex.de` automated GraphQL GET probes (`?query=%7BuserById(id:"0")%7D...`) consistently return HTTP 403 (WAF bot-gate), contradicting manual curl 200 claims — malformed probes return 400 "GET query missing"
+## 2026-09-18 21:54:26 UTC [target] (model nemotron3)
+[NEW] Automated probe log (743 lines) confirms ZERO POST GraphQL probes across all cycles; all structural findings rely solely on manual curl evidence
+[NEW] `graphql-api.app.{,staging.}cineplex.de` automated GraphQL GET probes (malformed URLs with unbalanced braces) consistently return HTTP 403; balanced URL-encoded GET `?query=%7B__typename%7D` → 200 confirmed live via manual curl this cycle
 [NEW] `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
 [CHANGED] `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now (growing ~135M/cycle); descriptive IOMB infra only
-[CHANGED] `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` 10th consecutive cycle NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in 7-host dev set; PASSIVE report-ready
-[CHANGED] `buchung-dev/bms-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again this cycle after prior timeout; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503 "Wartungsarbeiten"; model stable, exploitability backend-gated
-[CHANGED] `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` authless oracle persists 10+ cycles (200 backend hit 405-mismatch vs prod FORBIDDEN); HUMAN_ONLY POST extraction unproven
+[CHANGED] `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` 10th+ consecutive cycle NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in 7-host dev set; host HTTP 000
+[CHANGED] `buchung-dev/bms-dev.cineplex.de` origin (194.77.169.121) TCP-reachable this cycle; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503 "Wartungsarbeiten"; model stable, exploitability backend-gated
+[CHANGED] `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` authless oracle persists 10+ cycles (200 backend hit 405-mismatch on Spring Data JPA endpoint vs prod FORBIDDEN); HUMAN_ONLY POST extraction unproven
 [PRIO] graphql-api.app.cineplex.de,9.5,attack_surface=10|business_value=10|tech_exposure=10|gate_ease=10|cloud_surface=8|freshness=9
 [PRIO] graphql-api.app.staging.cineplex.de,9.0,attack_surface=10|business_value=9|tech_exposure=10|gate_ease=10|cloud_surface=8|freshness=9
 [PRIO] web-dev.cineplex.de,8.5,attack_surface=8|business_value=7|tech_exposure=6|gate_ease=10|cloud_surface=10|freshness=9
@@ -33,7 +33,7 @@ testability: HUMAN_ONLY
 class: MISCONFIG
 asset: web-dev.cineplex.de
 confidence: 95
-reasoning: CNAME `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` resolves (Status 0) but A-record follow returns Status 3 NXDOMAIN with azure-dns.com SOA present — target container app deleted, CNAME dangling. 10th consecutive cycle confirmed via manual DoH with correct Accept header. Sole dangling CNAME in 7-host dev set (bms-dev/booking-dev/buchung-dev/prelive/test/dev all resolve to 194.77.169.121 A-record). Host HTTP 000 (no web surface).
+reasoning: CNAME `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` resolves (Status 0) but A-record follow returns Status 3 NXDOMAIN with azure-dns.com SOA present — target container app deleted, CNAME dangling. 10th+ consecutive cycle confirmed via manual DoH with correct Accept header. Sole dangling CNAME in 7-host dev set (bms-dev/booking-dev/buchung-dev/prelive/test/dev all resolve to 194.77.169.121 A-record). Host HTTP 000 (no web surface).
 evidence_needed: Claimability attestation — register same Azure Container App name in switzerlandnorth region to serve content on web-dev.cineplex.de
 verify_steps: DoH CNAME query for web-dev.cineplex.de (Status 0) → DoH A query for target (Status 3 NXDOMAIN + azure SOA); repeat weekly for stability
 impact: Subdomain takeover on scoped dev domain — attacker serves arbitrary content on web-dev.cineplex.de (Medium, CVSS ~5.3-6.1); PASSIVE verification complete
@@ -44,7 +44,7 @@ testability: PASSIVE
 [PARKED] Internal Architecture Leak @ graphql-api.app.staging.cineplex.de: Schema-disclosed only (Spring Data JPA REST endpoints, mandatorId UUID, Lambda path, Apollo stacktraces); NOT HTTP-accessible (GET probes return 403 WAF-blocked); descriptive infra class, not independently reportable
 [FINAL] Ranked survivors (by testability × impact):
 [NEXT] PROBE: curl -sS -k --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/booking-session/session" — track 503→200 (dev backend up) and same-origin probe of /gateway/auth/oauth/* on bms-dev.cineplex.de
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th+ consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 5.3→7.5 stack; POST+GET execution; automated probe log has zero POST probes (all manual-curl verified); report-ready
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs; decodePublicId before gate; structural POC complete; HUMAN_ONLY cross-tenant proof
 [LEARN] ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 10+ cycles; HUMAN_ONLY POST extraction remains only unproven link

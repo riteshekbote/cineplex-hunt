@@ -555,3 +555,4 @@
 - 2026-09-18 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ consecutive cycle NXDOMAIN stability; sole dangle in 7-host dev set; PASSIVE, report-ready.
 - 2026-09-18 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 12+ cycle stability; CVSS 5.3→7.5 stack; POST+GET execution; automated probe log still zero POST probes (manual-curl verified); report-ready.
 - 2026-09-18 REJECTED relay_* @ data-9fc27eb430.cineplex.de, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead.
+- 2026-09-18 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th+ consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready

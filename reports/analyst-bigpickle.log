@@ -23125,3 +23125,73 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 6/100 — no PII touched this cycle; probes were 9 read-only GET/HEAD at ≤1 rps against a maintained dev-tier origin (blanket 503) and CF-fronted modern surfaces; no auth-bypass or mutating tests; only residual exposure is repeat probing of dev hosts the operator already leaves open (public CF 403, origin WAF-less).
+===== ANALYST bigpickle 2026-09-18 21:54:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mecho "== web-dev DoH (claimability baseline) =="; curl -sS --max-time 8 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" ; echo; echo "== prod booking check (unchanged baseline) =="; curl -k -sS --http2 --max-time 8 --resolve booking.cineplex.de:443:194.77.169.121 -H "Host: booking.cineplex.de" -o /dev/null -w "%{http_code} %{size_download}B\n" "https://booking.cineplex.de/"
+== web-dev DoH (claimability baseline) ==
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+== prod booking check (unchanged baseline) ==
+404 21B
+[0m
+[0m$ [0mfor h in auth-dev.cineplex.de cms-dev.cineplex.de gateway.cineplex.de booking-session.cineplex.de admin-dev.cineplex.de; do echo "== $h =="; curl -k -sS --http2 --max-time 8 --resolve "$h:443:194.77.169.121" -H "Host: $h" -o /dev/null -w "%{http_code} %{size_download}B\n" "https://$h/" ; done; echo "== buchung-dev gateway reg =="; curl -k -sS --http2 --max-time 10 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "%{http_code} %{size_download}B\n" "https://buchung-dev.cineplex.de/gateway/auth/users/custom/registration"
+== auth-dev.cineplex.de ==
+404 21B
+== cms-dev.cineplex.de ==
+404 21B
+== gateway.cineplex.de ==
+404 21B
+== booking-session.cineplex.de ==
+404 21B
+== admin-dev.cineplex.de ==
+404 21B
+== buchung-dev gateway reg ==
+503 1485B
+[0m
+STEP 1 — DELTA
+- CHANGED vhost enum: 5/5 Host variants (auth-dev, cms-dev, gateway, booking-session, admin-dev) → 404 default-backend on 194.77.169.121; only bms-dev + buchung-dev serve content
+- CHANGED dev-gateway: /gateway/auth/users/custom/registration still 503 1485B (blanket maintenance, no differential), 11th consecutive cycle
+- CHANGED web-dev dangle: DoH re-verified 11th cycle (Status 3 NXDOMAIN + azure-dns SOA); sole dangle
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,7.6,(IDOR/INTROSPECTION: a0.6 b0.9 t1.0 g0.9 c0.5 f0.5)
+- [PRIO] web-dev.cineplex.de,6.6,(MISCONFIG takeover: a0.3 b0.8 t0.6 g1.0 c0.5 f0.6)
+- [PRIO] 194.77.169.121,4.2,(dev origin: a0.5 b0.5 t0.5 g0.3 c0.4 f0.4)
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant decode-before-gate IDOR with authorized program accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return INVALID_ID via decodePublicId before any auth gate on the same GET surface where 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; verified both envs 12+ cycles
+evidence_needed: account A fetches account B entity via publicId with valid JWT (program sandbox accounts)
+verify_steps: two authorized sandbox accounts + valid JWTs; GET ?query=%7BuserById(id:%22<B>%22)%7Bemail fullName%7D%7D; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email, phone, address, orders, invoices); High
+testability: HUMAN_ONLY
+[HYP] Azure Container Apps claimability attestation for web-dev dangle
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 11 consecutive cycles
+evidence_needed: name-availability check proving claimable under switzerlandnorth region (attestation required by program)
+verify_steps: Azure name-availability lookup for the containerapps name; document 11-cycle DoH records; no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Dev-gateway maintenance lift: /gateway/* blanket 503 identical 1485B 11 cycles, zero differential in 11 probes; evidence_needed unsatisfied; confidence 50→40, watch-only
+- [PARKED] Ingress vhost enumeration: 5/5 enum Hosts → 404 default-backend this cycle; only 2 known vhosts; confidence 45→30 (dropped)
+- [FINAL] web-dev dangle (90, MISCONFIG, report-ready, 11-cycle stable)
+- [FINAL] graphql/l-IDOR (85, IDOR, HUMAN_ONLY for full proof; structural POC + introspection reportable)
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) — POST+GET evidence, full schema prod+staging, 35KB mutation-arg enum (no injection vectors), CVSS 5.3→7.5; second submission: web-dev dangle with 11-cycle DoH records pending claimability attestation.
+
+STEP 6 — LEARN
+- [LEARN] REJECTED dev-origin_vhost_enum @ 194.77.169.121: 5/5 non-registered Host headers → 404 default-backend; only bms-dev + buchung-dev served; no hidden vhosts
+- [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: unchanged this cycle — origin SPAs 200, /gateway/* blanket 503 11 cycles; model stable, exploitability backend-gated
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th consecutive cycle NXDOMAIN re-verified live (DoH Status 3 + azure SOA); sole dangle in 7-host dev set; PASSIVE, report-ready
+
+STEP 7 — RISK
+[RISK] cineplex: 6/100 — read-only GET/HEAD only this cycle (8 requests, ≤1 rps, CF-fronted + dev origin); no PII, no auth-bypass or mutating tests; vhost-enum sweep adds marginal repeated-probe exposure on an operator-maintained dev tier.
