@@ -551,3 +551,7 @@
 - 2026-09-18 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - 2026-09-18 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 - 2026-09-18 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-18 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin reachable again this cycle (SPAs 200) after prior-cycle 000 timeout; /gateway/* 503 persists → model stable, exploitability backend-gated, NOT dead.
+- 2026-09-18 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ consecutive cycle NXDOMAIN stability; sole dangle in 7-host dev set; PASSIVE, report-ready.
+- 2026-09-18 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 12+ cycle stability; CVSS 5.3→7.5 stack; POST+GET execution; automated probe log still zero POST probes (manual-curl verified); report-ready.
+- 2026-09-18 REJECTED relay_* @ data-9fc27eb430.cineplex.de, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead.

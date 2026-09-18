@@ -4807,3 +4807,48 @@ evidence_needed: account A fetches account B's entity by publicId (sandbox accou
 verify_steps: needs two program-provided sandbox accounts + valid JWT; blocked by PII rule without authorization
 impact: cross-tenant PII dump (email, phone, address, tickets, orders, invoices); High
 testability: HUMAN_ONLY
+## 2026-09-18 07:55:36 UTC [target] (model bigpickle)
+[CHANGED] dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 TCP-reachable again this cycle (SPAs 200) after prior-cycle timeout — but /gateway/* still 503 "Wartungsarbeiten"; model unchanged, exploitability still backend-gated.
+[PRIO] buchung-dev.cineplex.de, 6.6, 0.25(7,dev origin)+0.25(6,booking/auth tier)+0.15(7,bundle-disclosed OAuth+booking-session)+0.15(7,origin WAF-less)+0.10(5,shared ingress 194.77.169.121)+0.10(7,re-verified reachable this cycle)
+[PRIO] web-dev.cineplex.de, 6.1, 0.25(4,DNS-only)+0.25(6,scoped dev name)+0.15(3,no tech)+0.15(10,no auth)+0.10(8,azure containerapps)+0.10(10,10-cycle fresh) — report-ready
+[PRIO] graphql-api.app.cineplex.de, 6.1, 0.25(9,surface)+0.25(9,PII)+0.15(8,GraphQL)+0.15(8,GET authless)+0.10(3)+0.10(3) — IDOR structural complete but cross-tenant HUMAN_ONLY
+[HYP] Dev-origin gateway maintenance lift enables unauth OAuth/booking-session surface
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 50
+reasoning: origin SPAs returned 200 this cycle after prior-cycle timeout; /gateway/booking-session/session and /gateway/auth/oauth/token have returned 503 "Wartungsarbeiten" every cycle; SPA bundle discloses the /gateway/* route map; public CF 403 on same host vs origin 200 proves WAF-less origin
+evidence_needed: any /gateway/* route returning non-503 (2xx or 4xx error shape) at origin
+verify_steps: curl -k --http2 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session ; if non-503, GET /gateway/auth/oauth/token and compare error shape (401 vs 503)
+impact: dev-tier OAuth redirect/state + booking-session manipulation; medium; chained from known WAF-less origin
+testability: AUTH_HELPED
+[HYP] Ingress virtual-host enumeration on shared dev origin
+class: MISCONFIG
+asset: 194.77.169.121 (buchung-dev/bms-dev origin ingress)
+confidence: 45
+reasoning: two dev hosts routed by Host header on one nginx-ingress IP (bms-dev "T360 - CMS", buchung-dev "Cineplex Buchung"); prod booking/shop hosts return 404 default-backend on same IP → Host-based routing; other unpublished virtual-host names likely exist behind same ingress
+evidence_needed: any Host variant returning non-404/non-503 (live app/error) on 194.77.169.121
+verify_steps: read-only, ≤1 rps: curl -k --http2 --resolve VHOST:443:194.77.169.121 -H "Host: VHOST" https://VHOST/ for candidates gateway, api-dev, auth-dev, cms-dev, grafana, kibana, vault, keycloak, portainer, jenkins on buchung-dev/bms-dev/booking-dev suffixes — GET root only, no mutating
+impact: discovery of internal dev services → spur AUTH/IDOR/SSRF chains; medium
+testability: PASSIVE
+[HYP] Azure Container Apps claimability attestation for web-dev dangle
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure SOA present, host HTTP 000, sole dangle in 7-host dev set, stable 10+ consecutive cycles
+evidence_needed: name-availability check for the switzerlandnorth azure containerapps name (claimability)
+verify_steps: passive name lookup only; no mutation of owner's DNS; document 10-cycle DoH records
+impact: subdomain takeover of scoped dev host → phishing/SI inclusion; Medium
+testability: PASSIVE
+[PARKED] JWT alg confusion @ auth.cineplex.de: JWKS 404 closed passive path for 10+ cycles; needs token acquisition — keep candidate only.
+[PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45; email-presence oracle OOS-adjacent; low business value.
+[PARKED] relay_* @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only; no exploitable surface; rejected class (reaffirmed).
+[FINAL] graphql_introspection @ graphql-api.app.{,staging.}cineplex.de — confidence 85, CVSS 5.3→7.5, POST+GET verified, 12+ cycle, report-ready.
+[FINAL] idor_booking @ graphql-api.app.cineplex.de — confidence 85 structural (4/4 decode-before-gate, 6/6 control gates firing); cross-tenant PII proof HUMAN_ONLY.
+[FINAL] staging_testing_oracle @ graphql-api.app.staging.cineplex.de — confidence 75 functional; code-extraction HUMAN_ONLY.
+[FINAL] dangling_cname_takeover @ web-dev.cineplex.de — confidence 90, 10+ cycle, PASSIVE, report-ready.
+[NEXT] PROBE: curl -k -sS --http2 --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64)" "https://buchung-dev.cineplex.de/gateway/booking-session/session" — check if 503 "Wartungsarbeiten" flag lifted; if non-503, immediately GET /gateway/auth/oauth/token for 401-vs-503 error-shape comparison. Read-only, 1 request.
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin reachable again this cycle (SPAs 200) after prior-cycle 000 timeout; /gateway/* 503 persists → model stable, exploitability backend-gated, NOT dead.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ consecutive cycle NXDOMAIN stability; sole dangle in 7-host dev set; PASSIVE, report-ready.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 12+ cycle stability; CVSS 5.3→7.5 stack; POST+GET execution; automated probe log still zero POST probes (manual-curl verified); report-ready.
+[LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged out-of-scope/dead.
+[RISK] cineplex: 8/100 — all high-value items (IDOR, staging ATO oracle, introspection) touch PII or live auth flows the program forbids exposing; investigator remains passive-first, no mutating/auth-bypass probes against customer data; only fresh latency this cycle is dev-tier origin, low residual risk.

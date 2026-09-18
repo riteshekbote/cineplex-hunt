@@ -1198,3 +1198,16 @@ wwww.cineplex.de
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+
+## 2026-09-18 08:02:20 UTC
+- CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin 194.77.169.121 TCP-reachable again this cycle (SPAs 200) after prior-cycle timeout — but /gateway/* still 503 "Wartungsarbeiten"; model unchanged, e
+- NEW `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` DoH re-verified: CNAME Status 0, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA (10th consecutive cycl
+- NEW `graphql-api.app.{,staging.}cineplex.de` balanced URL-encoded GET `?query=%7B__typename%7D` → 200 both envs re-confirmed live (manual curl); automated urllib remains 403 (WAF client-differentiated bot
+- NEW `graphql-api.app.cineplex.de` 4/4 single-entity resolvers (`userById`, `invoice`, `order`, `ticket`) GET-verified via `id:"0"` → 200 `INVALID_ID` with `decodePublicId` stacktrace, NO Authorization hea
+- NEW `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode(email:"probe@test.de",type:PASSWORD_RESET)` → 200 with backend hit (405-method-mismatch on internal Spring Data JPA endpoint `/userPa
+- NEW `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable: SPA 200; `/gateway/*` routes still 503 "Wartungsarbeiten"
+- NEW `bms-dev.cineplex.de` origin (194.77.169.121) live "T360 - CMS" dev admin SPA (2147B) — Ticket360 CMS
+- CHANGED `api.cineplex.de` strict 403 all GraphQL paths (6+ probes); separate stricter WAF config; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
