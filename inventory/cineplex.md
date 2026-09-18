@@ -1184,3 +1184,17 @@ wwww.cineplex.de
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+
+## 2026-09-18 02:54:08 UTC
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- NEW data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11
+- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+- NEW `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again after last-cycle timeout; SPAs 200, `/gateway/*` still 503 "Wartungsarbeiten"
+- NEW `bms-dev.cineplex.de` origin (194.77.169.121) live "T360 - CMS" dev admin SPA (2147B) — not probed in recent automated cycles
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` balanced URL-encoded GET `?query=%7B__typename%7D` → 200 both envs reconfirmed via manual curl; automated urllib 403 (WAF client-differentiated bot-gate)
+- CHANGED `api.cineplex.de` strict 403 all GraphQL paths; separate stricter WAF config; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
