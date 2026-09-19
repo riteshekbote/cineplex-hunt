@@ -5018,3 +5018,24 @@ evidence_needed: any /gateway/* variant returning non-503 (2xx/401/4xx backend s
 verify_steps: GET-only on documented routes at ≤1 rps (/gateway/booking-session/session, /gateway/auth/oauth/token); already 503 stable across 8 cycles — low ROI
 impact: dev-tier backend surface if flag lifted; medium
 testability: AUTH_HELPED
+## 2026-09-19 12:15:28 UTC [target] (model bigpickle)
+[HYP] staging.cineplex.de live staging surface identification
+class: OTHER
+asset: staging.cineplex.de
+confidence: 45
+reasoning: 200/2527B stable since 09-11 while sibling staging (app.staging TLS-dead, prod.cineplex.de/uat 403-WAF-115KB); 2527B is app-shell/login-sized; content never read in 11+ cycles
+evidence_needed: body HTML reveals actual service (CMS/SSO/landing) + linked endpoints; excludes CF-block/placeholder page
+verify_steps: GET / with browser UA at ≤1 rps; read title/meta/scripts; follow with single GET /robots.txt or /login only if body shows a real app (no mutation, no auth)
+impact: preprod service identification → possible unauth login/debug/config exposure on a live scoped staging host; Medium-low pre-identification
+testability: PASSIVE
+[HYP] web-dev Azure Container Apps name claimability attestation (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 10+ consecutive cycles
+evidence_needed: program-required Azure name-availability attestation (switzerlandnorth) — management-API lookup, HUMAN_ONLY arm
+verify_steps: passive DoH histories documented 10+ cycles; attestation is Azure-side lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+[NEXT] PROBE: `curl -sS --http2 -H "User-Agent: Mozilla/5.0 ... Chrome/126" https://staging.cineplex.de/` at ≤1 rps — capture title/meta/scripts of the 2527B body to identify the service; follow with one GET only if a real app is indicated. (Human submission of graphql_introspection at bugs.olivermaicher.eu remains queued from prior lead.)
+[RISK] cineplex: 4/100 — analysis-only cycle, no new live probes executed; the single queued probe is read-only GET ≤1 rps against an already-probed scoped staging host; no PII, no auth-bypass, no mutating tests.

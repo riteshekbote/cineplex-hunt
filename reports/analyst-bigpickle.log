@@ -23429,3 +23429,58 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 - [RISK] cineplex: 5/100 — 9 read-only GET/HEAD probes at ≤1 rps against already-public dev origin (194.77.169.121); all responses SPA index/maintenance page or DNS NXDOMAIN; no PII, no mutating or auth-bypass tests, no burst probing.
+===== ANALYST bigpickle 2026-09-19 12:19:47 UTC =====
+[0m
+> build · big-pickle
+[0m
+STEP 1 — DELTA
+- NO_DELTA on all accepted/rejected stacks (12+ cycle stability: graphql_introspection, idor_booking 4/4, staging_testing_oracle, waf_method_gate, dev_origin_waf_bypass, relay/out-of-scope/TLS-dead).
+- [NEW] staging.cineplex.de: live 200 len=2527 (login/landing-sized) stable since 2026-09-11 — NOT WAF-403 like sibling staging hosts, yet body/content never examined in 11+ cycles; only unexplored live staging surface in scope.
+- [CHANGED] Ranked-hypotheses at 2026-09-19 07:46 dropped web-dev dangling_cname_takeover from top-2 despite KB 10+ cycle acceptance — ranking artifact, not a finding regression.
+- [CHANGED] buchung-dev/bms-dev origin 194.77.169.121: /gateway/* still 503 "Wartungsarbeiten" (8+ cycles); exploitability remains backend-gated.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.{,staging.}cineplex.de,7.3,report-ready stack (introspection CVSS 7.5, 4/4 IDOR, staging_oracle) — HUMAN submission
+- [PRIO] web-dev.cineplex.de,6.6,PASSIVE dangle (10+ cycles, sole CNAME; attestation open)
+- [PRIO] staging.cineplex.de,5.3,200/2527B live staging, no WAF signature, content unexamined
+- [PRIO] buchung-dev.cineplex.de,4.8,origin /gateway OAuth/booking routes 503-gated
+
+STEP 3 — HYPOTHESES
+[HYP] staging.cineplex.de live staging surface identification
+class: OTHER
+asset: staging.cineplex.de
+confidence: 45
+reasoning: 200/2527B stable since 09-11 while sibling staging (app.staging TLS-dead, prod.cineplex.de/uat 403-WAF-115KB); 2527B is app-shell/login-sized; content never read in 11+ cycles
+evidence_needed: body HTML reveals actual service (CMS/SSO/landing) + linked endpoints; excludes CF-block/placeholder page
+verify_steps: GET / with browser UA at ≤1 rps; read title/meta/scripts; follow with single GET /robots.txt or /login only if body shows a real app (no mutation, no auth)
+impact: preprod service identification → possible unauth login/debug/config exposure on a live scoped staging host; Medium-low pre-identification
+testability: PASSIVE
+
+[HYP] web-dev Azure Container Apps name claimability attestation (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 10+ consecutive cycles
+evidence_needed: program-required Azure name-availability attestation (switzerlandnorth) — management-API lookup, HUMAN_ONLY arm
+verify_steps: passive DoH histories documented 10+ cycles; attestation is Azure-side lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] cross-tenant IDOR re-verification (conf 85): no new evidence obtainable — HUMAN_ONLY cross-tenant PII proof blocked by program rule; message unchanged.
+- [PARKED] buchung-dev /gateway OAuth-token exposure (conf 30): 503 for 8+ cycles, no authless token surface; under cutoff, not re-pursued.
+- [PARKED] staging.cineplex.de (conf 45): borderline but cheap read-only probe resolves it in one request; survives one probe attempt, drops below threshold if body is standard/placeholder.
+- [FINAL] rank: (1) web-dev dangle attestation+submit [90, PASSIVE]; (2) graphql_introspection submission [report-ready]; (3) staging.cineplex.de body-examine [45, PASSIVE].
+
+STEP 5 — NEXT ACTION
+[NEXT] PROBE: `curl -sS --http2 -H "User-Agent: Mozilla/5.0 ... Chrome/126" https://staging.cineplex.de/` at ≤1 rps — capture title/meta/scripts of the 2527B body to identify the service; follow with one GET only if a real app is indicated. (Human submission of graphql_introspection at bugs.olivermaicher.eu remains queued from prior lead.)
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10+ consecutive cycles NXDOMAIN (CNAME Status 0 / A-follow Status 3 + azure SOA), sole dangle; attestation is the only open item before submission.
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: report-ready (CVSS 7.5 stack); automated probe log still zero POST probes — all evidence manual-curl.
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers decode-before-gate, 6/6 control gates firing; structural POC complete, HUMAN_ONLY for cross-tenant.
+- [LEARN] REJECTED staging_testing_oracle escalation @ graphql-api.app.staging.cineplex.de: env-guard omission persists but HUMAN_ONLY POST extraction unproven — no new exploitable path.
+- [LEARN] REJECTED relay_metrics/broker, username_enumeration, ssl_tls, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS, TLS-dead: unchanged.
+
+STEP 7 — RISK
+[RISK] cineplex: 4/100 — analysis-only cycle, no new live probes executed; the single queued probe is read-only GET ≤1 rps against an already-probed scoped staging host; no PII, no auth-bypass, no mutating tests.
