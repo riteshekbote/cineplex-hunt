@@ -23354,3 +23354,78 @@ testability: HUMAN_ONLY
 
 ## STEP 7 — RISK
 [RISK] cineplex: 4/100 — 18 read-only GET probes (≤1 rps) against operator-open dev origins + 2 DoH queries; all responses SPA-index/maintenance-page or DNS NXDOMAIN; no PII, no auth-bypass, no mutating tests; only residual exposure is repeat probing of already-public dev tier.
+===== ANALYST bigpickle 2026-09-19 07:46:19 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /health -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/health"; sleep 1; curl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /api/health -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/api/health"; sleep 1; curl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /auth/oauth/token -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/auth/oauth/token"; sleep 1; curl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /api/v1 -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/api/v1"
+GET /health -> 200 2410B ct=text/html
+GET /api/health -> 200 2410B ct=text/html
+GET /auth/oauth/token -> 200 2410B ct=text/html
+GET /api/v1 -> 200 2410B ct=text/html
+[0m
+[0m$ [0mcurl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "HEAD / -> %{http_code} %{size_download}B ct=%{content_type}\n" -X HEAD "https://buchung-dev.cineplex.de/"; sleep 1; curl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /swagger-ui.html -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/swagger-ui.html"; sleep 1; curl -ksS --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /dev/null -w "GET /actuator/health -> %{http_code} %{size_download}B ct=%{content_type}\n" "https://buchung-dev.cineplex.de/actuator/health"
+curl: (18) transfer closed with 2410 bytes remaining to read
+HEAD / -> 200 0B ct=text/html
+GET /swagger-ui.html -> 200 2410B ct=text/html
+GET /actuator/health -> 200 2410B ct=text/html
+[0m
+STEP 1 — DELTA:
+- NEW Origin probe this cycle: buchung-dev (194.77.169.121) returns **same 2410B "Cineplex Buchung" SPA index** on GET /health, /api/health, /auth/oauth/token, /api/v1, /swagger-ui.html, /actuator/health — SPA catch-all swallows every non-/gateway prefix; only /gateway/* is upstream-proxied (503 "Wartungsarbeiten").
+- CHANGED dev_gateway_nonprefix hypothesis weakened: no distinct backend surface outside /gateway prefix; /gateway/* remains the sole proxied prefix.
+- REAFFIRMED (no change): IDOR 4/4 decode-before-gate + 6/6 firing-gate control; staging testing oracle; WAF client-differentiated bot-gate; web-dev dangle 12+ cycles; api.cineplex.de GET-bypass dead; relay metrics stale/descriptive-only; TLS-dead set.
+
+STEP 2 — PRIORITIZE:
+- [PRIO] graphql-api.app.cineplex.de, 8.6, PII-bearing authless GraphQL (0.25·8+0.25·9+0.15·9+0.15·10+0.10·7+0.10·8)
+- [PRIO] web-dev.cineplex.de, 6.35, claimable Azure Container Apps dangle (0.25·3+0.25·7+0.15·3+0.15·10+0.10·9+0.10·10)
+- [PRIO] buchung-dev/bms-dev.cineplex.de, 6.05, WAF-less dev origin, backend maintenance-gated (0.25·5+0.25·5+0.15·5+0.15·10+0.10·4+0.10·9)
+
+STEP 3 — HYPOTHESES:
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any auth gate on the same GET surface where 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; verified both envs 12+ cycles via manual curl.
+evidence_needed: authorized account A fetches entity B by publicId with valid JWT — program sandbox accounts
+verify_steps: two authorized sandbox accounts; balanced URL-encoded GET `?query=%7BuserById(id:%22<B-id>%22)%7Bemail%20fullName%7D%7D` at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+
+[HYP] web-dev Azure Container Apps name claimability attestation pending before submission
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 12+ consecutive cycles; passive side fully confirmed.
+evidence_needed: program-required claimability attestation for switzerlandnorth region (Azure name-availability call, requires Azure account/management API)
+verify_steps: passive DoH records already documented 12+ cycles; attestation is an Azure-side lookup only, no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm: HUMAN_ONLY)
+
+[HYP] Dev /gateway maintenance flag is upstream-wide; backend state may be reachable only with correct leftover method/route
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 30
+reasoning: /gateway/* → distinct 503 "Wartungsarbeiten" (proxied to upstream), all other prefixes → 2410B SPA catch-all (this cycle's probe); no route outside /gateway returns backend shape; only remaining surface is that proxy and it is maintenance-gated.
+evidence_needed: any /gateway/* variant returning non-503 (2xx/401/4xx backend shape) without mutating state
+verify_steps: GET-only on documented routes at ≤1 rps (/gateway/booking-session/session, /gateway/auth/oauth/token); already 503 stable across 8 cycles — low ROI
+impact: dev-tier backend surface if flag lifted; medium
+testability: AUTH_HELPED
+
+STEP 4 — SELF-CRITIQUE:
+- [PARKED] dev_gateway_nonprefix: confidence 45→20 — fresh probe proves SPA catch-all on every non-/gateway prefix (identical 2410B index); no distinct surface; no further value.
+- [PARKED] dev /gateway probing: 30, 503-stable 8+ cycles; read-only GETs exhausted; waiting on backend state change, not testing.
+- IDOR: HUMAN_ONLY cross-tenant proof per program PII rule — structurally complete, correct as-is.
+- Attestation arm labeled (minor): PASSIVE covers DoH evidence; the Azure name-availability check itself is a human op-request step.
+- [FINAL] 1) cross-tenant IDOR (85, HUMAN_ONLY) 2) web-dev dangle attestation+submit (85, PASSIVE evid/human attest) 3) dev-origin tracked only.
+
+STEP 5 — NEXT ACTION:
+- [NEXT] HUMAN: Run Azure Container Apps name-availability check for name `web.gentleglacier-dfef6458` in switzerlandnorth (availability.azure API / portal) to complete claimability attestation, then submit web-dev dangle report (12+ cycle DoH evidence, CNAME Status 0/A-follow NXDOMAIN + azure SOA, host 000). Follow-on after introspection report submission at bugs.olivermaicher.eu.
+
+STEP 6 — LEARNING:
+- [LEARN] REJECTED dev_gateway_nonprefix @ buchung-dev: all non-/gateway prefixes return identical 2410B SPA index (catch-all, not proxied); only /gateway/* routes upstream (503); no distinct backend reach; hypothesis dead.
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: decode-before-gate model re-affirmed 12+ cycles; 6/6 control gates fire; unchanged.
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ cycle NXDOMAIN; sole dangle; report-ready pending attestation.
+- [LEARN] REJECTED api.cineplex.de GET-bypass, relay_metrics, relay_broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts: unchanged.
+
+STEP 7 — RISK:
+- [RISK] cineplex: 5/100 — 9 read-only GET/HEAD probes at ≤1 rps against already-public dev origin (194.77.169.121); all responses SPA index/maintenance page or DNS NXDOMAIN; no PII, no mutating or auth-bypass tests, no burst probing.

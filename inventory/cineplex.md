@@ -1267,3 +1267,5 @@ wwww.cineplex.de
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now (growing ~135M/cycle); descriptive IOMB infra only
 - CHANGED Automated probe log (743 lines) confirms ZERO POST GraphQL probes across all cycles; all structural findings rely solely on manual curl evidence
+
+## 2026-09-19 07:46:19 UTC

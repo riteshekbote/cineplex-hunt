@@ -4990,3 +4990,31 @@ impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
 testability: HUMAN_ONLY
 [NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) — POST introspection 200 full schema prod+staging, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors); then submit web-dev dangle after claimability attestation.
 [RISK] cineplex: 4/100 — 18 read-only GET probes (≤1 rps) against operator-open dev origins + 2 DoH queries; all responses SPA-index/maintenance-page or DNS NXDOMAIN; no PII, no auth-bypass, no mutating tests; only residual exposure is repeat probing of already-public dev tier.
+## 2026-09-19 07:46:02 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any auth gate on the same GET surface where 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED; verified both envs 12+ cycles via manual curl.
+evidence_needed: authorized account A fetches entity B by publicId with valid JWT — program sandbox accounts
+verify_steps: two authorized sandbox accounts; balanced URL-encoded GET `?query=%7BuserById(id:%22<B-id>%22)%7Bemail%20fullName%7D%7D` at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability attestation pending before submission
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 12+ consecutive cycles; passive side fully confirmed.
+evidence_needed: program-required claimability attestation for switzerlandnorth region (Azure name-availability call, requires Azure account/management API)
+verify_steps: passive DoH records already documented 12+ cycles; attestation is an Azure-side lookup only, no mutation of owner DNS
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm: HUMAN_ONLY)
+[HYP] Dev /gateway maintenance flag is upstream-wide; backend state may be reachable only with correct leftover method/route
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 30
+reasoning: /gateway/* → distinct 503 "Wartungsarbeiten" (proxied to upstream), all other prefixes → 2410B SPA catch-all (this cycle's probe); no route outside /gateway returns backend shape; only remaining surface is that proxy and it is maintenance-gated.
+evidence_needed: any /gateway/* variant returning non-503 (2xx/401/4xx backend shape) without mutating state
+verify_steps: GET-only on documented routes at ≤1 rps (/gateway/booking-session/session, /gateway/auth/oauth/token); already 503 stable across 8 cycles — low ROI
+impact: dev-tier backend surface if flag lifted; medium
+testability: AUTH_HELPED
