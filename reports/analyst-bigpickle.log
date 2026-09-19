@@ -23484,3 +23484,86 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 4/100 — analysis-only cycle, no new live probes executed; the single queued probe is read-only GET ≤1 rps against an already-probed scoped staging host; no PII, no auth-bypass, no mutating tests.
+===== ANALYST bigpickle 2026-09-19 15:58:32 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --http2 --max-time 15 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36" -D - "https://staging.cineplex.de/" -o /tmp/opencode/staging_body.html; echo "---SIZE---"; wc -c /tmp/opencode/staging_body.html
+HTTP/2 403 
+date: Sat, 19 Sep 2026 15:55:58 GMT
+content-type: text/html; charset=UTF-8
+content-length: 115615
+accept-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cf-mitigated: challenge
+x-frame-options: SAMEORIGIN
+server: cloudflare
+critical-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cross-origin-embedder-policy: require-corp
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+permissions-policy: accelerometer=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=(),xr-spatial-tracking=*
+referrer-policy: same-origin
+server-timing: chlray;desc="a3d9c7181f5296a2"
+x-content-type-options: nosniff
+cf-ray: a3d9c7181f5296a2-IAD
+alt-svc: h3=":443"; ma=86400
+
+---SIZE---
+115615 /tmp/opencode/staging_body.html
+[0m
+Probe executed: single read-only GET to `staging.cineplex.de` root (Chrome UA, ≤1 rps). Result below resolves the queued hypothesis.
+
+## STEP 1 — DELTA
+- [CHANGED] staging.cineplex.de: root GET now returns **HTTP 403 Cloudflare managed-challenge** (115,615B, `cf-mitigated: challenge`, `chlray` server-timing) — the prior "200/2527B stable" body is **not reproduced**; host saturates to the same 115KB challenge as prod.cineplex.de/uat.cineplex.de. No app surface; body is the WAF interstitial, not a service.
+- [CHANGED] Prior queued `[NEXT] PROBE` (staging.cineplex.de service identification) is **resolved → null**: hypothesis dead, host WAF-gated, unauth service ID impossible.
+- [NO_DELTA] All other tracked assets unchanged this cycle (GraphQL pair, web-dev dangle, buchung-dev/bms-dev origin, relay, TLS-dead, OOS classes).
+
+## STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.{,staging.}.cineplex.de, a=6 b=9 t=9 g=6 c=5 f=8 → **7.35** (introspection report-ready, CVSS 7.5 stack, 12+ cycles stable)
+- [PRIO] web-dev.cineplex.de, a=4 b=5 t=7 g=4 c=3 f=10 → **5.55** (sole dangling CNAME, report-ready, PASSIVE)
+- [PRIO] buchung-dev/bms-dev.cineplex.de, a=5 b=6 t=6 g=7 c=3 f=6 → **5.85** (WAF-less dev origin; exploitability backend-gated, 503)
+- [PRIO] staging.cineplex.de, a=2 b=4 t=3 g=1 c=2 f=5 → **2.75** (WAF challenge confirmed; dead)
+
+## STEP 3 — HYPOTHESES
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any gate on the GET surface where 6/6 sibling gates fire UNAUTHENTICATED; both envs, 12+ cycles, manual-curl verified (automated urllib 403 = WAF bot-gate only)
+evidence_needed: authorized account A fetches entity B by publicId with valid JWTs (program sandbox accounts)
+verify_steps: two sandbox accounts; balanced URL-encoded GET `?query=%7BuserById(id%3A%22<B-id>%22)%7Bemail%20fullName%7D%7D` at ≤1 rps; blocked by program PII rule absent explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 10+ consecutive cycles
+evidence_needed: program-required switzerlandnorth name-availability attestation (Azure management lookup)
+verify_steps: passive DoH histories already documented; attestation is Azure-side lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+[HYP] Dev /gateway maintenance flag is upstream-wide
+class: AUTH
+asset: buchung-dev.cineplex.de (origin 194.77.169.121)
+confidence: 30
+reasoning: /gateway/* → uniform 503 "Wartungsarbeiten" stable 8+ cycles; all other prefixes → SPA catch-all; no non-503 backend shape observed since gate began
+evidence_needed: any /gateway/* variant returning non-503 (2xx/401/4xx backend shape) without mutation
+verify_steps: GET-only documented routes at ≤1 rps; already 503-stable — low ROI
+impact: dev-tier backend surface if flag lifted; medium
+testability: AUTH_HELPED
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] staging.cineplex.de service identification: conf 45 → now **falsified by live probe** (403 CF challenge, cf-mitigated, 115,615B). WAF-gated public-login/interstitial class; no passive surface; body was never a reachable service. Killed.
+- [PARKED] dev /gateway maintenance flag: confidence 30 < 40 threshold; no new evidence arm; 503-stable 8+ cycles. Hold only.
+- [FINAL] Survivors: Cross-tenant IDOR (85, HUMAN_ONLY) → web-dev dangle (90, PASSIVE/report) → graphql_introspection (report-ready, human submission).
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit the graphql_introspection finding at bugs.olivermaicher.eu — prod+staging POST introspection 200 full schema, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors), CVSS 5.3→7.5, 12+ cycle stability; separately queue web-dev dangle submission pending Azure name-availability attestation.
+
+## STEP 6 — LEARNING
+[LEARN] REJECTED staging.cineplex.de @ service-identification: root GET returns CF managed-challenge 403/115,615B (cf-mitigated: challenge, chlray) under Chrome UA — prior "200/2527B stable since 09-11" body not reproducible; WAF-gated interstitial, no app surface; passive identification dead; consistent with prod.cineplex.de/uat pattern.
+
+## STEP 7 — RISK
+[RISK] cineplex: 4/100 — one read-only GET (≤1 rps, browser UA) against already-probed scoped staging host hit a Cloudflare managed challenge; no bypass attempted, no PII, no auth tests, no mutations; all other activity this cycle was analysis-only.

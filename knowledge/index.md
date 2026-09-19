@@ -570,3 +570,4 @@
 - 2026-09-19 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - 2026-09-19 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 - 2026-09-19 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
+- 2026-09-19 REJECTED staging.cineplex.de @ service-identification: root GET returns CF managed-challenge 403/115,615B (cf-mitigated: challenge, chlray) under Chrome UA — prior "200/2527B stable since 09-11" body not reproducible; WAF-gated interstitial, no app surface; passive identification dead; consistent with prod.cineplex.de/uat pattern.
