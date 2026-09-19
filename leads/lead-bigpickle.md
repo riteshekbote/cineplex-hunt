@@ -4969,3 +4969,24 @@ evidence_needed: passive name-availability check proving claimable (program-requ
 verify_steps: passive lookup only; document 12-cycle DoH records; no mutation of owner DNS
 impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
 testability: PASSIVE
+## 2026-09-19 02:50:32 UTC [target] (model bigpickle)
+[HYP] web-dev Azure Container Apps name claimability attestation
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 12 consecutive cycles
+evidence_needed: passive name-availability lookup proving the containerapps name is claimable (program-required attestation before submission)
+verify_steps: Azure name-availability check on the target name; document 12-cycle DoH records; no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+[HYP] Cross-tenant decode-before-gate IDOR with authorized program accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers return 200 INVALID_ID via decodePublicId before gate on GET surface where 6/6 sibling gates fire UNAUTHENTICATED; verified both envs 12+ cycles
+evidence_needed: account A fetches entity B via publicId with valid JWTs (program sandbox accounts)
+verify_steps: two authorized sandbox accounts; GET ?query=userById(invalid-cross-ID) at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) — POST introspection 200 full schema prod+staging, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors); then submit web-dev dangle after claimability attestation.
+[RISK] cineplex: 4/100 — 18 read-only GET probes (≤1 rps) against operator-open dev origins + 2 DoH queries; all responses SPA-index/maintenance-page or DNS NXDOMAIN; no PII, no auth-bypass, no mutating tests; only residual exposure is repeat probing of already-public dev tier.

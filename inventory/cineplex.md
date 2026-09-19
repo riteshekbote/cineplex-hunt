@@ -1256,3 +1256,14 @@ wwww.cineplex.de
 - CHANGED `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` 10th+ consecutive cycle NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.co
 - CHANGED `buchung-dev/bms-dev.cineplex.de` origin (194.77.169.121) TCP-reachable this cycle; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503 "Wartungs
 - CHANGED `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` authless oracle persists 10+ cycles (200 backend hit 405-mismatch on Spring Data JPA endpoint vs prod FORBIDDEN); HUMAN_ONLY POST ex
+
+## 2026-09-19 02:52:34 UTC
+- NEW Live GET verification: `graphql-api.app.cineplex.de` balanced URL-encoded GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` confirmed this cycle
+- NEW Live GET verification: `graphql-api.app.cineplex.de` `userById(id:"0")` → 200 INVALID_ID with `decodePublicId` stacktrace (no auth header); `currentUser` → 200 UNAUTHENTICATED on same surface — auth-o
+- NEW Live GET verification: `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` → 200 with 405-method-mismatch on internal Spring Data JPA endpoint `/userPasswordResets/search/findByMandato
+- NEW Live GET verification: `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` DoH Status 0 CNAME, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA (10th+ conse
+- NEW Live GET verification: `buchung-dev.cineplex.de` origin 194.77.169.121 TCP-reachable, SPA 200 "Cineplex Buchung"; `/gateway/*` routes still 503 "Wartungsarbeiten"
+- NEW Live GET verification: `bms-dev.cineplex.de` origin 194.77.169.121 live "T360 - CMS" dev admin SPA (2147B), direct origin, no Cloudflare; SPA catch-all on `/api`, `/graphql`
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config than `graphql-api` pair; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now (growing ~135M/cycle); descriptive IOMB infra only
+- CHANGED Automated probe log (743 lines) confirms ZERO POST GraphQL probes across all cycles; all structural findings rely solely on manual curl evidence

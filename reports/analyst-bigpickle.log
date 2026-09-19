@@ -23268,3 +23268,89 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 6/100 — this cycle: 6 read-only GETs at ≤1 rps against operator-maintained dev origin blanket-503 tier + SPA shells, plus 2 passive DoH queries; no PII touched, no auth-bypass or mutating tests; residual exposure only from repeated probes of dev hosts the operator leaves publicly routable.
+===== ANALYST bigpickle 2026-09-19 02:52:34 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mecho "=== buchung-dev via origin 194.77.169.121 non-/gateway prefixes ==="; for p in /health /api/health /api /actuator/health /graphql; do code=$(curl -k -sS -o /dev/null -w "%{http_code} %{size_download}B %{time_total}s" --max-time 10 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de$p" 2>&1); echo "$p -> $code"; sleep 1; done
+=== buchung-dev via origin 194.77.169.121 non-/gateway prefixes ===
+/health -> 200 2410B 0.543169s
+/api/health -> 200 2410B 0.532339s
+/api -> 200 2410B 0.540494s
+/actuator/health -> 200 2410B 0.532368s
+/graphql -> 200 2410B 0.534663s
+[0m
+[0m$ [0mecho "=== bms-dev origin (direct A, no CF) non-/gateway prefixes ==="; for p in /health /api/health /api /auth/oauth/token /graphql /metrics /actuator/health; do code=$(curl -k -sS -o /dev/null -w "%{http_code} %{size_download}B %{time_total}s" --max-time 10 -G "https://bms-dev.cineplex.de$p" 2>&1); echo "$p -> $code"; sleep 1; done
+=== bms-dev origin (direct A, no CF) non-/gateway prefixes ===
+/health -> 200 2147B 0.699857s
+/api/health -> 200 2147B 0.750250s
+/api -> 200 2147B 0.674745s
+/auth/oauth/token -> 200 2147B 0.544994s
+/graphql -> 200 2147B 0.545631s
+/metrics -> 200 2147B 0.673828s
+/actuator/health -> 200 2147B 0.674774s
+[0m
+[0m$ [0mecho "=== web-dev DoH CNAME re-check (12th cycle) ==="; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" 2>&1 | head -c 2000; echo; echo "=== A-follow ==="; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" 2>&1 | head -c 2000
+=== web-dev DoH CNAME re-check (12th cycle) ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+=== A-follow ===
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mecho "=== /gateway prefix control check ==="; for h in bms-dev.cineplex.de; do for p in /gateway /gateway/auth/oauth/token /gateway/booking-session/session; do code=$(curl -k -sS -o /dev/null -w "%{http_code} %{size_download}B" --max-time 10 "https://$h$p" 2>&1); echo "$h$p -> $code"; sleep 1; done; done; echo "=== buchung-dev /gateway via origin ==="; for p in /gateway /gateway/auth/oauth/token; do code=$(curl -k -sS -o /dev/null -w "%{http_code} %{size_download}B" --max-time 10 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de$p" 2>&1); echo "$p -> $code"; sleep 1; done
+=== /gateway prefix control check ===
+bms-dev.cineplex.de/gateway -> 200 2147B
+bms-dev.cineplex.de/gateway/auth/oauth/token -> 503 1485B
+bms-dev.cineplex.de/gateway/booking-session/session -> 503 1485B
+=== buchung-dev /gateway via origin ===
+/gateway -> 200 2410B
+/gateway/auth/oauth/token -> 503 1485B
+[0m
+**Fresh live reads (2026-09-19 00:00Z, read-only GET ≤1rps):**
+- `bms-dev`/`buchung-dev` origin: every non-`/gateway` prefix (/health, /api, /api/health, /graphql, /metrics, /actuator/health, /auth/oauth/token, /gateway itself) → **200 SPA index** (2147B/2410B catch-all). Only `/gateway/*` → **503** (1485B, both envs). Non-prefix backend-reach hypothesis resolved: catch-all swallows all.
+- `web-dev` doh.cloudflare-dns.com: **12th consecutive cycle** — CNAME Status 0 TTL 300 → A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA. Immutable.
+
+## STEP 1 — DELTA
+- [CHANGED] `buchung-dev`/`bms-dev` origin 194.77.169.121: all non-/gateway prefixes → 200 SPA catch-all; only /gateway/* → 503 (1485B) — non-prefix backend reach disproven, exploitability stays backend-gated.
+- [CHANGED] `web-dev.cineplex.de` dangle: 12th consecutive cycle NXDOMAIN re-verified via DoH (Status 0 / A-follow Status 3 + azure SOA).
+- [NO_DELTA] graphql-api prod/staging, IDOR structural POC, staging oracle, WAF bot-gate, api.cineplex.de strict-403 — all stable.
+
+## STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de, 8.0, su=bv=t (report-ready, CVSS 7.5)
+- [PRIO] web-dev.cineplex.de, 6.35, gate=cloud (passive takeover, ready)
+- [PRIO] buchung-dev/bms-dev.cineplex.de origin, 4.35, gate_ease (backend-gated, no new surface)
+
+## STEP 3 — HYPOTHESES
+[HYP] web-dev Azure Container Apps name claimability attestation
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 12 consecutive cycles
+evidence_needed: passive name-availability lookup proving the containerapps name is claimable (program-required attestation before submission)
+verify_steps: Azure name-availability check on the target name; document 12-cycle DoH records; no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE
+
+[HYP] Cross-tenant decode-before-gate IDOR with authorized program accounts
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 single-entity resolvers return 200 INVALID_ID via decodePublicId before gate on GET surface where 6/6 sibling gates fire UNAUTHENTICATED; verified both envs 12+ cycles
+evidence_needed: account A fetches entity B via publicId with valid JWTs (program sandbox accounts)
+verify_steps: two authorized sandbox accounts; GET ?query=userById(invalid-cross-ID) at ≤1 rps; blocked by program PII rule without explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] dev_gateway_nonprefix_reach @ buchung-dev/bms-dev: catch-all 200 on all non-/gateway prefixes proven this cycle (no distinct backend shape); confidence 45→0, dead.
+- [FINAL] web-dev.cineplex.de dangle (90, PASSIVE, report-ready). [FINAL] graphql_introspection prod+staging (report-ready, CVSS 7.5). [FINAL] idor_booking structural POC (85, HUMAN_ONLY cross-tenant link).
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit graphql_introspection report (bugs.olivermaicher.eu) — POST introspection 200 full schema prod+staging, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors); then submit web-dev dangle after claimability attestation.
+
+## STEP 6 — LEARNING
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th consecutive cycle NXDOMAIN re-verified live this cycle (CNAME Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in 7-host dev set; immutable; PASSIVE report-ready.
+- [LEARN] REJECTED dev_gateway_nonprefix_reach @ buchung-dev/bms-dev.cineplex.de: all non-/gateway prefixes return SPA index 200 (2147B/2410B catch-all); only /gateway/* 503; no backend shape outside prefix; hypothesis dead.
+- [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: /gateway/* 503 persists both envs at origin this cycle; model stable, exploitability remains backend-gated, NOT dead.
+
+## STEP 7 — RISK
+[RISK] cineplex: 4/100 — 18 read-only GET probes (≤1 rps) against operator-open dev origins + 2 DoH queries; all responses SPA-index/maintenance-page or DNS NXDOMAIN; no PII, no auth-bypass, no mutating tests; only residual exposure is repeat probing of already-public dev tier.
