@@ -23567,3 +23567,225 @@ testability: AUTH_HELPED
 
 ## STEP 7 — RISK
 [RISK] cineplex: 4/100 — one read-only GET (≤1 rps, browser UA) against already-probed scoped staging host hit a Cloudflare managed challenge; no bypass attempted, no PII, no auth tests, no mutations; all other activity this cycle was analysis-only.
+===== ANALYST bigpickle 2026-09-19 18:27:27 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run a focused read-only probe cycle before emitting structured findings.
+[0m$ [0mcurl -sS --max-time 12 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -o /tmp/opencode/webdev_cname.json -w "HTTP %{http_code}\n"; cat /tmp/opencode/webdev_cname.json
+HTTP 200
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+[0m
+[0m$ [0mcurl -sk --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/booking-session/session" -o /tmp/opencode/gw_session.txt -w "HTTP %{http_code} size=%{size_download}\n" ; curl -sk --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/" -o /tmp/opencode/buchung_index.html -w "HTTP %{http_code} size=%{size_download}\n"
+HTTP 503 size=1485
+HTTP 200 size=2410
+[0m
+[0m$ [0mcurl -sS --max-time 12 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" | head -c 600; echo; grep -oE 'src="[^"]+\.js[^"]*"|href="[^"]+\.js[^"]*"' /tmp/opencode/buchung_index.html; echo "---scripts---"; cat /tmp/opencode/buchung_index.html | head -c 800
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+href="/manifest.json"
+src="/static/js/2.65674838.chunk.js"
+src="/static/js/main.7dacb587.chunk.js"
+---scripts---
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/><meta name="theme-color" content="#000000"/><meta name="description" content="Buchung"/><link rel="manifest" href="/manifest.json"/><title>Cineplex Buchung</title><link rel="icon" type="image/png" href="/images/favicon/16x16_alt.png" sizes="16x16"><link rel="icon" type="image/png" href="/images/favicon/32x32_alt.png" sizes="32x32"><link rel="icon" type="image/png" href="/images/favicon/36x36_alt.png" sizes="36x36"><link rel="icon" type="image/png" href="/images/favicon/48x48_alt.png" sizes="48x48"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script>!function(e){function r(r){
+[0m
+[0m$ [0mcurl -sk --max-time 15 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/static/js/main.7dacb587.chunk.js" -o /tmp/opencode/buchung_main.js -w "main HTTP %{http_code} size=%{size_download}\n"; curl -sk --max-time 15 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/static/js/2.65674838.chunk.js" -o /tmp/opencode/buchung_vendor.js -w "vendor HTTP %{http_code} size=%{size_download}\n"
+main HTTP 200 size=312658
+vendor HTTP 200 size=1528044
+[0m
+[0m$ [0mgrep -oE '"/gateway[^"]*|/gateway/[a-zA-Z0-9_/{}${}.:*-]+' /tmp/opencode/buchung_main.js | sort -u | head -60; echo "=== /api refs ==="; grep -oE '"/api[^"]*|/api/[a-zA-Z0-9_/{}${}.:*-]+' /tmp/opencode/buchung_main.js | sort -u | head -40
+"/gateway/auth/oauth/token
+"/gateway/auth/users/custom/registration
+"/gateway/booking-session/process
+"/gateway/booking-session/redirect/userExternalLogin/
+"/gateway/booking-session/session
+"/gateway/booking-session/ws
+=== /api refs ===
+[0m
+[0m$ [0mecho "=== /gateway set from vendor ==="; grep -oE '/gateway/[a-zA-Z0-9_/{}${}.:*-]+' /tmp/opencode/buchung_vendor.js | sort -u | head -20; echo "=== gateway unique from both ==="; grep -ohE '/gateway/[a-zA-Z0-9_/{}${}.:*-]+' /tmp/opencode/buchung_main.js /tmp/opencode/buchung_vendor.js | sort -u; echo "=== 503 body ==="; cat /tmp/opencode/gw_session.txt
+=== /gateway set from vendor ===
+=== gateway unique from both ===
+/gateway/auth/oauth/token
+/gateway/auth/users/custom/registration
+/gateway/booking-session/process
+/gateway/booking-session/redirect/userExternalLogin/
+/gateway/booking-session/session
+/gateway/booking-session/ws
+=== 503 body ===
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wartungsarbeiten!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            background-image: url(https://cdn-app.cineplex.de/app/wartung2.jpg);
+            background-position: top center;
+            background-size: auto;
+            background-repeat: no-repeat;
+        }
+
+        #headline {
+            padding: 0.8em;
+            color: white;
+            font-family: Roboto, helvetica, arial, sans-serif;
+            text-align: center;
+        }
+
+        #headline h1 {
+            font-weight: 100;
+            font-size: 36px;
+            line-height: 1em;
+            margin-bottom: 0;
+        }
+
+        #headline h2 {
+            font-weight: 100;
+            font-size: 20px;
+            margin-top: 5px;
+        }
+
+        header {
+            font-family: Roboto, sans-serif;
+            font-weight: 300;
+            text-align: center;
+            background-color: #000000;
+            color: white;
+            padding-bottom: 2px;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <p><img alt="Cineplex" src="https://cdn-app.cineplex.de/app/logo.png"></p>
+    </div>
+</header>
+<div id="headline">
+    <h1>Wartungsarbeiten!</h1>
+
+    <h2>Geht gleich weiter.</h2>
+</div>
+
+</body>
+</html>
+[0m
+[0m$ [0mgrep -oE 'https?://[a-zA-Z0-9._-]+\.(cineplex\.de|de)' /tmp/opencode/buchung_main.js | sort -u | head -30; echo "=== oauth/client ==="; grep -oE 'client_id["\x27:=]+[a-zA-Z0-9._-]+|clientId["\x27:=]+[a-zA-Z0-9._-]+|grant_type["\x27:=]+[a-zA-Z0-9._-]+' /tmp/opencode/buchung_main.js | sort -u | head -20; echo "=== REACT_APP ==="; grep -oE 'REACT_APP_[A-Z_]+' /tmp/opencode/buchung_main.js | sort -u | head
+https://cdn.cineplex.de
+https://dev.cineplex.de
+https://secure.pay1.de
+https://www.cineplex.de
+https://www.fsk.de
+=== oauth/client ===
+=== REACT_APP ===
+[0m
+[0m$ [0mfor h in cdn-app.cineplex.de cdn.cineplex.de; do echo "=== $h CNAME ==="; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=$h&type=CNAME"; echo; done
+=== cdn-app.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"cdn-app.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+=== cdn.cineplex.de CNAME ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"cdn.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+[0m
+[0m$ [0mcurl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=cdn-app.cineplex.de&type=A"; echo; curl -sk --max-time 10 -o /dev/null -w "cdn-app /app/logo.png HTTP %{http_code} size=%{size_download}\n" "https://cdn-app.cineplex.de/app/logo.png"
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"cdn-app.cineplex.de","type":1}],"Answer":[{"name":"cdn-app.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"},{"name":"cdn-app.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"}]}
+cdn-app /app/logo.png HTTP 200 size=3449
+[0m
+[0m$ [0mcurl -sk --max-time 12 --resolve bms-dev.cineplex.de:443:194.77.169.121 -H "Host: bms-dev.cineplex.de" "https://bms-dev.cineplex.de/" -o /tmp/opencode/bms_index.html -w "bms index HTTP %{http_code} size=%{size_download}\n"; grep -oE 'src="[^"]+\.js[^"]*"' /tmp/opencode/bms_index.html
+bms index HTTP 200 size=2147
+src="runtime-es2015.99eb95e08f429df702b0.js"
+src="runtime-es5.99eb95e08f429df702b0.js"
+src="polyfills-es5.d27fdd633163339c79ef.js"
+src="polyfills-es2015.783de6f3f80b9db958b9.js"
+src="scripts.614dd636aaa5141f2762.js"
+src="vendor-es2015.fac78170ff8a9e6e6fd9.js"
+src="vendor-es5.fac78170ff8a9e6e6fd9.js"
+src="main-es2015.ad1e0e2152451c884d5e.js"
+src="main-es5.ad1e0e2152451c884d5e.js"
+[0m
+[0m$ [0mcurl -sk --max-time 15 --resolve bms-dev.cineplex.de:443:194.77.169.121 -H "Host: bms-dev.cineplex.de" "https://bms-dev.cineplex.de/main-es2015.ad1e0e2152451c884d5e.js" -o /tmp/opencode/bms_main.js -w "bms main HTTP %{http_code} size=%{size_download}\n"; grep -oE '"/[a-zA-Z0-9_/{}${}.:*-]+"' /tmp/opencode/bms_main.js | sort -u | grep -viE 'assets|/static|\.(png|jpg|svg|css|gif|woff)' | head -60
+bms main HTTP 200 size=1051504
+"/adminboard"
+"/counter"
+"/counter/confirmation/"
+"/counter/schedule"
+"/counter/transactions/list"
+"/counter/transactions/list/"
+"/counter/transactions/list/search/"
+"/dashboard"
+"/events/films/list"
+"/gateway/"
+"/gzA"
+"/hi0"
+"/init"
+"/locations/legal"
+"/locations/list"
+"/login"
+"/lzV"
+"/performances/list"
+"/performances/performance-attribute-list"
+"/performances/schedule"
+"/transactions/list"
+"/transactions/reports"
+"/transactions/sepa"
+"/users"
+[0m
+[0m$ [0mgrep -oE '"/gateway/[a-zA-Z0-9_/{}${}.:*-]+' /tmp/opencode/bms_main.js | sort -u | head -40; echo "=== http urls ==="; grep -oE 'https?://[a-zA-Z0-9._-]+\.(cineplex\.de|de|net|io)[a-zA-Z0-9_/.\-]*' /tmp/opencode/bms_main.js | sort -u | head -25
+=== http urls ===
+https://buchung-dev.cineplex.de/
+https://krankikom.de
+[0m
+# ANALYSIS CYCLE 2026-09-19 (POC/api)
+
+Probes run this cycle (all read-only GET, ≤1 rps, dev-cluster origin 194.77.169.121 + passive DoH): `/gateway/booking-session/session` 503, booking index 200/2410B, main+vendor bundles re-fetched (312KB/1.5MB), bms-dev index+bundle re-fetched (1MB), DoH for web-dev/cdn-app.
+
+STEP 1 — DELTA:
+- NEW cdn-app.cineplex.de (from 503 maintenance-page asset) — resolves via CF (A 104.16.22/23.67), /app/logo.png 200 — healthy, inventory note only, not a dangle.
+- CHANGED buchung-dev/bms-dev origin: /gateway/* still uniform 503 "Wartungsarbeiten"; bundle re-enumeration yields ONLY the 6 known /gateway routes (auth/oauth/token, auth/users/custom/registration, booking-session/{process,session,ws,redirect/userExternalLogin/}) — no /api routes, no client_id/grant_type literals (env-injected), no new HTTP surface. bms built-in endpoints are Angular client-side routes (/adminboard, /counter/transactions, /users, /transactions/sepa) behind the 503-gated gateway.
+- CHANGED web-dev.cineplex.de dangle: 11th consecutive cycle re-confirmed (CNAME Status 0 → A-follow Status 3 NXDOMAIN + switzerlandnorth.azurecontainerapps.io SOA).
+- NO_DELTA: graphql IDOR / staging oracle / WAF gate / relay (re-verified last cycle; relay stale).
+
+STEP 2 — PRIORITIZE:
+- [PRIO] graphql-api.app.cineplex.de,7.0,IDOR-HUMAN_ONLY(high PII+GraphQL)
+- [PRIO] web-dev.cineplex.de,6.6,MISCONFIG-PASSIVE(subdomain takeover, azure cloud)
+- [PRIO] graphql-api.app.staging.cineplex.de,6.4,OTHER-authless-env-guard
+- [PRIO] buchung-dev.cineplex.de,5.5,AUTH-origin-bypass(backend-gated)
+- [PRIO] graphql-api.app.{,staging.}cineplex.de,4.9,INFO-introspection(report-ready)
+
+STEP 3 — HYPOTHESES:
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any gate on the GET surface where 6/6 sibling gates fire UNAUTHENTICATED; both envs, 12+ cycles, manual-curl verified (automated urllib 403 = WAF bot-gate only)
+evidence_needed: authorized sandbox account A fetches entity B by publicId with valid JWT (program sandbox accounts)
+verify_steps: two sandbox accounts; GET `?query=%7BuserById(id%3A%22<B-id>%22)%7Bemail%20fullName%7D%7D` at ≤1 rps; blocked by program PII rule absent explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 11 consecutive cycles
+evidence_needed: program-required switzerlandnorth name-availability attestation (Azure management lookup)
+verify_steps: passive DoH histories documented; attestation is Azure-side lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+
+STEP 4 — SELF-CRITIQUE:
+- [PARKED] dev_origin /gateway flag-flip: re-checked 503 uniform again this cycle, bundle yields zero new routes; confidence 30 < 40, low ROI — parked, not dead (backend-gated).
+- [FINAL] IDOR cross-tenant (85, HUMAN_ONLY) — structural POC complete; [FINAL] web-dev dangle (90, PASSIVE) — report-ready pending attestation; [FINAL] staging env-guard oracle (persists; HUMAN_ONLY POST link remains only unproven).
+
+STEP 5 — NEXT ACTION:
+[NEXT] HUMAN: submit graphql_introspection at bugs.olivermaicher.eu — prod+staging POST introspection 200 full schema, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors), CVSS 5.3→7.5 stack, 12+ cycle stability; then queue web-dev dangle submission once switzerlandnorth name-availability attestation is obtained.
+
+STEP 6 — LEARNING:
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th consecutive cycle NXDOMAIN re-verified live (CNAME Status 0 / A-follow Status 3 + azure SOA); sole dangle in 7-host dev set; PASSIVE, report-ready.
+- [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: origin SPAs 200; /gateway/* still 503 "Wartungsarbeiten"; bundle re-enumeration confirms no hidden endpoints; model stable, exploitability backend-gated.
+- [LEARN] REJECTED cdn-app.cineplex.de @ new-host: resolves/serves fine via Cloudflare; healthy asset reference from 503 page, inventory note only.
+- [LEARN] REJECTED relay_metrics, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso): unchanged out-of-scope/dead.
+
+STEP 7 — RISK:
+[RISK] cineplex: 3/100 — probes were static-asset GETs (JS bundles, 503 page) + passive DoH against the already-investigated dev-cluster origin; no new live endpoint testing, no PII, no auth-bypass, no mutations; all within existing investigation scope at ≤1 rps.

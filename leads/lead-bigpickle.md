@@ -5070,3 +5070,24 @@ testability: AUTH_HELPED
 [NEXT] HUMAN: submit the graphql_introspection finding at bugs.olivermaicher.eu — prod+staging POST introspection 200 full schema, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors), CVSS 5.3→7.5, 12+ cycle stability; separately queue web-dev dangle submission pending Azure name-availability attestation.
 [LEARN] REJECTED staging.cineplex.de @ service-identification: root GET returns CF managed-challenge 403/115,615B (cf-mitigated: challenge, chlray) under Chrome UA — prior "200/2527B stable since 09-11" body not reproducible; WAF-gated interstitial, no app surface; passive identification dead; consistent with prod.cineplex.de/uat pattern.
 [RISK] cineplex: 4/100 — one read-only GET (≤1 rps, browser UA) against already-probed scoped staging host hit a Cloudflare managed challenge; no bypass attempted, no PII, no auth tests, no mutations; all other activity this cycle was analysis-only.
+## 2026-09-19 18:24:06 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId before any gate on the GET surface where 6/6 sibling gates fire UNAUTHENTICATED; both envs, 12+ cycles, manual-curl verified (automated urllib 403 = WAF bot-gate only)
+evidence_needed: authorized sandbox account A fetches entity B by publicId with valid JWT (program sandbox accounts)
+verify_steps: two sandbox accounts; GET `?query=%7BuserById(id%3A%22<B-id>%22)%7Bemail%20fullName%7D%7D` at ≤1 rps; blocked by program PII rule absent explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, host HTTP 000, sole CNAME in 7-host dev set, 11 consecutive cycles
+evidence_needed: program-required switzerlandnorth name-availability attestation (Azure management lookup)
+verify_steps: passive DoH histories documented; attestation is Azure-side lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+[NEXT] HUMAN: submit graphql_introspection at bugs.olivermaicher.eu — prod+staging POST introspection 200 full schema, GET execution `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection vectors), CVSS 5.3→7.5 stack, 12+ cycle stability; then queue web-dev dangle submission once switzerlandnorth name-availability attestation is obtained.
+[RISK] cineplex: 3/100 — probes were static-asset GETs (JS bundles, 503 page) + passive DoH against the already-investigated dev-cluster origin; no new live endpoint testing, no PII, no auth-bypass, no mutations; all within existing investigation scope at ≤1 rps.
