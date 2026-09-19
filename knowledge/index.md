@@ -571,3 +571,11 @@
 - 2026-09-19 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 - 2026-09-19 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data
 - 2026-09-19 REJECTED staging.cineplex.de @ service-identification: root GET returns CF managed-challenge 403/115,615B (cf-mitigated: challenge, chlray) under Chrome UA — prior "200/2527B stable since 09-11" body not reproducible; WAF-gated interstitial, no app surface; passive identification dead; consistent with prod.cineplex.de/uat pattern.
+- 2026-09-19 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th consecutive cycle NXDOMAIN re-verified; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready
+- 2026-09-19 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 stack, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- 2026-09-19 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof
+- 2026-09-19 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists; HUMAN_ONLY POST extraction only unproven link
+- 2026-09-19 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
+- 2026-09-19 REJECTED api.cineplex.de GET-based bypass: strict 403 all methods/encodings; separate stricter WAF config tested; hypothesis dead
+- 2026-09-19 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB stats, not reportable alone (reaffirmed)
+- 2026-09-19 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
