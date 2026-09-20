@@ -5190,3 +5190,33 @@ impact: additional scoped-host takeover if any CNAME target is NXDOMAIN; Medium
 testability: PASSIVE
 [NEXT] HUMAN: submit graphql_introspection bundle (prod+staging) at bugs.olivermaicher.eu — POST introspection 200 full schema, GET `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection args), WAF method-gate bypass contrasted with api.cineplex.de strict-403, 12+ cycle stability, CVSS 7.5; evidence = manual-curl outputs + probe-results.md 785-line zero-POST-gap disclosure as background; then queue web-dev dangle report pending Azure switzerlandnorth name-availability attestation (optionally attach the read-only DoH sweep of vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost/wildcard.systems).
 [RISK] cineplex: 1/100 — analysis-only cycle; zero live HTTP requests (context/KB review only); no PII, no auth-bypass, no mutations; pending HUMAN actions are the authorized report channel.
+## 2026-09-20 05:22:56 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers (unchanged, reportable bundle companion)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates fire UNAUTHENTICATED/ROLE on the same GET surface; automated zero-POST log is a WAF urllib artifact, evidence is manual-curl
+evidence_needed: controlled accounts A+B; A's valid JWT fetches B's publicId via userById with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` ≤1 rps curl --http2 browser UA, both envs; blocked by program PII rule absent authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability (submission path, intact)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA; host HTTP 000; sole dangle across dev-7 + systems-5 swept sets; 11+ consecutive cycles
+evidence_needed: Azure switzerlandnorth name-availability attestation for the ACA app name (management lookup, no owner-DNS mutation)
+verify_steps: weekly passive DoH; attestation is HUMAN Azure-side lookup only
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+[HYP] Dev-origin WAF-bypass full-impact chain (gated on maintenance window)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: public CF 403 vs origin SPA 200 differential live; origin /gateway/auth/* + /gateway/booking-session/* still 503 “Wartungsarbeiten” (1485B) both hosts THIS cycle — only missing precondition is backend leaving maintenance; prod booking/shop NOT on this origin (404), so impact confined to dev tier
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API); then auth/IDOR assessment on that route
+verify_steps: weekly origin GET of /gateway/booking-session/session + /gateway/auth/oauth/token via --resolve; read-only
+impact: unauth review of dev booking/payment+CMS API tier if it comes up; contingent, Medium-High when live
+testability: AUTH_HELPED (network-gated)
+[NEXT] HUMAN: submit graphql_introspection bundle (prod+staging) at bugs.olivermaicher.eu — POST introspection 200 full schema, GET `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection args), WAF method-gate bypass vs api.cineplex.de strict-403 contrast, 12+ cycle stability, CVSS 7.5; attach manual-curl outputs + probe-results.md (795-line) zero-POST-gap disclosure as background. Then queue web-dev dangle report pending Azure switzerlandnorth name-availability attestation (systems-zone sweep now attachable as negative-contrast evidence).
+[RISK] cineplex: 15/100 — this cycle: 10 read-only DoH lookups (public resolver, no target HTTP) + 2 read-only origin GETs (Host-header only, no auth, no body, no mutation) at ≤1 rps on scoped dev origin; zero PII, zero bypass attempts, zero writes; all findings remain on the authorized report channel (bugs.olivermaicher.eu)
