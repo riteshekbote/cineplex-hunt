@@ -5266,3 +5266,20 @@ testability: AUTH_HELPED (network-gated)
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, report-ready (unchanged)
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY cross-tenant proof (unchanged)
 [RISK] cineplex: 5/100 — passive DoH lookups only (public resolver, no HTTP to targets), no PII, no auth bypass, no mutations; all persistent findings remain on the authorized report channel (bugs.olivermaicher.eu)
+## 2026-09-20 14:17:05 UTC [target] (model bigpickle)
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates (errorStatistics/currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR) fire on the same GET surface proving auth layer works elsewhere; automated probe log zero-POST is urllib-WAF artifact, evidence is manual-curl.
+evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` curl --http2 browser UA ≤1rps; blocked by program PII rule absent authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: public CF 403 vs origin SPA 200 differential stable every cycle; /gateway/auth/oauth/token + /gateway/booking-session/session stuck 503 "Wartungsarbeiten" (1485B) both hosts this cycle too; prod booking/shop NOT on this origin (404), blast radius dev-tier only
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET via --resolve + Host header, read-only
+impact: unauth review of dev booking/payment+CMS API tier; contingent Medium-High
+testability: AUTH_HELPED (network-gated)
