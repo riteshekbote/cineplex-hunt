@@ -25101,3 +25101,79 @@ testability: AUTH_HELPED (attestation task)
 
 ## STEP 7 — RISK
 [RISK] cineplex: 5/100 — this cycle only passive DoH CNAME/A lookups (public resolver, JSON API) + 5 HEAD requests to Cloudflare edge (no origin contact, no body, no auth), zero PII, zero mutations; all reportable findings remain on the authorized channel.
+===== ANALYST bigpickle 2026-09-20 19:48:03 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mfor h in vpn-openvpn-cpz.systems.cineplex.de hz-apphost.systems.cineplex.de es-hz-apphost.systems.cineplex.de cpdly-hz-apphost.systems.cineplex.de wildcard.systems.cineplex.de; do echo "=== $h ==="; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=$h&type=CNAME"; echo; sleep 1; done
+=== vpn-openvpn-cpz.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"vpn-openvpn-cpz.systems.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+=== hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"hz-apphost.systems.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+=== es-hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"es-hz-apphost.systems.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+=== cpdly-hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"cpdly-hz-apphost.systems.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+=== wildcard.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"wildcard.systems.cineplex.de","type":5}],"Authority":[{"name":"cineplex.de","type":6,"TTL":1800,"data":"amit.ns.cloudflare.com. dns.cloudflare.com. 2415197241 10000 2400 604800 1800"}]}
+[0m
+All 5 return Status 0 (NOERROR) with empty Answer — no CNAME records. A-follow verify to confirm.
+[0m$ [0mfor h in vpn-openvpn-cpz.systems.cineplex.de hz-apphost.systems.cineplex.de es-hz-apphost.systems.cineplex.de cpdly-hz-apphost.systems.cineplex.de wildcard.systems.cineplex.de; do echo "=== $h ==="; curl -sS --max-time 10 -H "Accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=$h&type=A"; echo; sleep 1; done
+=== vpn-openvpn-cpz.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"vpn-openvpn-cpz.systems.cineplex.de","type":1}],"Answer":[{"name":"vpn-openvpn-cpz.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"},{"name":"vpn-openvpn-cpz.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"}]}
+=== hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"hz-apphost.systems.cineplex.de","type":1}],"Answer":[{"name":"hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"},{"name":"hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"}]}
+=== es-hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"es-hz-apphost.systems.cineplex.de","type":1}],"Answer":[{"name":"es-hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"},{"name":"es-hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"}]}
+=== cpdly-hz-apphost.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"cpdly-hz-apphost.systems.cineplex.de","type":1}],"Answer":[{"name":"cpdly-hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"},{"name":"cpdly-hz-apphost.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"}]}
+=== wildcard.systems.cineplex.de ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"wildcard.systems.cineplex.de","type":1}],"Answer":[{"name":"wildcard.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.22.67"},{"name":"wildcard.systems.cineplex.de","type":1,"TTL":300,"data":"104.16.23.67"}]}
+[0m
+5/5 systems-zone hosts: plain A→Cloudflare IPs, no CNAME, no dangle. Dangle-replication hypothesis conclusively dead. Now the weekly origin /gateway re-probe (on-hold hypothesis).
+[0m$ [0mcurl -sS -k --max-time 12 --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" -o /tmp/opencode/gw_cur.txt -w "buchung-dev /gateway/auth/oauth/token -> HTTP %{http_code} %{size_download}B\n" "https://buchung-dev.cineplex.de/gateway/auth/oauth/token"; sleep 1; curl -sS -k --max-time 12 --resolve bms-dev.cineplex.de:443:194.77.169.121 -H "Host: bms-dev.cineplex.de" -o /dev/null -w "bms-dev / -> HTTP %{http_code} %{size_download}B\n" "https://bms-dev.cineplex.de/"
+buchung-dev /gateway/auth/oauth/token -> HTTP 503 1485B
+bms-dev / -> HTTP 200 2147B
+[0m
+## STEP 1 — DELTA
+- [NEW] 5/5 systems-zone hosts (vpn-openvpn-cpz, hz-apphost, es-hz-apphost, cpdly-hz-apphost, wildcard.systems): empty CNAME Answer (Status 0), plain A→104.16.22/23.67 Cloudflare, no dangle — replication hypothesis conclusively closed (8 hosts swept, web-dev remains sole dangle)
+- [CHANGED] buchung-dev origin `/gateway/auth/oauth/token` → 503/1485B "Wartungsarbeiten" unchanged; bms-dev origin SPA 200/2147B unchanged — dev-origin model stable, backend-gated, on hold
+
+## STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de, 7.9, c=b=high, t=GraphQL, g=stable, f=12+ cycles (IDOR 85 / introspection report-ready)
+- [PRIO] web-dev.cineplex.de, 5.5, c=b=med, t=Azure-CNAME, f=11+ cycles NXDOMAIN (dangle, report-ready)
+- [PRIO] buchung-dev/bms-dev origin, 4.6, c=dev-tier, t=SPA+gateway, f=stable, gate=network-gated (AUTH_HELPED)
+- [PRIO] systems-zone 5 hosts, 1.2, c=low, t=none (Cloudflare A-records only, all edges dead-ends)
+
+## STEP 3 — HYPOTHESES
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged, only live thread)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: 503/1485B identical again this cycle; origin SPAs reachable (200), bypass differential stable; prod booking/shop NOT on this origin (404) — dev-tier blast radius only
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET via --resolve + Host header, read-only
+impact: unauth review of dev booking/payment+CMS API tier once live; contingent Medium-High
+testability: AUTH_HELPED (network-gated)
+
+## STEP 4 — SELF-CRITIQUE
+- [PARKED] Systems-zone dangle replication: 5/5 hosts A→CF, zero CNAMEs; swept to exhaustion, hypothesis dead (was 40)
+- [FINAL] idor_booking@graphql-api.app.cineplex.de — 4/4 decode-before-gate + 6/6 control group, both envs, 12+ cycles; HUMAN_ONLY cross-tenant proof (survives, 85)
+- [FINAL] graphql_introspection@graphql-api.app.{,staging.}cineplex.de — CVSS 7.5, POST+GET manual-curl verified, 12+ cycles, report-ready (survives)
+- [FINAL] web-dev dangle — 11+ cycle NXDOMAIN, sole dangle in full inventory sweep, PASSIVE, report-ready pending Azure claimability attestation (survives, 90)
+- [FINAL] dev-origin /gateway — 503-stable, on hold, not dead (survives, 45)
+- [FINAL] api.cineplex.de strict-403, relay/metrics, TLS-dead hosts, all OOS classes — dropped/dead
+
+## STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (sole dangle, 11+ cycles NXDOMAIN, Medium) with Azure claimability attestation; (2) graphql_introspection (CVSS 7.5); (3) IDOR functional-BUGLINK (4/4 resolvers, both envs, structural POC). No pending passive probes remain — complete-inventory CNAME sweep exhausted all unprobed hosts; only weekly dev-origin re-probe stays on rotation.
+
+## STEP 6 — LEARNING
+- [LEARN] REJECTED systems-zone_dangle_replication @ systems.cineplex.de: 5/5 unprobed hosts (vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost/wildcard) all plain A→Cloudflare 104.16.22/23.67, zero CNAMEs; web-dev confirmed sole dangle in full sweep
+- [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: unchanged 503/1485B gateway + 200 SPAs this cycle; exploitability backend-gated, on hold
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready (unchanged)
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready (unchanged)
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY cross-tenant proof (unchanged)
+- [LEARN] REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de, api.cineplex.de GET-bypass, TLS-dead hosts, OOS classes (username_enumeration/ssl/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive): unchanged dead/out-of-scope
+
+## STEP 7 — RISK
+[RISK] cineplex: 3/100 — this cycle only 10 passive DoH lookups (public resolver) + 2 read-only origin GETs (no body capture of sensitive data, no mutations, no auth), zero PII; all persistent findings remain on authorized channel.

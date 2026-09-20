@@ -5372,3 +5372,15 @@ impact: full subdomain control under cineplex.de trust for phishing/malware; Med
 testability: AUTH_HELPED (attestation task)
 [NEXT] HUMAN: submit web-dev dangle (sole-dangle full-sweep proof) + graphql_introspection (CVSS 7.5) to bugs.olivermaicher.eu with Azure CNAME claimability attestation; no pending passive probes remain — complete-inventory CNAME sweep exhausted all unprobed hosts.
 [RISK] cineplex: 5/100 — this cycle only passive DoH CNAME/A lookups (public resolver, JSON API) + 5 HEAD requests to Cloudflare edge (no origin contact, no body, no auth), zero PII, zero mutations; all reportable findings remain on the authorized channel.
+## 2026-09-20 19:43:03 UTC [target] (model bigpickle)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged, only live thread)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: 503/1485B identical again this cycle; origin SPAs reachable (200), bypass differential stable; prod booking/shop NOT on this origin (404) — dev-tier blast radius only
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET via --resolve + Host header, read-only
+impact: unauth review of dev booking/payment+CMS API tier once live; contingent Medium-High
+testability: AUTH_HELPED (network-gated)
+[NEXT] HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (sole dangle, 11+ cycles NXDOMAIN, Medium) with Azure claimability attestation; (2) graphql_introspection (CVSS 7.5); (3) IDOR functional-BUGLINK (4/4 resolvers, both envs, structural POC). No pending passive probes remain — complete-inventory CNAME sweep exhausted all unprobed hosts; only weekly dev-origin re-probe stays on rotation.
+[RISK] cineplex: 3/100 — this cycle only 10 passive DoH lookups (public resolver) + 2 read-only origin GETs (no body capture of sensitive data, no mutations, no auth), zero PII; all persistent findings remain on authorized channel.
