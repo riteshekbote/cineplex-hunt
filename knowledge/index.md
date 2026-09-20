@@ -579,3 +579,17 @@
 - 2026-09-19 REJECTED api.cineplex.de GET-based bypass: strict 403 all methods/encodings; separate stricter WAF config tested; hypothesis dead
 - 2026-09-19 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB stats, not reportable alone (reaffirmed)
 - 2026-09-19 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
+- 2026-09-20 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th+ consecutive cycle NXDOMAIN re-verified live; CNAME Status 0 / A-follow Status 3 + azure SOA; sole dangle in 7-host dev set; PASSIVE, report-ready
+- 2026-09-20 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 stack, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- 2026-09-20 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof
+- 2026-09-20 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists; HUMAN_ONLY POST extraction only unproven link
+- 2026-09-20 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+- 2026-09-20 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
+- 2026-09-20 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+- 2026-09-20 REJECTED api.cineplex.de GET-based bypass: strict 403 all methods/encodings; separate stricter WAF config tested; hypothesis dead
+- 2026-09-20 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB stats, not reportable alone (reaffirmed)
+- 2026-09-20 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-09-20 REJECTED nextcloud_unauth_inventory @ cloud.systems.cineplex.de: OCS caps standard, /public.php 500, only /status.php 200 version string; descriptive/known-vuln class OOS
+- 2026-09-20 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- 2026-09-20 REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+- 2026-09-20 REJECTED relay_broker_saturation: growing queue, no exploitable surface; DoS class not applicable; no sensitive data

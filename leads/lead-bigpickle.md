@@ -5160,3 +5160,33 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths — unchanged
 [LEARN] REJECTED TLS-dead: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 [RISK] cineplex: 1/100 — analysis-only cycle; zero live network requests (local file/context review only), no PII, no auth-bypass, no mutations; pending actions are the authorized report-submission channel.
+## 2026-09-20 00:36:04 UTC [target] (model bigpickle)
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates fire UNAUTHENTICATED/ROLE on the same GET surface; automated zero-POST log is a WAF bespoke-urllib artifact, evidence is manual-curl
+evidence_needed: controlled accounts A+B; A with valid JWT fetches B's publicId through userById with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` ≤1 rps via curl --http2 browser UA, both envs; blocked by program PII rule absent explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] web-dev Azure Container Apps name claimability (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA; host HTTP 000; sole CNAME in 7-host dev set; 11 consecutive cycles
+evidence_needed: Azure switzerlandnorth name-availability attestation for the ACA app name
+verify_steps: passive DoH histories documented 11+ cycles; attestation is Azure-side management lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+[HYP] Systems-zone second dangle sweep
+class: MISCONFIG
+asset: wildcard.systems.cineplex.de + CNAME'd systems hosts
+confidence: 40
+reasoning: wildcard.systems.cineplex.de never probed; vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost unprobed; web-dev proved the provider-zone failure mode (Azure NXDOMAIN) — same pattern may recur on systems.* CNAMEs
+evidence_needed: DoH CNAME/A-follow for the unprobed systems-zone set; any Status 3 NXDOMAIN target = takeover precondition
+verify_steps: bare DoH GETs (Accept: application/dns-json) for each host, record CNAME target + A-follow status; read-only, ≤10 queries total
+impact: additional scoped-host takeover if any CNAME target is NXDOMAIN; Medium
+testability: PASSIVE
+[NEXT] HUMAN: submit graphql_introspection bundle (prod+staging) at bugs.olivermaicher.eu — POST introspection 200 full schema, GET `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection args), WAF method-gate bypass contrasted with api.cineplex.de strict-403, 12+ cycle stability, CVSS 7.5; evidence = manual-curl outputs + probe-results.md 785-line zero-POST-gap disclosure as background; then queue web-dev dangle report pending Azure switzerlandnorth name-availability attestation (optionally attach the read-only DoH sweep of vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost/wildcard.systems).
+[RISK] cineplex: 1/100 — analysis-only cycle; zero live HTTP requests (context/KB review only); no PII, no auth-bypass, no mutations; pending HUMAN actions are the authorized report channel.

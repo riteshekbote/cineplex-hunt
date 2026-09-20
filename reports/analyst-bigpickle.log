@@ -23959,3 +23959,67 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 1/100 — analysis-only cycle; zero live network requests (local file/context review only), no PII, no auth-bypass, no mutations; pending actions are the authorized report-submission channel.
+===== ANALYST bigpickle 2026-09-20 00:36:36 UTC =====
+[0m
+> build · big-pickle
+[0m
+STEP 1 — DELTA
+- NO_DELTA: no new hosts, CNAME signals, schema fields, or behavior changes after 2026-09-19 22:45; probe-results.md mechanically at 785 lines (+5, no new unique evidence).
+- [CHANGED] KB hygiene: tail is dominated by re-logged duplicates of the same 4 findings (graphql_introspection / idor_booking / dangling_cname_takeover / staging_testing_oracle) ~15x each since 09-12; treat as re-confirmations, not deltas.
+- [CHANGED] Root-GET WAF model settled 10+ cycles (automated urllib 403 vs balanced-URL-encoded curl 200) — no longer an open question; no re-probe needed.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de,7.5,surface+tech+business:report-ready introspection/IDOR bundle
+- [PRIO] graphql-api.app.staging.cineplex.de,6.9,tech+gate:env-guard oracle (HUMAN_ONLY)
+- [PRIO] web-dev.cineplex.de,5.5,gate+ease+cloud:aca-dangle, attestation-gated
+- [PRIO] buchung-dev/bms-dev origin,5.2,bypass:backend-503-gated, on hold
+
+STEP 3 — HYPOTHESES
+[HYP] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates fire UNAUTHENTICATED/ROLE on the same GET surface; automated zero-POST log is a WAF bespoke-urllib artifact, evidence is manual-curl
+evidence_needed: controlled accounts A+B; A with valid JWT fetches B's publicId through userById with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` ≤1 rps via curl --http2 browser UA, both envs; blocked by program PII rule absent explicit authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+
+[HYP] web-dev Azure Container Apps name claimability (submission path)
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 90
+reasoning: CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA; host HTTP 000; sole CNAME in 7-host dev set; 11 consecutive cycles
+evidence_needed: Azure switzerlandnorth name-availability attestation for the ACA app name
+verify_steps: passive DoH histories documented 11+ cycles; attestation is Azure-side management lookup only, no owner-DNS mutation
+impact: subdomain takeover of scoped dev host → phishing/credential capture under cineplex.de trust; Medium
+testability: PASSIVE (attestation arm HUMAN_ONLY)
+
+[HYP] Systems-zone second dangle sweep
+class: MISCONFIG
+asset: wildcard.systems.cineplex.de + CNAME'd systems hosts
+confidence: 40
+reasoning: wildcard.systems.cineplex.de never probed; vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost unprobed; web-dev proved the provider-zone failure mode (Azure NXDOMAIN) — same pattern may recur on systems.* CNAMEs
+evidence_needed: DoH CNAME/A-follow for the unprobed systems-zone set; any Status 3 NXDOMAIN target = takeover precondition
+verify_steps: bare DoH GETs (Accept: application/dns-json) for each host, record CNAME target + A-follow status; read-only, ≤10 queries total
+impact: additional scoped-host takeover if any CNAME target is NXDOMAIN; Medium
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev: /gateway/* 503 every cycle → backend maintenance gates exploit; no passive evidence can move it; reverify only on state change.
+- [PARKED] systems-zone sweep (conf 40): borderline; folded into dangle evidence rather than a standalone finding.
+- [PARKED] profil_preference_surface: unchanged (conf 45, enumeration-adjacent, low value).
+- [FINAL] survivors ranked: 1) graphql_introspection prod+staging (CVSS 7.5, 12+ cycles, report-ready) 2) dangling_cname_takeover web-dev (11-cycle PASSIVE, report-ready, attestation-gated) 3) idor_booking structural POC (HUMAN_ONLY) 4) staging_testing_oracle (HUMAN_ONLY).
+- Flag: all graphql findings are manual-curl-only; malformed-brace + urllib-UA explanation is consistent 10+ cycles but is a report-reliability risk → zero-POST gap must be disclosed in the submission.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit graphql_introspection bundle (prod+staging) at bugs.olivermaicher.eu — POST introspection 200 full schema, GET `?query=%7B__typename%7D` → 200 both envs, 35KB mutation-arg enumeration (no injection args), WAF method-gate bypass contrasted with api.cineplex.de strict-403, 12+ cycle stability, CVSS 7.5; evidence = manual-curl outputs + probe-results.md 785-line zero-POST-gap disclosure as background; then queue web-dev dangle report pending Azure switzerlandnorth name-availability attestation (optionally attach the read-only DoH sweep of vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost/wildcard.systems).
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: report-ready; zero-POST automated-log gap is a WAF urllib-bot artifact, disclosed in report
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11 consecutive-cycle NXDOMAIN; sole dangle in 7-host dev set; PASSIVE; blocked only on Azure name-availability attestation
+- [LEARN] REJECTED freshness-mining: no unprobed inventory host shows a clear high-value passive surface; remaining decisive links (IDOR cross-tenant, staging POST extraction) are HUMAN_ONLY per program PII rule
+- [LEARN] REJECTED standard OOS classes unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths; TLS-dead hosts unreachable
+
+STEP 7 — RISK
+[RISK] cineplex: 1/100 — analysis-only cycle; zero live HTTP requests (context/KB review only); no PII, no auth-bypass, no mutations; pending HUMAN actions are the authorized report channel.
