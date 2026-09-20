@@ -601,3 +601,9 @@
 - 2026-09-20 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY cross-tenant proof (unchanged)
 - 2026-09-20 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
 - 2026-09-20 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th+ consecutive NXDOMAIN, sole dangle, PASSIVE report-ready
+- 2026-09-20 ACCEPTED mallocd_cname_sweep @ 5 systems-zone hosts + wildcard.cineplex.de + talk.systems: all direct A (Cloudflare), zero CNAME — web-dev confirmed sole dangle full inventory; replicate-not-found.
+- 2026-09-20 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready (unchanged).
+- 2026-09-20 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready (unchanged).
+- 2026-09-20 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY (unchanged).
+- 2026-09-20 REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead.
+- 2026-09-20 REJECTED relay_metrics/broker_saturation, username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts: unchanged out-of-scope/dead (reaffirmed).
