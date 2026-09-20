@@ -1,4 +1,47 @@
-## 2026-09-20 14:17:05 UTC [target] (model bigpickle)
+## 2026-09-20 17:33:23 UTC [target] (model bigpickle)
+[PRIO] web-dev.cineplex.de,5.25,0.25a4+0.25b4+0.15t3+0.15g10+0.10c5+0.10f8
+[PRIO] systems.cineplex.de CNAME set (unprobed 4),4.3,0.25a4+0.25b3+0.15t3+0.15g5+0.10c4+0.10f5
+[HYP] Systems-zone dangle replication after web-dev failure mode
+class: MISCONFIG
+asset: wildcard.systems.cineplex.de + vpn-openvpn-cpz/hz-apphost/es-hz-apphost/cpdly-hz-apphost.systems.cineplex.de
+confidence: 40
+reasoning: web-dev proved provider-zone NXDOMAIN failure pattern on Azure CNAMEs; these 5 systems-zone hosts never DoH-swept; if any CNAME target is in an acquirable managed zone, takeover precondition repeats
+evidence_needed: DoH CNAME + A-follow status for all 5; any Status 3 NXDOMAIN target = claimable precondition
+verify_steps: bare DoH GET with Accept: application/dns-json to public resolver, one query per host (5 total, read-only, no HTTP to target)
+impact: additional scoped-host takeover for phishing/malware under cineplex.de trust; Medium
+testability: PASSIVE
+[HYP] Cross-tenant decode-before-gate IDOR (unchanged bundle companion)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) return 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates fire on same GET surface; zero-POST automated log is urllib-WAF artifact, evidence manual-curl
+evidence_needed: controlled accounts A+B; A's JWT fetches B's publicId with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` ≤1rps curl --http2 browser UA; blocked by program PII rule absent authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] Dev-origin /gateway/* leaves maintenance → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: public CF 403 vs origin SPA 200 differential stable; /gateway/auth/* + /gateway/booking-session/* stuck 503 "Wartungsarbeiten" (1485B) both hosts every cycle; prod not on this origin (404) so blast radius dev-tier only
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET /gateway/booking-session/session + /gateway/auth/oauth/token via --resolve + Host header, read-only
+impact: unauth review of dev booking/payment+CMS API tier once live; contingent Medium-High
+testability: AUTH_HELPED (network-gated)
+[FINAL] graphql_introspection @ graphql-api.app.{,staging.}cineplex.de — CVSS 7.5, 12+ cycles, manual-curl verified, report-ready (survives)
+[FINAL] idor_booking decode-before-gate structural POC — 4/4 + 6/6 control group, HUMAN_ONLY (survives, unchanged)
+[FINAL] web-dev dangle — 10th+ cycle NXDOMAIN, sole dangle, PASSIVE, report-ready pending Azure attestation (survives)
+[FINAL] dev-origin /gateway maintenance-exit — gated, on hold, not dead (survives)
+[PARKED] systems-zone dangle replication — confidence 40, pattern-extension scan only; low expected value after web-dev proved sole-dangle
+[FINAL] api.cineplex.de strict-403, relay/metrics, TLS-dead hosts, all OOS classes — dropped (dead/OOS)
+[NEXT] PROBE: DoH records for the 5 unprobed systems-zone hosts (vpn-openvpn-cpz, hz-apphost, es-hz-apphost, cpdly-hz-apphost, wildcard.systems) via `https://cloudflare-dns.com/dns-query?name=<host>&type=CNAME` with `Accept: application/dns-json`, then A-follow verify any CNAME found; read-only, ≤10 queries, ≤1 rps.
+[LEARN] REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, reaffirmed
+[LEARN] REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+[LEARN] REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 10th+ consecutive NXDOMAIN, sole dangle, PASSIVE report-ready (unchanged)
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, report-ready (unchanged)
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY cross-tenant proof (unchanged)
+[RISK] cineplex: 5/100 — passive DoH lookups only (public resolver, no HTTP to targets), no PII, no auth bypass, no mutations; all persistent findings remain on the authorized report channel (bugs.olivermaicher.eu)
 class: IDOR
 asset: graphql-api.app.{,staging.}cineplex.de
 confidence: 85
@@ -15,3 +58,32 @@ evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
 verify_steps: weekly origin GET via --resolve + Host header, read-only
 impact: unauth review of dev booking/payment+CMS API tier; contingent Medium-High
 testability: AUTH_HELPED (network-gated)
+[HYP] Cross-tenant decode-before-gate IDOR (unchanged, re-scored top)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID via decodePublicId with no Authorization header, both envs, 12+ cycles; 6/6 sibling gates fire on the same GET surface; zero-POST automated log is urllib-WAF artifact, evidence is manual curl (id:"0" probe).
+evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` curl --http2 browser-UA ≤1rps; blocked by program PII rule absent authorization
+impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
+[HYP] Dev-origin /gateway/* maintenance-exit → auth/IDOR surface (unchanged)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: public CF 403 vs origin SPA 200 differential stable every cycle; /gateway/auth/oauth/token + /gateway/booking-session/session stuck 503 "Wartungsarbeiten" both hosts; prod booking/shop NOT on this origin (404) → dev-tier blast radius only
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET via --resolve + Host header, read-only
+impact: unauth review of dev booking/payment+CMS API tier once live; contingent Medium-High
+testability: AUTH_HELPED (network-gated)
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 90
+reasoning: 11th+ consecutive NXDOMAIN cycle (CNAME Status 0 / A-follow Status 3 + azure-dns.com SOA); now proven sole dangle across complete inventory sweep (58 hosts this cycle + 12 prior, all CNAME-less); only remaining unknown is claimability of the azurecontainerapps.io subdomain (registration/attestation)
+evidence_needed: Azure attestation that switzerlandnorth.azurecontainerapps.io name is now provisionable/registrable by a third party
+verify_steps: none passive remaining; claimability attested then submit
+impact: full subdomain control under cineplex.de trust for phishing/malware; Medium
+testability: AUTH_HELPED (attestation task)
+[NEXT] HUMAN: submit web-dev dangle (sole-dangle full-sweep proof) + graphql_introspection (CVSS 7.5) to bugs.olivermaicher.eu with Azure CNAME claimability attestation; no pending passive probes remain — complete-inventory CNAME sweep exhausted all unprobed hosts.
+[RISK] cineplex: 5/100 — this cycle only passive DoH CNAME/A lookups (public resolver, JSON API) + 5 HEAD requests to Cloudflare edge (no origin contact, no body, no auth), zero PII, zero mutations; all reportable findings remain on the authorized channel.

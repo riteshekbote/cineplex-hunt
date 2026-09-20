@@ -600,3 +600,4 @@
 - 2026-09-20 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, report-ready (unchanged)
 - 2026-09-20 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 structural POC, HUMAN_ONLY cross-tenant proof (unchanged)
 - 2026-09-20 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- 2026-09-20 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 11th+ consecutive NXDOMAIN, sole dangle, PASSIVE report-ready
