@@ -1417,3 +1417,5 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev.cineplex.de origin SPAs 200, /gateway/* 503 "Wartungsarbeiten" unchanged
 - CHANGED graphql-api.app.{,staging.}cineplex.de balanced GET `?query=%7B__typename%7D` → 200 stable; IDOR 4 resolvers GET-verified
 - CHANGED graphql-api.app.staging.cineplex.de `testing_getConfirmationCode` authless oracle persists (200 backend hit 405 vs prod FORBIDDEN)
+
+## 2026-09-21 23:48:17 UTC
