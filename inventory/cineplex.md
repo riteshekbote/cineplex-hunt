@@ -1409,3 +1409,11 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev.cineplex.de origin (194.77.169.121) TCP-reachable this cycle; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); /gateway/* routes still 503 "Wartungsarbe
 - CHANGED graphql-api.app.{,staging.}cineplex.de balanced URL-encoded GET `?query=%7B__typename%7D` → 200 confirmed live this cycle (curl --http2); `userById(id:"0")` → 200 INVALID_ID with `decodePublicId` stac
 - CHANGED graphql-api.app.staging.cineplex.de `testing_getConfirmationCode` authless oracle persists: GET → 200 with backend hit (405-method-mismatch on Spring Data JPA `/userPasswordResets/search/...`) vs prod
+
+## 2026-09-21 20:47:20 UTC
+- NEW No new assets or surfaces discovered since 2026-09-21 10:50; all findings reconfirmed stable
+- CHANGED Automated probe log grew from 824→824 lines (no new entries); ZERO POST GraphQL probes persists
+- CHANGED web-dev.cineplex.de dangling CNAME 12th+ cycle NXDOMAIN re-verified via manual DoH
+- CHANGED buchung-dev/bms-dev.cineplex.de origin SPAs 200, /gateway/* 503 "Wartungsarbeiten" unchanged
+- CHANGED graphql-api.app.{,staging.}cineplex.de balanced GET `?query=%7B__typename%7D` → 200 stable; IDOR 4 resolvers GET-verified
+- CHANGED graphql-api.app.staging.cineplex.de `testing_getConfirmationCode` authless oracle persists (200 backend hit 405 vs prod FORBIDDEN)

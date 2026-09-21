@@ -26587,3 +26587,223 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 3/100 — this cycle 6 read-only probes (3 DoH, 2 origin GET via Host header, 1 GraphQL GET) all ≤1rps, GET-only, no bodies written, no auth, no PII, zero mutations; findings on authorized channel; no live customer data touched.
+===== ANALYST bigpickle 2026-09-21 20:47:20 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la /home/runner/work/cineplex-hunt/cineplex-hunt/ 2>/dev/null && echo "---" && git log --oneline -3 2>/dev/null
+total 740
+drwxr-xr-x 12 runner runner   4096 Sep 21 20:44 .
+drwxr-xr-x  3 runner runner   4096 Sep 21 20:44 ..
+drwxr-xr-x  7 runner runner   4096 Sep 21 20:44 .git
+drwxr-xr-x  3 runner runner   4096 Sep 21 20:44 .github
+-rw-r--r--  1 runner runner   1923 Sep 21 20:44 README.md
+-rw-r--r--  1 runner runner     32 Sep 21 20:44 analyst-out.txt
+-rw-r--r--  1 runner runner 304146 Sep 21 20:44 analyst-prompt.txt
+-rw-r--r--  1 runner runner 300189 Sep 21 20:44 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 leads
+-rw-r--r--  1 runner runner  52776 Sep 21 20:44 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 reports
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Sep 21 20:44 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 21 20:44 scripts
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 21 20:44 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 21 20:44 triage
+---
+8047e41 triage 2026-09-21-18-47
+[0m
+[0m$ [0mls art/ 2>/dev/null; ls *.md *.yml 2>/dev/null
+README.md
+probe-results.md
+scope.yml
+[0m
+[0m$ [0mcat state_bigpickle.json; echo; echo "---triage---"; ls -lt triage/ | head -5; echo "---leads---"; ls -lt leads/ | head -5; echo "---reports---"; ls -lt reports/ | head -10; echo "---knowledge---"; ls -lt knowledge/ | head -5
+{"phase": "POC", "target": "api"}
+---triage---
+total 636
+-rw-r--r-- 1 runner runner   242 Sep 21 20:44 run-2026-09-19-09-23.md
+-rw-r--r-- 1 runner runner   156 Sep 21 20:44 run-2026-09-19-13-23.md
+-rw-r--r-- 1 runner runner   206 Sep 21 20:44 run-2026-09-19-16-47.md
+-rw-r--r-- 1 runner runner   148 Sep 21 20:44 run-2026-09-19-19-09.md
+---leads---
+total 2056
+-rw-r--r-- 1 runner runner 1303512 Sep 21 20:44 lead-nemotron3.md
+-rw-r--r-- 1 runner runner   16716 Sep 21 20:44 reposcan-cineplex.md
+-rw-r--r-- 1 runner runner    6375 Sep 21 20:44 lead-laguna.md
+-rw-r--r-- 1 runner runner    6250 Sep 21 20:44 lead-ling3.md
+---reports---
+total 4628
+-rw-r--r-- 1 runner runner 1855295 Sep 21 20:44 analyst-nemotron3.log
+-rw-r--r-- 1 runner runner    1966 Sep 21 20:44 hypotheses-bigpickle.txt
+-rw-r--r-- 1 runner runner      51 Sep 21 20:44 hypotheses-laguna.txt
+-rw-r--r-- 1 runner runner      50 Sep 21 20:44 hypotheses-ling3.txt
+-rw-r--r-- 1 runner runner      52 Sep 21 20:44 hypotheses-longcat.txt
+-rw-r--r-- 1 runner runner    9861 Sep 21 20:44 hypotheses-nemotron3.txt
+-rw-r--r-- 1 runner runner  446378 Sep 21 20:44 hypotheses.md
+-rw-r--r-- 1 runner runner    7807 Sep 21 20:44 valid-bugs.md
+-rw-r--r-- 1 runner runner 2311800 Sep 21 20:44 analyst-bigpickle.log
+---knowledge---
+total 120
+-rw-r--r-- 1 runner runner 119702 Sep 21 20:44 index.md
+[0m
+[0m$ [0mcat valid-bugs.md; echo "===HYP big==="; cat reports/hypotheses-bigpickle.txt 2>/dev/null | head -40
+cat: valid-bugs.md: No such file or directory
+===HYP big===
+## 2026-09-21 16:45:39 UTC [target] (model bigpickle)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (only live thread)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: CF-403 vs origin-SPA-200 differential stable; /gateway/booking-session/session still 503 "Wartungsarbeiten" 1485B this cycle; prod booking/shop not on this origin (404).
+evidence_needed: any /gateway/* route returning non-503.
+verify_steps: weekly origin GET `/gateway/booking-session/session` + `/gateway/auth/oauth/token` via `curl --resolve` (this cycle: 503, unchanged).
+impact: unauth review of dev booking/payment+CMS tier post-lift; contingent Medium-High.
+testability: AUTH_HELPED (network-gated)
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 90
+reasoning: 15th consecutive NXDOMAIN re-verified live (DoH A-follow Status 3, azure-dns.com SOA, TTL 300); sole dangle across full inventory sweep.
+evidence_needed: Azure attestation provable third-party name registrability.
+verify_steps: none passive remaining; attest then submit.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: prod GET `userById(id:"0")` → 200 INVALID_ID (decodePublicId) NO auth header; 6/6 sibling gates fire UNAUTHENTICATED; 4/4 id-resolvers identical both envs.
+evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
+[0m
+[0m$ [0mcat scope.yml
+programs:
+  cineplex:
+    name: Cineplex Deutschland GmbH & Co. KG / Cineplex Group Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+[0m
+[0m$ [0mcurl -s --http2 -H "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" | head -c 600; echo; sleep 1.2; curl -s --http2 -H "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" | head -c 800
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mcurl -sk -o /dev/null -w "spa:%{http_code}:%{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/ ; sleep 1.2; curl -sk -o /dev/null -w "gw-session:%{http_code}:%{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session; sleep 1.2; curl -sk -o /dev/null -w "gw-oauth:%{http_code}:%{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/auth/oauth/token
+spa:200:2410
+gw-session:503:1485
+gw-oauth:503:1485
+[0m
+[0m$ [0mfor p in "gateway/auth/users/custom/registration" "gateway/booking-session/process" "gateway/auth/oauth/token?grant_type=client_credentials"; do curl -sk -o /dev/null -w "%{http_code}:%{size_download} $p\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/$p"; sleep 1.2; done
+503:1485 gateway/auth/users/custom/registration
+503:1485 gateway/booking-session/process
+503:1485 gateway/auth/oauth/token?grant_type=client_credentials
+[0m
+[0m$ [0mfor h in "bms-dev.cineplex.de"; do for p in "/api" "/graphql"; do curl -sk -o /dev/null -w "$h$p:%{http_code}:%{size_download}\n" --resolve $h:443:194.77.169.121 -H "Host: $h" "https://$h$p"; sleep 1.2; done; done; curl -sk -o /dev/null -w "gw-1day-exit:%{http_code}:%{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" "https://buchung-dev.cineplex.de/gateway/booking-session/session?exit=1"
+bms-dev.cineplex.de/api:200:2147
+bms-dev.cineplex.de/graphql:200:2147
+gw-1day-exit:503:1485
+[0m
+Mature cycle (15th). Probed the only live thread plus dangle re-verify. Structured output:
+
+**STEP 1 — DELTA**
+- [CHANGED] `buchung-dev` /gateway maintenance gate is **namespace-wide, not route-specific**: bulk-probed `/gateway/booking-session/session`, `/gateway/booking-session/process`, `/gateway/auth/users/custom/registration`, `/gateway/auth/oauth/token` (incl. `?grant_type=client_credentials`) → all `503/1485B` identical; oauth endpoint does NOT reach auth logic.
+- [CHANGED] `bms-dev` `/api` and `/graphql` return SPA index `200/2147B` only — no live backend behind dev CMS shell (catch-all swallows all paths).
+- [CHANGED] `web-dev` dangle re-verified live: CNAME Status 0 → A-follow Status 3 NXDOMAIN + azure-dns.com SOA — 15th consecutive cycle, unchanged.
+- NO_DELTA inventory (0 new hosts), graphql prod/staging (report-ready), relay/TLS-dead/OOS classes (unchanged).
+
+**STEP 2 — PRIORITIZE**
+- [PRIO] graphql-api.app.cineplex.de IDOR, 6.7 (a8/b9/t9/g6/c0/f2)
+- [PRIO] graphql-api.app.{,staging.}cineplex.de introspection, 6.5 (a8/b7/t9/g8/c0/f2)
+- [PRIO] web-dev.cineplex.de dangle, 5.15 (a4/b5/t3/g9/c9/f2)
+- [PRIO] buchung-dev/bms-dev origin, 4.2 (a3/b6/t4/g7/c0/f3) — **down from 4.5**
+
+**STEP 3 — HYPOTHESES**
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 vs origin-SPA-200 differential stable 15 cycles; this cycle proved the 503 is namespace-wide (4 gateway routes incl. oauth token w/ grant_type all 503/1485B, no auth-logic reach) and bms-dev /api+/graphql are SPA-shell only (200/2147B) — no backend is liftable behind the gate.
+evidence_needed: any non-503 (esp. oauth/token reaching 401/400) from origin /gateway/*.
+verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` via `curl --resolve` (this cycle: both 503/1485B, unchanged).
+impact: unauth review of dev booking/payment+CMS tier only IF maintenance lifts; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+
+(HYP web-dev dangle + HYP graphql IDOR unchanged from last cycle at 90/85; reproduction withheld to avoid noise.)
+
+**STEP 4 — SELF-CRITIQUE**
+- [PARKED] dev-origin /gateway (40): namespace-wide 503 mono-surface + SPA-shell backends this cycle; confidence 45→40; weekly re-probe only, not dead.
+- [FINAL] web-dev dangle — 90, sole dangle, 15th-cycle live, PASSIVE, report-ready (Azure attestation needed).
+- [FINAL] graphql introspection — report-ready CVSS 7.5 (prod+staging, GET+POST, 13+ cycles).
+- [FINAL] graphql IDOR — 85, structural POC (4/4 resolvers decode-before-gate, 6/6 control gates), HUMAN_ONLY cross-tenant proof.
+- Nothing new reached the 40 threshold this cycle; no new passive surface in inventory.
+
+**STEP 5 — NEXT ACTION**
+[NEXT] HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (15-cycle NXDOMAIN, sole dangle incl. systems-zone/wildcard sweep, Medium, attach DoH Status-0/3 + azure SOA JSON); (2) graphql_introspection prod+staging (CVSS 7.5, WAF method-gate bypass, GET+POST execution); (3) IDOR functional-BUGLINK (4/4 resolvers, 6/6 control gates). Dev-origin /gateway weekly probe only.
+
+**STEP 6 — LEARNING**
+- [LEARN] ACCEPTED dev_origin_maintenance_scope @ buchung-dev.cineplex.de: /gateway 503 is namespace-wide (4 routes incl. oauth grant_type probe all 503/1485B); oauth/token does not reach auth logic; exploitation contingent on full-tier lift, confidence 45→40.
+- [LEARN] ACCEPTED bms-dev_backend_shell @ bms-dev.cineplex.de: /api + /graphql return SPA index 2147B (catch-all) — no reachable dev CMS backend; origin bypass surface is shell-only, not a live API risk.
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 15th consecutive NXDOMAIN re-verified live; sole dangle; PASSIVE report-ready (unchanged).
+- [LEARN] REJECTED/unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso).
+
+**STEP 7 — RISK**
+[RISK] cineplex: 4/100 — 11 read-only probes this cycle (2 DoH, 1 SPA, 3+4 gateway/origin route GETs incl. one `grant_type` query w/o credentials) all GET, ~1 rps spaced, no bodies written, no PII returned (improper `grant_type` gets maintenance 503, not data), zero mutations; findings remain on authorized channel; dev origin is a scoped company asset and Host-header resolution is standard origin verification.
