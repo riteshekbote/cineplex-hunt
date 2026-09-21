@@ -5725,3 +5725,31 @@ testability: AUTH_HELPED (attestation)
 [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin /gateway 503/1485B "Wartungsarbeiten" persists; exploitability backend-gated, not dead.
 [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged.
 [RISK] cineplex: 3/100 — this cycle 5 read-only probes (2 DoH, 2 GraphQL GET, 1 origin GET via Host header) all ≤1rps, GET/HEAD-only, no bodies written, no auth, no PII, zero mutations; findings remain on authorized channel; no live customer data touched.
+## 2026-09-21 16:45:39 UTC [target] (model bigpickle)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (only live thread)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 45
+reasoning: CF-403 vs origin-SPA-200 differential stable; /gateway/booking-session/session still 503 "Wartungsarbeiten" 1485B this cycle; prod booking/shop not on this origin (404).
+evidence_needed: any /gateway/* route returning non-503.
+verify_steps: weekly origin GET `/gateway/booking-session/session` + `/gateway/auth/oauth/token` via `curl --resolve` (this cycle: 503, unchanged).
+impact: unauth review of dev booking/payment+CMS tier post-lift; contingent Medium-High.
+testability: AUTH_HELPED (network-gated)
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 90
+reasoning: 15th consecutive NXDOMAIN re-verified live (DoH A-follow Status 3, azure-dns.com SOA, TTL 300); sole dangle across full inventory sweep.
+evidence_needed: Azure attestation provable third-party name registrability.
+verify_steps: none passive remaining; attest then submit.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: prod GET `userById(id:"0")` → 200 INVALID_ID (decodePublicId) NO auth header; 6/6 sibling gates fire UNAUTHENTICATED; 4/4 id-resolvers identical both envs.
+evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
