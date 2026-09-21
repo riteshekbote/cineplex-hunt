@@ -1393,3 +1393,5 @@ wwww.cineplex.de
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
 - CHANGED 5 systems-zone hosts + wildcard.cineplex.de + talk.systems: DoH this cycle → direct A records (Cloudflare), zero CNAME — web-dev confirmed sole dangle full inventory sweep
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now; descriptive IOMB infra only
+
+## 2026-09-21 05:09:31 UTC

@@ -639,3 +639,8 @@
 - 2026-09-21 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
 - 2026-09-21 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
 - 2026-09-21 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+- 2026-09-21 ACCEPTED idor_booking @ graphql-api.app.{,staging.}cineplex.de: both envs re-verified live this cycle — `userById(id:"0")` → 200 INVALID_ID + decodePublicId, no auth header.
+- 2026-09-21 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 13th consecutive cycle NXDOMAIN re-verified live; sole dangle; PASSIVE report-ready.
+- 2026-09-21 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: GET execution live; landing-page-on-HTML-Accept is Apollo middleware artifact not regression (JSON execution coexists same host).
+- 2026-09-21 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin /gateway 503 "Wartungsarbeiten!" persists (1485B); bms-dev 200/2147B; exploitability backend-gated, not dead.
+- 2026-09-21 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface.

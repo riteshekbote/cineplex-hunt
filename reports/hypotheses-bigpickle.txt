@@ -1,4 +1,4 @@
-## 2026-09-21 00:18:58 UTC [target] (model bigpickle)
+## 2026-09-21 05:09:21 UTC [target] (model bigpickle)
 class: MISCONFIG
 asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
 confidence: 90
@@ -48,51 +48,48 @@ testability: PASSIVE
 [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
 [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
 [LEARN] ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
-[RISK] cineplex: 55 — dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle with origin reachable but /gateway/* still 503; dangling CNAME stable reportable; introspection/IDOR/staging-oracle remain validated tier; all probes read-only, ≤1 rps, no PII touched
-[NEW] GraphQL prod GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` re-confirmed this cycle (curl --http2, browser UA) — GET-based origin execution stable.
-[CHANGED] buchung-dev origin (194.77.169.121): SPA 200/2410B, `/gateway/booking-session/session` still 503/1485B "Wartungsarbeiten" — maintenance state unchanged, exploitability remains backend-gated.
-[NEW] bms-dev origin SPA 200/2147B this cycle — Ticket360 CMS dev admin live at direct origin.
-[CHANGED] web-dev.cineplex.de dangle: DoH A-follow Status 3 NXDOMAIN + `switzerlandnorth.azurecontainerapps.io` azure SOA re-verified live — 12th+ consecutive cycle, sole dangle.
-[NEW] probe-results.md grew to 824 lines at 2026-09-20 22:15:21 — still ZERO POST probes, same 3 automated GET 403 urllib entries; no new surface, verification gap unchanged.
-[PRIO] graphql-api.app.cineplex.de,9.10,surface10/biz10/tech9(APOLLO+GraphQL)/gate9/noauth/cloud5/fresh9 — GET execution re-verified live this cycle
-[PRIO] buchung-dev.cineplex.de,6.95,surface7/biz7/tech7(gateway tier)/gate8(orignip din)/cloud5/fresh7 — origin reachable, /gateway 503 persists
-[PRIO] web-dev.cineplex.de,6.90,surface6/biz6/tech4(dns)/gate10(passive)/cloud10(azure)/fresh8 — 12th+ cycle NXDOMAIN, report-ready
+[PRIO] graphql-api.app.cineplex.de,9.10,surface10/biz10/tech9/gate9/noauth/cloud5/fresh9 — IDOR + introspection kept live-active each cycle; decisive structural proof re-confirmed this cycle on prod AND staging
+[PRIO] buchung-dev.cineplex.de,6.95,surface7/biz7/tech7(gateway)/gate8(origin direct)/cloud5/fresh7 — origin SPA live, /gateway 503 persists
+[PRIO] web-dev.cineplex.de,6.90,surface6/biz6/tech4(dns)/gate10(passive)/cloud10(azure)/fresh8 — 13th-cycle NXDOMAIN, report-ready
+[PRIO] graphql-api.app.staging.cineplex.de,6.75,surface6/biz7/tech8(schema testing_*)/gate8/oracle/fresh7 — env-guard omission persists
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate (unchanged, top)
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: re-verified live THIS cycle — prod+staging GET `userById(id:"0")` → 200 `INVALID_ID` (`decodePublicId` at `/var/task/graphql.js:43450`), no Authorization header; 6/6 sibling gates fire (currentUser UNAUTHENTICATED) on same GET surface; 4/4 id-resolvers historically identical
+evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection — blocked by program PII rule absent authorization
+verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` curl --http2 browser-UA ≤1rps (HUMAN_ONLY)
+impact: cross-tenant PII (email/phone/address/orders/invoices); High
+testability: HUMAN_ONLY
 [HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (only live thread)
 class: MISCONFIG
 asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
 confidence: 45
-reasoning: public CF 403 vs origin SPA 200 differential stable; /gateway/booking-session/session still 503 "Wartungsarbeiten" this cycle (1485B); prod booking/shop NOT on this origin (404) → dev-tier blast radius only; origin reachable every cycle since 09-16
-evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API); then unauth review of dev booking/payment+CMS API tier
-verify_steps: weekly origin GET `curl -k --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session` — read-only, ≤1rps
+reasoning: public CF 403 vs origin SPA 200 differential stable; `/gateway/booking-session/session` still 503 "Wartungsarbeiten!" this cycle; prod booking/shop not on this origin → dev-tier blast radius
+evidence_needed: any /gateway/* route returning non-503 (200/401/4xx-API)
+verify_steps: weekly origin GET `curl -k --resolve buchung-dev.cineplex.de:443:194.77.169.121 -H "Host: buchung-dev.cineplex.de" https://buchung-dev.cineplex.de/gateway/booking-session/session` — read-only ≤1rps
 impact: unauth review of dev booking/payment+CMS API tier once maintenance lifts; contingent Medium-High
 testability: AUTH_HELPED (network-gated)
 [HYP] web-dev dangle claimability (submission-bundled)
 class: MISCONFIG
 asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
 confidence: 90
-reasoning: 12th+ consecutive cycle NXDOMAIN re-verified live this cycle (DoH A-follow Status 3 + azure SOA, TTL 300); sole dangle across full swept inventory (7-dev set + 7 systems-zone hosts all CNAME-less/direct-A)
-evidence_needed: Azure attestation that switzerlandnorth.azurecontainerapps.io name is provisionable/registrable by a third party
+reasoning: 13th consecutive cycle NXDOMAIN re-verified live THIS cycle (CNAME Status 0 / A-follow Status 3 + azure-dns.com SOA, TTL 300); sole dangle across 7-dev set + 7 systems-zone hosts + wildcard (all direct-A)
+evidence_needed: Azure attestation switzerlandnorth.azurecontainerapps.io name provisionable/registrable by third party
 verify_steps: none passive remaining; attest then submit
 impact: full subdomain control under cineplex.de trust; Medium
 testability: AUTH_HELPED (attestation)
-[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate (unchanged, top)
-class: IDOR
-asset: graphql-api.app.{,staging.}cineplex.de
-confidence: 85
-reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) → 200 INVALID_ID with decodePublicId before auth, both envs, 12+ cycles; 6/6 sibling gates fire on same GET surface; GET execution re-confirmed live this cycle (`__typename` → 200); automated 403s are urllib-WAF artifact only
-evidence_needed: controlled accounts A+B; A's JWT resolves B's publicId with PII projection
-verify_steps: GET `?query=%7BuserById(id%3A%22<B-publicId>%22)%7Bemail%20fullName%7D%7D` curl --http2 browser-UA ≤1rps; blocked by program PII rule absent authorization
-impact: cross-tenant PII dump (email/phone/address/orders/invoices); High
-testability: HUMAN_ONLY
-[PARKED] dev-origin /gateway (45): 503-stable 12+ cycles, exploitability backend-gated; weekly re-probe only.
-[PARKED] profil_preference_surface (45): stale, low business value, no passive reflector.
-[FINAL] web-dev dangling CNAME — 90, sole dangle full-inventory, 12th+ cycle re-verified live this cycle, PASSIVE, report-ready.
-[FINAL] graphql-api IDOR — 85, structural POC complete, HUMAN_ONLY (submit as functional BUGLINK with control-group proof).
-[FINAL] graphql_introspection — report-ready (CVSS 7.5, prod+staging, 12+ cycles, throughput unchanged).
-[NEXT] HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (sole dangle, 12th+ cycle NXDOMAIN, Medium) + Azure claimability attestation; (2) graphql_introspection prod+staging (CVSS 7.5, WAF method-gate bypass, GET+POST execution re-confirmed live this cycle); (3) IDOR functional-BUGLINK (4/4 resolvers both envs, 6/6 control gates, structural POC). Passive discovery exhausted; only weekly /gateway origin re-probe on rotation.
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: GET execution re-verified live this cycle (`__typename` 200 prod); CVSS 7.5 report-ready (unchanged).
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN re-verified live; sole dangle; PASSIVE report-ready (unchanged).
-[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC unchanged; HUMAN_ONLY cross-tenant proof.
-[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPA 200 (buchung 2410B/bms 2147B) + /gateway 503 (1485B) this cycle — maintenance-exit hypothesis still not dead, backend-gated.
+[PARKED] dev-origin /gateway (45): 503-stable 13+ cycles, backend-gated; weekly re-probe only.
+[PARKED] profil_preference_surface (45): stale, low value, no passive reflector.
+[PARKED] staging_testing_oracle: env-guard omission real but HUMAN_ONLY POST proof; folded into submission list, not a separate active hunt.
+[FINAL] web-dev dangling CNAME — 90, sole dangle full-inventory, 13th-cycle re-verified live, PASSIVE, report-ready.
+[FINAL] graphql-api IDOR — 85, structural POC re-confirmed live both envs THIS cycle, HUMAN_ONLY (submit as functional BUGLINK with control-group proof).
+[FINAL] graphql_introspection — report-ready (CVSS 7.5, prod+staging, 13+ cycles).
+[NEXT] HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (sole dangle, 13th-cycle NXDOMAIN re-verified live, Medium) + Azure claimability attestation; (2) graphql_introspection prod+staging (CVSS 7.5, WAF method-gate bypass, GET+POST execution, 13-cycle stability); (3) IDOR functional-BUGLINK (4/4 resolvers both envs live re-verified this cycle, 6/6 control gates, structural POC). Passive discovery exhausted; only weekly /gateway origin re-probe on rotation.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.{,staging.}cineplex.de: both envs re-verified live this cycle — `userById(id:"0")` → 200 INVALID_ID + decodePublicId, no auth header.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 13th consecutive cycle NXDOMAIN re-verified live; sole dangle; PASSIVE report-ready.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: GET execution live; landing-page-on-HTML-Accept is Apollo middleware artifact not regression (JSON execution coexists same host).
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin /gateway 503 "Wartungsarbeiten!" persists (1485B); bms-dev 200/2147B; exploitability backend-gated, not dead.
 [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged (reaffirmed).
-[RISK] cineplex: 3/100 — this cycle 4 read-only probes (2 DoH lookups, 2 origin GETs at origin IP via Host header, 1 public GET) all ≤1rps, GET/HEAD only, no bodies written, no auth, no PII, zero mutations; findings remain on authorized channel (bugs.olivermaicher.eu); no live customer data touched.
+[LEARN] REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface.
+[RISK] cineplex: 3/100 — this cycle 6 read-only probes (3 DoH, 2 GraphQL GET, 2 origin GET via Host header) all ≤1rps, GET/HEAD-only, no bodies written, no auth, no PII, zero mutations; findings remain on authorized channel (bugs.olivermaicher.eu); no live customer data touched.
