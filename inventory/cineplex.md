@@ -1378,3 +1378,18 @@ wwww.cineplex.de
 - NEW Live GET verification: `buchung-dev/bms-dev.cineplex.de` origin 194.77.169.121 TCP-reachable; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503
 - CHANGED Automated probe log grew to 810 lines — still ZERO POST GraphQL probes across all cycles; all structural findings rely solely on manual curl evidence
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+
+## 2026-09-21 00:22:13 UTC
+- NEW GraphQL prod GET `?query=%7B__typename%7D` → 200 `{"data":{"__typename":"Query"}}` re-confirmed this cycle (curl --http2, browser UA) — GET-based origin execution stable.
+- CHANGED buchung-dev origin (194.77.169.121): SPA 200/2410B, `/gateway/booking-session/session` still 503/1485B "Wartungsarbeiten" — maintenance state unchanged, exploitability remains backend-gated.
+- NEW bms-dev origin SPA 200/2147B this cycle — Ticket360 CMS dev admin live at direct origin.
+- CHANGED web-dev.cineplex.de dangle: DoH A-follow Status 3 NXDOMAIN + `switzerlandnorth.azurecontainerapps.io` azure SOA re-verified live — 12th+ consecutive cycle, sole dangle.
+- NEW probe-results.md grew to 824 lines at 2026-09-20 22:15:21 — still ZERO POST probes, same 3 automated GET 403 urllib entries; no new surface, verification gap unchanged.
+- NEW Live GET verification: `graphql-api.app.{,staging.}cineplex.de` balanced URL-encoded `?query=%7B__typename%7D` → 200 confirmed this cycle; `userById(id:"0")` → 200 INVALID_ID with `decodePublicId` sta
+- NEW Live GET verification: `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode(email:"probe@test.de",type:PASSWORD_RESET)` → 200 with backend hit (405-method-mismatch on internal Spring Dat
+- NEW Live GET verification: `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` DoH Status 0 CNAME, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA (11th+ conse
+- NEW Live GET verification: `buchung-dev/bms-dev.cineplex.de` origin 194.77.169.121 TCP-reachable; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503
+- CHANGED Automated probe log grew to 810 lines — still ZERO POST GraphQL probes across all cycles; all structural findings rely solely on manual curl evidence
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+- CHANGED 5 systems-zone hosts + wildcard.cineplex.de + talk.systems: DoH this cycle → direct A records (Cloudflare), zero CNAME — web-dev confirmed sole dangle full inventory sweep
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now; descriptive IOMB infra only
