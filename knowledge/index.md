@@ -644,3 +644,10 @@
 - 2026-09-21 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: GET execution live; landing-page-on-HTML-Accept is Apollo middleware artifact not regression (JSON execution coexists same host).
 - 2026-09-21 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin /gateway 503 "Wartungsarbeiten!" persists (1485B); bms-dev 200/2147B; exploitability backend-gated, not dead.
 - 2026-09-21 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface.
+- 2026-09-21 ACCEPTED idor_booking @ graphql-api.app.{,staging.}cineplex.de: prod `userById(id:"0")` re-verified live 200/744B INVALID_ID no auth header; decodePublicId-before-gate model unchanged.
+- 2026-09-21 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: `__typename` GET 200/32B both envs live re-confirmed this cycle (curl --http2, browser UA).
+- 2026-09-21 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 14th consecutive cycle NXDOMAIN; sole dangle; PASSIVE report-ready.
+- 2026-09-21 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin /gateway 503/1485B "Wartungsarbeiten" persists; exploitability backend-gated, not dead.
+- 2026-09-21 REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged.
+- 2026-09-21 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN, sole dangle in full 14-host sweep, PASSIVE report-ready
+- 2026-09-21 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link

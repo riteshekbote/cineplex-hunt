@@ -1395,3 +1395,10 @@ wwww.cineplex.de
 - CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); estimated ~892.9M+ now; descriptive IOMB infra only
 
 ## 2026-09-21 05:09:31 UTC
+
+## 2026-09-21 10:50:42 UTC
+- NEW Automated probe log grew to 824 lines — still ZERO POST GraphQL probes across all cycles; verification gap for introspection/IDOR/staging-oracle remains manual-curl-only
+- NEW web-dev.cineplex.de dangling CNAME re-verified 12th+ consecutive cycle via manual DoH (CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure SOA); sole dangle in full 14-host sweep (7 dev + 7 systems-zo
+- NEW buchung-dev/bms-dev.cineplex.de origin (194.77.169.121) TCP-reachable this cycle; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); /gateway/* routes still 503 "Wartungsarbe
+- CHANGED graphql-api.app.{,staging.}cineplex.de balanced URL-encoded GET `?query=%7B__typename%7D` → 200 confirmed live this cycle (curl --http2); `userById(id:"0")` → 200 INVALID_ID with `decodePublicId` stac
+- CHANGED graphql-api.app.staging.cineplex.de `testing_getConfirmationCode` authless oracle persists: GET → 200 with backend hit (405-method-mismatch on Spring Data JPA `/userPasswordResets/search/...`) vs prod
