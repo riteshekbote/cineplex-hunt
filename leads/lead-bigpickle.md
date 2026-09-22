@@ -5820,3 +5820,31 @@ evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/40
 verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` via `curl --resolve` (≤1rps, GET only).
 impact: unauth review of dev booking/payment+CMS tier only if maintenance lifts; contingent Medium.
 testability: AUTH_HELPED (network-gated)
+## 2026-09-22 02:59:53 UTC [target] (model bigpickle)
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: prod GET `userById(id:"0")` → 200 INVALID_ID (decodePublicId) with NO auth header; 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED on same GET surface; 4/4 id-resolvers identical both envs, 10+ cycles.
+evidence_needed: A+B controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: 15th+ consecutive NXDOMAIN re-verified by my DoH THIS cycle (Status 0/3 + azure SOA, TTL 300); sole CNAME across full 14-host sweep (7 dev + 7 systems-zone + wildcard).
+evidence_needed: Azure attestation proving third-party name registrability under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit with DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 vs origin-SPA-200 differential stable 16 cycles; `/gateway/booking-session/session` + `/gateway/auth/oauth/token` both 503/1485B "Wartungsarbeiten" this cycle — namespace-wide maintenance, no auth logic reachable.
+evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` via `curl --resolve` (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier only if maintenance lifts; contingent Medium.
+testability: AUTH_HELPED (network-gated)
