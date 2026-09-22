@@ -663,3 +663,6 @@
 - 2026-09-22 REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - 2026-09-22 REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - 2026-09-22 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+- 2026-09-22 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin now fully TCP-unreachable (000 root + /gateway) this cycle — network oscillates 200/503↔000; exploitability network-gated, model stable, NOT dead.
+- 2026-09-22 REJECTED waf_gate_attenuation_change @ graphql-api.app.cineplex.de: curl http2 GET `?query=%7B__typename%7D` 200/32B re-confirmed vs automated urllib 403 — bot-gate model unchanged, no new surface.
+- 2026-09-22 REJECTED @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged out-of-scope/dead (reaffirmed).

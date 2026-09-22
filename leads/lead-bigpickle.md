@@ -5973,3 +5973,91 @@ verify_steps: weekly origin GET of the two /gateway routes (≤1rps, GET only).
 impact: unauth review of dev booking/payment+CMS tier if maintenance lifts; contingent Medium.
 testability: AUTH_HELPED
 [NEXT] HUMAN: submit the 3-finding bundle to bugs.olivermaicher.eu — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (POST introspection 200 full schema + GET `?query=%7B__typename%7D` 200 both envs, curl --http2 headers/screenshots); (2) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io Medium (attach DoH JSON: CNAME Status 0 / A-follow Status 3 / azure-dns.com SOA, TTL 300, 12+ cycle continuity, sole dangle in full 14-host sweep); (3) IDOR structural POC (4/4 id-resolvers INVALID_ID decodePublicId-before-gate vs 6/6 sibling UNAUTHENTICATED gates) flagged HUMAN_ONLY so triager can scope consent-based cross-tenant proof.
+## 2026-09-22 23:27:09 UTC [target] (model bigpickle)
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY, post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High; Q7 HOLD pending that proof.
+testability: HUMAN_ONLY
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: manual DoH re-verified: CNAME Status 0 + A-follow Status 3 NXDOMAIN with azure-dns.com SOA; sole CNAME in full 14-host sweep; 15+ cycles stable.
+evidence_needed: attestation that a third party can register the target name under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit (attach DoH JSON).
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 public vs origin-SPA-200 differential stable 17+ cycles; `/gateway/booking-session/session` + `/gateway/auth/oauth/token` still 503/1485B "Wartungsarbeiten" this cycle — no auth logic reachable.
+evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET via `curl --resolve` of the two /gateway routes (≤1rps, GET only).
+impact: unauth review of dev payment/booking+CMS tier only if maintenance lifts; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+[HYP] web-dev dangling CNAME takeover (claimability)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, TTL 300, sole CNAME across full 14-host sweep, 12+ consecutive cycles, host HTTP 000.
+evidence_needed: Azure attestation that third party can register target name under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit with DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers decode-before-gate (200 INVALID_ID, no Authorization header, both envs) vs 6/6 sibling gates UNAUTHENTICATED on same GET surface; 15+ cycles.
+evidence_needed: two controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 vs origin-SPA-200 differential stable ~18 cycles; both /gateway routes re-probed THIS cycle still 503/1485B "Wartungsarbeiten" — no auth logic reachable.
+evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET of the two /gateway routes (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier if maintenance lifts; contingent Medium.
+testability: AUTH_HELPED
+[NEXT] HUMAN: submit the 3-finding bundle to bugs.olivermaicher.eu — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (POST introspection 200 full schema + GET `?query=%7B__typename%7D` 200 both envs, curl --http2 headers/screenshots); (2) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io Medium (attach DoH JSON: CNAME Status 0 / A-follow Status 3 / azure-dns.com SOA, TTL 300, 12+ cycle continuity, sole dangle in full 14-host sweep); (3) IDOR structural POC (4/4 id-resolvers INVALID_ID decodePublicId-before-gate vs 6/6 sibling UNAUTHENTICATED gates) flagged HUMAN_ONLY so triager can scope consent-based cross-tenant proof.
+[LEARN] REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, reaffirmed
+[LEARN] REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+[LEARN] REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+[LEARN] REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
+[LEARN] REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+[RISK] cineplex: 55 — dev-origin (WAF-bypassed booking/payment tier + CMS) surfaces this cycle with origin reachable but /gateway/* still 503; dangling CNAME stable reportable; introspection/IDOR/staging-oracle remain validated tier; all probes read-only, ≤1 rps, no PII touched
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) decode-before-gate (200 INVALID_ID, decodePublicId stacktrace, no Authorization header, both envs) vs 6/6 sibling gates fire UNAUTHENTICATED on the same GET surface; 15+ cycles; GET execution re-confirmed 200/32B this cycle.
+evidence_needed: two controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY, post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High; Q7 HOLD pending approval.
+testability: HUMAN_ONLY
+[HYP] web-dev dangle claimability
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: manual DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA, TTL 300, host HTTP 000, sole CNAME in full 14-host sweep, 12+ consecutive cycles.
+evidence_needed: Azure attestation that a third party can register the target name under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit with DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 public vs origin-SPA-200 differential proven across cycles, but origin currently fully TCP-unreachable (000 root + 000 both /gateway this cycle) — network oscillates between reachable (200/503) and 000; no auth logic was ever reachable.
+evidence_needed: origin reachable AND any /gateway/* route returning non-503 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET via `curl --resolve` of `/gateway/auth/oauth/token` + `/gateway/booking-session/session` (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier only if network+maintenance lift; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+[NEXT] HUMAN: submit the 3-finding bundle to bugs.olivermaicher.eu — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (curl --http2 POST introspection 200 full schema + GET `?query=%7B__typename%7D` 200/32B both envs; WAF client-differentiated bot-gate is not auth, raw headers attached); (2) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io Medium (attach DoH JSON: CNAME Status 0 / A-follow Status 3 / azure-dns.com SOA, TTL 300, 12+ cycle continuity, sole dangle in 14-host sweep; attach Azure claimability attestation); (3) IDOR structural POC (4/4 id-resolvers INVALID_ID decodePublicId-before-gate vs 6/6 sibling UNAUTHENTICATED gates) flagged HUMAN_ONLY for triager-scoped consent proof. Continue weekly 2-probe origin `/gateway` exit check.
+[LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin now fully TCP-unreachable (000 root + /gateway) this cycle — network oscillates 200/503↔000; exploitability network-gated, model stable, NOT dead.
+[LEARN] REJECTED waf_gate_attenuation_change @ graphql-api.app.cineplex.de: curl http2 GET `?query=%7B__typename%7D` 200/32B re-confirmed vs automated urllib 403 — bot-gate model unchanged, no new surface.
+[LEARN] REJECTED @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged out-of-scope/dead (reaffirmed).
+[RISK] cineplex: 2/100 — 4 read-only probes this cycle (2 origin GET via --resolve both 000, 1 origin root 000, 1 GraphQL GET 200/32B `__typename`); all GET, spaced ≥1.5s, no bodies written, no PII returned, zero mutations, no auth logic touched (origin unreachable); findings pending on authorized channel only.
