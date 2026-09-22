@@ -3188,3 +3188,21 @@
 - LEARN: REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - LEARN: REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - LEARN: REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+
+## RANKED HYPOTHESES 2026-09-22 08:25:29 UTC
+- [97] graphql-api.app.cineplex.de: Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before-Gate (from art/lead_nemotron3.txt)
+- [92] web-dev.cineplex.de: web-dev dangle claimability (submission-bundled) (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: submit to bugs.olivermaicher.eu — bundle ready this cycle — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (curl POST introspection 20
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (sole dangle, 12+ cycles NXDOMAIN, Medium) with Azure clai
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN, sole dangle in full 14-host sweep, PASSIVE report-ready
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC comp
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
+- LEARN: ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API bas
+- LEARN: REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, re
+- LEARN: REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- LEARN: REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+- LEARN: REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
+- LEARN: REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface

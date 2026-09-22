@@ -1,11 +1,4 @@
-## 2026-09-22 02:59:53 UTC [target] (model bigpickle)
-[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
-class: IDOR
-asset: graphql-api.app.{,staging.}cineplex.de
-confidence: 85
-reasoning: prod GET `userById(id:"0")` → 200 INVALID_ID (decodePublicId) with NO auth header; 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED on same GET surface; 4/4 id-resolvers identical both envs, 10+ cycles.
-evidence_needed: A+B controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
-verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+## 2026-09-22 08:25:08 UTC [target] (model bigpickle)
 impact: cross-tenant PII (email/phone/orders/invoices); High.
 testability: HUMAN_ONLY
 [HYP] web-dev dangle claimability (submission-bundled)
@@ -26,3 +19,49 @@ evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/40
 verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` via `curl --resolve` (≤1rps, GET only).
 impact: unauth review of dev booking/payment+CMS tier only if maintenance lifts; contingent Medium.
 testability: AUTH_HELPED (network-gated)
+[HYP] No public repos available for audit
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+confidence: 100
+reasoning: GitHub org exists with 0 public repositories. No source code is exposed publicly.
+impact: N/A — no attack surface identified via public GitHub repos
+verify_steps: Visit https://github.com/Cineplex-Deutschland to confirm zero public repos
+[HYP] No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+confidence: 100
+reasoning: The GitHub org Cineplex-Deutschland was created 2026-05-11 and contains 0 public repositories. All candidate lists and prior scan logs confirm no org targets are configured. No source code is publicly exposed on GitHub.
+impact: N/A — no attack surface identified via public GitHub repos. The source-code audit vector is closed.
+verify_steps: Visit https://github.com/Cineplex-Deutschland to confirm zero public repos.
+[HYP] No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG
+class: OTHER
+asset: github.com/Cineplex-Deutschland
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: prod GET `userById(id:"0")` → 200 INVALID_ID (decodePublicId) with NO auth header; 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED on same GET surface; 4/4 id-resolvers identical both envs, 15+ cycles.
+evidence_needed: A+B controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
+[HYP] web-dev dangle claimability (submission-bundled)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH re-verified THIS cycle: CNAME Status 0 (TTL 300) + A-follow Status 3 NXDOMAIN with `switzerlandnorth.azurecontainerapps.io` azure-dns.com SOA; sole dangling CNAME across full 14-host sweep (7 dev + 7 systems-zone + wildcard).
+evidence_needed: Azure attestation proving third-party name registrability under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit with DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 40
+reasoning: CF-403 vs origin-SPA-200 differential stable 17 cycles; `/gateway/booking-session/session` + `/gateway/auth/oauth/token` both 503/1485B "Wartungsarbeiten" THIS cycle — namespace-wide maintenance, no auth logic reachable.
+evidence_needed: any /gateway/* route returning non-503 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` via `curl --resolve` (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier only if maintenance lifts; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+[NEXT] HUMAN: submit to bugs.olivermaicher.eu — bundle ready this cycle — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (curl POST introspection 200 full schema + GET `?query=%7B__typename%7D` 200 both envs, WAF method-gate bypass, screenshot/headers); (2) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io Medium (attach DoH JSON: CNAME Status 0 / A-follow Status 3 / azure-dns.com SOA, TTL 300, 15+ cycle continuity); (3) IDOR structural POC (4/4 id-resolvers INVALID_ID decodePublicId-before-gate vs 6/6 sibling UNAUTHENTICATED gates) flagged HUMAN_ONLY so triager can scope a consent-based proof. Continue weekly origin `/gateway/*` 503-exit probe only.
+[RISK] cineplex: 2/100 — 9 read-only probes this cycle (2 DoH, 4 origin GET via --resolve incl. 2 /gateway routes + 2 SPAs, 1 GraphQL GET, 1 relay /metrics); all GET, spaced ≥1.2s, no bodies written, no PII returned, zero mutations; origin /gateway probes return maintenance 503 (no auth logic touched); findings pending on authorized channel only.
