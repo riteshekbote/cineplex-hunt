@@ -1523,3 +1523,13 @@ wwww.cineplex.de
 - CHANGED idor_booking @ graphql-api.app.cineplex.de: structural POC complete (4/4 resolvers, 6/6 control gates); HUMAN_ONLY cross-tenant proof
 - CHANGED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link
 - CHANGED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+
+## 2026-09-23 23:26:54 UTC
+- NEW ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) this cycle → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline 
+- NEW www.support.systems.cineplex.de @ dangling-CNAME-lookalike: cert SAN present but DoH Status 3 NXDOMAIN with no CNAME record — host-only dead entry, not a takeover candidate
+- NEW buchung-dev.cineplex.de origin (194.77.169.121) now TCP-unreachable (HTTP 000) this cycle while bms-dev remains 200/2147B — oscillation continues, exploitability network-gated
+- CHANGED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN re-verified live; sole dangle in full 14-host sweep; PASSIVE, in submission bundle
+- CHANGED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready, 12+ cycle stability — in submission bundle
+- CHANGED idor_booking @ graphql-api.app.cineplex.de: structural POC complete (4/4 resolvers, 6/6 control gates); HUMAN_ONLY cross-tenant proof
+- CHANGED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link
+- CHANGED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
