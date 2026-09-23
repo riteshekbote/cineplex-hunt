@@ -6157,3 +6157,4 @@ testability: AUTH_HELPED (network-gated)
 [LEARN] ACCEPTED e2e_scan_noop: no new asset → no new hypothesis; pipeline correctly no-ops on empty delta rather than inventing findings.
 [LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso): unchanged out-of-scope/dead (reaffirmed).
 [RISK] cineplex: 2/100 — zero live requests this cycle (hip content: crt.sh/certspotter/hackertarget CT-log APIs are third-party passive sources, not target infrastructure); prior-cycle footprint was 4 read-only GETs. No cross-tenant/PII access attempted; findings only move to authorized channel.
+## 2026-09-23 17:40:15 UTC [target] (model bigpickle)

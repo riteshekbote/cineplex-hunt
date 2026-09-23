@@ -29538,3 +29538,35 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 2/100 — zero live requests this cycle (hip content: crt.sh/certspotter/hackertarget CT-log APIs are third-party passive sources, not target infrastructure); prior-cycle footprint was 4 read-only GETs. No cross-tenant/PII access attempted; findings only move to authorized channel.
+===== ANALYST bigpickle 2026-09-23 17:44:27 UTC =====
+[0m
+> build · big-pickle
+[0m
+STEP 1 — DELTA
+- NO_DELTA: last cycle's full passive CT diff (certspotter+hackertarget+systems-zone) returned zero non-inventory hosts; inventory baseline 132 hosts confirmed complete 2026-09-23; no new surface since 12:54:25 UTC cycle.
+- NO_DELTA: all live-surface findings (IDOR 4/4 resolvers, web-dev dangle, staging oracle, dev-origin differential, introspection) re-verified 12+ cycles; automated probe log still zero POST probes — no contradiction, all manual-curl-confirmed.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.cineplex.de, 8.6, attack_surface(8)+business_value(9)+tech_exposure(9/GraphQL)+gate_ease(9/no-auth)+cloud_surface(8)+freshness(9)
+- [PRIO] web-dev.cineplex.de, 7.4, attack_surface(7)+business_value(6)+tech_exposure(6)+gate_ease(10)+cloud_surface(9/Azure)+freshness(8)
+- [PRIO] buchung-dev/bms-dev origin 194.77.169.121, 5.2, attack_surface(6)+business_value(6)+tech_exposure(6)+gate_ease(6)+cloud_surface(4)+freshness(5)
+
+STEP 3 — HYPOTHESES
+- [HYP] None new — no fresh surface to justify a new hypothesis; CT sweep closed the last open breadth lever. Existing top-2 (IDOR structural, web-dev dangle) are HUMAN_ONLY-proof/attestation-gated and already in the 3-finding submission bundle. Adding duplicate hypotheses without evidence would violate "do not invent."
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev: confidence 38 < 40; network-oscillates 200/503↔000; /gateway/* stuck 503 20+ cycles; backend-gated, no auth logic reachable.
+- [PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; OOS-adjacent oracle; low business value.
+- [FINAL] #1 IDOR structural POC (97) — 6/6 control gates, decodePublicId-before-gate, both envs; cross-tenant PII proof HUMAN_ONLY. In bundle.
+- [FINAL] #2 web-dev dangle (92) — 12+ consecutive NXDOMAIN, sole CNAME in 14-host sweep; PASSIVE report-ready; Azure attestation required. In bundle.
+- [FINAL] #3 graphql introspection (report-ready CVSS 7.5) — 12+ cycle stability, POST+GET execution manual-curl-confirmed. In bundle.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: submit the ready 3-finding bundle to bugs.olivermaicher.eu — (1) graphql-api.app.{,staging.}cineplex.de introspection+GET-execution CVSS 7.5, (2) web-dev.cineplex.de dangling CNAME→switzerlandnorth.azurecontainerapps.io Medium with DoH JSON (CNAME Status 0 / A-follow Status 3 + azure SOA), (3) IDOR structural POC flagged HUMAN_ONLY per program PII rule. Autonomous off-target probing adds nothing until the bundle is out; resume SCAN only after submission.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED e2e_scan_noop: CT sweep delta empty → pipeline correctly no-ops instead of inventing hypotheses; repeated empty deltas are the expected steady state until the bundle clears or a new passive source is justified.
+- [LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead app.staging/couat/login/sso): unchanged out-of-scope/dead (reaffirmed).
+
+STEP 7 — RISK
+- [RISK] cineplex: 1/100 — zero live requests this cycle (no new passive source; CT logs already diffed last cycle). Original footprint 4 read-only GETs, ≤1.5s spacing, no POST/mutations, no PII, no cross-tenant access. All findings travel only through the authorized bugs.olivermaicher.eu channel on human submission.
