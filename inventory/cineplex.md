@@ -1485,3 +1485,5 @@ wwww.cineplex.de
 - CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only, not reportable alone
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
+
+## 2026-09-23 01:46:56 UTC

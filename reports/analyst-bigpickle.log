@@ -29104,3 +29104,80 @@ STEP 6 — LEARNING:
 
 STEP 7 — RISK:
 [RISK] cineplex: 2/100 — 4 read-only probes this cycle (2 origin GET via --resolve both 000, 1 origin root 000, 1 GraphQL GET 200/32B `__typename`); all GET, spaced ≥1.5s, no bodies written, no PII returned, zero mutations, no auth logic touched (origin unreachable); findings pending on authorized channel only.
+===== ANALYST bigpickle 2026-09-23 01:46:56 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s --max-time 15 "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" -H "Accept: application/dns-json"; echo; sleep 2; curl -s --max-time 15 "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=A" -H "Accept: application/dns-json"; echo
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":1}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mcurl -s --max-time 12 -o /dev/null -w "buchung-dev origin root: %{http_code} %{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/"; sleep 2; curl -s --max-time 12 -o /dev/null -w "buchung-dev origin /gateway/session: %{http_code} %{size_download}\n" --resolve buchung-dev.cineplex.de:443:194.77.169.121 "https://buchung-dev.cineplex.de/gateway/booking-session/session"; sleep 2; curl -s --max-time 12 -o /dev/null -w "bms-dev origin root: %{http_code} %{size_download}\n" --resolve bms-dev.cineplex.de:443:194.77.169.121 "https://bms-dev.cineplex.de/"
+buchung-dev origin root: 000 0
+buchung-dev origin /gateway/session: 000 0
+bms-dev origin root: 200 2147
+[0m
+[0m$ [0mcurl -s --max-time 15 -o /dev/null -w "prod GET __typename: %{http_code} %{size_download}\n" --http2 "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"; sleep 2; curl -s --max-time 15 -o /dev/null -w "staging GET __typename: %{http_code} %{size_download}\n" --http2 "https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+prod GET __typename: 200 32
+staging GET __typename: 200 32
+[0m
+STEP 1 — DELTA
+- [CHANGED] web-dev.cineplex.de dangle: this cycle DoH re-verified — CNAME `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` Status 0 (TTL 300) / A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA → **13th consecutive cycle**, sole dangle.
+- [CHANGED] graphql-api.app.{,staging.}cineplex.de: live GET `?query=%7B__typename%7D` → **200/32B both envs** (curl --http2, browser UA) — GET origin execution stable.
+- [CHANGED] dev-origin family (194.77.169.121): bms-dev root **200/2147B** (T360 CMS live at origin); buchung-dev root + `/gateway/booking-session/session` → **000** this cross-section — network oscillation documented model, not a new state.
+- NO_DELTA: probe-results.md zero-POST verification gap, api.cineplex.de strict-403, relay/metrics stale, TLS-dead set, OOS classes.
+
+STEP 2 — PRIORITIZE
+- [PRIO] graphql-api.app.{,staging.}cineplex.de,0.72,execution+introspection+IDOR surface stable; report-ready
+- [PRIO] web-dev.cineplex.de,0.58,dangle claimability matured to 13 cycles; submission-bundled
+- [PRIO] buchung-dev/bms-dev origin 194.77.169.121,0.44,network-gated; /gateway still 503/000
+
+STEP 3 — HYPOTHESES
+[HYP] Systemic unauth'd IDOR — decodePublicId-before-gate (unchanged, re-verified via GET envs)
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 85
+reasoning: 4/4 id-resolvers (userById/invoice/order/ticket) 200 INVALID_ID decodePublicId stacktrace, no Authorization header, both envs; 6/6 sibling gates fire UNAUTHENTICATED same GET surface; 15+ cycles; GET 200/32B re-confirmed this cycle.
+evidence_needed: two controlled accounts; A's JWT resolving B's publicId with PII projection — blocked by program PII rule.
+verify_steps: GET `?query=%7BuserById(id%3A%22%3CB-publicId%3E%22)%7Bemail%20fullName%7D%7D` (HUMAN_ONLY post-approval, ≤1rps).
+impact: cross-tenant PII (email/phone/orders/invoices); High.
+testability: HUMAN_ONLY
+
+[HYP] web-dev dangle claimability
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: 13th consecutive cycle NXDOMAIN (this cycle live); CNAME Status 0/A-follow Status 3 + azure-dns SOA; host 000; sole CNAME in 14-host sweep.
+evidence_needed: Azure attestation third party can register target under azurecontainerapps.io.
+verify_steps: none passive remaining; attest then submit with DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 38
+reasoning: CF-403 vs origin-SPA-200 differential proven; buchung-dev origin 000 this cycle (oscillation), bms-dev 200/2147B; /gateway/* never exited 503; no auth logic reachable in 19+ cycles.
+evidence_needed: origin reachable AND any /gateway/* route returning non-503/non-000 (esp. oauth/token 401/400).
+verify_steps: weekly origin GET `/gateway/auth/oauth/token` + `/gateway/booking-session/session` (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier only if network+maintenance lift; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+
+STEP 4 — SELF-CRITIQUE
+- IDOR dropped 85→85 kept: evidence path fully speced, HUMAN_ONLY flagged, structural POC reportable even absent cross-tenant run.
+- dev-origin dropped 40→38 (<40): origin 000/503 oscillation, no auth logic ever reachable; PARKED to weekly watch, not FINAL.
+- [PARKED] dev_origin_waf_bypass: origin oscillates and /gateway never exits maintenance; <40 confidence without a non-503/000 response.
+- [FINAL] 1. IDOR structural POC (confidence 85, HUMAN_ONLY). 2. web-dev dangle (confidence 92, PASSIVE/attestation). 3. graphql_introspection CVSS 7.5 (report-ready, 13+ cycles).
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: submit to bugs.olivermaicher.eu the 3-finding bundle — (1) graphql-api.app.{,staging.}cineplex.de introspection CVSS 7.5 (POST introspection 200 full schema + GET `?query=%7B__typename%7D` 200/32B both envs, curl --http2 headers; WAF urllib-403 client-differentiated bot-gate is not auth); (2) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io Medium (attach DoH JSON CNAME Status 0/A-follow Status 3/azure-dns SOA TTL 300, 13-cycle continuity, sole dangle in 14-host sweep; attach Azure claimability attestation); (3) IDOR structural POC (4/4 id-resolvers INVALID_ID decodePublicId-before-gate vs 6/6 sibling UNAUTHENTICATED gates) flagged HUMAN_ONLY for triager-scoped consent proof. Continue weekly 2-probe origin `/gateway` exit check.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 13th consecutive NXDOMAIN re-verified live this cycle; sole dangle; PASSIVE report-ready (unchanged).
+- [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: GET execution 200/32B both envs re-confirmed live; CVSS 7.5 report-ready (unchanged).
+- [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC unchanged; HUMAN_ONLY cross-tenant proof (unchanged).
+- [LEARN] CHANGED dev_origin_waf_bypass @ buchung-dev/bms-dev: buchung-dev origin 000 (oscillation), bms-dev 200/2147B this cross-section; /gateway still no exit; network-gated, not dead.
+- [LEARN] REJECTED @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay/metrics, api.cineplex.de GET-bypass, TLS-dead hosts — unchanged out-of-scope/dead (reaffirmed).
+
+STEP 7 — RISK
+- [RISK] cineplex: 2/100 — 7 read-only GET probes this cycle (DoH x2, origin x3 via --resolve [000/200], GraphQL GET x2 both 200/32B); all GET, rate ≤0.5rps, no bodies written, no PII returned, zero mutations, no auth logic touched (origin /gateway unreachable); findings pending on authorized channel only.
