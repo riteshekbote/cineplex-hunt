@@ -877,3 +877,9 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 ## 2026-09-23 01:46:59 UTC
 https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-23 07:15:24 UTC
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://buchung-dev.cineplex.de/gateway/auth/oauth/token` -> HTTP 403
+https://crt.sh/?q=%25.cineplex.de&output=json` -> ERR The read operation timed out

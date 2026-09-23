@@ -678,3 +678,8 @@
 - 2026-09-23 REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - 2026-09-23 REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - 2026-09-23 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+- 2026-09-23 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ cycle NXDOMAIN, sole dangle, PASSIVE report-ready — in submission bundle.
+- 2026-09-23 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready, 12+ cycle stability — in submission bundle.
+- 2026-09-23 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete, 6/6 control gates; HUMAN_ONLY cross-tenant proof.
+- 2026-09-23 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: buchung-dev origin 000 this cycle, bms-dev 200/2147B — oscillation continues; exploitability network-gated, NOT dead.
+- 2026-09-23 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts (app.staging/couat/login/sso): unchanged out-of-scope/dead.

@@ -1487,3 +1487,15 @@ wwww.cineplex.de
 - CHANGED TLS-dead hosts reaffirmed: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de — unreachable
 
 ## 2026-09-23 01:46:56 UTC
+
+## 2026-09-23 07:15:07 UTC
+- NEW Automated probe log grew to 879 lines — still ZERO POST GraphQL probes across all cycles; all structural findings (introspection, IDOR, staging oracle) rely solely on manual curl evidence
+- NEW Latest automated probes (2026-09-23 01:46:59 UTC): `graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D` → HTTP 403; `graphql-api.app.staging.cineplex.de/` → HTTP 403 (malforme
+- CHANGED `web-dev.cineplex.de` CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` 12th+ consecutive NXDOMAIN cycle re-verified via manual DoH (Status 0 / A-follow Status 3 + `azure-dns.c
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` balanced URL-encoded GET `?query=%7B__typename%7D` → 200 confirmed live via manual curl (curl --http2); `userById(id:"0")` → 200 INVALID_ID with `decodePublicI
+- CHANGED `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode(email:"probe@test.de",type:PASSWORD_RESET)` → 200 with backend hit (405-method-mismatch on Spring Data JPA `/userPasswordResets/searc
+- CHANGED `buchung-dev/bms-dev.cineplex.de` origin (194.77.169.121) TCP-reachable; SPAs 200 (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes still 503 "Wartungsarbeiten" —
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only, not reportable alone
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
