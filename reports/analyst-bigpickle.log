@@ -29570,3 +29570,41 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 - [RISK] cineplex: 1/100 — zero live requests this cycle (no new passive source; CT logs already diffed last cycle). Original footprint 4 read-only GETs, ≤1.5s spacing, no POST/mutations, no PII, no cross-tenant access. All findings travel only through the authorized bugs.olivermaicher.eu channel on human submission.
+===== ANALYST bigpickle 2026-09-23 20:44:12 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --max-time 15 -H 'Accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME&ct=application/dns-json'
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+[0m
+[0m$ [0msleep 2; curl -sS --max-time 15 -H 'Accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A&ct=application/dns-json'
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+STEP 1 — DELTA
+NO_DELTA: no new inventory hosts (CT sweep 09-23 yielded zero; 132-host baseline complete); no new [CHANGED] surface on any tracked asset since last cycle.
+[VERIFIED] web-dev.cineplex.de CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` re-confirmed live THIS cycle via DoH: CNAME Status 0 TTL 300, A-follow on target Status 3 (NXDOMAIN) with `switzerlandnorth.azurecontainerapps.io` SOA in authority — 13th+ consecutive NXDOMAIN cycle, fresh timestamp for submission bundle.
+
+STEP 2 — PRIORITIZE
+[PRIO] web-dev.cineplex.de,7.6,a0.25+... — sole dangling CNAME, MISCONFIG, PASSIVE-ready, 13 cycles stable; a=4,s=5,t=7,g=10,c=8,f=10 (=0.25·4+0.25·5+0.15·7+0.15·10+0.10·8+0.10·10=7.55)
+[PRIO] graphql-api.app.{,staging.}cineplex.de,7.2 — introspection CVSS 7.5 report-ready + IDOR structural POC (4/4 resolvers, 6/6 control gates); HUMAN_ONLY PII proof.
+[PRIO] buchung-dev/bms-dev.cineplex.de,4.8 — origin-bypass differential real but exploitability network+backend-gated (503/000 oscillation 20+ cycles); no new lever.
+
+STEP 3 — HYPOTHESES
+No new hypothesis above threshold this cycle. Convergence: last-cycle CT sweep was the final genuinely-new passive lever and returned zero; all prior hypotheses are final/parked/rejected in KB.
+
+STEP 4 — SELF-CRITIQUE
+[FINAL] #1 Systemic Unauthenticated IDOR via decodePublicId-Before-Gate @ graphql-api.app.{,staging.}cineplex.de (conf 85→97 per triage stack) — structural POC complete, 6/6 control gates fire UNAUTHENTICATED proving auth-omission; cross-tenant PII proof HUMAN_ONLY (program PII rule); in submission bundle.
+[FINAL] #2 web-dev dangling CNAME → Azure Container Apps (conf 92) — DoH re-verified live this very cycle (Status 0/3 + azure SOA, TTL 300); sole CNAME in full 14-host sweep; PASSIVE; claimability awaits Azure attestation; in submission bundle.
+[FINAL] #3 GraphQL introspection (CVSS 7.5) — POST+GET execution; 12+ cycle stability; report-ready; in submission bundle.
+[PARKED] Dev-origin /gateway maintenance-exit: conf 38 < 40, network-gated, oscillating 200/503↔000; weekly watch only, NOT dead.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: attest azurecontainerapps.io claimability for `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (attach THIS cycle's fresh DoH JSON), then submit the 3-finding bundle to bugs.olivermaicher.eu — (1) web-dev dangle Medium + DoH/azure-SOA evidence, (2) graphql-api introspection CVSS 7.5 (bal-encoded GET `?query=%7B__typename%7D`→200 both envs + introspection schema), (3) IDOR structural POC flagged HUMAN_ONLY (no cross-tenant PII requested). Autonomous probes add nothing further; inventory is exhausted.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified live this cycle (CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure-dns SOA); 13th consecutive cycle; sole dangle; PASSIVE report-ready with fresh timestamp.
+[LEARN] REJECTED @ all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, relay/metrics, relay_broker_saturation, TLS-dead hosts app.staging/couat/login/sso, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
+[LEARN] ACCEPTED e2e_convergence: 3 findings report-ready, inventory scanned to exhaustion (132-host baseline + CT diff + full CNAME sweep); correct behavior is no-op on empty delta, not fabricated findings.
+
+STEP 7 — RISK
+[RISK] cineplex: 2/100 — zero live requests to target infra this cycle (only 2 passive DoH queries to cloudflare-dns.com, off-target); prior footprint 4 read-only GETs; no POST/mutations, no PII, findings only via authorized channel.
