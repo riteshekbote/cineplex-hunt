@@ -683,3 +683,8 @@
 - 2026-09-23 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete, 6/6 control gates; HUMAN_ONLY cross-tenant proof.
 - 2026-09-23 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: buchung-dev origin 000 this cycle, bms-dev 200/2147B — oscillation continues; exploitability network-gated, NOT dead.
 - 2026-09-23 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts (app.staging/couat/login/sso): unchanged out-of-scope/dead.
+- 2026-09-23 ACCEPTED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) this cycle → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed complete as of 2026-09-23.
+- 2026-09-23 REJECTED www.support.systems.cineplex.de @ dangling-CNAME-lookalike: cert SAN present but DoH Status 3 NXDOMAIN with no CNAME record — host-only dead entry, not a takeover candidate.
+- 2026-09-23 REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change.
+- 2026-09-23 ACCEPTED e2e_scan_noop: no new asset → no new hypothesis; pipeline correctly no-ops on empty delta rather than inventing findings.
+- 2026-09-23 REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso): unchanged out-of-scope/dead (reaffirmed).

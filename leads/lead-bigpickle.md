@@ -6131,3 +6131,29 @@ testability: AUTH_HELPED (network-gated)
 [LEARN] ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev: buchung-dev origin 000 this cycle, bms-dev 200/2147B — oscillation continues; exploitability network-gated, NOT dead.
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts (app.staging/couat/login/sso): unchanged out-of-scope/dead.
 [RISK] cineplex: 2/100 — 4 read-only GET probes last cycle (2 origin via --resolve both 000, 1 origin root 000, 1 GraphQL `__typename` 200/32B); no POST/mutations, no PII requested, spaced ≥1.5s; this cycle proposes only a passive off-target CT diff; findings pending on authorized channel only.
+## 2026-09-23 12:50:47 UTC [target] (model bigpickle)
+[HYP] web-dev dangle claimability (unchanged)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: Manual DoH CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns SOA, TTL 300, host HTTP 000; sole CNAME in 14-host sweep; 12+ consecutive cycles; no new host emerged in CT sweep to displace it.
+evidence_needed: Azure attestation that third party can register the target hostname under azurecontainerapps.io.
+verify_steps: none passive remain; attest, then submit with DoH JSON (Status 0/3 + SOA) attached.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 38
+reasoning: CF-403 vs origin-SPA-200 differential proven; buchung-dev origin oscillates 200/503↔000; bms-dev 200/2147B stable; /gateway/* stuck at 503 "Wartungsarbeiten" 20+ cycles; fresh bms/booking-dev cert renewal 09-21 indicates dev tier still maintained.
+evidence_needed: buchung-dev origin reachable AND any /gateway/* route returning non-503/non-000 (esp. oauth/token 401/400).
+verify_steps: weekly `curl --resolve buchung-dev.cineplex.de:443:194.77.169.121 https://buchung-dev.cineplex.de/gateway/auth/oauth/token` (≤1rps, GET only).
+impact: unauth review of dev booking/payment+CMS tier only if network+maintenance lift; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+[NEXT] HUMAN: attest azurecontainerapps.io claimability for `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, then submit the ready 3-finding bundle to bugs.olivermaicher.eu (graphql-api introspection CVSS 7.5 + web-dev dangle Medium with DoH JSON + IDOR structural POC flagged HUMAN_ONLY); autonomous probes add nothing until bundle is out — CT breadth was this cycle's last genuinely-new-scan lever and yielded zero.
+[LEARN] ACCEPTED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) this cycle → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed complete as of 2026-09-23.
+[LEARN] REJECTED www.support.systems.cineplex.de @ dangling-CNAME-lookalike: cert SAN present but DoH Status 3 NXDOMAIN with no CNAME record — host-only dead entry, not a takeover candidate.
+[LEARN] REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change.
+[LEARN] ACCEPTED e2e_scan_noop: no new asset → no new hypothesis; pipeline correctly no-ops on empty delta rather than inventing findings.
+[LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso): unchanged out-of-scope/dead (reaffirmed).
+[RISK] cineplex: 2/100 — zero live requests this cycle (hip content: crt.sh/certspotter/hackertarget CT-log APIs are third-party passive sources, not target infrastructure); prior-cycle footprint was 4 read-only GETs. No cross-tenant/PII access attempted; findings only move to authorized channel.
