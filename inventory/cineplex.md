@@ -1578,3 +1578,12 @@ wwww.cineplex.de
 - CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable this cycle (SPAs 200), /gateway/* routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 - CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
 - CHANGED web-dev.cineplex.de CNAME→azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in full 14-host sweep
+
+## 2026-09-24 23:45:01 UTC
+- CHANGED probe-results.md: 928 lines, ZERO POST GraphQL probes across all cycles (2026-09-03→2026-09-24); automated GraphQL GET with malformed URLs (`?query={userById(id:"0"){id}` missing closing brace) consis
+- CHANGED graphql-api.app.{,staging.}cineplex.de: root GET 403 (automated urllib) vs balanced URL-encoded GET 200 (manual curl) — WAF client-differentiated bot-gate model stable 12+ cycles
+- CHANGED web-dev.cineplex.de CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 CNAME / A-follow Status 3 NXDOMAIN + azure-
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable this cycle (SPAs 200), /gateway/* routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED bms-dev.cineplex.de origin (194.77.169.121): live "T360 - CMS" dev admin SPA 200/2147B, direct origin no CF; API base = buchung-dev
+- CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
