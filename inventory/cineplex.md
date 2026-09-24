@@ -1542,3 +1542,12 @@ wwww.cineplex.de
 - CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED web-dev.cineplex.de CNAME→azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in full 14-host sweep (7 dev + 7 
 - CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
+
+## 2026-09-24 06:47:45 UTC
+- CHANGED probe-results.md: 903 lines, ZERO POST GraphQL probes across all cycles (2026-09-03→2026-09-23); automated GraphQL GET with malformed URLs consistently returns HTTP 403 (WAF bot-gate); balanced URL-en
+- CHANGED graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: root GET 403 (automated urllib) vs balanced URL-encoded GET 200 (manual curl --http2) — WAF client-differentiated bot-gate model stab
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable this cycle (SPAs 200), /gateway/* routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED bms-dev.cineplex.de origin (194.77.169.121): live "T360 - CMS" dev admin SPA 200/2147B, direct origin no CF; API base = buchung-dev
+- CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED web-dev.cineplex.de CNAME→azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 / A-follow Status 3 + azure-dns.com SOA); sole dangle in full 14-host sweep (7 dev + 7 
+- CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
