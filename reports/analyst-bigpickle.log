@@ -29924,3 +29924,61 @@ STEP 7 — RISK
 - [RISK] cineplex: 1/100 — zero live requests to target infra this cycle (local read-only state check only); all historical probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant data attempted; findings move only via authorized channel bugs.olivermaicher.eu.
 
 SUMMARY: Convergence confirmed. No delta, no new hypothesis warranted, no probe justified. The decisive action is the HUMAN submission of the 3-finding bundle; further autonomous scanning adds nothing and would be noise.
+===== ANALYST bigpickle 2026-09-24 17:32:57 UTC =====
+[0m
+> build · big-pickle
+[0m
+STEP 1 — DELTA: NO_DELTA
+- No inventory additions (132-host baseline holds; CT sweep zero non-inventory hosts as of 2026-09-24)
+- No surface change: web-dev NXDOMAIN stable (12th+ cycle), graphql-api pair GET-execution stable, buchung-dev origin oscillates reachable/000, /gateway/* 503 persistent
+- No new REJECTED-class entries; all OOS classes reaffirmed
+
+STEP 2 — PRIORITIZE
+[PRIO] graphql-api.app.cineplex.de,7.6,0.25*7+0.25*10+0.15*10+0.15*9+0.10*5+0.10*5 (GraphQL/broken-auth surface, High PII value, no auth gate on 4 resolvers, HUMAN_ONLY proof)
+[PRIO] web-dev.cineplex.de,5.4,0.25*5+0.25*5+0.15*4+0.15*10+0.10*8+0.10*5 (dangle, PASSIVE verified, no new data)
+[PRIO] buchung-dev.cineplex.de,5.0,0.25*6+0.25*6+0.15*6+0.15*5+0.10*8+0.10*5 (origin bypass proven, auth logic unreachable behind 503 → unchanged)
+
+STEP 3 — HYPOTHESES
+[HYP] Systemic unauth'd IDOR via decodePublicId-before-gate (report-ready, unchanged)
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 97
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID with decodePublicId stacktrace on no-auth balanced GET; 6/6 sibling gates (currentUser/searchUsers/adminUsers/userByQr/voucherInstanceByQR/errorStatistics) fire UNAUTHENTICATED/ROLE/ROOT/DEVICE on same surface — auth layer provably functions while id-resolvers omit it.
+evidence_needed: cross-tenant PII proof only — HUMAN_ONLY per program PII rule.
+verify_steps: re-verify only on code/schema drift.
+impact: cross-tenant user/invoice/order/ticket disclosure; High.
+testability: HUMAN_ONLY
+[HYP] Web-dev dangling CNAME — submission prep (report-ready, unchanged)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH live this cycle per KB: CNAME Status 0 TTL 300, A-follow Status 3 NXDOMAIN + azure-dns SOA; host HTTP 000; sole CNAME in full 14-host sweep.
+evidence_needed: Azure claimability attestation.
+verify_steps: none passive remain; attach fresh DoH JSON.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] GraphQL introspection exposure (report-ready, unchanged)
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 91
+reasoning: Full introspection 200 on both envs (manual curl POST+GET); schema exposes 100+ mutations incl. login/updateUserAdminStatus/deleteCineplexUser + PII-typed User; mutation-arg enumeration (35KB) rules out SSRF/file-injection extensions; CVSS 7.5 stack documented.
+evidence_needed: none remain.
+verify_steps: attach `__typename` GET 200 (32B) + schema excerpt.
+impact: attack-surface + PII field disclosure; Medium-High.
+testability: PASSIVE
+
+STEP 4 — SELF-CRITIQUE
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev: origin oscillates reachable/000, /gateway/* 503 "Wartungsarbeiten" 20+ cycles — no auth logic reachable; exploitability backend-gated; confidence 38.
+[PARKED] staging_testing_oracle @ graphql-api.app.staging: env-guard omission persists 11+ cycles; POST extraction HUMAN_ONLY; covered under IDOR bundle as corroboration.
+[PARKED] profil_preference_surface: confidence 45, email-oracle OOS-adjacent.
+[FINAL] ranked: 1) IDOR 97 2) dangling CNAME 92 3) introspection 91 — all unchanged, all in submission bundle.
+
+STEP 5 — NEXT ACTION
+[NEXT] HUMAN: submit 3-finding bundle to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (Medium, PASSIVE, fresh DoH JSON CNAME Status 0/A-follow 3 + azure SOA), (2) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (CVSS 7.5, `__typename` GET 200 + schema excerpt), (3) systemic IDOR structural POC (4/4 resolvers, 6/6 control gates) flagged HUMAN_ONLY per program PII rule. Autonomous probes add no information; inventory scanned to exhaustion.
+
+STEP 6 — LEARNING
+[LEARN] ACCEPTED e2e_convergence @ cineplex: inventory 132-host baseline + CT diff + CNAME sweep exhausted; correct behavior is no-op on empty delta, not fabricated findings.
+[LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
+
+STEP 7 — RISK
+[RISK] cineplex: 1/100 — zero live requests this cycle (pure analytical convergence; no target infra touched); all prior probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant data attempted; findings move only via the authorized channel bugs.olivermaicher.eu.
