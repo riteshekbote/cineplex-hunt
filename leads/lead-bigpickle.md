@@ -6201,3 +6201,31 @@ impact: unauth review of dev booking/payment+CMS tier contingent on network+main
 testability: AUTH_HELPED (network-gated)
 [NEXT] HUMAN: attest azurecontainerapps.io claimability for `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, then submit the 3-finding bundle to bugs.olivermaicher.eu — (1) web-dev dangle Medium + fresh DoH JSON (Status 0/3 + azure SOA), (2) graphql-api introspection CVSS 7.5 with bal-encoded GET `?query=%7B__typename%7D`→200 evidence + schema, (3) IDOR structural POC flagged HUMAN_ONLY. Autonomous probes add nothing further; inventory is exhausted.
 [RISK] cineplex: 1/100 — zero live requests this cycle (purely analytical convergence cycle; no target infra touched); all prior probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant access attempted; findings move only via the authorized channel bugs.olivermaicher.eu.
+## 2026-09-24 01:38:23 UTC [target] (model bigpickle)
+[HYP] Web-dev dangling CNAME — claimability/submission prep (unchanged)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH this cycle: CNAME Status 0 TTL 300, A-follow Status 3 NXDOMAIN with SOA ns1-35.azure-dns.com @ switzerlandnorth.azurecontainerapps.io; host HTTP 000; sole CNAME in full swept set.
+evidence_needed: Azure-side claimability attestation (can third party register the target).
+verify_steps: none passive remain; attach this cycle's DoH JSON (Status 0/3 + SOA) at submission.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Systemic unauth'd IDOR via decodePublicId-before-gate (unchanged)
+class: IDOR
+asset: graphql-api.app.cineplex.de (+staging)
+confidence: 97
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID with decodePublicId stacktrace on no-auth GET; 6/6 sibling gates fire UNAUTHENTICATED/ROLE/ROOT/DEVICE on same surface.
+evidence_needed: none passive remain; cross-tenant PII proof HUMAN_ONLY per program PII rule.
+verify_steps: structural POC complete; re-verify only on code/schema drift.
+impact: cross-tenant user/invoice/order/ticket disclosure; High.
+testability: HUMAN_ONLY
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 38
+reasoning: CF-403 vs origin-SPA-200 differential proven; /gateway/* 503 "Wartungsarbeiten" unchanged this cycle (503/1485B); no auth logic reachable.
+evidence_needed: buchung-dev origin reachable AND any /gateway/* route non-503 (esp. oauth/token 401/400).
+verify_steps: weekly `curl --resolve buchung-dev.cineplex.de:443:194.77.169.121 https://buchung-dev.cineplex.de/gateway/auth/oauth/token` (GET only). Done this cycle — still 503.
+impact: unauth review of dev booking/payment+CMS tier if network+maintenance lift; contingent Medium.
+testability: AUTH_HELPED (network-gated)

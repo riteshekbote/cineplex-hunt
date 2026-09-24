@@ -691,3 +691,20 @@
 - 2026-09-23 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified live this cycle (CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure-dns SOA); 13th consecutive cycle; sole dangle; PASSIVE report-ready with fresh timestamp.
 - 2026-09-23 REJECTED @ all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, relay/metrics, relay_broker_saturation, TLS-dead hosts app.staging/couat/login/sso, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
 - 2026-09-23 ACCEPTED e2e_convergence: 3 findings report-ready, inventory scanned to exhaustion (132-host baseline + CT diff + full CNAME sweep); correct behavior is no-op on empty delta, not fabricated findings.
+- 2026-09-24 ACCEPTED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) this cycle → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed complete as of 2026-09-23
+- 2026-09-24 REJECTED www.support.systems.cineplex.de @ dangling-CNAME-lookalike: cert SAN present but DoH Status 3 NXDOMAIN with no CNAME record — host-only dead entry, not a takeover candidate
+- 2026-09-24 REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change
+- 2026-09-24 ACCEPTED e2e_scan_noop: no new asset → no new hypothesis; pipeline correctly no-ops on empty delta rather than inventing findings
+- 2026-09-24 REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso): unchanged out-of-scope/dead (reaffirmed)
+- 2026-09-24 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN, sole dangle in full 14-host sweep, PASSIVE report-ready
+- 2026-09-24 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- 2026-09-24 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof
+- 2026-09-24 ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link
+- 2026-09-24 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differentiated bot-gate
+- 2026-09-24 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
+- 2026-09-24 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+- 2026-09-24 REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, reaffirmed
+- 2026-09-24 REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- 2026-09-24 REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+- 2026-09-24 REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
+- 2026-09-24 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface

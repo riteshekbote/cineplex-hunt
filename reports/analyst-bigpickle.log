@@ -29671,3 +29671,71 @@ STEP 6 — LEARNING
 
 STEP 7 — RISK
 [RISK] cineplex: 1/100 — zero live requests this cycle (purely analytical convergence cycle; no target infra touched); all prior probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant access attempted; findings move only via the authorized channel bugs.olivermaicher.eu.
+===== ANALYST bigpickle 2026-09-24 01:42:14 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -s --max-time 15 -H 'Accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME'
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+[0m
+[0m$ [0mcurl -s --max-time 15 -H 'Accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A'
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mcurl -s -k -o /tmp/opencode/bdg_body.txt --max-time 25 -w 'HTTP:%{http_code} SIZE:%{size_download}\n' --resolve buchung-dev.cineplex.de:443:194.77.169.121 https://buchung-dev.cineplex.de/gateway/auth/oauth/token
+HTTP:503 SIZE:1485
+[0m
+STEP 1 — DELTA
+- NO_DELTA: inventory 132-host baseline complete as of 09-23, zero CT delta; no new surfaces, findings bundle still awaiting HUMAN gate (attest → submit)
+- CHANGED: web-dev.cineplex.de CNAME re-verified this cycle (CNAME Status 0 / TTL 300, A-follow Status 3 NXDOMAIN + azure SOA) — 14th consecutive cycle
+- CHANGED: buchung-dev.cineplex.de origin `/gateway/auth/oauth/token` → HTTP 503/1485B (identical to prior cycle maintenance page) — dev-origin bypass still backend-gated
+
+STEP 2 — PRIORITIZE
+- [PRIO] web-dev.cineplex.de,7.6,a0.25+... sole dangling CNAME, MISCONFIG, PASSIVE, 14-cycle stability, in bundle
+- [PRIO] graphql-api.app.{,staging.}cineplex.de,7.2,introspection CVSS 7.5 + IDOR structural POC (4/4 resolvers, 6/6 gates), HUMAN_ONLY PII proof, in bundle
+- [PRIO] buchung-dev/bms-dev.cineplex.de,4.8,origin-bypass differential real; /gateway 503 / origin oscillation 20+ cycles; no new lever
+
+STEP 3 — HYPOTHESES
+[HYP] Web-dev dangling CNAME — claimability/submission prep (unchanged)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH this cycle: CNAME Status 0 TTL 300, A-follow Status 3 NXDOMAIN with SOA ns1-35.azure-dns.com @ switzerlandnorth.azurecontainerapps.io; host HTTP 000; sole CNAME in full swept set.
+evidence_needed: Azure-side claimability attestation (can third party register the target).
+verify_steps: none passive remain; attach this cycle's DoH JSON (Status 0/3 + SOA) at submission.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] Systemic unauth'd IDOR via decodePublicId-before-gate (unchanged)
+class: IDOR
+asset: graphql-api.app.cineplex.de (+staging)
+confidence: 97
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID with decodePublicId stacktrace on no-auth GET; 6/6 sibling gates fire UNAUTHENTICATED/ROLE/ROOT/DEVICE on same surface.
+evidence_needed: none passive remain; cross-tenant PII proof HUMAN_ONLY per program PII rule.
+verify_steps: structural POC complete; re-verify only on code/schema drift.
+impact: cross-tenant user/invoice/order/ticket disclosure; High.
+testability: HUMAN_ONLY
+[HYP] Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged)
+class: MISCONFIG
+asset: buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)
+confidence: 38
+reasoning: CF-403 vs origin-SPA-200 differential proven; /gateway/* 503 "Wartungsarbeiten" unchanged this cycle (503/1485B); no auth logic reachable.
+evidence_needed: buchung-dev origin reachable AND any /gateway/* route non-503 (esp. oauth/token 401/400).
+verify_steps: weekly `curl --resolve buchung-dev.cineplex.de:443:194.77.169.121 https://buchung-dev.cineplex.de/gateway/auth/oauth/token` (GET only). Done this cycle — still 503.
+impact: unauth review of dev booking/payment+CMS tier if network+maintenance lift; contingent Medium.
+testability: AUTH_HELPED (network-gated)
+
+STEP 4 — SELF-CRITIQUE
+- [PARKED] Dev-origin /gateway maintenance-exit: conf 38 < 40; this cycle's weekly watch still 503/1485B; network-gated, oscillating 503↔000; weekly watch only, NOT dead.
+- [FINAL] #1 Systemic unauthenticated IDOR decodePublicId-before-gate @ graphql-api.app.{,staging.}cineplex.de (97) — structural POC complete, 6/6 control gates; HUMAN_ONLY PII proof; in bundle.
+- [FINAL] #2 web-dev dangling CNAME → Azure Container Apps (92) — 14th-cycle fresh DoH evidence (Status 0/3 + azure SOA, TTL 300); sole dangle; PASSIVE; in bundle.
+- [FINAL] #3 GraphQL introspection (CVSS 7.5) — POST+GET execution, 12+ cycle stability; report-ready; in bundle.
+
+STEP 5 — NEXT ACTION
+- [NEXT] HUMAN: attest `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` cloud-account claimability, then submit the 3-finding bundle to bugs.olivermaicher.eu with THIS cycle's fresh DoH JSON (web-dev dangle + introspection CVSS 7.5 + IDOR structural POC flagged HUMAN_ONLY). Autonomous probes add nothing; inventory exhausted and dev-origin watch re-confirmed 503.
+
+STEP 6 — LEARNING
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: DoH re-verified live this cycle (CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + ns1-35.azure-dns.com SOA); 14th consecutive cycle; sole dangle; report-ready with fresh timestamp.
+- [LEARN] REJECTED dev_origin_gateway_exit @ buchung-dev.cineplex.de: /gateway/auth/oauth/token 503/1485B this cycle, byte-identical to prior — maintenance state unchanged; 20+ cycles; confidence stays 38 (parked).
+- [LEARN] ACCEPTED e2e_convergence: no asset delta → no new hypothesis; correct no-op on empty delta, weekly watch only on the single parked lead.
+
+STEP 7 — RISK
+- [RISK] cineplex: 2/100 — 2 passive DoH queries to cloudflare-dns.com (off-target) + 1 read-only GET to scoped dev origin at ≤1rps; no POST/mutations, no PII or cross-tenant data, findings only via bugs.olivermaicher.eu.
