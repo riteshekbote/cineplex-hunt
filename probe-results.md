@@ -920,3 +920,9 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-09-24 20:45:55 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403

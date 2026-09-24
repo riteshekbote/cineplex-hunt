@@ -710,3 +710,8 @@
 - 2026-09-24 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
 - 2026-09-24 ACCEPTED e2e_convergence @ cineplex: inventory 132-host baseline + CT diff + CNAME sweep exhausted; correct behavior is no-op on empty delta, not fabricated findings.
 - 2026-09-24 REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
+- 2026-09-24 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; correct behavior is no-op on empty delta, not fabricated findings.
+- 2026-09-24 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready — in submission bundle.
+- 2026-09-24 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready; 12+ cycle stability — in submission bundle.
+- 2026-09-24 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete; 6/6 control gates; HUMAN_ONLY cross-tenant proof.
+- 2026-09-24 REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
