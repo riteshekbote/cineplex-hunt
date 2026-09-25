@@ -1587,3 +1587,5 @@ wwww.cineplex.de
 - CHANGED bms-dev.cineplex.de origin (194.77.169.121): live "T360 - CMS" dev admin SPA 200/2147B, direct origin no CF; API base = buchung-dev
 - CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
+
+## 2026-09-25 03:10:56 UTC

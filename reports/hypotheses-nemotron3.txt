@@ -1,16 +1,9 @@
-## 2026-09-24 23:44:53 UTC [target] (model nemotron3)
-[CHANGED] probe-results.md: 928 lines, ZERO POST GraphQL probes across all cycles (2026-09-03→2026-09-24); automated GraphQL GET with malformed URLs (`?query={userById(id:"0"){id}` missing closing brace) consistently returns HTTP 403 (WAF bot-gate); balanced URL-encoded GET `?query=%7B__typename%7D` returns 200 only via manual curl --http2
-[CHANGED] graphql-api.app.{,staging.}cineplex.de: root GET 403 (automated urllib) vs balanced URL-encoded GET 200 (manual curl) — WAF client-differentiated bot-gate model stable 12+ cycles
-[CHANGED] web-dev.cineplex.de CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 CNAME / A-follow Status 3 NXDOMAIN + azure-dns.com SOA); sole dangle in full 14-host sweep (7 dev + 7 systems-zone + wildcard.cineplex.de + talk.systems all direct-A)
-[CHANGED] buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable this cycle (SPAs 200), /gateway/* routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
-[CHANGED] bms-dev.cineplex.de origin (194.77.169.121): live "T360 - CMS" dev admin SPA 200/2147B, direct origin no CF; API base = buchung-dev
-[CHANGED] data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
-[CHANGED] ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed complete
-[PRIO] graphql-api.app.cineplex.de,9.5,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
-[PRIO] graphql-api.app.staging.cineplex.de,9.0,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=8
-[PRIO] web-dev.cineplex.de,8.0,attack_surface=8,business_value=6,tech_exposure=6,gate_ease=10,cloud_surface=9,freshness=9
-[PRIO] buchung-dev.cineplex.de,6.5,attack_surface=7,business_value=7,tech_exposure=7,gate_ease=8,cloud_surface=5,freshness=6
-[PRIO] bms-dev.cineplex.de,6.0,attack_surface=6,business_value=6,tech_exposure=6,gate_ease=10,cloud_surface=5,freshness=6
+## 2026-09-25 03:10:45 UTC [target] (model nemotron3)
+[PRIO] graphql-api.app.cineplex.de,9.8,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,9.5,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,7.2,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
+[PRIO] buchung-dev.cineplex.de,6.8,attack_surface=8,business_value=7,tech_exposure=7,gate_ease=8,cloud_surface=6,freshness=6
+[PRIO] bms-dev.cineplex.de,6.5,attack_surface=7,business_value=6,tech_exposure=8,gate_ease=8,cloud_surface=6,freshness=6
 [HYP] GraphQL Full Introspection + Mutation Surface Exposure on Production
 class: MISCONFIG
 asset: graphql-api.app.cineplex.de
@@ -38,15 +31,7 @@ evidence_needed: POST to testing_getConfirmationCode with any email returns 200 
 verify_steps: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\",type:PASSWORD_RESET)}"} — read-only probe for oracle response; if 200 with code, confirms auth bypass on staging
 impact: Confirmation code oracle enables account takeover via email verification bypass on staging with prod-parity schema; forceDeleteUser enables mass user deletion → Critical auth bypass
 testability: HUMAN_ONLY
-[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps
-class: MISCONFIG
-asset: web-dev.cineplex.de
-confidence: 95
-reasoning: CNAME `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` resolves (Status 0) but A-record follow returns Status 3 NXDOMAIN with azure-dns.com SOA present — target container app deleted, CNAME dangling; 12th+ consecutive cycle confirmed via manual DoH with correct Accept header; sole dangling CNAME in 14-host sweep (7 dev + 7 systems-zone + wildcard.cineplex.de + talk.systems all direct-A); host HTTP 000 (no web surface)
-evidence_needed: Claimability attestation — register same Azure Container App name in switzerlandnorth region to serve content on web-dev.cineplex.de
-verify_steps: DoH CNAME query for web-dev.cineplex.de (Status 0) → DoH A query for target (Status 3 NXDOMAIN + azure SOA); repeat weekly for stability
-impact: Subdomain takeover on scoped dev domain — attacker serves arbitrary content on web-dev.cineplex.de (Medium, CVSS ~5.3-6.1); PASSIVE verification complete
-testability: PASSIVE
+[PARKED] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps: confidence 95 but PASSIVE-only; claimability attestation required (register same Azure Container App name in switzerlandnorth) — not a live probe action; in submission bundle
 [PARKED] JWT Algorithm/Key Confusion via GraphQL login Mutation: confidence 55 < 60 threshold; no passive JWKS fetch possible (auth.cineplex.de/.well-known/jwks.json 404); requires active token capture (AUTH_HELPED) and offline crypto analysis
 [PARKED] profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent (username enumeration class); client-side `?captcha=` + dead reCAPTCHA is low-value control finding on newsletter form; HUMAN_ONLY write proof, business value low
 [PARKED] Dev-Origin WAF Bypass Full-Impact Chain (buchung-dev/bms-dev): contingent on dev backend /gateway/* routes moving from 503 to 200; origin SPAs live but API routes in maintenance; won't drop below confidence 40, re-probe next cycle

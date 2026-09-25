@@ -6377,3 +6377,46 @@ testability: PASSIVE
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready; 12+ cycle stability — in submission bundle.
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete; 6/6 control gates; HUMAN_ONLY cross-tenant proof.
 [LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
+## 2026-09-25 03:06:39 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,7.6,0.25*7+0.25*10+0.15*10+0.15*9+0.10*5+0.10*5 (GraphQL/broken-auth, High PII, 4/4 id-resolvers authless, HUMAN_ONLY cross-tenant proof)
+[PRIO] web-dev.cineplex.de,5.4,0.25*5+0.25*5+0.15*4+0.15*10+0.10*8+0.10*5 (sole dangle, 12+ cycles PASSIVE verified, report-ready)
+[PRIO] buchung-dev.cineplex.de,5.0,0.25*6+0.25*6+0.15*6+0.15*5+0.10*8+0.10*5 (origin bypass proven; auth logic behind 503 → network-gated, PARKED)
+[HYP] Systemic unauth'd IDOR via decodePublicId-before-gate (report-ready, unchanged)
+class: IDOR
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 97
+reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID on no-auth balanced GET; 6/6 sibling gates (currentUser/searchUsers ROLE/adminUsers ROOT/userByQr DEVICE/voucherInstanceByQR/errorStatistics) fire on same surface — auth layer provably functional while id-resolvers omit it; decode-after-DecodePublicId stacktrace observed.
+evidence_needed: cross-tenant PII proof — HUMAN_ONLY per program PII rule.
+verify_steps: re-verify only on schema/code drift; else paste existing curl GET logs at submission.
+impact: cross-tenant user/invoice/order/ticket disclosure; High.
+testability: HUMAN_ONLY
+[HYP] Web-dev dangling CNAME (report-ready, unchanged)
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: DoH CNAME Status 0 TTL 300, A-follow Status 3 NXDOMAIN + azure-dns.com SOA; host HTTP 000; sole CNAME in full 14-host sweep (7 dev + 7 systems).
+evidence_needed: Azure-side claimability attestation.
+verify_steps: none passive remain; attach fresh DoH JSON at submission.
+impact: full subdomain control under cineplex.de; Medium.
+testability: AUTH_HELPED (attestation)
+[HYP] GraphQL introspection exposure (report-ready, unchanged)
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 91
+reasoning: Full introspection 200 both envs (manual curl POST+GET); schema exposes 100+ mutations incl. login/updateUserAdminStatus/deleteCineplexUser + PII-typed User; 35KB mutation-arg enumeration rules out SSRF/file-injection extensions; CVSS 7.5 stack documented.
+evidence_needed: none remain.
+verify_steps: attach `__typename` GET 200 (32B) + schema excerpt.
+impact: attack-surface + PII field disclosure; Medium-High.
+testability: PASSIVE
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev: origin oscillates reachable/000, /gateway/* 503 "Wartungsarbeiten" 20+ cycles — no auth logic reachable; confidence 38, exploitability backend-gated.
+[PARKED] staging_testing_oracle @ graphql-api.app.staging: env-guard omission persists 11+ cycles; POST extraction HUMAN_ONLY; corroboration only within IDOR bundle.
+[PARKED] profil_preference_surface: confidence 45; email-presence oracle OOS-adjacent; low business value.
+[PARKED] waf_method_gate_attenuation: bot-gate model fully explained; not reportable alone.
+[FINAL] ranked: 1) IDOR 97 2) dangling CNAME 92 3) introspection 91 — all unchanged, all in submission bundle.
+[NEXT] HUMAN: submit 3-finding bundle to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (Medium, PASSIVE, fresh DoH JSON CNAME Status 0 / A-follow 3 + azure SOA), (2) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (CVSS 7.5, `__typename` GET 200 + schema excerpt), (3) systemic IDOR structural POC (4/4 resolvers, 6/6 control gates) explicitly flagged HUMAN_ONLY per program PII rule. No live probes warranted; inventory scanned to exhaustion.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings — reaffirmed day-rollover cycle.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready — in submission bundle.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready; 12+ cycle stability — in submission bundle.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete; 6/6 control gates; HUMAN_ONLY cross-tenant proof.
+[LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
+[RISK] cineplex: 1/100 — zero live requests to target infra this cycle (pure analytical convergence); all prior probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant data attempted; findings move only via authorized channel bugs.olivermaicher.eu.
