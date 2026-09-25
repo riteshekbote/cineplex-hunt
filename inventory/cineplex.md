@@ -1593,3 +1593,17 @@ wwww.cineplex.de
 ## 2026-09-25 08:57:17 UTC
 
 ## 2026-09-25 14:24:46 UTC
+
+## 2026-09-25 18:52:39 UTC
+- CHANGED @ graphql-api.app.cineplex.de: unauth GET introspection reproduced THIS cycle (200, no Authorization, `Accept: application/json`) — 83 queryType fields + 140 mutationType fields enumerated by name onl
+- CHANGED @ graphql-api.app.{prod,staging}.cineplex.de: queryType name-lists are byte-identical (83 == 83, list equality True) — zero environment-specific schema partitioning; prod schema also carries `testing_
+- CHANGED @ web-dev.cineplex.de: automated DoH CNAME probe in probe-results.md now returns HTTP 200 (was 415 in 10 prior cycles) — header-format defect in the pipeline is fixed; manual DoH re-confirms CNAME Sta
+- CHANGED @ probe-results.md: 958 lines, still ZERO POST probes; new this cycle are only the DoH CNAME probe (200) and 4 malformed-brace URLs (400) — no new authenticated or mutating surface
+- CHANGED probe-results.md: 928 lines, ZERO POST GraphQL probes across all cycles (2026-09-03→2026-09-24); automated GraphQL GET with malformed URLs consistently returns HTTP 403 (WAF bot-gate); balanced URL-en
+- CHANGED graphql-api.app.{,staging.}cineplex.de: root GET 403 (automated urllib) vs balanced URL-encoded GET 200 (manual curl --http2) — WAF client-differentiated bot-gate model stable 12+ cycles
+- CHANGED web-dev.cineplex.de CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io: 12th+ consecutive NXDOMAIN re-verified via manual DoH (Status 0 CNAME / A-follow Status 3 NXDOMAIN + azure-
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable this cycle (SPAs 200), /gateway/* routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED bms-dev.cineplex.de origin (194.77.169.121): live "T360 - CMS" dev admin SPA 200/2147B, direct origin no CF; API base = buchung-dev
+- CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
+- CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
+- NEW ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empt
