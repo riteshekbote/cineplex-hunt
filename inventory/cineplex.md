@@ -1589,3 +1589,5 @@ wwww.cineplex.de
 - CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
 
 ## 2026-09-25 03:10:56 UTC
+
+## 2026-09-25 08:57:17 UTC

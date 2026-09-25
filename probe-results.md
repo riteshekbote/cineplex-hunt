@@ -938,3 +938,11 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+
+## 2026-09-25 08:57:25 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME -> 200 len=?
+https://web-dev.cineplex.de/ -> ERR <urlopen error [Errno -2] Name or service not know

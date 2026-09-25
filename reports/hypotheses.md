@@ -3584,3 +3584,30 @@
 - LEARN: REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - LEARN: REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - LEARN: REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+
+## RANKED HYPOTHESES 2026-09-25 08:57:17 UTC
+- [98] graphql-api.app.cineplex.de: GraphQL Full Introspection + Mutation Surface Exposure on Production (from art/lead_nemotron3.txt)
+- [95] graphql-api.app.cineplex.de: Authorization omission before ID decoding in four GraphQL resolvers (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: submit the existing three-finding evidence bundle to bugs.olivermaicher.eu with redacted evidence; mark the resolver finding HUMAN_ONLY for consented cro
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit 4-finding bundle to bugs.olivermaicher.eu with evidence packages — (1) dangling CNAME web-dev.cineplex.de (DoH logs + claimability attestation tem
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: confirmed schema exposure remains unchanged; no new delta.
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolver-ordering evidence and 6/6 control gates remain intact; PII proof stays HUMAN_ONLY.
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ NXDOMAIN cycles persist; provider claimability attestation is still required.
+- LEARN: REJECTED staging_testing_oracle as a standalone finding: current evidence does not prove confirmation-code extraction.
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker statistics are descriptive and expose no exploitable authless manipul
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions remain unchanged.
+- LEARN: REJECTED api.cineplex.de GET-bypass @ api.cineplex.de: strict 403 persisted across tested methods and encodings.
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready — in submission bundle
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5, POST+GET execution confirmed manual-curl; 12+ cycle stability; report-ready
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC comp
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: env-guard omission persists 11+ cycles; HUMAN_ONLY POST extraction only unproven link
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET → 200 origin; automated urllib 403; WAF is client-differ
+- LEARN: ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs 200, /gateway/* 503-stable; exploitability backend-gated; on hold, not dead
+- LEARN: ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API bas
+- LEARN: REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, re
+- LEARN: REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+- LEARN: REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+- LEARN: REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
+- LEARN: REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface

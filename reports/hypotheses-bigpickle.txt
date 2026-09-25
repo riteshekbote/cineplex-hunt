@@ -1,43 +1,45 @@
-## 2026-09-25 03:06:39 UTC [target] (model bigpickle)
-[PRIO] graphql-api.app.cineplex.de,7.6,0.25*7+0.25*10+0.15*10+0.15*9+0.10*5+0.10*5 (GraphQL/broken-auth, High PII, 4/4 id-resolvers authless, HUMAN_ONLY cross-tenant proof)
-[PRIO] web-dev.cineplex.de,5.4,0.25*5+0.25*5+0.15*4+0.15*10+0.10*8+0.10*5 (sole dangle, 12+ cycles PASSIVE verified, report-ready)
-[PRIO] buchung-dev.cineplex.de,5.0,0.25*6+0.25*6+0.15*6+0.15*5+0.10*8+0.10*5 (origin bypass proven; auth logic behind 503 → network-gated, PARKED)
-[HYP] Systemic unauth'd IDOR via decodePublicId-before-gate (report-ready, unchanged)
+## 2026-09-25 08:57:04 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de (resolver endpoints),9.00,attack_surface=10; business_value=10; tech_exposure=10; gate_ease=8; cloud_surface=5; freshness=8
+[PRIO] graphql-api.app.{,staging.}cineplex.de (schema endpoint),8.90,attack_surface=10; business_value=9; tech_exposure=10; gate_ease=9; cloud_surface=5; freshness=8
+[PRIO] web-dev.cineplex.de,7.65,attack_surface=6; business_value=8; tech_exposure=7; gate_ease=10; cloud_surface=7; freshness=9
+[HYP] Authorization omission before ID decoding in four GraphQL resolvers
 class: IDOR
-asset: graphql-api.app.{,staging.}cineplex.de
-confidence: 97
-reasoning: 4/4 single-entity resolvers (userById/invoice/order/ticket) return 200 INVALID_ID on no-auth balanced GET; 6/6 sibling gates (currentUser/searchUsers ROLE/adminUsers ROOT/userByQr DEVICE/voucherInstanceByQR/errorStatistics) fire on same surface — auth layer provably functional while id-resolvers omit it; decode-after-DecodePublicId stacktrace observed.
-evidence_needed: cross-tenant PII proof — HUMAN_ONLY per program PII rule.
-verify_steps: re-verify only on schema/code drift; else paste existing curl GET logs at submission.
-impact: cross-tenant user/invoice/order/ticket disclosure; High.
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Recorded unauthenticated GETs return HTTP 200 INVALID_ID from decodePublicId for userById, invoice, order, and ticket; currentUser, searchUsers, adminUsers, userByQr, voucherInstanceByQR, and errorStatistics gates fire on the same surface. No valid customer ID or PII was requested.
+evidence_needed: Controlled cross-tenant validation with two consented test accounts and a known test-tenant object ID.
+verify_steps: GET /?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D and GET /?query=%7BcurrentUser%7Bid%7D%7D with Accept: application/json and no Authorization; compare INVALID_ID versus UNAUTHENTICATED only.
+impact: Conditional cross-tenant disclosure of user, invoice, order, or ticket data; High only after controlled proof, currently an authorization-ordering defect.
 testability: HUMAN_ONLY
-[HYP] Web-dev dangling CNAME (report-ready, unchanged)
+[HYP] Full GraphQL introspection and mutation surface exposed without authentication
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 98
+reasoning: Recorded manual POST and balanced GET responses expose the complete schema on both environments; staging reports 140 mutations and 83 queries, with PII-typed User fields and authentication/administration operations. The 35KB argument review found no URL or file-injection arguments; no mutation was executed.
+evidence_needed: Existing redacted schema response and GET metadata reproduction; no customer data is required.
+verify_steps: GET /?query=%7B__typename%7D and GET /?query=%7B__schema%7BqueryType%7Bfields%7Bname%7D%7D%7D%7D with Accept: application/json on each host.
+impact: Unauthenticated disclosure of operation names, argument types, PII field names, and mutation surface; Medium-High attack-surface exposure, not account takeover by itself.
+testability: PASSIVE
+[HYP] web-dev CNAME points to an NXDOMAIN Azure Container Apps target
 class: MISCONFIG
 asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
 confidence: 92
-reasoning: DoH CNAME Status 0 TTL 300, A-follow Status 3 NXDOMAIN + azure-dns.com SOA; host HTTP 000; sole CNAME in full 14-host sweep (7 dev + 7 systems).
-evidence_needed: Azure-side claimability attestation.
-verify_steps: none passive remain; attach fresh DoH JSON at submission.
-impact: full subdomain control under cineplex.de; Medium.
-testability: AUTH_HELPED (attestation)
-[HYP] GraphQL introspection exposure (report-ready, unchanged)
-class: MISCONFIG
-asset: graphql-api.app.{,staging.}cineplex.de
-confidence: 91
-reasoning: Full introspection 200 both envs (manual curl POST+GET); schema exposes 100+ mutations incl. login/updateUserAdminStatus/deleteCineplexUser + PII-typed User; 35KB mutation-arg enumeration rules out SSRF/file-injection extensions; CVSS 7.5 stack documented.
-evidence_needed: none remain.
-verify_steps: attach `__typename` GET 200 (32B) + schema excerpt.
-impact: attack-surface + PII field disclosure; Medium-High.
-testability: PASSIVE
-[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev: origin oscillates reachable/000, /gateway/* 503 "Wartungsarbeiten" 20+ cycles — no auth logic reachable; confidence 38, exploitability backend-gated.
-[PARKED] staging_testing_oracle @ graphql-api.app.staging: env-guard omission persists 11+ cycles; POST extraction HUMAN_ONLY; corroboration only within IDOR bundle.
-[PARKED] profil_preference_surface: confidence 45; email-presence oracle OOS-adjacent; low business value.
-[PARKED] waf_method_gate_attenuation: bot-gate model fully explained; not reportable alone.
-[FINAL] ranked: 1) IDOR 97 2) dangling CNAME 92 3) introspection 91 — all unchanged, all in submission bundle.
-[NEXT] HUMAN: submit 3-finding bundle to bugs.olivermaicher.eu — (1) web-dev.cineplex.de dangling CNAME→azurecontainerapps.io (Medium, PASSIVE, fresh DoH JSON CNAME Status 0 / A-follow 3 + azure SOA), (2) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (CVSS 7.5, `__typename` GET 200 + schema excerpt), (3) systemic IDOR structural POC (4/4 resolvers, 6/6 control gates) explicitly flagged HUMAN_ONLY per program PII rule. No live probes warranted; inventory scanned to exhaustion.
-[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings — reaffirmed day-rollover cycle.
-[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12th+ consecutive NXDOMAIN; sole dangle; PASSIVE report-ready — in submission bundle.
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: CVSS 7.5 report-ready; 12+ cycle stability — in submission bundle.
-[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: structural POC complete; 6/6 control gates; HUMAN_ONLY cross-tenant proof.
-[LEARN] REJECTED all prior OOS classes (username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, api.cineplex.de GET-bypass, TLS-dead hosts app.staging/couat/login/sso, relay/metrics, relay_broker_saturation, wildcard.systems replication): unchanged out-of-scope/dead — reaffirmed.
-[RISK] cineplex: 1/100 — zero live requests to target infra this cycle (pure analytical convergence); all prior probes read-only GET/HEAD ≤1rps; no POST/mutations, no PII/cross-tenant data attempted; findings move only via authorized channel bugs.olivermaicher.eu.
+reasoning: Repeated DoH checks show an active CNAME, NXDOMAIN on the target A lookup, Azure SOA data, HTTP 000 for the host, and 12+ consecutive cycles; the target was the sole dangle in the swept host set. Azure-side claimability remains unverified.
+evidence_needed: Provider-side confirmation that the Azure Container Apps resource is released and claimable; do not modify DNS or claim it.
+verify_steps: DoH GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME and the equivalent target A query with Accept: application/dns-json; document GET https://web-dev.cineplex.de/ as non-resolving.
+impact: If claimable, takeover of web-dev.cineplex.de with trusted-host abuse or phishing impact; Medium, conditional; current evidence proves dangling DNS only.
+testability: AUTH_HELPED
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: 200/405 backend mismatch is suggestive, but code extraction is HUMAN_ONLY and POST is excluded this cycle; retain as corroboration only.
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin reachability oscillates while /gateway/* remains 503 Wartungsarbeiten; no reachable authentication logic.
+[PARKED] waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: client-differentiated WAF behavior is a detection condition, not a standalone reportable impact.
+[FINAL] Ranked survivors: 1) GraphQL resolver authorization gap (IDOR candidate, 95, priority 9.00); 2) GraphQL introspection exposure (MISCONFIG, 98, priority 8.90); 3) web-dev dangling CNAME (MISCONFIG, 92, priority 7.65).
+[NEXT] HUMAN: submit the existing three-finding evidence bundle to bugs.olivermaicher.eu with redacted evidence; mark the resolver finding HUMAN_ONLY for consented cross-tenant validation and perform no new live probes.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: confirmed schema exposure remains unchanged; no new delta.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolver-ordering evidence and 6/6 control gates remain intact; PII proof stays HUMAN_ONLY.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ NXDOMAIN cycles persist; provider claimability attestation is still required.
+[LEARN] REJECTED staging_testing_oracle as a standalone finding: current evidence does not prove confirmation-code extraction.
+[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker statistics are descriptive and expose no exploitable authless manipulation path.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions remain unchanged.
+[LEARN] REJECTED api.cineplex.de GET-bypass @ api.cineplex.de: strict 403 persisted across tested methods and encodings.
+[LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+[RISK] cineplex: 1/100 — analysis-only cycle; no new live requests, valid customer IDs, PII, mutations, or auth-bypass tests; cross-tenant confirmation is deferred to authorized human testers.

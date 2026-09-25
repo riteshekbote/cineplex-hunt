@@ -737,3 +737,11 @@
 - 2026-09-25 REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - 2026-09-25 REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - 2026-09-25 REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+- 2026-09-25 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: confirmed schema exposure remains unchanged; no new delta.
+- 2026-09-25 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolver-ordering evidence and 6/6 control gates remain intact; PII proof stays HUMAN_ONLY.
+- 2026-09-25 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ NXDOMAIN cycles persist; provider claimability attestation is still required.
+- 2026-09-25 REJECTED staging_testing_oracle as a standalone finding: current evidence does not prove confirmation-code extraction.
+- 2026-09-25 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker statistics are descriptive and expose no exploitable authless manipulation path.
+- 2026-09-25 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions remain unchanged.
+- 2026-09-25 REJECTED api.cineplex.de GET-bypass @ api.cineplex.de: strict 403 persisted across tested methods and encodings.
+- 2026-09-25 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
