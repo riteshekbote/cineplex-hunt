@@ -6465,3 +6465,49 @@ testability: AUTH_HELPED
 [LEARN] REJECTED api.cineplex.de GET-bypass @ api.cineplex.de: strict 403 persisted across tested methods and encodings.
 [LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
 [RISK] cineplex: 1/100 — analysis-only cycle; no new live requests, valid customer IDs, PII, mutations, or auth-bypass tests; cross-tenant confirmation is deferred to authorized human testers.
+## 2026-09-25 14:24:24 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de (resolver endpoints),9.00,attack_surface=10; business_value=10; tech_exposure=10; gate_ease=8; cloud_surface=5; freshness=8  
+[PRIO] graphql-api.app.{,staging.}cineplex.de (schema endpoint),8.90,attack_surface=10; business_value=9; tech_exposure=10; gate_ease=9; cloud_surface=5; freshness=8  
+[PRIO] web-dev.cineplex.de,7.65,attack_surface=6; business_value=8; tech_exposure=7; gate_ease=10; cloud_surface=7; freshness=9
+[HYP] Authorization omission before ID decoding in four GraphQL resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Existing read-only evidence records `userById`, `invoice`, `order`, and `ticket` with `id:"0"` returning HTTP 200 `INVALID_ID` through `decodePublicId` without an Authorization header; six adjacent controls return authentication or authorization errors. This proves resolver ordering, not cross-tenant data access.
+evidence_needed: Two consented test accounts and a test-tenant object ID demonstrating missing object-level authorization; no customer IDs or PII.
+verify_steps: `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D` with `Accept: application/json` and no Authorization; compare with `GET https://graphql-api.app.cineplex.de/?query=%7BcurrentUser%7Bid%7D%7D`; use only `id:"0"` and at most 1 request/second.
+impact: Conditional cross-tenant disclosure of user, invoice, order, or ticket data; High only after controlled proof, currently an authorization-ordering defect.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated GraphQL schema and mutation surface exposure
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 98
+reasoning: Existing redacted manual evidence reports HTTP 200 full introspection on both environments, including 140 mutations and 83 queries on staging and PII-typed authentication/administration operations; no mutation or customer data was executed. Automated records contain no POST evidence, so reproduction remains manual-evidence-dependent.
+evidence_needed: Redacted metadata-only schema reproduction on both hosts with no field values or customer data.
+verify_steps: `GET https://graphql-api.app.cineplex.de/?query=%7B__schema%7BqueryType%7Bfields%7Bname%7D%7D%7D%7D` and the equivalent staging request, with `Accept: application/json` and no Authorization; stop at metadata-only schema data.
+impact: Unauthenticated disclosure of operation names, argument types, PII field names, and mutation surface; Medium-High, previously assessed CVSS 7.5, with no account takeover or data extraction proven.
+testability: PASSIVE
+[HYP] Dangling CNAME for web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: Repeated DoH evidence records an active CNAME to an Azure Container Apps target whose A lookup is NXDOMAIN, with Azure SOA and HTTP 000; 12+ cycles and sole dangle in the swept inventory. Provider-side claimability remains unverified.
+evidence_needed: Azure confirmation that the target resource is released and claimable; do not modify DNS or claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` and `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`; do not send HTTP requests to the target.
+impact: If claimable, trusted-subdomain takeover enabling phishing or trusted-host abuse; Medium and conditional; current evidence proves dangling DNS only.
+testability: AUTH_HELPED
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin reachability oscillates and `/gateway/*` returns 503 `Wartungsarbeiten`; no reachable authentication logic or reportable impact.  
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Authless 200/405 behavior is suggestive, but confirmation-code extraction is unproven and remains corroboration only.  
+[PARKED] waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Client-differentiated WAF behavior is a detection condition, not standalone impact.  
+[PARKED] jwt_alg_confusion @ auth.cineplex.de: OIDC/JWKS endpoints return 404 and no signing-key or algorithm-mismatch evidence is available.  
+[PARKED] profil_preference_surface @ profil.cineplex.de: No high-confidence exploit; email-presence oracle is OOS-adjacent and business value is low.
+[FINAL] 1) GraphQL resolver authorization-ordering candidate, priority 9.00, confidence 95, HUMAN_ONLY PII proof; 2) GraphQL introspection, priority 8.90, confidence 98, PASSIVE; 3) web-dev dangling CNAME, priority 7.65, confidence 92, AUTH_HELPED.
+[NEXT] HUMAN: Submit the existing redacted three-finding evidence bundle to bugs.olivermaicher.eu, explicitly marking cross-tenant validation for the resolver finding as HUMAN_ONLY; perform no new live probes.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: Existing redacted schema evidence remains stable; metadata-only reproduction is sufficient and no mutation execution occurred.  
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolver-ordering evidence and 6/6 control gates remain intact; PII impact remains HUMAN_ONLY.  
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ NXDOMAIN cycles persist, but provider claimability attestation is outstanding.  
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker statistics are descriptive and expose no exploitable unauthenticated manipulation path.  
+[LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: Growing queue telemetry provides no authorized DoS or injection surface.  
+[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de: Strict 403 behavior persisted across tested methods and encodings.  
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: Explicit program exclusions remain unchanged.
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: 1/100 — no new live requests this cycle; no valid customer IDs, PII, mutations, or auth-bypass tests; validation and submission remain within the authorized channel.

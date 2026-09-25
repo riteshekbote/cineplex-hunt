@@ -745,3 +745,10 @@
 - 2026-09-25 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions remain unchanged.
 - 2026-09-25 REJECTED api.cineplex.de GET-bypass @ api.cineplex.de: strict 403 persisted across tested methods and encodings.
 - 2026-09-25 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-09-25 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: Existing redacted schema evidence remains stable; metadata-only reproduction is sufficient and no mutation execution occurred.
+- 2026-09-25 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolver-ordering evidence and 6/6 control gates remain intact; PII impact remains HUMAN_ONLY.
+- 2026-09-25 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 12+ NXDOMAIN cycles persist, but provider claimability attestation is outstanding.
+- 2026-09-25 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker statistics are descriptive and expose no exploitable unauthenticated manipulation path.
+- 2026-09-25 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: Growing queue telemetry provides no authorized DoS or injection surface.
+- 2026-09-25 REJECTED api_cineplex_get_bypass @ api.cineplex.de: Strict 403 behavior persisted across tested methods and encodings.
+- 2026-09-25 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: Explicit program exclusions remain unchanged.
