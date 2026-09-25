@@ -6562,3 +6562,28 @@ testability: AUTH_HELPED
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
 [LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
 [RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: 2/100 — this cycle issued 5 live requests, all metadata-only GET with no Authorization, spaced ≥2 s, returning operation field NAMES only; no field values, no customer or employee identifiers, no mutation executed, no write path touched, and nothing beyond what the client already downloads. The one residual exposure is that unauthenticated introspection was exercised against production, which is the finding under report and is inherently repeatable. Cross-tenant confirmation and provider-side takeover attestation both remain with authorized humans.
+## 2026-09-25 21:58:05 UTC [target] (model bigpickle)
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 99
+reasoning: Both halves of the surface now compared name-by-name in the same cycle. queryType: 83 fields each, list-equal. mutationType: 140 fields each, list-equal, both responses 4324 B, zero prod-only and zero staging-only entries. All 16 account-takeover-adjacent mutations present on staging: login, socialLogin, loginPOS, refreshLogin, requestLoginCreation, requestPasswordReset, resendEmailConfirmation, changePassword, updateUserProfile, updateUserAdminStatus, updateUser, deleteUser, deleteCineplexUser, updateUserSubscription, createUserTokenForSubscriptionValidation, deleteLinkedAccount. No Authorization header on any request; field NAMES only, no field values, no mutation executed.
+evidence_needed: None. Same-tenant, same-cycle, metadata-only reproduction on both environments.
+verify_steps: `GET https://graphql-api.app.{prod,staging}.cineplex.de/?query=%7B__schema%7BmutationType%7Bfields%7Bname%7D%7D%7D%7D` and the `queryType` equivalent, with `Accept: application/json`, no Authorization. Stop at field names.
+impact: Unauthenticated disclosure of the entire 223-operation catalogue including the exact names of the password-reset, password-change, admin-status, user-deletion and token-creation surface. Reconnaissance cost drops to zero. Medium-High; no takeover or extraction is claimed.
+testability: PASSIVE
+class: IDOR
+asset: graphql-api.app.cineplex.de (userById / invoice / order / ticket)
+confidence: 95
+reasoning: 4/4 resolvers return 200 with `INVALID_ID` raised inside `decodePublicId` under `/var/task/graphql.js`, no Authorization header, while 6/6 sibling controls on the same transport fire their gate (currentUser, errorStatistics → UNAUTHENTICATED; searchUsers → role; adminUsers → root; userByQr → device; voucherInstanceByQR → role). An auth layer demonstrably executes on this exact surface. This cycle's schema read places the four ungated resolvers immediately adjacent to the gated PII selectors.
+evidence_needed: Two consented test accounts in separate tenants plus one test-tenant object ID showing the object returned to the non-owning principal. No customer IDs, no PII.
+verify_steps: `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D` with `Accept: application/json` and no Authorization; contrast `?query=%7BcurrentUser%7Bid%7D%7D`. Use only `id:"0"`, ≤1 rps.
+impact: If the ordering defect extends to real objects, cross-tenant disclosure of user, invoice, order and ticket records. High only after controlled cross-tenant proof; today an authorization-ordering defect with a complete structural control group.
+testability: HUMAN_ONLY
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: DoH CNAME query Status 0, TTL 300, answer as above; A-follow Status 3 NXDOMAIN with the `switzerlandnorth.azurecontainerapps.io` SOA served from `ns1-35.azure-dns.com`. Host HTTP unreachable. Full 14-host sweep shows every sibling is a direct A record, so this is the sole dangling record in the estate.
+evidence_needed: Azure confirmation that Container App environment `gentleglacier-dfef6458` is deprovisioned and its name claimable. Do not modify DNS, do not attempt to claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` then the `type=A` follow-up on the target, each with `Accept: application/dns-json`. Send no HTTP to the target.
+impact: If claimable, an attacker serves content on a trusted cineplex.de subdomain — brand-trusted phishing plus any cookie or token scoped to the parent domain. Medium, conditional; evidence proves dangling DNS only, not claimability.
+testability: AUTH_HELPED

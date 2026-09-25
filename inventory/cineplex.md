@@ -1607,3 +1607,14 @@ wwww.cineplex.de
 - CHANGED data-9fc27eb430.cineplex.de/metrics: stale in probe log (last fresh 2026-09-08: 553.5M queued); descriptive IOMB infra only
 - CHANGED ct_diff_sweep @ *.cineplex.de: full passive CT sweep (certspotter+hackertarget+systems-zone) → zero non-inventory hosts; only wildcard certs + routine renewals; inventory 132-host baseline confirmed c
 - NEW ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empt
+
+## 2026-09-25 21:58:17 UTC
+- CHANGED graphql-api.app.cineplex.de: unauth GET introspection reproduced THIS cycle (200, no Authorization, `Accept: application/json`) — 83 queryType fields + 140 mutationType fields enumerated by name only;
+- CHANGED web-dev.cineplex.de: automated DoH CNAME probe in probe-results.md now returns HTTP 200 (was 415 for 10 cycles) — header-format defect fixed; manual DoH re-confirms CNAME Status 0 / A-follow Status 3 
+- CHANGED probe-results.md: 958 lines, still ZERO POST probes; new entries only DoH CNAME probe (200) and 4 malformed-brace URLs (400) — no new authenticated or mutating surface
+- CHANGED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: REJECTED as standalone finding — method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no
+- CHANGED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: REJECTED — IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- CHANGED api_cineplex_get_bypass @ api.cineplex.de: REJECTED — strict 403 persisted across all methods/encodings; separate stricter edge config
+- CHANGED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions reaffirmed
+- CHANGED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- NEW e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta

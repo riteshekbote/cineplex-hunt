@@ -759,3 +759,8 @@
 - 2026-09-25 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path.
 - 2026-09-25 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead.
 - 2026-09-25 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-09-25 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: upgraded to same-cycle GET verification — first cycle where evidence is not manual-curl-only; 83 queries + 140 mutations enumerated by name on prod, 83 identical on staging, zero env partitioning
+- 2026-09-25 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; independent schema read places ungated resolvers directly adjacent to gated PII selectors, corroborating omission without touching customer records
+- 2026-09-25 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 13th+ consecutive NXDOMAIN, and pipeline's DoH probe now succeeds (200) after 10 cycles of 415s — CNAME precondition now machine-checkable, not just manual
+- 2026-09-25 REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: field exists in prod queryType too and no code was ever extracted; method-mismatch error is descriptive (explicit program exclusion)
+- 2026-09-25 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path

@@ -3664,3 +3664,16 @@
 - LEARN: REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
 - LEARN: REJECTED wildcard.systems dangle-replication: direct-A records; hypothesis dead
 - LEARN: REJECTED waf_gate_attenuation_change: `Accept: text/html` GET landing-page 200 not a new bypass vector — pre-09-21 documented Apollo behavior, no new surface
+
+## RANKED HYPOTHESES 2026-09-25 21:58:17 UTC
+- [99] graphql-api.app.cineplex.de: GraphQL Full Introspection + Mutation Surface Exposure on Production (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit 3-finding redacted evidence bundle to bugs.olivermaicher.eu — (1) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (schema dump + muta
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: upgraded to same-cycle GET verification — first cycle where evidence is not manual-curl
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; independent schema
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 13th+ consecutive NXDOMAIN, and pipeline's DoH probe now succeeds (200) after 10 cycles of 415s — CNAME 
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: field exists in prod queryType too and no code was ever extracted; method-mismatch error 
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation p
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
