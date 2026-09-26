@@ -1632,3 +1632,31 @@ wwww.cineplex.de
 - CHANGED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions reaffirmed
 - CHANGED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - NEW e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta
+
+## 2026-09-26 05:31:14 UTC
+- NEW `graphql-api.app.cineplex.de` — first-ever **argument-type** enumeration of the whole surface: `?query={__type(name:"Query"){fields{name args{…}}}}` → 200/13070 B and `{__type(name:"Mutation")…}` → 20
+- NEW **CORRECTION to KB record** — the 2026-09-12/13/17/25 entry "full mutation arg enumeration (35KB) confirms no URL/file/image/base64/host injection vectors; all args are ID/String/Int/Boolean/Json scal
+- NEW `login(email: String!, password: String!, privileged: Boolean, appId: ID, logoutFromOtherApps: Boolean, code: String, nativeBuildCode: Int)` — client-supplied `privileged` flag on the authentication m
+- NEW `startWebBooking(screeningId: ID!, linkedUsersIds: ?[ID]!, freeTicketSpend: Int)` and `logUserScreeningInterests(cinemaId: ID!, screeningId: ID!, linkedUserIds: ?[ID]!, freeTicketSpend: Int)` — client
+- NEW `sendNotifications(authToken: String!, userIds: ?[ID]!, title, body, appLink, imageUrl, inAppNotification, pushNotificationChannel)` — client-supplied `authToken` **and** broadcast target list.
+- NEW `deleteCineplexUser(id: String!, apiKey: String!)` — destructive account deletion whose entire authorization input is a request-body field.
+- NEW `externalUrl(appDeepLink: String!)` / `appDeepLink(externalUrl: String!)` are **unauthenticated** and resolve deep-link paths: `cineplex://probe/127.0.0.1:1` → `UNKNOWN_HOST`, `http://127.0.0.1:1/x` →
+- CHANGED `getOnlineTicketingBooking` is **root-gated** — `FORBIDDEN "You must be the root user"`, byte-identical (922 B) with args, without args, and on staging. My unauthenticated-SSRF lead is **killed by my 
+- CHANGED `web-dev.cineplex.de` DoH CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status **3 NXDOMAIN**, authority `ns1-35.azure-dns.com` SOA. 15th conse
+- CHANGED `graphql-api.app.cineplex.de` `userById(id:"0")` → 200/744 B `INVALID_ID`, `decodePublicId` at `/var/task/graphql.js:43464:15`, no Authorization. `currentUser` → 200/836 B code `UNAUTHENTICATED`. Stag
+- CHANGED `probe-results.md` now 986 lines; last automated entry 2026-09-26 00:24:40 UTC — **no new automated probe this cycle**. Triage `run-2026-09-26-01-56.md` is an `UnknownError` server fault. Reposcan sti
+- CHANGED Root cause of the 12-cycle verification gap identified: the pipeline's own probe URLs carry a **literal trailing backtick** (`…%7D%7D\``) → 400, and urllib UA → Cloudflare 403. Both are harness defect
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- NEW graphql-api.app.cineplex.de - first ARGUMENT-TYPE enumeration of the full surface: `?query={__type(name:"Query"){fields{name args{name type{kind name ofType{kind name ofType{kind name}}}}}}}` -> 200/1
+- NEW CORRECTION @ graphql-api.app.cineplex.de: the 2026-09-12..09-19 KB claim "full mutation arg enumeration (35KB) confirms no injection vectors; all args are ID/String/Int/Boolean/Json scalars or named i
+- NEW `login(email: String!, password: String!, privileged: Boolean, appId: ID, logoutFromOtherApps: Boolean, code: String, nativeBuildCode: Int)` - client-supplied `privileged` flag on the auth mutation. `
+- NEW `startWebBooking(screeningId: ID!, linkedUsersIds: ?[ID]!, freeTicketSpend: Int)` / `logUserScreeningInterests(cinemaId: ID!, screeningId: ID!, linkedUserIds: ?[ID]!, freeTicketSpend: Int)` - caller n
+- NEW `sendNotifications(authToken: String!, userIds: ?[ID]!, ...)` - client-supplied token + broadcast target list. `deleteCineplexUser(id: String!, apiKey: String!)` - destructive delete authorized from a
+- NEW `externalUrl(appDeepLink: String!)` / `appDeepLink(externalUrl: String!)` are unauthenticated: `UNKNOWN_HOST`, `UNKNOWN_PATH`, and `INVALID_ID for type: Movie id: 12345`. Path vocabulary tested - user
+- CHANGED `getOnlineTicketingBooking` is ROOT-GATED: `FORBIDDEN "You must be the root user"`, 922B byte-identical with args, without args, and on staging. The unauthenticated-SSRF lead is KILLED by my own canar
+- CHANGED `web-dev.cineplex.de` DoH CNAME Status 0 TTL 300 -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN, authority ns1-35.azure-dns.com SOA. 15th consecutive 
+- CHANGED `userById(id:"0")` -> 200/744B INVALID_ID with decodePublicId at /var/task/graphql.js:43464:15, no Authorization; `currentUser` -> 200/836B UNAUTHENTICATED; staging `userById(id:"0")` -> 200/744B iden
+- CHANGED Root cause of the 12-cycle verification gap: pipeline probe URLs carry a literal trailing backtick (-> 400) and the urllib UA hits the edge bot-gate (-> 403). Harness defect, not server behavior; bala
+- CHANGED probe-results.md now 1010 lines (20 rows appended this cycle); triage run-2026-09-26-01-56 is an UnknownError server fault (ref err_b491aaa2); reposcan still `TARGET_ORG not configured`, 0 public repo

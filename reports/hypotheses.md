@@ -3700,3 +3700,51 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
+
+## RANKED HYPOTHESES 2026-09-26 05:31:14 UTC
+- [100] github.com/Cineplex-Deutschland: No public repos available for audit (from art/lead_bigpickle.txt)
+- [99] graphql-api.app.cineplex.de: GraphQL Full Introspection + Mutation Surface Exposure on Production (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: file the redacted bundle to bugs.olivermaicher.eu as **four** findings — (1) introspection with this cycle's `__type` argument-type bodies and the single
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit 3-finding redacted evidence bundle to bugs.olivermaicher.eu — (1) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (schema dump + muta
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: introspection upgraded again this cycle from field names to **argument types** — prod Query 200/130
+- LEARN: REJECTED ssrf_getOnlineTicketingBooking @ graphql-api.app.cineplex.de: my own loopback canary returned `FORBIDDEN "You must be the root user"` identically with 
+- LEARN: REJECTED deeplink_entity_id_oracle @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are unauthenticated but their path vocabulary exposes only `movie`
+- LEARN: ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: new attack surface documented at argument level — `startWebBooking(linkedUsersIds:[ID]!, freeTicketSpend:Int)` 
+- LEARN: CORRECTION @ knowledge base: the 2026-09-12→09-25 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects
+- LEARN: ACCEPTED e2e_convergence @ cineplex: automated `probe-results.md` unchanged since 00:24 UTC (986 lines, still zero POST), the 01:56 triage is an `UnknownError` 
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles. Hypothesis dead.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged. No res
+- LEARN: REJECTED TLS-dead @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 14th+ consecutive cycle, CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in the 14-
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead.
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: upgraded again from field names to ARGUMENT TYPES - prod Query 200/13070B/83 fields, pr
+- LEARN: REJECTED ssrf_getOnlineTicketingBooking @ graphql-api.app.cineplex.de: my own loopback canary returned FORBIDDEN "You must be the root user" identically with ar
+- LEARN: REJECTED deeplink_entity_id_oracle @ graphql-api.app.cineplex.de: externalUrl/appDeepLink are unauthenticated but their path vocabulary exposes only `movie` (us
+- LEARN: ACCEPTED buslogic_booking_mutations @ graphql-api.app.cineplex.de: new attack surface documented at argument level - startWebBooking(linkedUsersIds:[ID]!, freeT
+- LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
+- LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server - pipeline probe URLs carry a literal trailing ba
+- LEARN: ACCEPTED e2e_convergence @ cineplex: automated probe-results.md unchanged since 00:24 UTC, the 01:56 triage is an UnknownError server fault, and reposcan is sti
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles. Hypothesis dead.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged. No res
+- LEARN: REJECTED TLS-dead @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 14th+ consecutive cycle, CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in the 14-
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
