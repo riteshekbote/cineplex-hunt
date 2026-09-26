@@ -3772,3 +3772,46 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
+
+## RANKED HYPOTHESES 2026-09-26 14:43:49 UTC
+- [99] graphql-api.app.cineplex.de: GraphQL Full Introspection + Mutation Argument Surface Exposure on Production (from art/lead_nemotron3.txt)
+- [78] graphql-api.app.cineplex.de: Role and tenant assignment are settable from the request body on the canonical user-update mutation (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: file the redacted bundle to bugs.olivermaicher.eu as four findings and, in the same ticket, request the one thing that unblocks everything else — two con
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit 3-finding redacted evidence bundle to bugs.olivermaicher.eu — (1) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (schema dump + muta
+- LEARN: ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: `updateUser(userId:ID!, …, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` is active
+- LEARN: ACCEPTED AUTH @ graphql-api.app.{,staging.}cineplex.de: `login(privileged:Boolean)` and `refreshLogin(refreshToken:String!, privileged:Boolean)` take a privileg
+- LEARN: REJECTED schema_metadata_mining @ graphql-api.app.cineplex.de: 0 of 150 mutations and 0 of 88 queries carry a `description`; 0 arguments across both root types 
+- LEARN: REJECTED harness_derived_conclusions @ probe tooling: the pipeline's DoH probe returned HTTP 400 this cycle on a trailing backtick, one cycle after a 200 was lo
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th consecutive cycle, fresh same-cycle DoH pair — CNAME Status 0 to web.gentleglacier-dfef6458.switzer
+- LEARN: REJECTED ssrf_getOnlineTicketingBooking, staging_testing_oracle, relay_metrics, relay_broker_saturation, api_cineplex_get_bypass, TLS-dead hosts, and all explic
+- LEARN: ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: new attack surface at the input-object layer, one level below anything read in 25 cycles — `CinemaOperatingComp
+- LEARN: ACCEPTED AUTH @ graphql-api.app.cineplex.de: `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — both credential argu
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: evidence upgraded a second time, from field names to argument types to the **contents of all 44 IN
+- LEARN: CORRECTION self_error @ this session: the "10 staging-only account mutations" claim was mine and was wrong — I passed `includeDeprecated:true` to staging and om
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + `ns1-35.azure-dns.com` SOA
+- LEARN: PARKED mutation cluster @ graphql-api.app.cineplex.de: `storeSDKLogin` (caller supplies `userId` to bind a cookie), `storeConsent` (consent written against a cl
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: unchanged. The `testing_` fields are present on prod too and the only distinguishing sign
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de; REJECTED TLS-dead @ app.staging, graphql-api.app.couat, login, sso: unchanged. REJECTED username_enumeration
+- LEARN: ACCEPTED idor_blast_radius @ graphql-api.app.cineplex.de: 27 cycles of "IDOR impact unknown" closed in one request. `userById` returns `User` = 51 fields includ
+- LEARN: ACCEPTED idor_chaining @ graphql-api.app.cineplex.de: `order(id) → user` and `ticket(id) → order → user` reach the same object without `userById`. Three entry p
+- LEARN: ACCEPTED mass_assignment_readwrite_mirror @ graphql-api.app.cineplex.de: the four caller-supplied `CinemaOperatingCompanyData.accessRight*` flags are the identi
+- LEARN: ACCEPTED preauth_role_recon @ graphql-api.app.cineplex.de: `User.privileges.rootRole`/`adminRole`/`supportRole` are NON_NULL on the object behind the pre-auth-r
+- LEARN: ACCEPTED physical_to_profile @ graphql-api.app.cineplex.de: `userByQr(qrCode)` → `User` makes a physical ticket stub a digital-identity oracle. Physical artifac
+- LEARN: CORRECTION self_error @ this session: third instance of one error class. The 385 types were counted as "opened" while object field lists never were, so the deci
+- LEARN: REJECTED schema_metadata_mining @ graphql-api.app.cineplex.de: avenue closed on a negative result. 0 descriptions and 0 argument default values across 150 mutat
+- LEARN: CORRECTION self_error @ probe tooling: the 2026-09-25 "DoH path fixed, now 200" entry did not hold — 400 on a trailing backtick again this cycle, 17 cycles into
+- LEARN: ACCEPTED cross_analyst_untrusted @ workflow: `reports/analyst-nemotron3.log` matched a grep for my own query shape. Another agent's output was not used as evide
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th consecutive cycle, fresh same-cycle DoH pair, CNAME Status 0 / A-follow Status 3 NXDOMAIN + Azure S
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de; REJECTED api_cineplex_get_bypass; REJECTED TLS-dead hosts; REJECTED staging_testi
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in 
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified 
+- LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
+- LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba

@@ -1681,3 +1681,72 @@ wwww.cineplex.de
 - CHANGED graphql-api.app.cineplex.de combined two-type introspection GET returned one-off 502 (16B) while single-type forms returned 200 — bare error code is descriptive-error (OOS), no state exposed
 - CHANGED buchung-dev.cineplex.de origin (194.77.169.121) TCP-reachable again (SPAs 200), /gateway/* still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 - CHANGED getOnlineTicketingBooking mutation root-gated: FORBIDDEN "You must be the root user" byte-identical with/without args and on staging — unauth SSRF lead killed by canary
+
+## 2026-09-26 14:43:49 UTC
+- NEW First-ever read of the deprecationReason layer: `{__type(name:"Mutation"){fields(includeDeprecated:true){name isDeprecated deprecationReason args{name defaultValue type{…}}}}}` → 200/61199 B, unauth G
+- NEW `updatePassword` deprecationReason = "[5.2.3] use requestPasswordReset instead" — the vendor's own note establishes the intended authorization as oldPassword-OR-token; the signature makes BOTH indepen
+- NEW `updateUser(userId:ID!, blocked:Boolean, blockedText:String, firstname, lastname, street, houseNumber, zipCode, city, email, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` 
+- NEW Contrast pair inside one schema, one type: `updateUserProfile(name, firstName, lastName, street, houseNumber, zipCode, city, country, gender, telephone, birthDate)` has no `userId` and no role field (
+- NEW `increaseUserTestingStatus(testingStatus: TestingStatus!)` (active) + enum `TestingStatus = [TESTING, PRODUCTION, STAGING, DEVELOPMENT, CINEMA_EMPLOYEE]` — caller sets the environment/role class a use
+- NEW `login(email:String!, password:String!, privileged:Boolean, appId:ID, logoutFromOtherApps:Boolean, code:String, nativeBuildCode:Int)` and `refreshLogin(refreshToken:String!, privileged:Boolean)` — pri
+- NEW `loginPOS(authToken:String!)` — the entire authorization input of an authentication mutation is one client-supplied string.
+- NEW `sendShowtimeAnalyticsCampaign(authKey:String!, id:String!, name:String!, channels:[…]!, customerIds:[…]!, callbackEvents:[…]!, pushData:ShowtimesCampaignData!)` — authorization is a body field, recip
+- NEW `buyAndRedeemVoucher(voucherClassId:ID!, userId:ID!)` — caller names the account a purchased voucher is redeemed to.
+- NEW `capturePaypalOrderAndCreateTickets(bookingProcessId:ID!)` — PayPal capture plus ticket issuance keyed on a caller-supplied id.
+- NEW `reportApprovedSubscription(paypalApproveLink:String!)` (deprecated, reason "[1350/1351] completed subscriptions will be recognized via User.subscriptions") — a client-supplied PayPal approval URL com
+- NEW NEGATIVE, closes an avenue: 0 of 150 mutations and 0 of 88 queries carry a `description`; 0 of every argument in both root types carries a `defaultValue`. The schema has no remaining free metadata — n
+- NEW Arithmetic cross-check: 88 Query fields = 83 active + 5 deprecated; 150 Mutation = 140 active + 10 deprecated. Consistent with last cycle's name-only 83/140 and with the 150/150 parity, from a differe
+- CHANGED Staging re-verified this cycle: 150 mutation names, and `updateUser`, `updateUserProfile`, `updateUserAdminStatus`, `login`, `loginPOS`, `refreshLogin`, `increaseUserTestingStatus`, `sendShowtimeAnaly
+- CHANGED `web-dev.cineplex.de` 17th consecutive cycle: DoH CNAME Status 0 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN, authority `switzerlandnorth.azureconta
+- CHANGED The pipeline's own DoH probe returned HTTP 400 this cycle with a trailing backtick — the 2026-09-25 "fixed, now 200" DoH entry was not durable. probe-results.md 1003 lines, 5 entries this cycle, still
+- CHANGED My own SSRF canary is now unnecessary to re-run: `getOnlineTicketingBooking` was proven root-gated last cycle; `capturePaypalOrderAndCreateTickets` is the untested PayPal surface, not that one.
+- NEW `graphql-api.app.cineplex.de` — first-ever full **type** inventory read, `?query={__schema{types{kind name}}}` → 200/18532 B unauthenticated GET: **385 types** = 275 OBJECT, 56 ENUM, **44 INPUT_OBJECT
+- NEW All **44 INPUT_OBJECT bodies** opened for the first time in one aliased GET (200/25019 B, unauthenticated): 11 reachable from mutation args, 1 (`TargetGroupClusterInput`) nests 24 more filter types (a
+- NEW `CinemaOperatingCompanyData` = `{name, cinemasIds:LIST(ID), accessRightDashboard:Boolean, accessRightFilmStatistics:Boolean, accessRightBonusProgram:Boolean, accessRightCampaigning:Boolean}` — **four 
+- NEW `SDKLoginInput{cookieId:String!, datetime:DateTime!, userId:String}` → `storeSDKLogin(data:)` — the client names the **userId a cookie gets bound to**.
+- NEW `ConsentInput{cookieId:String!, datetime:DateTime!, consent:Boolean!}` → `storeConsent(data:)` — a consent record is written against a client-supplied cookie id with no identity binding.
+- NEW `logItems(items:LIST(LogItem{type,datetime,value}), options:LogOptions{source,appVersion,device,session,appId,url})` — fully client-controlled telemetry record (type, value, session, url, timestamp).
+- NEW `UserGroupFilterInput{id:ID!, name, moviesOnWatchlistIds, moviesSeenIds, bonusPointsGeq/Leq, visitFrequency…}` → `editUserGroupFilter` — caller supplies the **target filter id** plus the audience crit
+- NEW Deprecated `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — **both** credential arguments are nullable, so the signature admits a change authorized by nei
+- CHANGED **RETRACTION of my own claim, same cycle:** "10 staging-only account mutations" was an artifact of passing `includeDeprecated:true` to staging and not to prod. Prod `includeDeprecated:true` → 150 = 14
+- CHANGED Prior KB line "all args are ID/String/Int/Boolean/Json scalars or named input objects" is **incomplete for the same reason the 09-26 name-only claim was false**: 44 named input objects existed and 0 h
+- CHANGED `web-dev.cineplex.de` dangle **16th consecutive cycle**: CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow **Status 3 NXDOMAIN**, authority `ns1-35
+- CHANGED Input-object parity staging vs prod: `CinemaOperatingCompanyData`, `SDKLoginInput`, `ConsentInput` field sets compare **equal** — the `accessRight*` flags are not environment-partitioned.
+- NEW FIRST-EVER read of OBJECT type field lists. probe-results.md contained **zero** object-type captures (grep for name%3A%22(User|Order|Invoice|Ticket)%22 → 0 hits in 1003 lines), so the blast radius of 
+- NEW \`userById:User\` \`order:Order\` \`invoice:Invoice!\` \`ticket:Ticket\` \`currentUser:User\` \`userByQr:User\` \`voucherInstanceByQR:VoucherInstance\`. Object types reachable from Query: 25 distinct.
+- NEW **\`User\` = 51 fields.** Identity: email, firstName, lastName, fullName, name, telephone, birthDate, gender, street, houseNumber, zipCode, city, country. **Credential/authorization artifacts: \`onlin
+- NEW \`UserPrivileges\` = 10 fields: \`belongsToCinemaOperatingCompanies\`, \`adminForCinemas\`, \`adminForBonusPrograms\`, \`accessRightDashboard:Boolean!\`, \`accessRightFilmStatistics:Boolean!\`, \`acce
+- NEW **MASS-ASSIGNMENT CONFIRMATION, read/write mirror:** the four \`accessRight*\` names I flagged last cycle as caller-supplied on \`CinemaOperatingCompanyData\` (create/updateCinemaOperatingCompany) are
+- NEW \`Order\` = 15 fields incl. \`user:User!\`, \`qrCode\`, \`qrCodeImage\`, **\`pickupCode:Int\`**, \`pkpass\`, \`googlePayPass\`, \`startPreparationLink\`, \`refundable\`, \`lineItems\`, \`cinema\`, \`s
+- NEW **CHAINING, changes the finding's shape:** \`ticket(id) → order → user\` and \`order(id) → user\` reach the same 51-field object **without ever calling \`userById\`**. Three independent pre-auth-decod
+- NEW \`userByQr(qrCode:String!)\` also returns \`User\` — QR lookup is a physical-artifact-to-digital-profile path (hold a ticket stub, get the profile) if ownership is not checked.
+- NEW \`UserBlockedReason\` enum = MISSING_EMAIL_VERIFICATION, WRONG_EMAIL, OTHER_ACCOUNT_EXISTED, ANONYMOUS_USER_LOGGED_OUT, OTHER. \`ExternalNewsletterPreferences\` = 4 fields incl. \`subscribed:Boolean\`
+- NEW Parity: staging 150 mutation names incl. updateUser, increaseUserTestingStatus, login, loginPOS, refreshLogin, sendShowtimeAnalyticsCampaign, buyAndRedeemVoucher, capturePaypalOrderAndCreateTickets, r
+- NEW NEGATIVE, closes the last avenue: 0/150 mutations and 0/88 queries carry a \`description\`; 0 arguments in either root type carry a \`defaultValue\`. 88 Query = 83 active + 5 deprecated, 150 Mutation 
+- CHANGED 27-cycle correction: earlier "all args are ID/String/Int/Boolean/Json scalars or named input objects" was name-only, retracted 09-26 when 44 unread input objects appeared. This cycle is the THIRD inst
+- CHANGED web-dev dangle 17th consecutive cycle, fresh same-cycle DoH pair: CNAME Status 0 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN, authority switzerlandn
+- CHANGED probe-results.md 1003 lines, 5 entries this cycle, still ZERO POST; 4 of 5 are harness artifacts (urllib UA → 403, backtick → 400). No conclusion drawn from the automated log.
+- CHANGED Observed \`reports/analyst-nemotron3.log\` matching my type-fetch grep — another agent's log, NOT adopted as evidence. Cross-analyst output treated as untrusted; all findings below re-derived from my 
+- NEW FIRST-EVER read of OBJECT type field lists. `probe-results.md` contained **zero** object-type captures (grep `name%3A%22(User|Order|Invoice|Ticket)%22` → 0 hits in 1003 lines), so the blast radius of 
+- NEW Return types: `userById:User` `order:Order` `invoice:Invoice!` `ticket:Ticket` `currentUser:User` `userByQr:User` `voucherInstanceByQR:VoucherInstance`. 25 distinct OBJECT types reachable from Query.
+- NEW **`User` = 51 fields.** Identity: `email`, `firstName`, `lastName`, `fullName`, `name`, `telephone`, `birthDate`, `gender`, `street`, `houseNumber`, `zipCode`, `city`, `country`. **Credential artifact
+- NEW `UserPrivileges` = 10 fields: `belongsToCinemaOperatingCompanies`, `adminForCinemas`, `adminForBonusPrograms`, `accessRightDashboard:Boolean!`, `accessRightFilmStatistics:Boolean!`, `accessRightBonusP
+- NEW **MASS-ASSIGNMENT CONFIRMATION via read/write mirror:** the four `accessRight*` names flagged last cycle as caller-supplied on `CinemaOperatingCompanyData` are the **identical four names** the server 
+- NEW `Order` = 15 fields incl. `user:User!`, `qrCode`, `qrCodeImage`, **`pickupCode:Int`**, `pkpass`, `googlePayPass`, `startPreparationLink`, `refundable`, `lineItems`, `cinema`, `screening`. `Ticket` = 2
+- NEW **CHAINING — changes the finding's shape:** `ticket(id) → order → user` and `order(id) → user` reach the same 51-field object **without ever calling `userById`**. Three independent pre-auth-decode ent
+- NEW `userByQr(qrCode:String!)` also returns `User` — a QR lookup is a physical-artifact-to-digital-profile path (hold a ticket stub, get the profile) if ownership is unchecked. `voucherInstanceByQR` is th
+- NEW `UserBlockedReason` = MISSING_EMAIL_VERIFICATION, WRONG_EMAIL, OTHER_ACCOUNT_EXISTED, ANONYMOUS_USER_LOGGED_OUT, OTHER. `ExternalNewsletterPreferences` = `id`,`name`,`category`,`subscribed`. `TestingS
+- NEW Staging re-verified at 150 mutation names, including `updateUser`, `increaseUserTestingStatus`, `login`, `loginPOS`, `refreshLogin`, `sendShowtimeAnalyticsCampaign`, `buyAndRedeemVoucher`, `capturePay
+- NEW NEGATIVE, closes the last avenue: 0/150 mutations and 0/88 queries carry a `description`; 0 arguments in either root type carry a `defaultValue`. 88 Query = 83 active + 5 deprecated; 150 Mutation = 14
+- CHANGED THIRD instance of the same evidence-depth error class, now recorded as a rule: 27 cycles of "IDOR impact unknown" rested on a read that stopped one level short — the 385 types were counted but object-
+- CHANGED `web-dev.cineplex.de` dangle 17th consecutive cycle, fresh same-cycle DoH pair: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN, author
+- CHANGED `probe-results.md` 1003 lines, 5 entries this cycle, still zero POST; 4 of 5 are harness artifacts (urllib UA → 403, backtick → 400). No conclusion drawn from it.
+- CHANGED Process guard: `reports/analyst-nemotron3.log` matched a grep for my own type-fetch shape. Another agent's log was not adopted as evidence; everything this cycle was re-derived from my captures in `/t
+- NEW graphql-api.app.cineplex.de: first full **argument-type** introspection via GET (200, 13070B Query, 39292B Mutation) — 8 dangerous args: login.privileged, startWebBooking.freeTicketSpend/linkedUsersId
+- NEW graphql-api.app.cineplex.de: full **type inventory** GET (200, 18532B) — 385 types including 44 INPUT_OBJECT bodies; CinemaOperatingCompanyData carries 4 accessRight* Boolean flags + caller-supplied c
+- NEW graphql-api.app.cineplex.de: getOnlineTicketingBooking mutation **root-gated** (FORBIDDEN "You must be the root user" byte-identical with/without args, on staging too) — unauth SSRF lead killed by can
+- NEW web-dev.cineplex.de: automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → web.gentleglacier-dfef6458.switzerlandno
+- NEW probe-results.md: 1003 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable again (SPAs 200), /gateway/* still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 manual curl (browser UA, --http2); automated urllib 403 — WAF client-differentiated bot-gate stable
+- CHANGED idor_booking: 4/4 resolvers (userById/invoice/order/ticket) GET-verified `id:"0"` → 200 INVALID_ID with decodePublicId stacktrace, NO Authorization; currentUser → 200 UNAUTHENTICATED on same surface —
