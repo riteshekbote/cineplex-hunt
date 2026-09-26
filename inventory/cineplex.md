@@ -1760,3 +1760,18 @@ wwww.cineplex.de
 - CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 - CHANGED graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 manual curl (browser UA, --http2); automated urllib 403 — WAF client-differentiated bot-gate stable
 - CHANGED idor_booking: 4/4 resolvers (userById/invoice/order/ticket) GET-verified `id:"0"` → 200 INVALID_ID with decodePublicId stacktrace, NO Authorization; `currentUser` → 200 UNAUTHENTICATED on same surface
+
+## 2026-09-26 20:56:26 UTC
+- NEW **`/graphql` is a second, independent, unauthenticated GraphQL entry point on both `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de`** — never previously probed with a browser UA
+- NEW `www.graphql-api.app.staging.cineplex.de` — inventory host with **no probe record in 20+ cycles** — resolved this cycle: DoH `A` → **Status 3 NXDOMAIN**, authority `amit.ns.cloudflare.com`/`dns.cloudf
+- CHANGED Remediation scope for both the introspection finding and the IDOR finding is now **two paths per environment** (`/` and `/graphql`), not one. Any fix, WAF rule, or rate-limit scoped to one path leaves
+- CHANGED `probe-results.md` 1016 lines, this cycle's 4 entries all `HTTP 403` on `/`-only URLs with the urllib UA. **Zero POST, and zero `/graphql` probes across all cycles** — the automated harness cannot see
+- CHANGED Method correction to my own prior 27 cycles: the stall was a *depth* problem on `/` (schema exhausted, 0 descriptions, 0 defaults). This cycle's only new fact came from *breadth* on a single unprobed 
+- NEW graphql-api.app.cineplex.de: first-cycle **argument-type** introspection via balanced GET (200, 13070B Query, 39292B Mutation) — 8 dangerous args discovered: `login.privileged`, `startWebBooking.freeT
+- NEW graphql-api.app.cineplex.de: first-ever full **type inventory** GET (200, 18532B) — 385 types including 44 INPUT_OBJECT bodies; `CinemaOperatingCompanyData` carries 4 caller-supplied `accessRight*` Bo
+- NEW graphql-api.app.cineplex.de: `getOnlineTicketingBooking` mutation **root-gated** (FORBIDDEN "You must be the root user" byte-identical with/without args, on staging) — unauth SSRF lead killed by canar
+- NEW web-dev.cineplex.de: automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandn
+- NEW probe-results.md: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED graphql-api.app.{,staging.}cineplex.de: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 manual curl (browser UA, --http2); automated urllib 403 — WAF client-differentiated bot-gate stable
+- CHANGED idor_booking: 4/4 resolvers (userById/invoice/order/ticket) GET-verified `id:"0"` → 200 INVALID_ID with decodePublicId stacktrace, NO Authorization; `currentUser` → 200 UNAUTHENTICATED on same surface
