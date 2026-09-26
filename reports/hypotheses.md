@@ -3748,3 +3748,27 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b
+
+## RANKED HYPOTHESES 2026-09-26 10:16:02 UTC
+- [99] graphql-api.app.cineplex.de: GraphQL Full Introspection + Mutation Argument Surface Exposure on Production (from art/lead_nemotron3.txt)
+- [66] graphql-api.app.cineplex.de: Authorization flags and tenant membership are settable from the request body on cinema-operating-company create and update (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: file the redacted bundle to bugs.olivermaicher.eu as four findings — (1) introspection, upgraded a **second** time, this cycle from field names to argume
+- NEXT(hypotheses-nemotron3.txt): HUMAN: submit 3-finding redacted evidence bundle to bugs.olivermaicher.eu — (1) GraphQL introspection graphql-api.app.{,staging.}cineplex.de (schema dump + muta
+- LEARN: ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: new attack surface at the input-object layer, one level below anything read in 25 cycles — `CinemaOperatingComp
+- LEARN: ACCEPTED AUTH @ graphql-api.app.cineplex.de: `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — both credential argu
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: evidence upgraded a second time, from field names to argument types to the **contents of all 44 IN
+- LEARN: CORRECTION self_error @ this session: the "10 staging-only account mutations" claim was mine and was wrong — I passed `includeDeprecated:true` to staging and om
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + `ns1-35.azure-dns.com` SOA
+- LEARN: PARKED mutation cluster @ graphql-api.app.cineplex.de: `storeSDKLogin` (caller supplies `userId` to bind a cookie), `storeConsent` (consent written against a cl
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: unchanged. The `testing_` fields are present on prod too and the only distinguishing sign
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de; REJECTED TLS-dead @ app.staging, graphql-api.app.couat, login, sso: unchanged. REJECTED username_enumeration
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 14th+ consecutive cycle, CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in the 14-
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (928 lines) consistent with manual-curl-verified b

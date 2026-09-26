@@ -32308,3 +32308,487 @@ I continued and completed the three things my own analysis left inconsistent. No
 - The `buslogic_booking_mutations` gate is genuinely **unverified**, not soft-pedaled: `startWebBooking`/`logUserScreeningInterests` are mutations on live booking data, so I refused to execute them. 62 confidence reflects schema-verified signature with an untested authorization layer.
 
 Worth flagging: the retraction matters beyond this cycle. If the program already received a submission scored "CVSS 5.3, no injection vectors," that severity was derived from the false claim and should be corrected upward before it gets triaged as low.
+===== ANALYST bigpickle 2026-09-26 10:16:02 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run a small set of read-only, ≤1 rps GET probes to close the one depth gap I found last cycle: the *contents* of the named input objects were never enumerated (same class of name-only error I retracted).
+[0m$ [0mmkdir -p /tmp/opencode/cx26 && cd /tmp/opencode/cx26 && \
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' && \
+echo "== P1: prod __schema type list (kind+name only) ==" && \
+curl -s -o p1.json -w 'http=%{http_code} bytes=%{size_download} t=%{time_total}\n' --http2 -H 'Accept: application/json' -A "$UA" \
+  -G --data-urlencode 'query={__schema{types{kind name}}}' 'https://graphql-api.app.cineplex.de/' && \
+head -c 300 p1.json; echo; sleep 3; \
+echo "== P2: web-dev DoH CNAME ==" && \
+curl -s -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME' | python3 -c 'import sys,json;d=json.load(sys.stdin);print("Status",d.get("Status"),[a.get("data") for a in d.get("Answer",[])])'; sleep 3; \
+echo "== P3: web-dev DoH A-follow ==" && \
+curl -s -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A' | python3 -c 'import sys,json;d=json.load(sys.stdin);print("Status",d.get("Status"),"Authority",[a.get("data") for a in d.get("Authority",[])][:1])'
+== P1: prod __schema type list (kind+name only) ==
+http=200 bytes=18532 t=0.538420
+{"data":{"__schema":{"types":[{"kind":"OBJECT","name":"Query"},{"kind":"SCALAR","name":"String"},{"kind":"SCALAR","name":"ID"},{"kind":"OBJECT","name":"OnboardingContent"},{"kind":"OBJECT","name":"Movie"},{"kind":"SCALAR","name":"Int"},{"kind":"SCALAR","name":"Boolean"},{"kind":"SCALAR","name":"Floa
+== P2: web-dev DoH CNAME ==
+Status 0 ['web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.']
+== P3: web-dev DoH A-follow ==
+Status 3 Authority ['ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300']
+[0m
+P1 returned 200/18532 B (full type list — a body never read before) and web-dev is confirmed dangling for the 16th cycle. Now extracting the input-object inventory:
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+d=json.load(open('p1.json'))['data']['__schema']['types']
+from collections import Counter
+c=Counter(t['kind'] for t in d)
+print("total types:",len(d), dict(c))
+io=[t['name'] for t in d if t['kind']=='INPUT_OBJECT']
+en=[t['name'] for t in d if t['kind']=='ENUM']
+print("\nINPUT_OBJECT count:",len(io))
+for n in io: print("  ",n)
+print("\nENUM count:",len(en))
+print("  ", ", ".join(en))
+PY
+total types: 385 {'OBJECT': 275, 'SCALAR': 9, 'ENUM': 56, 'INPUT_OBJECT': 44, 'INTERFACE': 1}
+
+INPUT_OBJECT count: 44
+   UserGroupDefinition
+   PayoutMissedFilter
+   TargetGroupFilterConfigInput
+   CinemaOperatingCompanyData
+   TeenInputData
+   UpdateCinemaInput
+   CinemaLocationInput
+   CinemaOpeningHoursInput
+   CinemaInformationParagraphInput
+   LogItem
+   LogOptions
+   SeatPricingCategoryInput
+   UserGroupFilterInput
+   UserGroupFilterOnReferencedMovieInput
+   ShowtimesCampaignData
+   SeatSelection
+   SDKLoginInput
+   ConsentInput
+   TargetGroupClusterInput
+   AgeFilterInput
+   GendersFilterInput
+   ParentStatusFilterInput
+   LongetermBenefitsReceivedFilterInput
+   DistanceFilterInput
+   MovieAffinityFilterInput
+   GenreAffinityFilterInput
+   CastOrCrewMemberAffinityFilterInput
+   MovieAttributesAffinityFilterInput
+   ScreeningAttributeInput
+   MoviesSeenFilterInput
+   MoviesNotSeenFilterInput
+   MoviesOnWatchListFilterInput
+   BonusProgramMemberStatusFilterInput
+   BonusPointsFilterInput
+   StatusPointsFilterInput
+   StatusLevelFilterInput
+   VouchersReceivedFilterInput
+   VouchersRedeemedFilterInput
+   StickersReceivedFilterInput
+   AverageCinemaVisitsFilterInput
+   NoCinemaVisitSinceFilterInput
+   CinemaVisitSinceFilterInput
+   AverageGroupSizesFilterInput
+   CinemaClusterData
+
+ENUM count: 56
+   MovieDepartment, UserBlockedReason, ScreeningAttributeType, ScreeningAttributeDisplayType, MovieListItemDisplayType, SeatType, SeatStatus, TicketStatus, TicketProvider, OrderStatus, TestingStatus, NotificationChannelPriority, Gender, PaypalTenureType, BlockedReason, LinkedAccountStatus, BonusType, CinemaProductCategory, Brand, AccessRestriction, HostingProvider, ScreeningStatusType, CheckVoucherCodeErrorCode, CampaignType, CampaignTrigger, Channel, CampaignStatus, CampaignTimeUnit, CampaignIntervalEndType, CampaignEventType, SeatingAreaName, SeatSelectionType, StatisticDataType, StatisticGroupBy, ConfirmationCodeType, ContentSectionListDisplayType, ContentSectionListName, ServiceStatusType, EmailComponentName, ParentStatus, LongTermBenefitsStatus, BonusProgramMemberStatus, TimePeriod, GroupSize, TargetGroupStatus, LogSource, LoginRole, SocialAuthProvider, OnboardingStep, UpdatedTargetGroupStatus, CancellationEffectiveAtType, __TypeKind, __DirectiveLocation, LoginError, MovieListSectionDisplayType, ButtonSectionOnPressType
+[0m
+44 input objects, 0 of which have ever been read. Enumerating all their fields in a single aliased request, plus re-fetching the mutation arg→input-object mapping so the mapping is same-cycle:
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY' > q1.txt
+import json
+d=json.load(open('p1.json'))['data']['__schema']['types']
+io=[t['name'] for t in d if t['kind']=='INPUT_OBJECT']
+parts=['{']
+for i,n in enumerate(io):
+    parts.append('i%d:__type(name:"%s"){inputFields{name type{kind name ofType{kind name ofType{kind name}}} defaultValue}}'%(i,n))
+parts.append('}')
+print(''.join(parts))
+PY
+wc -c q1.txt && \
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' && \
+echo "== Q1: all 44 INPUT_OBJECT field definitions ==" && \
+curl -s -o q1.json -w 'http=%{http_code} bytes=%{size_download}\n' --http2 -H 'Accept: application/json' -A "$UA" \
+  -G --data-urlencode "query@q1.txt" 'https://graphql-api.app.cineplex.de/' ; sleep 3; \
+echo "== Q2: Mutation arg -> input object mapping ==" && \
+curl -s -o q2.json -w 'http=%{http_code} bytes=%{size_download}\n' --http2 -H 'Accept: application/json' -A "$UA" \
+  -G --data-urlencode 'query={__type(name:"Mutation"){fields{name args{name type{kind name ofType{kind name ofType{kind name}}}}}}}' 'https://graphql-api.app.cineplex.de/'; sleep 2; \
+head -c 200 q1.json; echo; head -c 200 q2.json
+5536 q1.txt
+== Q1: all 44 INPUT_OBJECT field definitions ==
+http=200 bytes=25019
+== Q2: Mutation arg -> input object mapping ==
+http=200 bytes=42996
+{"data":{"i0":{"inputFields":[{"name":"clientOfCinemasAny","type":{"kind":"LIST","name":null,"ofType":{"kind":"NON_NULL","name":null,"ofType":{"kind":"SCALAR","name":"ID"}}},"defaultValue":null}]},"i1
+{"data":{"__type":{"fields":[{"name":"a","args":[{"name":"id","type":{"kind":"NON_NULL","name":null,"ofType":{"kind":"SCALAR","name":"ID","ofType":null}}}]},{"name":"upsertApp","args":[{"name":"id","t
+[0m
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+q1=json.load(open('q1.json'))['data']
+io={k[1:]:v for k,v in q1.items() if v}
+print("INPUT_OBJECTs with fields:",len(io),"/44 ; empty:",[k for k,v in q1.items() if not v])
+
+def flat(t):
+    if t is None: return "?"
+    k=t.get('kind'); n=t.get('name')
+    if k in ('NON_NULL','LIST'):
+        return k+"("+flat(t.get('ofType'))+")"
+    return n or k
+
+# index input object -> fields
+fields={}
+for name,v in io.items():
+    fields[name]=[(f['name'],flat(f['type'])) for f in (v.get('inputFields') or [])]
+
+# map mutation -> input object args
+q2=json.load(open('q2.json'))['data']['__type']['fields']
+usage={}
+for f in q2:
+    for a in f.get('args') or []:
+        t=flat(a['type'])
+        for name in fields:
+            if name in t:
+                usage.setdefault(name,[]).append(f['name'])
+print("\n=== input objects reachable from mutations (count %d) ==="%len(usage))
+for name in sorted(usage, key=lambda n:-len(usage[n])):
+    print("\n%-38s <- %d mutations: %s"%(name,len(usage[name]),", ".join(sorted(set(usage[name]))[:8])))
+    print("    fields: "+", ".join("%s:%s"%(a,b) for a,b in fields[name]))
+PY
+INPUT_OBJECTs with fields: 44 /44 ; empty: []
+
+=== input objects reachable from mutations (count 0) ===
+[0m
+Bug in my own parser — I keyed the input objects by alias index, not name. Fixing:
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+d=json.load(open('p1.json'))['data']['__schema']['types']
+io_names=[t['name'] for t in d if t['kind']=='INPUT_OBJECT']
+q1=json.load(open('q1.json'))['data']
+fields={}
+for i,n in enumerate(io_names):
+    v=q1.get('i%d'%i) or {}
+    fields[n]=[(f['name'],f) for f in (v.get('inputFields') or [])]
+def flat(t):
+    if t is None: return "?"
+    k,n=t.get('kind'),t.get('name')
+    if k in ('NON_NULL','LIST'): return k+"("+flat(t.get('ofType'))+")"
+    return n or k
+for n in io_names:
+    for a,f in fields[n]: f['flat']=flat(f['type'])
+
+q2=json.load(open('q2.json'))['data']['__type']['fields']
+usage={}
+for f in q2:
+    for a in f.get('args') or []:
+        t=flat(a['type'])
+        for n in io_names:
+            if n in t: usage.setdefault(n,[]).append(f['name'])
+print("=== %d/%d INPUT_OBJECTs reachable from mutations ==="%(len(usage),len(io_names)))
+for n in sorted(usage,key=lambda x:-len(usage[x])):
+    print("\n%-34s <- %2d mut: %s"%(n,len(usage[n]),", ".join(sorted(set(usage[n]))[:6])))
+    print("   "+", ".join("%s:%s"%(a,b['flat']) for a,b in fields[n]))
+print("\n=== input objects NOT reachable from any mutation ===")
+print(", ".join(n for n in io_names if n not in usage))
+PY
+=== 11/44 INPUT_OBJECTs reachable from mutations ===
+
+CinemaOperatingCompanyData         <-  2 mut: createCinemaOperatingCompany, updateCinemaOperatingCompany
+   name:String, accessRightDashboard:Boolean, accessRightFilmStatistics:Boolean, accessRightBonusProgram:Boolean, accessRightCampaigning:Boolean, cinemasIds:LIST(ID)
+
+CinemaClusterData                  <-  2 mut: createCinemaCluster, updateCinemaCluster
+   position:NON_NULL(Int), name:NON_NULL(String), cinemaIds:NON_NULL(LIST(NON_NULL(?)))
+
+TeenInputData                      <-  1 mut: joinBonusProgram
+   firstName:NON_NULL(String), lastName:NON_NULL(String), birthdate:NON_NULL(String), email:String, gender:NON_NULL(Gender)
+
+UpdateCinemaInput                  <-  1 mut: updateCinema
+   id:NON_NULL(ID), name:NON_NULL(String), logo:String, claim:String, hasBonusProgram:Boolean, headerImage:String, imprint:String, technologies:String, history:String, specialAboutUs:String, currentInformation:String, onlineTicketingBaseUrl:String, ticketProvider:String, street:String, houseNumber:String, zipCode:String, city:String, parkingDescription:String, locationDescription:String, latitude:String, longitude:String, location:CinemaLocationInput, googleMapsLink:String, appleMapsLink:String, phone:String, facebook:String, twitter:String, instagram:String, tiktok:String, website:String, email:String, barrierFree:Boolean, barrierFreeText:String, hearingImpaired:Boolean, hearingImpairedText:String, blind:Boolean, blindText:String, openingHoursDisplay:NON_NULL(LIST(NON_NULL(?))), pricesDisplay:NON_NULL(LIST(NON_NULL(?))), specialOffersDisplay:NON_NULL(LIST(NON_NULL(?))), giftVouchersDisplay:NON_NULL(LIST(NON_NULL(?))), sneaksDisplay:NON_NULL(LIST(NON_NULL(?))), brands:NON_NULL(LIST(NON_NULL(?))), accessRestrictedTo:NON_NULL(AccessRestriction)
+
+LogItem                            <-  1 mut: logItems
+   type:String, datetime:DateTime, value:String
+
+LogOptions                         <-  1 mut: logItems
+   source:LogSource, appVersion:String, device:String, session:String, appId:String, url:String
+
+UserGroupFilterInput               <-  1 mut: editUserGroupFilter
+   id:NON_NULL(ID), name:String, moviesOnWatchlistIds:LIST(NON_NULL(ID)), moviesSeenIds:LIST(NON_NULL(ID)), moviesNotSeenIds:LIST(NON_NULL(ID)), moviesRatedPositivelyIds:LIST(NON_NULL(ID)), moviesRatedNegativelyIds:LIST(NON_NULL(ID)), bonusPointsGeq:Int, bonusPointsLeq:Int, visitFrequencyVisits:Int, visitFrequencyIntervalLengthDays:Int
+
+UserGroupFilterOnReferencedMovieInput <-  1 mut: editUserGroupFilterOnReferencedMovie
+   id:NON_NULL(ID), name:String, onWatchlist:Boolean, seen:Boolean, ratedPositively:Boolean, ratedNegatively:Boolean
+
+ShowtimesCampaignData              <-  1 mut: sendShowtimeAnalyticsCampaign
+   title:NON_NULL(String), body:NON_NULL(String), image:String, targetType:NON_NULL(String), targetMovieId:String
+
+SDKLoginInput                      <-  1 mut: storeSDKLogin
+   cookieId:NON_NULL(String), datetime:NON_NULL(DateTime), userId:String
+
+ConsentInput                       <-  1 mut: storeConsent
+   cookieId:NON_NULL(String), datetime:NON_NULL(DateTime), consent:NON_NULL(Boolean)
+
+=== input objects NOT reachable from any mutation ===
+UserGroupDefinition, PayoutMissedFilter, TargetGroupFilterConfigInput, CinemaLocationInput, CinemaOpeningHoursInput, CinemaInformationParagraphInput, SeatPricingCategoryInput, SeatSelection, TargetGroupClusterInput, AgeFilterInput, GendersFilterInput, ParentStatusFilterInput, LongetermBenefitsReceivedFilterInput, DistanceFilterInput, MovieAffinityFilterInput, GenreAffinityFilterInput, CastOrCrewMemberAffinityFilterInput, MovieAttributesAffinityFilterInput, ScreeningAttributeInput, MoviesSeenFilterInput, MoviesNotSeenFilterInput, MoviesOnWatchListFilterInput, BonusProgramMemberStatusFilterInput, BonusPointsFilterInput, StatusPointsFilterInput, StatusLevelFilterInput, VouchersReceivedFilterInput, VouchersRedeemedFilterInput, StickersReceivedFilterInput, AverageCinemaVisitsFilterInput, NoCinemaVisitSinceFilterInput, CinemaVisitSinceFilterInput, AverageGroupSizesFilterInput
+[0m
+This is materially new. Two bodies nobody had read: the 44 input objects and their nesting. Let me extract the arg signatures for the mutations that matter and check which input objects are nested vs orphaned:
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+d=json.load(open('p1.json'))['data']['__schema']['types']
+io_names=[t['name'] for t in d if t['kind']=='INPUT_OBJECT']
+q1=json.load(open('q1.json'))['data']
+def flat(t):
+    if t is None: return "?"
+    k,n=t.get('kind'),t.get('name')
+    if k in ('NON_NULL','LIST'): return k+"("+flat(t.get('ofType'))+")"
+    return n or k
+fields={n:[(f['name'],flat(f['type'])) for f in ((q1.get('i%d'%i) or {}).get('inputFields') or [])] for i,n in enumerate(io_names)}
+
+# nesting map
+print("=== nested input-object references ===")
+for n in io_names:
+    kids=set()
+    for a,t in fields[n]:
+        for o in io_names:
+            if o!=n and o in t: kids.add(o)
+    if kids: print("  %-38s -> %s"%(n,", ".join(sorted(kids))))
+used_by_mut=set()
+q2=json.load(open('q2.json'))['data']['__type']['fields']
+for f in q2:
+    for a in f.get('args') or []:
+        for o in io_names:
+            if o in flat(a['type']): used_by_mut.add(o)
+nested=set()
+for n in io_names:
+    for a,t in fields[n]:
+        for o in io_names:
+            if o!=n and o in t: nested.add(o)
+orphans=[n for n in io_names if n not in used_by_mut and n not in nested]
+print("\n=== ORPHANED input objects (no mutation arg, no nested ref) -> query-only or dead: %d ==="%len(orphans))
+print("  "+", ".join(orphans))
+print("\n=== full arg signatures of the sensitive mutations ===")
+for want in ["createCinemaOperatingCompany","updateCinemaOperatingCompany","storeSDKLogin","storeConsent",
+             "logItems","editUserGroupFilter","deleteCineplexUser","sendNotifications","startWebBooking"]:
+    f=next((x for x in q2 if x['name']==want),None)
+    if not f: print("  %s: NOT FOUND"%want); continue
+    print("  %s(%s)"%(want, ", ".join("%s: %s"%(a['name'],flat(a['type'])) for a in f.get('args') or [])))
+PY
+=== nested input-object references ===
+  UpdateCinemaInput                      -> CinemaLocationInput
+  TargetGroupClusterInput                -> AgeFilterInput, AverageCinemaVisitsFilterInput, AverageGroupSizesFilterInput, BonusPointsFilterInput, BonusProgramMemberStatusFilterInput, CastOrCrewMemberAffinityFilterInput, CinemaVisitSinceFilterInput, DistanceFilterInput, GendersFilterInput, GenreAffinityFilterInput, LongetermBenefitsReceivedFilterInput, MovieAffinityFilterInput, MovieAttributesAffinityFilterInput, MoviesNotSeenFilterInput, MoviesOnWatchListFilterInput, MoviesSeenFilterInput, NoCinemaVisitSinceFilterInput, ParentStatusFilterInput, StatusLevelFilterInput, StatusPointsFilterInput, StickersReceivedFilterInput, VouchersReceivedFilterInput, VouchersRedeemedFilterInput
+
+=== ORPHANED input objects (no mutation arg, no nested ref) -> query-only or dead: 9 ===
+  UserGroupDefinition, PayoutMissedFilter, TargetGroupFilterConfigInput, CinemaOpeningHoursInput, CinemaInformationParagraphInput, SeatPricingCategoryInput, SeatSelection, TargetGroupClusterInput, ScreeningAttributeInput
+
+=== full arg signatures of the sensitive mutations ===
+  createCinemaOperatingCompany(data: NON_NULL(CinemaOperatingCompanyData))
+  updateCinemaOperatingCompany(id: NON_NULL(ID), data: NON_NULL(CinemaOperatingCompanyData))
+  storeSDKLogin(data: NON_NULL(SDKLoginInput))
+  storeConsent(data: NON_NULL(ConsentInput))
+  logItems(items: LIST(LogItem), options: LogOptions)
+  editUserGroupFilter(userGroupFilter: NON_NULL(UserGroupFilterInput))
+  deleteCineplexUser(id: NON_NULL(String), apiKey: NON_NULL(String))
+  sendNotifications(authToken: NON_NULL(String), userIds: LIST(NON_NULL(Int)), title: NON_NULL(String), body: NON_NULL(String), appLink: NON_NULL(String), imageUrl: NON_NULL(String), inAppNotification: NON_NULL(Boolean), pushNotificationChannel: NON_NULL(String), language: String)
+  startWebBooking(screeningId: NON_NULL(ID), linkedUsersIds: LIST(NON_NULL(ID)), freeTicketSpend: Int)
+[0m
+Now the decisive parity check — does staging partition the authorization layer at the *input-object* level too?
+[0m$ [0mcd /tmp/opencode/cx26 && \
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' && \
+echo "== Q3: staging parity on the 3 sensitive input objects ==" && \
+curl -s -o q3.json -w 'http=%{http_code} bytes=%{size_download}\n' --http2 -H 'Accept: application/json' -A "$UA" -G \
+ --data-urlencode 'query={a:__type(name:"CinemaOperatingCompanyData"){inputFields{name type{kind name ofType{kind name}}}} b:__type(name:"SDKLoginInput"){inputFields{name type{kind name ofType{kind name}}}} c:__type(name:"ConsentInput"){inputFields{name}} d:__type(name:"Mutation"){fields(includeDeprecated:true){name}}}' \
+ 'https://graphql-api.app.staging.cineplex.de/' && python3 - <<'PY'
+import json
+s=json.load(open('q3.json'))['data']; p=json.load(open('q1.json'))['data']
+d=json.load(open('p1.json'))['data']['__schema']['types']
+io=[t['name'] for t in d if t['kind']=='INPUT_OBJECT']
+def pf(v): return sorted(f['name'] for f in (v.get('inputFields') or [])) if v else None
+for key,name in [('a','CinemaOperatingCompanyData'),('b','SDKLoginInput'),('c','ConsentInput')]:
+    st=pf(s.get(key)); pr=pf(p.get('i%d'%io.index(name)))
+    print("\n%-28s staging==prod field set: %s"%(name, st==pr))
+    print("   staging: %s"%(", ".join(st) if st else st))
+sm=sorted(f['name'] for f in s['d']['fields'])
+print("\nstaging Mutation field count:",len(sm))
+print("staging-only vs prod (prod=140):", [f for f in sm if f.startswith('testing')])
+PY
+== Q3: staging parity on the 3 sensitive input objects ==
+http=200 bytes=5520
+
+CinemaOperatingCompanyData   staging==prod field set: True
+   staging: accessRightBonusProgram, accessRightCampaigning, accessRightDashboard, accessRightFilmStatistics, cinemasIds, name
+
+SDKLoginInput                staging==prod field set: True
+   staging: cookieId, datetime, userId
+
+ConsentInput                 staging==prod field set: True
+   staging: consent, cookieId, datetime
+
+staging Mutation field count: 150
+staging-only vs prod (prod=140): []
+[0m
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+s=json.load(open('q3.json'))['data']; p=json.load(open('q2.json'))['data']['__type']['fields']
+sm=sorted(f['name'] for f in s['d']['fields']); pm=sorted(f['name'] for f in p)
+print("prod mutations:",len(pm)," staging mutations:",len(sm))
+print("\nstaging-ONLY (%d):"%len(set(sm)-set(pm)))
+for n in sorted(set(sm)-set(pm)): print("   +",n)
+print("\nprod-ONLY (%d):"%len(set(pm)-set(sm)))
+for n in sorted(set(pm)-set(sm)): print("   -",n)
+PY
+prod mutations: 140  staging mutations: 150
+
+staging-ONLY (10):
+   + acceptCinuruTerms
+   + addLogin
+   + reportApprovedSubscription
+   + reportScreeningError
+   + resendActivationEmail
+   + sendResetPasswordEmail
+   + submitContactForm
+   + updateEmail
+   + updatePassword
+   + verifyEmail
+
+prod-ONLY (0):
+[0m
+Staging exposes 10 mutations production does not have — and they are account-credential primitives. Getting their signatures (metadata only, nothing executed):
+[0m$ [0mcd /tmp/opencode/cx26 && \
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' && \
+curl -s -o q4.json -w 'http=%{http_code} bytes=%{size_download}\n' --http2 -H 'Accept: application/json' -A "$UA" -G \
+ --data-urlencode 'query={__type(name:"Mutation"){fields{name description args{name type{kind name ofType{kind name ofType{kind name}}}}}}}' \
+ 'https://graphql-api.app.staging.cineplex.de/' && python3 - <<'PY'
+import json
+fs=json.load(open('q4.json'))['data']['__type']['fields']
+stg={"acceptCinuruTerms","addLogin","reportApprovedSubscription","reportScreeningError","resendActivationEmail","sendResetPasswordEmail","submitContactForm","updateEmail","updatePassword","verifyEmail"}
+def flat(t):
+    if t is None: return "?"
+    k,n=t.get('kind'),t.get('name')
+    if k in ('NON_NULL','LIST'): return k+"("+flat(t.get('ofType'))+")"
+    return n or k
+for f in fs:
+    if f['name'] in stg:
+        print("%s(%s)"%(f['name'], ", ".join("%s: %s"%(a['name'],flat(a['type'])) for a in f.get('args') or [])))
+        if f.get('description'): print("    desc: %s"%f['description'][:200])
+PY
+http=200 bytes=45656
+[0m
+[0m$ [0mcd /tmp/opencode/cx26 && python3 - <<'PY'
+import json
+d=json.load(open('q4.json'))
+print("top keys:",list(d.keys()))
+if 'errors' in d: print("ERRORS:",json.dumps(d['errors'])[:600])
+t=d.get('data',{}).get('__type')
+print("__type present:",bool(t))
+if t:
+    fs=t['fields']; print("field count:",len(fs))
+    names=sorted(f['name'] for f in fs)
+    stg=["acceptCinuruTerms","addLogin","reportApprovedSubscription","reportScreeningError","resendActivationEmail","sendResetPasswordEmail","submitContactForm","updateEmail","updatePassword","verifyEmail"]
+    print("present in q4:",[n for n in stg if n in names])
+    print("missing:",[n for n in stg if n not in names])
+PY
+top keys: ['data']
+__type present: True
+field count: 140
+present in q4: []
+missing: ['acceptCinuruTerms', 'addLogin', 'reportApprovedSubscription', 'reportScreeningError', 'resendActivationEmail', 'sendResetPasswordEmail', 'submitContactForm', 'updateEmail', 'updatePassword', 'verifyEmail']
+[0m
+Correction needed — my own query was asymmetric. `includeDeprecated:true` gave 150; without it staging is 140, identical to prod. Verifying prod with the same flag before I claim anything:
+[0m$ [0mcd /tmp/opencode/cx26 && \
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' && \
+curl -s -o q5.json -w 'http=%{http_code} bytes=%{size_download}\n' --http2 -H 'Accept: application/json' -A "$UA" -G \
+ --data-urlencode 'query={__type(name:"Mutation"){fields(includeDeprecated:true){name isDeprecated args{name type{kind name ofType{kind name}}}}}}' \
+ 'https://graphql-api.app.cineplex.de/' && python3 - <<'PY'
+import json
+pf=json.load(open('q5.json'))['data']['__type']['fields']
+stg=json.load(open('q3.json'))['data']['d']['fields']
+pn={f['name'] for f in pf}; sn={f['name'] for f in stg}
+dep=sorted(f['name'] for f in pf if f.get('isDeprecated'))
+act=sorted(f['name'] for f in pf if not f.get('isDeprecated'))
+print("prod includeDeprecated total:",len(pf)," active:",len(act)," deprecated:",len(dep))
+print("staging includeDeprecated total:",len(stg))
+print("\nDEPRECATED on prod (%d): %s"%(len(dep),", ".join(dep)))
+print("\nprod-only:",sorted(pn-sn)," staging-only:",sorted(sn-pn))
+acct=["addLogin","updatePassword","updateEmail","sendResetPasswordEmail","resendActivationEmail","verifyEmail","acceptCinuruTerms","reportApprovedSubscription","reportScreeningError","submitContactForm"]
+print("\ncredential/account mutations present on PROD too:",[n for n in acct if n in pn])
+for f in pf:
+    if f['name'] in ("addLogin","updatePassword","updateEmail"):
+        print("  %s(%s)"%(f['name'], ", ".join("%s: %s"%(a['name'],a['type'].get('name') or a['type'].get('kind')) for a in f.get('args') or [])))
+PY
+http=200 bytes=45191
+prod includeDeprecated total: 150  active: 140  deprecated: 10
+staging includeDeprecated total: 150
+
+DEPRECATED on prod (10): acceptCinuruTerms, addLogin, reportApprovedSubscription, reportScreeningError, resendActivationEmail, sendResetPasswordEmail, submitContactForm, updateEmail, updatePassword, verifyEmail
+
+prod-only: []  staging-only: []
+
+credential/account mutations present on PROD too: ['addLogin', 'updatePassword', 'updateEmail', 'sendResetPasswordEmail', 'resendActivationEmail', 'verifyEmail', 'acceptCinuruTerms', 'reportApprovedSubscription', 'reportScreeningError', 'submitContactForm']
+  addLogin(email: NON_NULL, password: NON_NULL, appId: ID, name: String, firstName: String, lastName: String)
+  updateEmail(email: NON_NULL)
+  updatePassword(oldPassword: String, appId: ID, token: String, password: NON_NULL, email: String)
+[0m
+[NEW] `graphql-api.app.cineplex.de` — first-ever full **type** inventory read, `?query={__schema{types{kind name}}}` → 200/18532 B unauthenticated GET: **385 types** = 275 OBJECT, 56 ENUM, **44 INPUT_OBJECT**, 9 SCALAR, 1 INTERFACE. Never enumerated in 25 prior cycles.
+[NEW] All **44 INPUT_OBJECT bodies** opened for the first time in one aliased GET (200/25019 B, unauthenticated): 11 reachable from mutation args, 1 (`TargetGroupClusterInput`) nests 24 more filter types (an audience-targeting DSL), 9 orphaned.
+[NEW] `CinemaOperatingCompanyData` = `{name, cinemasIds:LIST(ID), accessRightDashboard:Boolean, accessRightFilmStatistics:Boolean, accessRightBonusProgram:Boolean, accessRightCampaigning:Boolean}` — **four authorization flags in the request body** — on both `createCinemaOperatingCompany(data:)` and `updateCinemaOperatingCompany(id:, data:)`, plus a caller-supplied `cinemasIds` tenant-attach list.
+[NEW] `SDKLoginInput{cookieId:String!, datetime:DateTime!, userId:String}` → `storeSDKLogin(data:)` — the client names the **userId a cookie gets bound to**.
+[NEW] `ConsentInput{cookieId:String!, datetime:DateTime!, consent:Boolean!}` → `storeConsent(data:)` — a consent record is written against a client-supplied cookie id with no identity binding.
+[NEW] `logItems(items:LIST(LogItem{type,datetime,value}), options:LogOptions{source,appVersion,device,session,appId,url})` — fully client-controlled telemetry record (type, value, session, url, timestamp).
+[NEW] `UserGroupFilterInput{id:ID!, name, moviesOnWatchlistIds, moviesSeenIds, bonusPointsGeq/Leq, visitFrequency…}` → `editUserGroupFilter` — caller supplies the **target filter id** plus the audience criteria.
+[NEW] Deprecated `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — **both** credential arguments are nullable, so the signature admits a change authorized by neither.
+[CHANGED] **RETRACTION of my own claim, same cycle:** "10 staging-only account mutations" was an artifact of passing `includeDeprecated:true` to staging and not to prod. Prod `includeDeprecated:true` → 150 = 140 active + 10 deprecated, **byte-for-byte the same 150 names as staging**; prod-only ∅, staging-only ∅. Claim withdrawn before it reached a hypothesis.
+[CHANGED] Prior KB line "all args are ID/String/Int/Boolean/Json scalars or named input objects" is **incomplete for the same reason the 09-26 name-only claim was false**: 44 named input objects existed and 0 had been read. Two instances of the same evidence-depth error in the same record.
+[CHANGED] `web-dev.cineplex.de` dangle **16th consecutive cycle**: CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow **Status 3 NXDOMAIN**, authority `ns1-35.azure-dns.com` SOA. Same DoH pair as every prior cycle.
+[CHANGED] Input-object parity staging vs prod: `CinemaOperatingCompanyData`, `SDKLoginInput`, `ConsentInput` field sets compare **equal** — the `accessRight*` flags are not environment-partitioned.
+
+[PRIO] graphql-api.app.cineplex.de,8.55,0.25(9.5,223 ops + 44 input objects + full arg contract)+0.25(9,money/auth/credential/tenant-config/PII)+0.15(9.5,GraphQL introspection wide open, JWT login)+0.15(8,introspection needs no auth; mutation gates unverified)+0.10(3,no cloud-metadata reach proven, my SSRF canary killed it)+0.10(10,4 fresh GETs this cycle 18.5/25/43/45KB)
+[PRIO] graphql-api.app.staging.cineplex.de,8.30,0.25(9.5,identical 150-name surface)+0.25(8,staging data value lower than prod)+0.15(9.5,introspection equally open)+0.15(8,no auth)+0.10(3,no cloud reach)+0.10(10,fresh 2 GETs)
+[PRIO] web-dev.cineplex.de,6.80,0.25(5,single host no HTTP)+0.25(7,brand-trusted phishing on cineplex.de)+0.15(6,dangling Azure Container Apps CNAME)+0.15(10,zero auth required)+0.10(4,claimability unverified)+0.10(10,fresh DoH this cycle)
+
+[HYP] Authorization flags and tenant membership are settable from the request body on cinema-operating-company create and update
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de — mutationType createCinemaOperatingCompany / updateCinemaOperatingCompany (staging identical)
+confidence: 66
+reasoning: Schema-verified same cycle, unauthenticated GET, no Authorization, prod 200/42996 B. `updateCinemaOperatingCompany(id: ID!, data: CinemaOperatingCompanyData!)` and `createCinemaOperatingCompany(data: CinemaOperatingCompanyData!)` both take a body object containing `accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, `accessRightCampaigning` (Boolean) plus `cinemasIds: LIST(ID)`. The caller therefore names both the authorization it holds and the cinemas it is attached to. Mass assignment is an explicit priority class. Staging field set compares equal, so the flags are not environment-partitioned. The same host already demonstrates id-decode-before-gate on 4 entity resolvers against a 6/6 control group of siblings that do fire gates, so an omitted ownership check here is a pattern in this codebase, not a guess. Gate status UNVERIFIED — mutations were not executed.
+evidence_needed: Two consented operating-company/tenant accounts. Proof that account B can set accessRight* flags and cinemasIds it does not own, and that the server persists the caller-supplied value rather than deriving rights from the session.
+verify_steps: Schema side is closed. Remaining leg is authenticated. With consented creds: `POST /` `{"query":"mutation($d:CinemaOperatingCompanyData!){updateCinemaOperatingCompany(id:\"<B-id>\",data:$d){name}}","variables":{"d":{"name":"probe","accessRightDashboard":true,"accessRightFilmStatistics":true,"accessRightBonusProgram":true,"accessRightCampaigning":true,"cinemasIds":["<A-cinema>"]}}}` then re-read as A. Do not attempt unauthenticated — this writes tenant configuration.
+impact: If unowned, horizontal privilege escalation to dashboard/film-statistics/bonus/campaigning data plus cross-tenant cinema attachment. High if confirmed; today a precisely evidenced attack surface with an unverified authorization layer. Second-order: `accessRightBonusProgram` + `accessRightDashboard` together would make the adjacent `CinemaOperatingCompanyData` finding a read path to aggregate customer data.
+testability: HUMAN_ONLY
+
+[HYP] Deprecated credential mutations accept a password change authorized by neither the old password nor a reset token
+class: AUTH
+asset: graphql-api.app.cineplex.de — mutationType updatePassword (deprecated) / addLogin (deprecated)
+confidence: 64
+reasoning: Same-cycle unauthenticated GET with `includeDeprecated:true`, prod 200/45191 B: `updatePassword(oldPassword: String, appId: ID, token: String, password: String!, email: String)`. Only `password` is NON_NULL; `oldPassword` and `token` are both independently optional, so the signature admits a request carrying a new password and neither proof of the current one nor a reset token. In GraphQL, `@deprecated` is advisory metadata and does not remove a field from execution, so the surface is very likely still callable — marked unverified because I did not execute it. Prod and staging expose the identical 150-name surface (140 active + these 10 deprecated), so there is no environment partitioning. `addLogin(email!, password!, appId, name, firstName, lastName)` sits in the same deprecated set. Account-takeover and password-policy classes are explicit priority.
+evidence_needed: A consented low-privilege account. Proof that `updatePassword` succeeds with `oldPassword` and `token` both omitted or null, and that the session's account is the one changed. Also whether an active replacement (`changePassword` is in the active 140) closes the path server-side despite the nullable signature.
+verify_steps: `GET /?query={__type(name:%22Mutation%22){fields(includeDeprecated:true){name isDeprecated args{name type{kind name ofType{kind name}}}}}}` is the passive half, already captured. The exploit half requires a consented account and writes a credential — not attempted. Do not test unauthenticated: it is an account-takeover primitive on live accounts.
+impact: If the nullable signature is honoured, full account takeover of any session-holding user by password reset with no current-password and no emailed token. Critical if confirmed; today an exactly-specified schema precondition with an unverified server-side check.
+testability: HUMAN_ONLY
+
+[HYP] Dangling CNAME on a scoped dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: Same-cycle DoH, `Accept: application/dns-json`. CNAME query Status 0, TTL 300, answer as above; A-follow Status 3 NXDOMAIN with the `switzerlandnorth.azurecontainerapps.io` SOA served by `ns1-35.azure-dns.com`. 16th consecutive cycle. Full sweep shows every sibling is a direct A record. No HTTP sent to the target, no DNS modified, no claim attempted.
+evidence_needed: Azure confirmation that Container App environment `gentleglacier-dfef6458` is deprovisioned and its name claimable. Do not modify DNS and do not attempt to claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` then `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`. Send no HTTP to the target.
+impact: If claimable, an attacker serves content on a trusted cineplex.de subdomain — brand-trusted phishing plus any cookie or token scoped to the parent domain. Medium, conditional; proves dangling DNS only.
+testability: AUTH_HELPED
+
+[PARKED] `storeSDKLogin(SDKLoginInput{cookieId!,datetime!,userId})` / `storeConsent(ConsentInput{cookieId!,datetime!,consent!})`: client-supplied `userId` to bind a cookie to an identity, and consent records written against a client-supplied cookie id. Read same cycle (prod+staging field sets equal). Ranked below the two hypotheses above rather than dropped: both are writes with real ATO and GDPR-audit implications, but the session-binding one cannot be separated from ordinary device-registration design without executing it, and I will not. Held for the same consented-account request that closes the other two.
+[PARKED] `logItems` log/telemetry injection: `LogItem{type,datetime,value}` and `LogOptions{source,appVersion,device,session,appId,url}` are entirely caller-controlled, so a forged analytics record or a `url`/`value` payload aimed at an internal dashboard is plausible. Cannot be tested — it is a write, and a scanner-triggered ingestion test would pollute production analytics.
+[PARKED] `editUserGroupFilter(userGroupFilter: UserGroupFilterInput{id!, …})` + the 24-type `TargetGroupClusterInput` audience DSL: caller supplies the target filter id and the segmentation criteria, so this is marketing-audience IDOR. Same blocked leg as above, lower business value than the credential and privilege paths.
+[PARKED] `joinBonusProgram(data: TeenInputData{firstName!,lastName!,birthdate!,email,gender!})`: collects a minor's identity, birthdate and gender. Inventory/data-protection note only — no flaw evidenced, and minors' data is exactly the category the program flags as sensitive.
+[FINAL] Survivors ranked: 1) `updatePassword` nullable `oldPassword`+`token` on a deprecated but almost certainly executable field, AUTH, 64, schema leg PASSIVE-complete, exploit leg HUMAN_ONLY. 2) `accessRight*` + `cinemasIds` mass assignment on cinema-operating-company create/update, BUSLOGIC, 66, schema leg PASSIVE-complete, exploit leg HUMAN_ONLY. 3) web-dev dangling CNAME, MISCONFIG, 93, AUTH_HELPED pending provider attestation. Parked above are all write-path surfaces blocked on the same missing credential. Retracted one false finding (staging-only account mutations) and closed a second evidence-depth gap (44 unread input objects).
+
+[NEXT] HUMAN: file the redacted bundle to bugs.olivermaicher.eu as four findings — (1) introspection, upgraded a **second** time, this cycle from field names to argument types to **the 44 input-object bodies**, with the note that the earlier "all args are scalars or named input objects" line was name-only and that 8 URL/credential-shaped args plus 4 in-body authorization flags and a 24-type audience DSL were underneath it; (2) `updatePassword(oldPassword:String, token:String, password:String!)` deprecated-with-nullable-credentials, stating explicitly that GraphQL `@deprecated` is advisory and I did not execute it; (3) `accessRight*` + `cinemasIds` mass assignment, labelled HUMAN_ONLY with the exact cross-tenant question; (4) web-dev CNAME/NXDOMAIN DoH pair with Azure claimability unverified — and in the same ticket request two consented low-privilege accounts in separate tenants plus one free-ticket campaign, the only thing that can close all three mutation-layer legs. Do **not** file the WAF 403s: the automated wall is a harness defect (trailing backtick, urllib UA), and do not file a "staging-only account mutations" finding — I withdrew it this cycle.
+
+[LEARN] ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: new attack surface at the input-object layer, one level below anything read in 25 cycles — `CinemaOperatingCompanyData` carries `accessRightDashboard`/`accessRightFilmStatistics`/`accessRightBonusProgram`/`accessRightCampaigning` plus a caller-supplied `cinemasIds` list, on both `createCinemaOperatingCompany` and `updateCinemaOperatingCompany(id, data)`. Staging field set equal, so the authorization flags are not environment-partitioned. Gates unverified, not executed.
+[LEARN] ACCEPTED AUTH @ graphql-api.app.cineplex.de: `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — both credential arguments independently nullable, so the signature admits a change authorized by neither. Field is `@deprecated`, which is advisory only; execution availability unverified. Same 150-name surface on staging.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: evidence upgraded a second time, from field names to argument types to the **contents of all 44 INPUT_OBJECT types** (200/18532 + 200/25019 + 200/42996 + 200/45191 B, all unauthenticated GET). Second instance of the same evidence-depth error already retracted on 09-26: a summary line asserting completeness that was derived from a shallower read than it claimed.
+[LEARN] CORRECTION self_error @ this session: the "10 staging-only account mutations" claim was mine and was wrong — I passed `includeDeprecated:true` to staging and omitted it for prod. Both envs expose the identical 150 names (140 active + 10 deprecated). Caught by re-reading my own query, not by a server signal. Recorded because the retracted claim was heading straight into a hypothesis about staging-only ATO primitives.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + `ns1-35.azure-dns.com` SOA, re-verified with the correct `Accept: application/dns-json` header so the machine-checkable path stays open. Sole dangle in the swept sets. PASSIVE.
+[LEARN] PARKED mutation cluster @ graphql-api.app.cineplex.de: `storeSDKLogin` (caller supplies `userId` to bind a cookie), `storeConsent` (consent written against a client-supplied cookie id), `logItems` (fully caller-controlled log/telemetry record), `editUserGroupFilter` (caller supplies target filter id + audience DSL) — all schema-verified same cycle, all writes, all blocked on the same consented-account leg.
+[LEARN] REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: unchanged. The `testing_` fields are present on prod too and the only distinguishing signal remains a method-mismatch error, which is descriptive and an explicit exclusion. Note this is a **different rationale** from the 10-deprecated-fields question above, which was schema-level and which I resolved rather than rejected.
+[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path. Unchanged, not re-probed.
+[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de; REJECTED TLS-dead @ app.staging, graphql-api.app.couat, login, sso: unchanged. REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: explicit program exclusions, unchanged.
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: 3/100 — this cycle issued 8 read-only GET requests, all ≥2 s apart: 4 to `graphql-api.app.cineplex.de` (18.5 KB type list, 25 KB input objects, 43 KB mutation args, 45 KB deprecated-inclusive args) and 2 to `graphql-api.app.staging.cineplex.de` (5.5 KB, 45.7 KB), plus 2 to the third-party resolver dns.google for the web-dev DoH pair. Every request carried no `Authorization` header and returned field names, argument names, type kinds and type names only. No field value, no mutation executed, no write path touched, no customer or employee identifier requested, no PII, no credential, no DNS modification, no HTTP to the CNAME target, no claim attempt, no login attempt. The residual exposure is that unauthenticated introspection was exercised against production four more times — the finding under report, inherently repeatable, and the same schema any client already downloads. The three mutation-layer legs, the cross-tenant ownership proof, and the Azure claimability attestation all remain with authorized humans holding consented credentials.

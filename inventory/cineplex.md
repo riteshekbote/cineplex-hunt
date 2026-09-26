@@ -1660,3 +1660,24 @@ wwww.cineplex.de
 - CHANGED `userById(id:"0")` -> 200/744B INVALID_ID with decodePublicId at /var/task/graphql.js:43464:15, no Authorization; `currentUser` -> 200/836B UNAUTHENTICATED; staging `userById(id:"0")` -> 200/744B iden
 - CHANGED Root cause of the 12-cycle verification gap: pipeline probe URLs carry a literal trailing backtick (-> 400) and the urllib UA hits the edge bot-gate (-> 403). Harness defect, not server behavior; bala
 - CHANGED probe-results.md now 1010 lines (20 rows appended this cycle); triage run-2026-09-26-01-56 is an UnknownError server fault (ref err_b491aaa2); reposcan still `TARGET_ORG not configured`, 0 public repo
+
+## 2026-09-26 10:16:02 UTC
+- NEW `graphql-api.app.cineplex.de` — first-ever full **type** inventory read, `?query={__schema{types{kind name}}}` → 200/18532 B unauthenticated GET: **385 types** = 275 OBJECT, 56 ENUM, **44 INPUT_OBJECT
+- NEW All **44 INPUT_OBJECT bodies** opened for the first time in one aliased GET (200/25019 B, unauthenticated): 11 reachable from mutation args, 1 (`TargetGroupClusterInput`) nests 24 more filter types (a
+- NEW `CinemaOperatingCompanyData` = `{name, cinemasIds:LIST(ID), accessRightDashboard:Boolean, accessRightFilmStatistics:Boolean, accessRightBonusProgram:Boolean, accessRightCampaigning:Boolean}` — **four 
+- NEW `SDKLoginInput{cookieId:String!, datetime:DateTime!, userId:String}` → `storeSDKLogin(data:)` — the client names the **userId a cookie gets bound to**.
+- NEW `ConsentInput{cookieId:String!, datetime:DateTime!, consent:Boolean!}` → `storeConsent(data:)` — a consent record is written against a client-supplied cookie id with no identity binding.
+- NEW `logItems(items:LIST(LogItem{type,datetime,value}), options:LogOptions{source,appVersion,device,session,appId,url})` — fully client-controlled telemetry record (type, value, session, url, timestamp).
+- NEW `UserGroupFilterInput{id:ID!, name, moviesOnWatchlistIds, moviesSeenIds, bonusPointsGeq/Leq, visitFrequency…}` → `editUserGroupFilter` — caller supplies the **target filter id** plus the audience crit
+- NEW Deprecated `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — **both** credential arguments are nullable, so the signature admits a change authorized by nei
+- CHANGED **RETRACTION of my own claim, same cycle:** "10 staging-only account mutations" was an artifact of passing `includeDeprecated:true` to staging and not to prod. Prod `includeDeprecated:true` → 150 = 14
+- CHANGED Prior KB line "all args are ID/String/Int/Boolean/Json scalars or named input objects" is **incomplete for the same reason the 09-26 name-only claim was false**: 44 named input objects existed and 0 h
+- CHANGED `web-dev.cineplex.de` dangle **16th consecutive cycle**: CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow **Status 3 NXDOMAIN**, authority `ns1-35
+- CHANGED Input-object parity staging vs prod: `CinemaOperatingCompanyData`, `SDKLoginInput`, `ConsentInput` field sets compare **equal** — the `accessRight*` flags are not environment-partitioned.
+- NEW graphql-api.app.cineplex.de argument-type enumeration via GET introspection (200, 13070B Query, 39292B Mutation) — first cycle with full arg types, not just names; 8 URL/credential-shaped args discove
+- NEW CORRECTION: prior KB claim "full mutation arg enumeration confirms no injection vectors" (2026-09-12..09-19) is factually incorrect — name-only read missed 8 dangerous args; CVSS 5.3→7.5 re-score need
+- NEW web-dev.cineplex.de automated DoH CNAME probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 / A-follow Status 3 NXDOMAIN + azure-dns.com SOA confir
+- CHANGED probe-results.md 996 lines, still ZERO POST GraphQL probes across all cycles; automated GraphQL GET probes carry literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED graphql-api.app.cineplex.de combined two-type introspection GET returned one-off 502 (16B) while single-type forms returned 200 — bare error code is descriptive-error (OOS), no state exposed
+- CHANGED buchung-dev.cineplex.de origin (194.77.169.121) TCP-reachable again (SPAs 200), /gateway/* still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED getOnlineTicketingBooking mutation root-gated: FORBIDDEN "You must be the root user" byte-identical with/without args and on staging — unauth SSRF lead killed by canary
