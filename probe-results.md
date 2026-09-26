@@ -1023,3 +1023,12 @@ https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D
 https://graphql-api.app.cineplex.de/graphql` -> HTTP 400
 https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
 https://graphql-api.app.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+
+## 2026-09-26 23:26:23 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7BqueryType%7Bfields%7Bname%7D%7DmutationType%7Bfields%7Bname%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7BuserById%28id%3A%220%22%29%7Bid%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
