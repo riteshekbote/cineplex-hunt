@@ -1832,3 +1832,5 @@ wwww.cineplex.de
 - CHANGED `web-dev.cineplex.de` automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerland
 - CHANGED `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+
+## 2026-09-27 20:51:54 UTC
