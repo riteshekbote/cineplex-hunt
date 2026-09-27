@@ -1050,3 +1050,10 @@ https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%
 https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
+
+## 2026-09-27 13:25:15 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7Btypes%7Bkind%20name%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
