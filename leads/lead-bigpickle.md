@@ -7379,3 +7379,89 @@ testability: PASSIVE
 [NEXT] PROBE: GET https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22ContentSectionListName%22%29%7BenumValues%7Bname%7D%7D%7D — resolves the enum value needed to canary contentSectionListByNameAndCinemas(name:ContentSectionListName!, cinemaIds:[ID]!), the last untested resolver in the family and the only remaining id-family field that is scoping-typed rather than single-id.
 [LEARN]
 [RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **1/100** — 24 requests this cycle, all GET, all read-only, all >=1.2 s apart, none carrying an Authorization header. 22 went to the two in-scope GraphQL hosts (1 root-type arg read, 12 canaries, 1 two-type field-list read, 2 base64-format discriminators, 1 root-type return-type read, 1 business-logic canary, 4 staging parity) and 2 to the third-party resolver dns.google for a host already in my own inventory. Every id argument was the literal "0" or the locally generated base64 of integer 1 ("MQ==") — neither can correspond to a customer record. Only __typename was selected on every canary; the only two object field lists read were Notification and BonusProgram, whose fields are non-customer metadata. No POST, no mutation, no write path, no login, no credential, no token, no voucher/ticket/order number, no PII, no customer identifier, no DNS modification, no claim attempt, no HTTP sent to the CNAME target, no testing_forceDeleteUser, no method change against any internal endpoint. The net safety result is negative by construction: the family was mapped using ids that cannot resolve to a person, so this cycle established scope-of-omission without touching a single record. One destructive field and one code-minting field remain deliberately untouched.
+## 2026-09-27 23:42:30 UTC [target] (model bigpickle)
+[PRIO] graphql-api.app.cineplex.de,9,axis a=10/b=9/t=10/g=10/c=6/f=9
+[PRIO] graphql-api.app.staging.cineplex.de,8,axis a=9/b=8/t=10/g=10/c=6/f=8
+[PRIO] web-dev.cineplex.de,5,axis a=3/b=6/t=2/g=10/c=2/f=10 — score 5 because it needs *no* further probing from me; it is provider-side and closed.
+[HYP] The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missing ownership check" inference is falsified on its one publicly-testable member
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 80
+reasoning: All 83 Query fields read with return types (200/8428B). 20 fields take an entity id; 15 reach decode-or-lookup with no Authorization, in 4 decoder contracts (decodePublicId ×9, base64-strict ×3, per-type parser ×3) and now 2 argument shapes (scalar `id`, list `cinemaIds[]` decoded inside `Array.map` :15095:127). `currentUser` → 836B `UNAUTHENTICATED` same cycle, so the auth layer exists on the same transport. Decisive test this cycle: with an *invalid* id the resolver returns `INVALID_ID` at `decodePublicId`; with a *valid public* cinema id (`Q2luZW1hOjIzOQ==`, obtained unauthenticated from `cinemas{id name}` → 92 entries of public location data) the same resolver returns `UNAUTHENTICATED` at `Object.selectedCinemaIdsDb` :40870. `INVALID_ID` vs `UNAUTHENTICATED` therefore discriminates *decode position*, not *check presence*.
+evidence_needed: One consented account's own `publicId` passed to any of the 9 `decodePublicId` customer-namespace resolvers with no `Authorization` header. `UNAUTHENTICATED` closes the family as decoder-oracle-only; a populated object confirms the finding at full severity.
+verify_steps: Re-run the invalid/valid canary pair per resolver and read `extensions.exception.stacktrace`; expect the decoder frame for an invalid id and the owning-check frame for a valid one. Never a customer id; `__typename` only.
+impact: Proven: unauthenticated reach to the decode/lookup layer on 15 resolvers, yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) — Low. If a post-decode check is absent on the 14 customer-namespace members: 51-field `User` identity, `onlineTicketingToken`, full financial history — High. Unresolved, and no longer the default assumption.
+testability: HUMAN_ONLY
+[HYP] Staging carries the identical 15-member pre-auth decoder family and the same present-and-firing ownership gate — no environment partitioning
+class: IDOR
+asset: graphql-api.app.staging.cineplex.de
+confidence: 88
+reasoning: Same-cycle parity on the new member: `contentSectionListByNameAndCinemas(name:CURATED,cinemaIds:["0"])` → 200/**766 B byte-identical** to prod, same `INVALID_ID`, same message, same `Array.map` list-decode shape, same `failedType:"Cinema"`; only bundle offsets differ (prod :43464/:15083, staging :43944/:15265), proving separate deployments rather than a shared origin. Previously established: 150/150 mutation names, 83/83 query names, 744 B `INVALID_ID` / 836 B `UNAUTHENTICATED` pair, 6/6 firing gates.
+evidence_needed: A staging id that returns a populated object, or a program-supplied staging credential. Parity of the *defect* is proven; parity of *data* is not.
+verify_steps: Repeat the invalid/valid canary pair against `graphql-api.app.staging.cineplex.de/` and `/graphql` and diff error codes and byte sizes against prod per field.
+impact: No mitigation by environment separation. With the shared internal LOGIN backend, staging is a credential-bearing surface with production-grade ordering, which raises the likelihood its data is real.
+testability: PASSIVE
+[HYP] Dangling CNAME to an unresolvable Azure Container Apps environment on a trusted parent domain
+class: MISCONFIG
+asset: web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: Re-probed this cycle, not carried. CNAME Status 0 TTL 300 answering the same target; A-follow Status 3 NXDOMAIN with the `ns1-35.azure-dns.com` SOA. 20 consecutive cycles, identical answer. Sole CNAME across the 14-host dev and systems sweep. No HTTP sent to the target.
+evidence_needed: Azure confirmation that environment `gentleglacier-dfef6458` is deprovisioned and its name claimable. Provider-side, not obtainable by testing.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` then the same for the target with `type=A`, each with `Accept: application/dns-json`. Status 0 + Status 3 is the signature. Do not modify DNS or claim.
+impact: Content served on a trusted `cineplex.de` subdomain — brand-trusted phishing plus any cookie or token scoped to the parent domain. Medium, conditional; proves dangling DNS only.
+testability: AUTH_HELPED
+[PARKED] mutation cluster and mass-assignment write family: schema-verified name-for-name, but every instance is a write requiring a session; no read-only verify step exists.
+[PARKED] staging_testing_oracle: REJECTED class — the only distinguishing signal is a descriptive method-mismatch error; field exists on prod.
+[PARKED] getOnlineTicketingBooking SSRF: root-gated, byte-identical with and without args. Dead.
+[PARKED] buchung-dev/bms-dev origin bypass: SPAs 200, `/gateway/*` 503 "Wartungsarbeiten"; backend-gated.
+[FINAL] 1. Decoder-oracle family, 15 resolvers / 4 contracts / 2 argument shapes, ownership-check presence *unresolved on 14, confirmed present on 1* (80) — 2. staging parity incl. the new member and the firing gate (88) — 3. web-dev.dangling CNAME (93, report-ready, provider-side)
+[NEXT] HUMAN: supply one consented account's own `publicId` to the single request that decides the family — `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22%3Cown-publicId%3E%22%29%7B__typename%7D%7D%7D` with **no** `Authorization` header. `UNAUTHENTICATED` → the family is a decoder oracle (Low, reportable now). A populated `User` → IDOR at full severity. This cycle proved the test is decisive by running the public-id half of it; the customer-id half is the only link left and cannot be reached without an account.
+[LEARN] REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: my own central inference is falsified. `contentSectionListByNameAndCinemas` with a valid public cinema id returns `UNAUTHENTICATED` at `selectedCinemaIdsDb`, not data. The `INVALID_ID`-vs-`UNAUTHENTICATED` split I used as the discriminator for 27 cycles measures *decode position*, not *check presence* — the same signature appears on a resolver that does enforce authorization. Severity must be re-scored down to the decoder oracle until a customer-namespace member is tested.
+[LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: the pre-auth decoder reach itself stands and is now better bounded — 15 resolvers, 4 decoder contracts, 2 argument shapes including a list decode inside `Array.map`, so a fix scoped to scalar `args.id` is incomplete.
+[LEARN] ACCEPTED public_cinema_namespace @ graphql-api.app.cineplex.de: `cinemas{id name}` is unauthenticated and returns 92 public cinema records; ids are base64 of `Cinema:<n>`. This gave a non-customer id for a decisive test with zero PII exposure — the safe way to falsify a finding of your own.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 83 Query fields with return types (8428 B) and the `ContentSectionListName` enum read this cycle, both unauthenticated GET.
+[LEARN] REJECTED harness_derived_conclusions @ probe tooling: demonstrated same-cycle — the pipeline's log records 403 for the exact `__type(name:"ContentSectionListName")` URL I fetched at 200. The log's silence on any host is not evidence of absence.
+[LEARN] REJECTED web-dev dangle, relay metrics, api.cineplex.de GET-bypass, TLS-dead hosts, and all explicit program exclusions: unchanged, not re-probed.
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **2/100** — 8 requests, all GET, read-only, all ≥2 s apart, none carrying an `Authorization` header. 7 to the two in-scope GraphQL hosts (1 enum read, 1 id-family canary on prod, 1 parity canary on staging, 1 `currentUser` control, 1 Query return-type read, 1 `cinemas{__typename}`, 1 `cinemas{id name}`), 1 to the third-party resolver for a host already in inventory. Every id argument was `"0"` or a public cinema business identifier from the unauthenticated cinema roster. No customer identifier, no PII field, no order/ticket/invoice/voucher number, no POST, no mutation, no write path, no login, no credential, no token, no DNS modification, no claim attempt, no HTTP to the CNAME target. The one meaningful step this cycle — supplying a valid id to a pre-auth resolver — was confined to the *Cinema* namespace, which is public marketing data, specifically so the test could not touch a person.
+[PRIO] graphql-api.app.cineplex.de,9,axis a=10/b=9/t=10/g=10/c=7/f=9 — score capped: finding is now proven and report-ready, so it needs no further probing from me
+[PRIO] graphql-api.app.staging.cineplex.de,8,axis a=9/b=8/t=10/g=10/c=6/f=8
+[PRIO] web-dev.cineplex.de,5,axis a=3/b=6/t=2/g=10/c=2/f=10 — provider-side, closed to me
+[HYP] Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup resolvers are individually unauthenticated in some cases and gated in others
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: Single-variable comparison holds transport, auth state and id value constant and varies only the resolver: `cinema(id:…)` 200/44B `{"data":{"cinema":…}}` versus `contentSectionListByNameAndCinemas(cinemaIds:[…])` 200/665B UNAUTHENTICATED. `movie(id:…)` 200/44B ungated on a second decoder contract. The check that does exist is a narrow session check (`Object.selectedCinemaIdsDb` :40870), not a shared guard.
+evidence_needed: A consented account's own `publicId` against `userById` with no `Authorization`. `UNAUTHENTICATED` → the defect stays Low (public catalogue). Populated `User` → High.
+verify_steps: Replay the four requests in the report; read `extensions.exception.stacktrace` to separate the decoder frame from the authorization frame.
+impact: **Low as demonstrated** — public cinema/film catalogue plus two internal counters, no PII, no revenue. The finding's value is that it *demonstrates* absent checks exist in this codebase while the same id pattern is applied to `userById`/`order`/`ticket`/`invoice`/`notification`, where absence would be High. That escalation is a falsifiable prediction, not a claim.
+testability: PASSIVE
+[HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before any authorization decision
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME to an unresolvable Azure Container Apps environment on a trusted parent domain
+class: MISCONFIG
+asset: web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: 20th consecutive cycle, fresh same-cycle DoH read, CNAME Status 0 TTL 300; A-follow NXDOMAIN with Azure SOA; no HTTP sent to the target.
+evidence_needed: Azure confirmation the environment is deprovisioned and claimable. Provider-side.
+verify_steps: Two DoH reads (CNAME then A on the target) with `Accept: application/dns-json`; Status 0 + Status 3 is the signature.
+impact: Trusted-parent content serving — brand-phishing plus parent-scoped cookie/token risk. Medium, conditional.
+testability: AUTH_HELPED
+[PARKED] mutation/mass-assignment write family: schema-verified name-for-name, every instance is a write needing a session, no read-only verify step.
+[PARKED] staging_testing_oracle, getOnlineTicketingBooking SSRF, buchung-dev/bms-dev origin bypass: dead or root-gated.
+[FINAL] 1. Inconsistent per-resolver authorization — proven, 2 ungated resolvers, zero PII, report-ready at Low (92) — 2. Pre-auth decode reach, 15 resolvers / 4 contracts / 2 argument shapes (85) — 3. web-dev dangling CNAME (93, provider-side)
+[NEXT] HUMAN: supply one consented account's own `publicId` to `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22%3Cown-publicId%3E%22%29%7B__typename%7D%7D%7D` with **no** `Authorization` header. `UNAUTHENTICATED` → the family is a decoder oracle, Low, and the report stands as written. Populated `User` → High, and the same request pattern applies across `order`/`ticket`/`invoice` via chaining. This is the only remaining link; public-namespace testing is exhausted (`companies` returns empty, `movies`/`bonusPrograms` require `ids`), so it cannot be reached without an account.
+[LEARN] REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: falsified by my own test. A syntactically invalid id cannot distinguish "check absent" from "check after decode" — both yield `INVALID_ID` plus a `decodePublicId` frame. Cost: one cycle and a wrong top finding held for 27 cycles.
+[LEARN] ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport, auth state and id value constant, vary only the resolver, and the comparison becomes self-evident. Two ungated resolvers, one gated, same id. No account, no PII, two curl commands a triager can replay.
+[LEARN] ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: enumerating a *non-customer* namespace yields valid ids and converts an untestable question into a testable one. This is how a top finding got falsified safely — reach for public data before reaching for an account.
+[LEARN] ACCEPTED ungated_read_impact_floor @ graphql-api.app.cineplex.de: measure what an ungated read actually returns before scoring it. `MovieStatistics` is two counters, not revenue; the honest severity is Low, and saying so is what makes the High-if-it-spreads argument credible.
+[LEARN] REJECTED enum_milestone @ graphql-api.app.cineplex.de: the `ContentSectionListName` enum was not the decisive step — resolving it produced an id-less field. The decisive step was finding an *enumerable public namespace*, which the enum search never implied.
+[LEARN] REJECTED harness_derived_conclusions @ probe tooling: same-cycle proof — the pipeline logged 403 for the exact enum URL I fetched at 200.
+[LEARN] REJECTED companies/bonusPrograms/screening enumeration; dangle, relay metrics, api GET-bypass, TLS-dead, staging oracle; all program exclusions: unchanged or closed on negative results.
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **2/100** — 20 requests, all GET, read-only, all ≥2 s apart, none carrying an `Authorization` header. 19 to the two in-scope GraphQL hosts, 1 to the third-party resolver for an inventoried host. Two returned 400 `GRAPHQL_VALIDATION_FAILED` (missing required argument) before reaching any resolver. Every id argument was `"0"` or a public business identifier from the unauthenticated `cinemas`/`allMovies` catalogues. No customer identifier, no PII field, no order/ticket/invoice/voucher number, no POST, no mutation, no write path, no login, no credential, no token, no DNS modification, no claim attempt, no HTTP to the CNAME target. The one step that carried real interpretive risk — feeding a valid id to a pre-auth resolver — was deliberately confined to the `Cinema` and `Movie` namespaces, which are public marketing data, precisely so it could not touch a person.

@@ -3947,3 +3947,33 @@
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified 
 - LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
 - LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba
+
+## RANKED HYPOTHESES 2026-09-27 23:42:41 UTC
+- [99] graphql-api.app.cineplex.de: GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production (from art/lead_nemotron3.txt)
+- [80] graphql-api.app.cineplex.de: The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missing ownership check" inference is falsified on its one publicly-testable member (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: supply one consented account's own `publicId` to the single request that decides the family — `GET https://graphql-api.app.cineplex.de/?query=%7BuserById
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkin
+- LEARN: REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: my own central inference is falsified. `contentSectionListByNameAndCinemas` with a valid public 
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: the pre-auth decoder reach itself stands and is now better bounded — 15 resolvers, 4 decoder contracts, 2 a
+- LEARN: ACCEPTED public_cinema_namespace @ graphql-api.app.cineplex.de: `cinemas{id name}` is unauthenticated and returns 92 public cinema records; ids are base64 of `C
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 83 Query fields with return types (8428 B) and the `ContentSectionListName` enum read t
+- LEARN: REJECTED harness_derived_conclusions @ probe tooling: demonstrated same-cycle — the pipeline's log records 403 for the exact `__type(name:"ContentSectionListNam
+- LEARN: REJECTED web-dev dangle, relay metrics, api.cineplex.de GET-bypass, TLS-dead hosts, and all explicit program exclusions: unchanged, not re-probed.
+- LEARN: REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: falsified by my own test. A syntactically invalid id cannot distinguish "check absent" from "che
+- LEARN: ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport, auth state and id value constant, vary only the resolver, and the comparison bec
+- LEARN: ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: enumerating a *non-customer* namespace yields valid ids and converts an untestable question in
+- LEARN: ACCEPTED ungated_read_impact_floor @ graphql-api.app.cineplex.de: measure what an ungated read actually returns before scoring it. `MovieStatistics` is two coun
+- LEARN: REJECTED enum_milestone @ graphql-api.app.cineplex.de: the `ContentSectionListName` enum was not the decisive step — resolving it produced an id-less field. The
+- LEARN: REJECTED harness_derived_conclusions @ probe tooling: same-cycle proof — the pipeline logged 403 for the exact enum URL I fetched at 200.
+- LEARN: REJECTED companies/bonusPrograms/screening enumeration; dangle, relay metrics, api GET-bypass, TLS-dead, staging oracle; all program exclusions: unchanged or cl
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in 
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified 
+- LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
+- LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba

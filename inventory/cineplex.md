@@ -1834,3 +1834,5 @@ wwww.cineplex.de
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 
 ## 2026-09-27 20:51:54 UTC
+
+## 2026-09-27 23:42:41 UTC
