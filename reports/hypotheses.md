@@ -3914,3 +3914,19 @@
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified 
 - LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
 - LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba
+
+## RANKED HYPOTHESES 2026-09-27 18:00:46 UTC
+- [99] graphql-api.app.cineplex.de: GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production (from art/lead_nemotron3.txt)
+- [86] graphql-api.app.cineplex.de: Pre-auth id-decode reaches the entity-lookup layer on **six** resolvers, not the four already documented, with a uniform non-enumerating guardrail (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: GET https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkin
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in 
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified 
+- LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
+- LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba

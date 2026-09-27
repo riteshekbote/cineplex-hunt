@@ -1821,3 +1821,14 @@ wwww.cineplex.de
 - CHANGED `web-dev.cineplex.de` automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerland
 - CHANGED `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+
+## 2026-09-27 18:00:46 UTC
+- NEW First-ever full **type inventory** GET on `graphql-api.app.cineplex.de` → 200/18532B, 385 types including 44 INPUT_OBJECT bodies; `CinemaOperatingCompanyData` carries 4 caller-supplied `accessRight*` 
+- NEW First-ever **argument-type** enumeration: 8 dangerous args — `login.privileged`, `startWebBooking.freeTicketSpend/linkedUsersIds`, `logUserScreeningInterests.freeTicketSpend/linkedUserIds`, `sendNotif
+- NEW **MASS-ASSIGNMENT CONFIRMATION**: `CinemaOperatingCompanyData.accessRight*` (4 flags) are **identical names** the server derives onto `UserPrivileges`; `updateUser(adminCinemaOperatingCompanyIds)` mir
+- NEW **CHAINING**: `ticket(id) → order → user` and `order(id) → user` reach the same 51-field `User` object **without calling `userById`** — three independent pre-auth-decode entry points
+- NEW **PHYSICAL-TO-PROFILE**: `userByQr(qrCode)` returns `User` — physical ticket stub → digital identity if ownership unchecked
+- NEW `getOnlineTicketingBooking` mutation **root-gated** (`FORBIDDEN "You must be the root user"` byte-identical with/without args, on staging) — unauth SSRF lead killed by canary
+- CHANGED `web-dev.cineplex.de` automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerland
+- CHANGED `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues

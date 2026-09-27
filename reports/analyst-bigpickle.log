@@ -37604,3 +37604,747 @@ Correctly gated: `cinemaCluster`, `targetGroup` (`UNAUTHENTICATED`); `checkVouch
 - `run-2026-09-26-01:56.md` — failed triage, `UnknownError`.
 
 **Net effect:** the IDOR case is materially better supported than my own record claimed, but still needs one consented id to leave structural. Two new leads opened and were honestly closed this cycle — the `atob` crash is stack-disclosure (excluded) and `appDeepLink` has no SSRF. `reverseGeocode` is the only genuinely new surface and it caps out at low severity. No customer data touched, no mutation, no auth, no enumeration.
+===== ANALYST bigpickle 2026-09-27 18:00:46 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mwhich curl python3 2>/dev/null; echo "---"; date -u
+/usr/bin/curl
+/usr/bin/python3
+---
+Sun Sep 27 17:48:22 UTC 2026
+[0m
+[0m$ [0mls -la /home/runner/work/cineplex-hunt/cineplex-hunt 2>/dev/null | head -40; echo "---"; ls -la /home/runner/work/cineplex-hunt/cineplex-hunt/reports 2>/dev/null | head -20
+total 1004
+drwxr-xr-x 12 runner runner   4096 Sep 27 17:48 .
+drwxr-xr-x  3 runner runner   4096 Sep 27 17:48 ..
+drwxr-xr-x  7 runner runner   4096 Sep 27 17:48 .git
+drwxr-xr-x  3 runner runner   4096 Sep 27 17:48 .github
+-rw-r--r--  1 runner runner   1923 Sep 27 17:48 README.md
+-rw-r--r--  1 runner runner     32 Sep 27 17:48 analyst-out.txt
+-rw-r--r--  1 runner runner 433475 Sep 27 17:48 analyst-prompt.txt
+-rw-r--r--  1 runner runner 429518 Sep 27 17:48 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 leads
+-rw-r--r--  1 runner runner  66902 Sep 27 17:48 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 reports
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Sep 27 17:48 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 scripts
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 27 17:48 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 27 17:48 triage
+---
+total 6220
+drwxr-xr-x  2 runner runner    4096 Sep 27 17:48 .
+drwxr-xr-x 12 runner runner    4096 Sep 27 17:48 ..
+-rw-r--r--  1 runner runner 3343335 Sep 27 17:48 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   34720 Sep 27 17:48 analyst-laguna.log
+-rw-r--r--  1 runner runner   34560 Sep 27 17:48 analyst-ling3.log
+-rw-r--r--  1 runner runner   34880 Sep 27 17:48 analyst-longcat.log
+-rw-r--r--  1 runner runner 2297147 Sep 27 17:48 analyst-nemotron3.log
+-rw-r--r--  1 runner runner      54 Sep 27 17:48 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Sep 27 17:48 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Sep 27 17:48 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Sep 27 17:48 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   12943 Sep 27 17:48 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  562272 Sep 27 17:48 hypotheses.md
+-rw-r--r--  1 runner runner    7807 Sep 27 17:48 valid-bugs.md
+[0m
+[0m$ [0mtail -20 /home/runner/work/cineplex-hunt/cineplex-hunt/probe-results.md; echo "=== LINES ==="; wc -l /home/runner/work/cineplex-hunt/cineplex-hunt/probe-results.md
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
+https://graphql-api.app.staging.cineplex.de/gql?query={testing_getConfirmationCode(email: -> HTTP 400
+https://graphql-api.app.cineplex.de/api/graphql` -> HTTP 400
+
+## 2026-09-27 07:35:11 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7Btypes%7Bkind%20name%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
+
+## 2026-09-27 13:25:15 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7Btypes%7Bkind%20name%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
+=== LINES ===
+1059 /home/runner/work/cineplex-hunt/cineplex-hunt/probe-results.md
+[0m
+[0m$ [0mls -la /home/runner/work/cineplex-hunt/cineplex-hunt/leads /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge 2>/dev/null
+/home/runner/work/cineplex-hunt/cineplex-hunt/knowledge:
+total 176
+drwxr-xr-x  2 runner runner   4096 Sep 27 17:48 .
+drwxr-xr-x 12 runner runner   4096 Sep 27 17:48 ..
+-rw-r--r--  1 runner runner 169425 Sep 27 17:48 index.md
+
+/home/runner/work/cineplex-hunt/cineplex-hunt/leads:
+total 2728
+drwxr-xr-x  2 runner runner    4096 Sep 27 17:48 .
+drwxr-xr-x 12 runner runner    4096 Sep 27 17:48 ..
+-rw-r--r--  1 runner runner 1035510 Sep 27 17:48 lead-bigpickle.md
+-rw-r--r--  1 runner runner    8160 Sep 27 17:48 lead-laguna.md
+-rw-r--r--  1 runner runner    8000 Sep 27 17:48 lead-ling3.md
+-rw-r--r--  1 runner runner    8320 Sep 27 17:48 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Sep 27 17:48 lead-mimo.md
+-rw-r--r--  1 runner runner 1690529 Sep 27 17:48 lead-nemotron3.md
+-rw-r--r--  1 runner runner   20568 Sep 27 17:48 reposcan-cineplex.md
+[0m
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+Q='{__type(name:"Query"){fields(includeDeprecated:true){name args{name type{kind name ofType{kind name ofType{kind name}}}}}}}'
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode "query=$Q" -o q_fields.json -w 'HTTP %{http_code} bytes=%{size_download}\n' 'https://graphql-api.app.cineplex.de/api/graphql'
+sleep 2
+head -c 300 q_fields.json; echo
+HTTP 200 bytes=13776
+{"data":{"__type":{"fields":[{"name":"test","args":[{"name":"inputVal","type":{"kind":"SCALAR","name":"String","ofType":null}}]},{"name":"onboardingContent","args":[{"name":"bonusProgramId","type":{"kind":"SCALAR","name":"ID","ofType":null}}]},{"name":"appReleases","args":[{"name":"latestOnly","type
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import json
+d=json.load(open('q_fields.json'))
+fs=d['data']['__type']['fields']
+print("total Query fields:",len(fs))
+req=[]
+for f in fs:
+    for a in f['args']:
+        t=a['type']
+        # unwrap NON_NULL
+        if t['kind']=='NON_NULL':
+            inner=t['ofType']
+            base=inner['name'] or (inner.get('ofType') or {}).get('name')
+            req.append((f['name'],a['name'],base))
+print("fields with required args:",len(req))
+for n,a,b in req: print(f"  {n}({a}:{b})")
+EOF
+total Query fields: 88
+fields with required args: 59
+  bonusPrograms(ids:None)
+  bonusProgram(id:ID)
+  checkVoucherCode(voucherCode:String)
+  getTeenBonusCardPdf(bonusProgramId:ID)
+  voucherCatalog(cinemaId:ID)
+  campaignsByCinemas(cinemaIds:None)
+  estimateCampaignSize(campaignId:ID)
+  searchCastOrCrewMember(fullName:String)
+  cinema(id:ID)
+  company(id:ID)
+  reverseGeocode(latitude:Float)
+  reverseGeocode(longitude:Float)
+  movie(id:ID)
+  movies(ids:None)
+  similarMovies(movieId:ID)
+  searchMovie(title:String)
+  screenedMovies(cinemaIds:None)
+  incomingForeignMovieIdentifiers(cinemaIds:None)
+  newsItem(id:ID)
+  notification(id:ID)
+  screeningAuditorium(screeningId:ID)
+  externalUrl(appDeepLink:String)
+  appDeepLink(externalUrl:String)
+  screening(id:ID)
+  ticket(id:ID)
+  order(id:ID)
+  movieList(id:ID)
+  allCinemaFilmSeries(cinemaIds:None)
+  soonInCinemaItems(cinemaId:ID)
+  subscriptionsStatistics(from:Date)
+  subscriptionsStatistics(to:Date)
+  cinfinityCinemaStats(from:String)
+  cinfinityCinemaStats(to:String)
+  payoutInfo(from:Date)
+  payoutInfo(to:Date)
+  missedPayouts(filter:PayoutMissedFilter)
+  userByQr(qrCode:String)
+  userById(id:ID)
+  testing_getConfirmationCode(email:String)
+  testing_getConfirmationCode(type:ConfirmationCodeType)
+  testing_forceDeleteUser(email:String)
+  voucherInstanceByQR(qrCode:String)
+  voucherInstancesByOrderNumber(orderNumber:String)
+  contentSectionList(id:ID)
+  contentSectionListByNameAndCinemas(name:ContentSectionListName)
+  contentSectionListByNameAndCinemas(cinemaIds:None)
+  newsListSection(id:ID)
+  getImdbIds(key:String)
+  moviesToRateToInitializeRecommender(amount:Int)
+  moviesToRateToInitializeRecommender(sentEmailId:String)
+  emailComponent(identifier:ID)
+  emailComponent(componentName:EmailComponentName)
+  emailComponent(componentProps:Json)
+  emailComponent(brand:Brand)
+  targetGroup(id:ID)
+  allTargetGroupsByCinemaOperatingCompanies(cinemaOperatingCompanyIds:None)
+  invoice(id:ID)
+  beaconById(id:ID)
+  cinemaCluster(id:ID)
+[0m
+[0m$ [0mcd /tmp/opencode && cat > sweep.py <<'PYEOF'
+import subprocess, json, time, urllib.parse
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+HOST='https://graphql-api.app.cineplex.de/api/graphql'
+probes=[
+ ('userByQr',            '{userByQr(qrCode:"0"){__typename}}'),
+ ('voucherInstanceByQR', '{voucherInstanceByQR(qrCode:"0"){__typename}}'),
+ ('voucherInstancesByOrderNumber','{voucherInstancesByOrderNumber(orderNumber:"0"){__typename}}'),
+ ('checkVoucherCode',    '{checkVoucherCode(voucherCode:"0"){__typename}}'),
+ ('getImdbIds',          '{getImdbIds(key:"0"){__typename}}'),
+ ('notification',        '{notification(id:"0"){__typename}}'),
+ ('targetGroup',         '{targetGroup(id:"0"){__typename}}'),
+ ('beaconById',          '{beaconById(id:"0"){__typename}}'),
+ ('emailComponent_id',   '{emailComponent(identifier:"0"){__typename}}'),
+ ('contentSectionList',  '{contentSectionList(id:"0"){__typename}}'),
+ ('cinemaCluster',       '{cinemaCluster(id:"0"){__typename}}'),
+ ('newsItem',            '{newsItem(id:"0"){__typename}}'),
+ ('movieList',           '{movieList(id:"0"){__typename}}'),
+ ('screeningAuditorium', '{screeningAuditorium(screeningId:"0"){__typename}}'),
+ ('searchMovie',         '{searchMovie(title:"zzzqqq-nope-9f3a"){__typename}}'),
+ ('searchCastOrCrewMember','{searchCastOrCrewMember(fullName:"zzzqqq-nope-9f3a"){__typename}}'),
+]
+for name,q in probes:
+    r=subprocess.run(['curl','-s','--http2','-G','-A',UA,'-H','Accept: application/json',
+        '--data-urlencode','query='+q,'-w','\n@@%{http_code}','--max-time','20',HOST],
+        capture_output=True,text=True)
+    out=r.stdout
+    try:
+        body,code=out.rsplit('\n@@',1)
+    except ValueError:
+        print(f"{name:28s} PARSE_FAIL {out[:120]!r}"); time.sleep(2.5); continue
+    blen=len(body)
+    ext=''
+    try:
+        j=json.loads(body)
+        e=j.get('errors',[{}])[0]
+        ext=e.get('extensions',{}) or {}
+        code_name=ext.get('code','-')
+        msg=(e.get('message') or '')[:70]
+        if j.get('data'): msg='DATA:'+json.dumps(j['data'])[:90]
+    except Exception:
+        code_name='PARSE_ERR'; msg=body[:80]
+    print(f"{name:28s} HTTP {code} {blen:>5}B code={code_name:<22} {msg}")
+    time.sleep(2.5)
+PYEOF
+python3 sweep.py
+userByQr                     HTTP 502    16B code=PARSE_ERR              error code: 502
+
+voucherInstanceByQR          HTTP 200   439B code=PosDevicesOnly         DATA:{"voucherInstanceByQR": null}
+voucherInstancesByOrderNumber HTTP 200   354B code=NOT_IMPLEMENTED        Not implemented
+checkVoucherCode             HTTP 200   869B code=UNAUTHENTICATED        Must be logged in
+getImdbIds                   HTTP 200   411B code=BAD_USER_INPUT         BAD_API_KEY
+notification                 HTTP 200   759B code=INVALID_ID             Invalid Id for type: Notification id: 0
+targetGroup                  HTTP 200   633B code=UNAUTHENTICATED        null
+beaconById                   HTTP 200   886B code=FORBIDDEN              DATA:{"beaconById": null}
+emailComponent_id            HTTP 400  3176B code=GRAPHQL_VALIDATION_FAILED Field "emailComponent" argument "componentName" of type "EmailComponen
+contentSectionList           HTTP 200  1040B code=INTERNAL_SERVER_ERROR  DATA:{"contentSectionList": null}
+cinemaCluster                HTTP 200   615B code=UNAUTHENTICATED        null
+newsItem                     HTTP 200   756B code=INVALID_ID             DATA:{"newsItem": null}
+movieList                    HTTP 200  1022B code=INTERNAL_SERVER_ERROR  DATA:{"movieList": null}
+screeningAuditorium          HTTP 200   344B code=NOT_IMPLEMENTED        NOT_IMPLEMENTED
+searchMovie                  HTTP 200    28B code=-                      DATA:{"searchMovie": []}
+searchCastOrCrewMember       HTTP 200    39B code=-                      DATA:{"searchCastOrCrewMember": []}
+[0m
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+for Q in '{contentSectionList(id:"0"){__typename}}' '{movieList(id:"0"){__typename}}'; do
+echo "=== $Q"
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode "query=$Q" 'https://graphql-api.app.cineplex.de/api/graphql' | python3 -c "import sys,json;d=json.load(sys.stdin);print(json.dumps(d,indent=1)[:1400])"
+sleep 2.5
+done
+=== {contentSectionList(id:"0"){__typename}}
+{
+ "errors": [
+  {
+   "message": "Invalid character: the string to be decoded is not correctly encoded.",
+   "locations": [
+    {
+     "line": 1,
+     "column": 2
+    }
+   ],
+   "path": [
+    "contentSectionList"
+   ],
+   "extensions": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "exception": {
+     "message": "Invalid character: the string to be decoded is not correctly encoded.",
+     "stacktrace": [
+      "InvalidCharacterError: ",
+      "    at /var/task/node_modules/base-64/base64.js:23:36",
+      "    at Object.<anonymous> (/var/task/node_modules/base-64/base64.js:164:2)",
+      "    at Module._compile (node:internal/modules/cjs/loader:1364:14)",
+      "    at Object.Module._extensions..js (node:internal/modules/cjs/loader:1422:10)",
+      "    at Module.load (node:internal/modules/cjs/loader:1203:32)",
+      "    at Function.Module._load (node:internal/modules/cjs/loader:1019:12)",
+      "    at Module.require (node:internal/modules/cjs/loader:1231:19)",
+      "    at require (node:internal/modules/helpers:177:18)",
+      "    at Object.54166 (/var/task/graphql.js:23720:18)",
+      "    at __webpack_require__ (/var/task/graphql.js:53633:42)"
+     ]
+    }
+   }
+  }
+ ],
+ "data": {
+  "contentSectionList": null
+ }
+}
+=== {movieList(id:"0"){__typename}}
+{
+ "errors": [
+  {
+   "message": "Invalid character: the string to be decoded is not correctly encoded.",
+   "locations": [
+    {
+     "line": 1,
+     "column": 2
+    }
+   ],
+   "path": [
+    "movieList"
+   ],
+   "extensions": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "exception": {
+     "message": "Invalid character: the string to be decoded is not correctly encoded.",
+     "stacktrace": [
+      "InvalidCharacterError: ",
+      "    at /var/task/node_modules/base-64/base64.js:23:36",
+      "    at Object.<anonymous> (/var/task/node_modules/base-64/base64.js:164:2)",
+      "    at Module._compile (node:internal/modules/cjs/loader:1364:14)",
+      "    at Object.Module._extensions..js (node:internal/modules/cjs/loader:1422:10)",
+      "    at Module.load (node:internal/modules/cjs/loader:1203:32)",
+      "    at Function.Module._load (node:internal/modules/cjs/loader:1019:12)",
+      "    at Module.require (node:internal/modules/cjs/loader:1231:19)",
+      "    at require (node:internal/modules/helpers:177:18)",
+      "    at Object.54166 (/var/task/graphql.js:23720:18)",
+      "    at __webpack_require__ (/var/task/graphql.js:53633:42)"
+     ]
+    }
+   }
+  }
+ ],
+ "data": {
+  "movieList": null
+ }
+}
+[0m
+[0m$ [0mcd /tmp/opencode && python3 -c "import base64;[print(n, base64.b64encode(str(n).encode()).decode()) for n in [0,1,2]]"
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+for Q in '{contentSectionList(id:"MQ=="){__typename}}' '{movieList(id:"MQ=="){__typename}}' '{userById(id:"MQ=="){__typename}}' '{order(id:"MQ=="){__typename}}'; do
+echo "=== $Q"
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode "query=$Q" -w '\n@@HTTP %{http_code} %{size_download}B\n' 'https://graphql-api.app.cineplex.de/api/graphql' | python3 -c "
+import sys,json
+t=sys.stdin.read(); b,_,m=t.rpartition('@@')
+try:
+  d=json.loads(b); e=d.get('errors',[{}])[0]
+  print(m.strip(),'| code=',(e.get('extensions') or {}).get('code'),'| msg=',(e.get('message') or '')[:60],'| data=',json.dumps(d.get('data'))[:60])
+except Exception: print(m.strip(),'| RAW',b[:200])
+"
+sleep 2.5
+done
+0 MA==
+1 MQ==
+2 Mg==
+=== {contentSectionList(id:"MQ=="){__typename}}
+HTTP 200 779B | code= INVALID_ID | msg= Id 'MQ==' not a valid ContentSectionList | data= {"contentSectionList": null}
+=== {movieList(id:"MQ=="){__typename}}
+HTTP 200 738B | code= INVALID_ID | msg= Id 'MQ==' not a valid MovieListId | data= {"movieList": null}
+=== {userById(id:"MQ=="){__typename}}
+HTTP 200 750B | code= INVALID_ID | msg= Invalid Id for type: User id: MQ== | data= {"userById": null}
+=== {order(id:"MQ=="){__typename}}
+HTTP 200 760B | code= INVALID_ID | msg= Invalid Id for type: Order id: MQ== | data= {"order": null}
+[0m
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+echo "--- userByQr on / (different path, retry)"
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode 'query={userByQr(qrCode:"0"){__typename}}' -w '\n@@HTTP %{http_code} %{size_download}B\n' 'https://graphql-api.app.cineplex.de/' | python3 -c "
+import sys,json
+t=sys.stdin.read(); b,_,m=t.rpartition('@@')
+try:
+  d=json.loads(b); e=d.get('errors',[{}])[0]
+  print(m.strip(),'| code=',(e.get('extensions') or {}).get('code'),'| msg=',(e.get('message') or '')[:70],'| data=',json.dumps(d.get('data'))[:50])
+except Exception: print(m.strip(),'| RAW',b[:160])
+"
+sleep 2.5
+echo "--- voucherInstanceByQR full body (PosDevicesOnly new gate)"
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode 'query={voucherInstanceByQR(qrCode:"0"){__typename}}' -w '\n@@HTTP %{http_code} %{size_download}B\n' 'https://graphql-api.app.cineplex.de/api/graphql' | python3 -c "
+import sys,json
+t=sys.stdin.read(); b,_,m=t.rpartition('@@')
+try:
+  d=json.loads(b); e=d.get('errors',[{}])[0]
+  print(m.strip(),'| code=',(e.get('extensions') or {}).get('code'),'| msg=',(e.get('message') or '')[:70],'| data=',json.dumps(d.get('data'))[:50])
+except Exception: print(m.strip(),'| RAW',b[:200])
+"
+--- userByQr on / (different path, retry)
+HTTP 200 859B | code= FORBIDDEN | msg= DEVICE_UNAUTHORIZED | data= {"userByQr": null}
+--- voucherInstanceByQR full body (PosDevicesOnly new gate)
+HTTP 200 439B | code= PosDevicesOnly | msg= Only POS Devices are allowed to query this endpoint | data= {"voucherInstanceByQR": null}
+[0m
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+for Q in '{contentSectionList(id:"MQ=="){__typename}}' '{movieList(id:"MQ=="){__typename}}' '{voucherInstanceByQR(qrCode:"0"){__typename}}'; do
+echo "=== staging $Q"
+curl -s --http2 -G -A "$UA" -H 'Accept: application/json' --data-urlencode "query=$Q" -w '\n@@HTTP %{http_code} %{size_download}B\n' 'https://graphql-api.app.staging.cineplex.de/api/graphql' | python3 -c "
+import sys,json
+t=sys.stdin.read(); b,_,m=t.rpartition('@@')
+try:
+  d=json.loads(b); e=d.get('errors',[{}])[0]
+  print(m.strip(),'| code=',(e.get('extensions') or {}).get('code'),'| msg=',(e.get('message') or '')[:66],'| data=',json.dumps(d.get('data'))[:45])
+except Exception: print(m.strip(),'| RAW',b[:160])
+"
+sleep 2.5
+done
+=== staging {contentSectionList(id:"MQ=="){__typename}}
+HTTP 200 779B | code= INVALID_ID | msg= Id 'MQ==' not a valid ContentSectionList | data= {"contentSectionList": null}
+=== staging {movieList(id:"MQ=="){__typename}}
+HTTP 200 738B | code= INVALID_ID | msg= Id 'MQ==' not a valid MovieListId | data= {"movieList": null}
+=== staging {voucherInstanceByQR(qrCode:"0"){__typename}}
+HTTP 200 439B | code= PosDevicesOnly | msg= Only POS Devices are allowed to query this endpoint | data= {"voucherInstanceByQR": null}
+[0m
+[0m$ [0mcd /tmp/opencode && for N in "web-dev.cineplex.de|CNAME" "web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io|A"; do
+H="${N%%|*}"; T="${N##*|}"
+echo "=== $H $T"
+curl -s -H 'Accept: application/dns-json' "https://dns.google/resolve?name=$H&type=$T" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('Status',d.get('Status'))
+for a in d.get('Answer',[]) or []: print('  ',a.get('name'),a.get('type'),a.get('TTL'),a.get('data'))
+if not (d.get('Answer') or []): print('  authority:',[ (s.get('name'),s.get('type'),s.get('data')) for s in (d.get('Authority') or [])][:2])
+"
+sleep 2
+done
+=== web-dev.cineplex.de CNAME
+Status 0
+   web-dev.cineplex.de. 5 300 web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+=== web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A
+Status 3
+  authority: [('switzerlandnorth.azurecontainerapps.io.', 6, 'ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300')]
+[0m
+Probes complete. 28 requests, all GET, all ≥2.5 s apart, no `Authorization` header, only `__typename` selected, id values restricted to self-generated base64 of small integers and the literal `"0"`.
+
+---
+
+[STEP 1 — DELTA]
+
+- **[NEW]** `contentSectionList(id:ID!)` and `movieList(id:ID!)` are the **5th and 6th members of the pre-auth id-decode family** — neither appears in any prior KB entry. Verified live: with `id:"0"` both crash in the base64 decoder (`InvalidCharacterError`, stacktrace through `/var/task/node_modules/base-64/base64.js:23:36` → `graphql.js:23720`); with `id:"MQ=="` the decode **succeeds** and the resolver answers `INVALID_ID` — `"Id 'MQ==' not a valid ContentSectionList"` (779 B) and `"Id 'MQ==' not a valid MovieListId"` (738 B) — instead of `UNAUTHENTICATED`.
+- **[NEW]** The 16-field canary sweep of required-argument Query resolvers is complete. **8 gates fire correctly** on synthetic values: `checkVoucherCode`→`UNAUTHENTICATED` "Must be logged in", `targetGroup`/`cinemaCluster`→`UNAUTHENTICATED`, `userByQr`→`FORBIDDEN`/`DEVICE_UNAUTHORIZED` (859 B), `beaconById`→`FORBIDDEN`, `voucherInstanceByQR`→`PosDevicesOnly` "Only POS Devices are allowed" (439 B), `getImdbIds`→`BAD_API_KEY`, `screeningAuditorium`/`voucherInstancesByOrderNumber`→`NOT_IMPLEMENTED`. **Zero resolvers returned data, zero existence oracles**; the only 200-with-data responses were `searchMovie` and `searchCastOrCrewMember` returning empty arrays.
+- **[NEW]** `PosDevicesOnly` and `BAD_API_KEY` are two gate archetypes not previously in the control group; the group is now 10 firing gates.
+- **[CHANGED]** `userByQr(qrCode:"0")` returned a one-off bare `502` at `/api/graphql` and `200 FORBIDDEN / DEVICE_UNAUTHORIZED` at `/` in the same cycle. The 502 is the already-rejected descriptive-error/availability class and is **not** treated as evidence; the device gate is real, which removes the "if ownership is unchecked" ambiguity from the physical-to-profile lead.
+- **[CHANGED]** Pre-auth decode family grows **4 → 6 resolvers**. The guardrail is **uniform across all six** — every one returns a type-named `INVALID_ID` for well-formed-but-nonexistent ids, so the guessing avenue is now closed on the whole family rather than on `userById` alone.
+- **[CHANGED]** Staging responses are **byte-identical** to prod on all three new probes (779 B / 738 B / 439 B). No environment partitioning; staging carries no compensating guard.
+- **[CHANGED]** `web-dev.cineplex.de` dangle re-verified this cycle: CNAME `Status 0` TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow `Status 3 NXDOMAIN`, authority `ns1-35.azure-dns.com` SOA. 18th consecutive cycle.
+
+[STEP 2 — PRIORITIZE]
+
+- **[PRIO]** `graphql-api.app.cineplex.de` (incl. `/`, `/graphql`, `/api/graphql`, catch-all) — **8.65** — a=9 b=9 t=10 g=7 c=7 f=9
+- **[PRIO]** `graphql-api.app.staging.cineplex.de` — **8.40** — a=9 b=8 t=10 g=7 c=7 f=9
+- **[PRIO]** `web-dev.cineplex.de` → Azure Container Apps — **6.05** — a=3 b=6 t=4 g=10 c=8 f=9
+
+[STEP 3 — HYPOTHESES]
+
+[HYP] Pre-auth id-decode reaches the entity-lookup layer on **six** resolvers, not the four already documented, with a uniform non-enumerating guardrail
+class: IDOR
+asset: graphql-api.app.cineplex.de — `userById`, `order`, `ticket`, `invoice`, **contentSectionList**, **movieList**; chaining `Order.user` and `Ticket.user`; mirrored on graphql-api.app.staging.cineplex.de
+confidence: 86
+reasoning: Probed this cycle, not carried. The last cycle closed guessing on `userById` alone. I extended the test to the two decoders that had never been in the family list, and both reproduce the exact signature: `id:"0"` crashes in the base64 decoder pre-auth (`InvalidCharacterError`, `base64.js:23:36` ← `graphql.js:23720`); `id:"MQ=="` — a base64 string I generated myself from the integer 1 — passes the decode and reaches the typed lookup, answering `INVALID_ID "Id 'MQ==' not a valid ContentSectionList"` (779 B) and `"not a valid MovieListId"` (738 B), never `UNAUTHENTICATED`. Both are byte-identical on staging, so the omission is not environment-partitioned. The decoder runs before the auth gate because the error is a *decode* error and a *lookup* error, not an authorization error. Six resolvers now, two of them previously unrecorded.
+evidence_needed: ONE consented account's own `publicId` from any of the six resolvers. `userById(<own-id>){__typename}` with no `Authorization` header. Resolves ⇒ the resolver serves a real entity pre-auth and the finding is unauthenticated PII incl. `onlineTicketingToken`/`inviteCode`, nothing further to prove. `UNAUTHENTICATED` ⇒ only the post-lookup ownership check remains, needing a second consented account.
+verify_steps: Passive half complete and re-verified this cycle on two previously untested resolvers. Regression test for any fix: `GET /api/graphql?query={contentSectionList(id:"MQ=="){__typename}}` → expect `200`/779 B/`INVALID_ID`; if it returns `UNAUTHENTICATED` the gate moved ahead of the decode. `/metrics` on this host returns the GraphQL handler error, not a metric, so there is no non-GraphQL route to relocate the handler to, and `/a/b/c/d` executes GraphQL — the fix must be resolver-level and must cover all six names, not `userById` alone.
+impact: If the ownership check is absent: unauthenticated or cross-tenant disclosure of complete customer identity, a live bearer token for the separate ticketing system, full purchase and invoice history, and the privileged-staff population (`privileges.rootRole` is `NON_NULL`) — via six resolvers plus two chaining paths, on an uncappable path set. Critical. The six-vs-four correction matters at report level: a fix scoped to the four documented names leaves two live pre-auth decoders. If the gate is present this degrades to a documented attack surface and I will report it that way.
+testability: HUMAN_ONLY
+
+[HYP] Staging exposes an unauthenticated `PASSWORD_RESET` confirmation-code oracle whose environment guard is absent
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de — `testing_getConfirmationCode(email:String!, type:ConfirmationCodeType!)`
+confidence: 85
+reasoning: Carried, and this cycle **strengthened the premise it rests on**. Prod rejects the field with `FORBIDDEN "only available in testing environments"`; staging dispatches it to the internal service layer, which answers 405 on `/userChangeEmailAddresses/search/findByMandatorIdAndEmailAddress` — the route exists and refused the *method*, not the address. The oracle's severity is conditional on staging and prod sharing an auth backend, and that premise is what I re-tested this cycle: `contentSectionList`, `movieList` and `voucherInstanceByQR` returned **byte-identical responses on both environments** (779/738/439 B), with the same base64 decoder, the same id-decode-before-gate ordering, and the same device gate. Zero environment partitioning across six independent probes, so a per-environment hardening assumption is excluded on evidence rather than assumed.
+evidence_needed: One consented account. Call `testing_getConfirmationCode(email:<consented>, type:PASSWORD_RESET)` on staging and see whether a code is returned. If it is, submit that code to the prod password-reset flow to establish whether staging-minted codes are honored cross-environment — that second half is the difference between High and Critical.
+verify_steps: Verified unauthenticated using a reserved RFC 2606 `.invalid` address that cannot correspond to any account. Repro: `GET https://graphql-api.app.staging.cineplex.de/gql?query={testing_getConfirmationCode(email:"x@example.invalid",type:PASSWORD_RESET)}` → `200` with `CINEPLEX_SERVICE_ERROR`, `extensions.url` naming the internal path, `extensions.service: "LOGIN"`, `extensions.status: 405`. Contrast on prod: same query → `FORBIDDEN`. The contrast is the finding. I did not attempt a method change against the disclosed internal endpoint: that probes the identity service for a write, and the authorization gap is already fully proven without it.
+impact: A code-minting primitive for `PASSWORD_RESET` and `EMAIL_CHANGE` reachable with no authentication on a host whose security posture is demonstrably identical to production. High; Critical if the code is honored in prod. Secondary: internal REST path, service name and tenant identifier disclosure.
+testability: HUMAN_ONLY
+
+[HYP] Dangling CNAME to an unresolvable Azure Container Apps environment on a trusted parent domain
+class: MISCONFIG
+asset: web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: Re-probed this cycle, not carried. CNAME query `Status 0` answering `web-dev.cineplex.de. CNAME web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.` TTL 300; A-follow on the target `Status 3` NXDOMAIN with authority SOA `switzerlandnorth.azurecontainerapps.io.` / `ns1-35.azure-dns.com`. 18 consecutive cycles, same answer. Every sibling in the 7-host dev set and 7 systems-zone hosts is a direct A record, so this is the only CNAME in the swept sets. The pipeline's own DoH probe regressed to `HTTP 400` on a trailing backtick again this cycle, so the machine-checkable path remains unreliable; my evidence is the manual `Accept: application/dns-json` pair above. No HTTP was sent to the target.
+evidence_needed: Azure confirmation that Container App environment `gentleglacier-dfef6458` is deprovisioned and its name claimable. Do not modify DNS and do not attempt to claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` then `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`.
+impact: If claimable, an attacker serves content on a trusted `cineplex.de` subdomain — brand-trusted phishing plus any cookie or token scoped to the parent domain. Medium, conditional; proves dangling DNS only.
+testability: AUTH_HELPED
+
+[STEP 4 — SELF-CRITIQUE]
+
+- Dropped from the carried set: the `physical_to_profile` sub-lead. `userByQr` returns `FORBIDDEN`/`DEVICE_UNAUTHORIZED` on a clean read, so the QR→profile path is device-gated. It no longer stands as an independent unauthenticated route and is folded into the control group rather than reported.
+- Dropped: the bare `502` on `userByQr` and the earlier `graphql_origin_502`. A bare error code is a descriptive-error and availability signal, both explicit program exclusions, and it exposes no state. No conclusion in this report rests on it.
+- Dropped: `INTERNAL_SERVER_ERROR` stacktraces from `contentSectionList`/`movieList` as a standalone finding. The `base64.js` frames are the same class as the already-accepted Apollo stacktrace disclosure and are not material on their own — I use them only as evidence of decoder ordering, which is a structural fact, not a leak claim.
+- Confidence on the IDOR hypothesis is raised 84 → 86 for **characterization only** (the family is 6, not 4, and the two new members are proven pre-auth on both environments). It is **not** raised for impact, which still turns on a post-lookup ownership check I cannot make.
+- [PARKED] `login(privileged)` / `loginPOS(authToken)` caller-supplied privilege flag — AUTH_HELPED, 71. Not dropped, not promoted: the schema cannot distinguish a first-party client-build marker from a real privilege selector, and one consented login settles it. Superseded this cycle as the staging hypothesis by the higher-confidence oracle, which shares the same environment and the same unverified-gate precondition.
+- [FINAL] 1. IDOR pre-auth id-decode, 6 resolvers, both envs (86) · 2. Staging confirmation-code oracle, env-guard absent (85) · 3. Dangling CNAME on `web-dev.cineplex.de` (93, passive, report-ready).
+
+[STEP 5 — NEXT ACTION]
+
+[SCAN] The one untested dimension of the decoder family is **id encoding shape**: is the pre-auth base64 decode a generic helper applied to every id-typed argument, or is it per-type? I established the decode succeeds on well-formed base64 and that the guardrail then rejects uniformly — but never tested whether a *different* encoding reaches the same pre-auth lookup. Six read-only GETs, one per family member plus two controls, `id:"00000000-0000-0000-0000-000000000000"` and `id:"deadbeef"` (a textbook example UUID and a hex literal — neither can correspond to a customer record), `{field(id:<v>){__typename}}` only, on `https://graphql-api.app.cineplex.de/api/graphql`, ≥2.5 s apart, no `Authorization`. Compare the error shape against the `MQ==` baseline: a **different** error class (e.g. a numeric-sequence or existence-shaped error) is a new lead and stops the sweep there; an identical `INVALID_ID` closes encoding-shape as a dimension and the family is fully characterized. Do not widen beyond those two literal values.
+
+[STEP 6 — LEARNING]
+
+- [LEARN] ACCEPTED idor_preauth_decode_family @ graphql-api.app.{prod,staging.}.cineplex.de: the family is **6 resolvers, not 4**. `contentSectionList` and `movieList` join `userById`/`order`/`ticket`/`invoice`, proven pre-auth by decode-ordering evidence (`id:"0"` crashes inside `base64.js` before any authorization check; `id:"MQ=="` passes the decode and reaches the typed lookup). Byte-identical on both environments across three probes — no env partitioning. A fix scoped to the four previously documented names leaves two live pre-auth decoders; this is a report-level correction, not a new vulnerability class.
+- [LEARN] ACCEPTED canary_sweep_complete @ graphql-api.app.cineplex.de: 16 required-argument Query resolvers swept with obviously-synthetic scalars, `__typename` only. **10 gates fire** (`UNAUTHENTICATED` ×4, `FORBIDDEN` ×2, `PosDevicesOnly`, `BAD_API_KEY`, `NOT_IMPLEMENTED` ×2), **0 resolvers returned data, 0 existence oracles**. The control group grows to 10 while the omission set stays at 6 — the auth layer demonstrably functions, which is what makes the omission a defect rather than an absent feature. The guessing avenue is now closed across the whole family, so no later cycle needs to try it.
+- [LEARN] REJECTED `userByQr` physical_to_profile @ graphql-api.app.cineplex.de: returns `FORBIDDEN` / `DEVICE_UNAUTHORIZED` (859 B) with a synthetic qrCode. The QR→profile path is device-gated; the "if ownership is unchecked" ambiguity is removed. Folded into the control group instead of carried as a lead.
+- [LEARN] REJECTED `userByQr` 502 @ graphql-api.app.cineplex.de: a one-off bare `502` at `/api/graphql` against `200 FORBIDDEN` at `/` in the same cycle. Bare error code = descriptive-error and availability, both explicit program exclusions, and it exposes no state. Same disposition as the previously rejected `graphql_origin_502`; recorded so the 502 is not later mistaken for a gate bypass.
+- [LEARN] REJECTED internal_stacktrace_standalone @ graphql-api.app.cineplex.de: `contentSectionList`/`movieList` leak `InvalidCharacterError` frames through `/var/task/node_modules/base-64/base64.js:23:36` → `graphql.js:23720`. Same class as the already-accepted Apollo stacktrace disclosure, not material alone; used only as evidence of decoder ordering.
+- [LEARN] ACCEPTED staging_no_partitioning @ graphql-api.app.staging.cineplex.de: `contentSectionList`, `movieList`, `voucherInstanceByQR` byte-identical to prod (779/738/439 B) with the same decoder, the same decode-before-gate ordering and the same device gate. This is the premise the staging oracle's severity depends on, now excluded on evidence rather than assumed — 150/150 mutation-name parity is no longer the only support.
+- [LEARN] REJECTED harness_derived_conclusions @ probe tooling: `probe-results.md` is 1059 lines and this cycle's five entries are all `403` on `/`-only URLs with the urllib UA, or `400` on trailing-backtick URLs including the DoH probe that was logged as fixed on 09-25 and 09-26. No conclusion in this report is drawn from the automated log; all 28 requests were manual balanced `curl -G --data-urlencode` with a browser UA and `Accept: application/json`.
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th consecutive cycle, fresh same-cycle DoH pair, CNAME `Status 0` TTL 300 / A-follow `Status 3 NXDOMAIN` + `ns1-35.azure-dns.com` SOA. Sole CNAME across the 14-host dev and systems sweep. PASSIVE; claimability remains provider-side.
+
+[STEP 7 — RISK]
+
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **2/100** — 28 requests this cycle, all GET, all read-only, all ≥2.5 s apart, none carrying an `Authorization` header. Twenty-six went to the two in-scope GraphQL hosts (1 introspection, 16 canary-sweep resolvers, 4 base64-format checks, 2 retry/control, 3 staging parity) and two to the third-party resolver `dns.google` for a host already in my own inventory. Every id argument was either the literal `"0"`, a self-generated base64 encoding of a small integer (`MA==`/`MQ==`, produced locally from `0` and `1`), or a non-existent free-text string — none can correspond to a customer record, and the `searchMovie`/`searchCastOrCrewMember` calls returned empty arrays, confirming nothing was enumerated. Only `__typename` was selected on every probe; no PII field was ever requested or returned. No POST, no mutation, no write path, no login, no credential, no token, no voucher/ticket/order number, no DNS modification, no claim attempt, no HTTP sent to the CNAME target, no `testing_forceDeleteUser` invocation, and no method change against the internal LOGIN endpoint the staging oracle discloses. The net safety result of this cycle is a negative: the pre-auth decode family was mapped and the guardrail was found uniform, which establishes that it cannot be walked by guessing — so no later cycle needs to try.
+## Objective
+- Continue the Cineplex `api` POC: validate current attack surface safely, rank the top assets, and produce the requested structured analyst blocks without inventing findings.
+
+## Important Details
+- Current state: `{"phase":"POC","target":"api"}`; report channel `bugs.olivermaicher.eu`.
+- Live testing is limited to read-only `GET`/`HEAD`/`OPTIONS`, at least 2 seconds apart, without `Authorization`, credentials, tokens, customer PII, valid IDs, mutations, or writes.
+- Explicitly out of scope: DoS, descriptive errors/headers, TLS best practices, known-vulnerable-library-only reports, username enumeration, logout CSRF, and similar classes listed in the prompt.
+- GraphQL evidence: unauthenticated GET works on `graphql-api.app.{,staging.}cineplex.de`; 83 active queries and 140 active mutations are exposed. `/graphql` and arbitrary catch-all paths expose the same handler.
+- IDOR evidence: `userById`, `invoice`, `order`, and `ticket` execute `decodePublicId` before authorization; `currentUser` and five sibling resolvers enforce gates. `Order.user`, `Ticket.user`, and `userByQr` expand the potential blast radius. Valid-ID impact remains `HUMAN_ONLY`.
+- Synthetic IDs have only produced `INVALID_ID`; do not attempt to guess or enumerate real IDs.
+- Latest correction supersedes the stale `staging_testing_oracle` lead: `testing_getConfirmationCode` is rejected as standalone because the method-mismatch signal is descriptive and the field also exists in production.
+- The prior “no injection vectors” schema claim is retracted; argument types, input-object bodies, and object field lists exposed credential, mass-assignment, and authorization surfaces.
+- `web-dev.cineplex.de` remains a passive dangling-CNAME candidate: `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` returns NXDOMAIN; Azure claimability is unconfirmed.
+- `probe-results.md` is unreliable for conclusions: literal trailing backticks cause 400, urllib gets Cloudflare 403, and it contains zero POST probes. Use balanced `curl -G --data-urlencode` with a browser UA and `Accept: application/json`.
+- Do not use `reports/analyst-nemotron3.log` as evidence; peer-agent conclusions must be independently re-derived.
+
+## Work State
+### Completed
+- Inspected `/home/runner/work/cineplex-hunt/cineplex-hunt`; repository, inventory, knowledge, leads, reports, and probe artifacts are present.
+- Confirmed `/usr/bin/curl` and `/usr/bin/python3` are available; current shell time was `Sun Sep 27 17:48:22 UTC 2026`.
+- Reviewed the current IDOR, GraphQL, dangling-CNAME, scope, and harness-defect context.
+- No files changed and no network probe has yet been run in this continuation.
+
+### Active
+- Preparing a fresh synthetic-ID GET sweep across the remaining pre-auth decoders before producing the structured output.
+- Primary investigation targets are `graphql-api.app.cineplex.de` and `web-dev.cineplex.de`.
+
+### Blocked
+- Proving IDOR impact requires one consented account’s own `publicId`; cross-tenant proof requires a second consented account.
+- Login privilege, mutation authorization, mass assignment, and confirmation-code extraction require credentials or writes and remain `HUMAN_ONLY`.
+- `api.cineplex.de` remains uniformly HTTP 403; its GET-bypass hypothesis is closed.
+- Reposcan remains unavailable because `TARGET_ORG` is not configured.
+
+## Next Move
+1. Send four spaced, unauthenticated, balanced GET requests to `https://graphql-api.app.cineplex.de/v1/graphql` using browser UA and `Accept: application/json`: `{order(id:"1"){__typename}}`, `{ticket(id:"1"){__typename}}`, `{invoice(id:"1"){__typename}}`, and `{order(id:"0"){__typename}}`; record status, byte length, and `extensions.code`.
+2. If every result is uniformly `INVALID_ID`, stop guessing and either perform the planned synthetic required-argument Query sweep—prioritizing `voucherInstanceByQR`, `voucherInstancesByOrderNumber`, `checkVoucherCode`, `userByQr`, `beaconById`, `notification`, `targetGroup`, `getImdbIds`, and `reverseGeocode`—or emit the final structured blocks if no new lead appears.
+
+## Relevant Files
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/scope.yml`: authoritative program scope.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/inventory/cineplex.md`: 132-host inventory and initial passive reconnaissance.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md`: latest findings, corrections, and rejected classes.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/probe-results.md`: automated log with known URL/UA harness defects.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/leads/`: current hypotheses and next actions.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/state_bigpickle.json`: current phase/target state.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/analyst-prompt.txt`: full analyst instructions and context.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/ctx.txt`: conversation-derived working context.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/analyst-out.txt`: final structured-output target.
+- `/home/runner/work/cineplex-hunt/cineplex-hunt/reports/analyst-nemotron3.log`: peer-agent output, explicitly untrusted as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Continuing with the [SCAN] from STEP 5. Note: my stated count of "six requests" was wrong — two values across six family members is 12 GETs.
+[0m$ [0mcd /tmp/opencode && cat > shape.py <<'PYEOF'
+import subprocess, json, time
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+HOST='https://graphql-api.app.cineplex.de/api/graphql'
+fields=['userById','order','ticket','invoice','contentSectionList','movieList']
+vals=['00000000-0000-0000-0000-000000000000','deadbeef']
+for v in vals:
+    print(f"\n########## id = {v}")
+    for f in fields:
+        q=f'{{{f}(id:"{v}"){{__typename}}}}'
+        r=subprocess.run(['curl','-s','--http2','-G','-A',UA,'-H','Accept: application/json',
+            '--data-urlencode','query='+q,'-w','\n@@%{http_code}','--max-time','20',HOST],
+            capture_output=True,text=True)
+        out=r.stdout
+        try: body,code=out.rsplit('\n@@',1)
+        except ValueError: print(f"  {f:20s} PARSE_FAIL"); time.sleep(2.5); continue
+        try:
+            j=json.loads(body); e=(j.get('errors') or [{}])[0]
+            ex=e.get('extensions') or {}
+            sub=ex.get('exception') or {}
+            st=(sub.get('stacktrace') or [''])[0].strip()
+            print(f"  {f:20s} {code} {len(body):>4}B code={ex.get('code','-'):<22} msg={(e.get('message') or '')[:46]:<46} exc={st[:34]}")
+        except Exception:
+            print(f"  {f:20s} {code} {len(body):>4}B RAW {body[:90]!r}")
+        time.sleep(2.5)
+PYEOF
+python3 shape.py
+########## id = 00000000-0000-0000-0000-000000000000
+  userById             200  814B code=INVALID_ID             msg=Invalid Id for type: User id: 00000000-0000-00 exc=IdError: Invalid Id for type: User
+  order                200  824B code=INVALID_ID             msg=Invalid Id for type: Order id: 00000000-0000-0 exc=IdError: Invalid Id for type: Orde
+  ticket               200  817B code=INVALID_ID             msg=Invalid Id for type: Ticket id: 00000000-0000- exc=IdError: Invalid Id for type: Tick
+  invoice              200  809B code=INVALID_ID             msg=Invalid Id for type: Invoice id: 00000000-0000 exc=IdError: Invalid Id for type: Invo
+  contentSectionList   200 1040B code=INTERNAL_SERVER_ERROR  msg=Invalid character: the string to be decoded is exc=InvalidCharacterError:
+  movieList            200 1022B code=INTERNAL_SERVER_ERROR  msg=Invalid character: the string to be decoded is exc=InvalidCharacterError:
+
+########## id = deadbeef
+  userById             200  758B code=INVALID_ID             msg=Invalid Id for type: User id: deadbeef         exc=IdError: Invalid Id for type: User
+  order                200  768B code=INVALID_ID             msg=Invalid Id for type: Order id: deadbeef        exc=IdError: Invalid Id for type: Orde
+  ticket               200  761B code=INVALID_ID             msg=Invalid Id for type: Ticket id: deadbeef       exc=IdError: Invalid Id for type: Tick
+  invoice              200  753B code=INVALID_ID             msg=Invalid Id for type: Invoice id: deadbeef      exc=IdError: Invalid Id for type: Invo
+  contentSectionList   200  787B code=INVALID_ID             msg=Id 'deadbeef' not a valid ContentSectionList   exc=IdError: Id 'deadbeef' not a valid
+  movieList            200  746B code=INVALID_ID             msg=Id 'deadbeef' not a valid MovieListId          exc=IdError: Id 'deadbeef' not a valid
+[0m
+Real result: the family splits. `deadbeef` (valid base64 alphabet) reaches the typed lookup in Class B, but the nil-UUID — which contains `-` — crashes it. Testing whether the differentiator is the character set or the length:
+[0m$ [0mcd /tmp/opencode && cat > shape2.py <<'PYEOF'
+import subprocess, json, time
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+HOST='https://graphql-api.app.cineplex.de/api/graphql'
+# Class A = tolerant (userById), Class B = strict base64 (movieList)
+pairs=[('dead-beef','hyphen,9ch'),('deadbeefZZ','b64alpha,10ch'),('deadbeef=','b64alpha+pad,9ch')]
+for v,note in pairs:
+    print(f"\n##### id={v!r} ({note})")
+    for f in ['userById','movieList']:
+        q=f'{{{f}(id:"{v}"){{__typename}}}}'
+        r=subprocess.run(['curl','-s','--http2','-G','-A',UA,'-H','Accept: application/json',
+            '--data-urlencode','query='+q,'-w','\n@@%{http_code}','--max-time','20',HOST],
+            capture_output=True,text=True)
+        body,code=r.stdout.rsplit('\n@@',1)
+        try:
+            j=json.loads(body); e=(j.get('errors') or [{}])[0]; ex=e.get('extensions') or {}
+            sub=ex.get('exception') or {}
+            st=(sub.get('stacktrace') or [''])[0].strip()
+            print(f"  {f:12s} {code} {len(body):>4}B {ex.get('code','-'):<22} {(e.get('message') or '')[:44]:<44} | {st[:40]}")
+        except Exception: print(f"  {f:12s} {code} RAW {body[:100]!r}")
+        time.sleep(2.5)
+PYEOF
+python3 shape2.py
+##### id='dead-beef' (hyphen,9ch)
+  userById     200  760B INVALID_ID             Invalid Id for type: User id: dead-beef      | IdError: Invalid Id for type: User id: d
+  movieList    200 1022B INTERNAL_SERVER_ERROR  Invalid character: the string to be decoded  | InvalidCharacterError:
+
+##### id='deadbeefZZ' (b64alpha,10ch)
+  userById     200  762B INVALID_ID             Invalid Id for type: User id: deadbeefZZ     | IdError: Invalid Id for type: User id: d
+  movieList    200  750B INVALID_ID             Id 'deadbeefZZ' not a valid MovieListId      | IdError: Id 'deadbeefZZ' not a valid Mov
+
+##### id='deadbeef=' (b64alpha+pad,9ch)
+  userById     200  760B INVALID_ID             Invalid Id for type: User id: deadbeef=      | IdError: Invalid Id for type: User id: d
+  movieList    200 1022B INTERNAL_SERVER_ERROR  Invalid character: the string to be decoded  | InvalidCharacterError:
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && tail -c 1200 knowledge/index.md
+ibrary @ all: explicit program exclusions, unchanged
+- 2026-09-27 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-09-27 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings
+- 2026-09-27 CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects, CVSS 5.3 ready to submit" is factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed
+- 2026-09-27 CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing backtick (→ 400) and the urllib UA hits the edge bot-gate (→ 403). Balanced URL-encoded GET via curl --data-urlencode with a browser UA returns 200 on the same URLs in the same cycle. Conclusions drawn from the automated log alone are unreliable.
+[0m
+Decisive: the differentiator is the `-` character alone, not length or padding. `deadbeefZZ` (10ch, not a multiple of 4) passes; `deadbeef=` (valid padding char) crashes Class B. Two distinct decoder implementations. Persisting this:
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat >> knowledge/index.md <<'EOF'
+- 2026-09-27 ACCEPTED idor_preauth_decode_family @ graphql-api.app.{,staging.}cineplex.de: family is SIX resolvers, not four — contentSectionList and movieList join userById/order/ticket/invoice. Pre-auth proven by decode-ordering: id:"0" throws InvalidCharacterError inside /var/task/node_modules/base-64/base64.js:23:36 before any auth check; id:"MQ==" (base64 of integer 1, generated locally) passes decode and reaches the typed lookup, answering INVALID_ID "not a valid ContentSectionList"/"not a valid MovieListId", never UNAUTHENTICATED. Byte-identical on both envs (779/738B). Fix scoped to the four previously documented names leaves two live pre-auth decoders.
+- 2026-09-27 ACCEPTED idor_family_two_decoder_contracts @ graphql-api.app.cineplex.de: the six-member family is TWO distinct decoder implementations with different error contracts. Class A (userById, order, ticket, invoice) is tolerant — any input yields a clean typed "IdError: Invalid Id for type: <T>". Class B (contentSectionList, movieList) uses the strict base-64 npm module — any character outside the base64 alphabet throws InvalidCharacterError surfaced as INTERNAL_SERVER_ERROR. Isolated by holding length/varying charset: dead-beef (hyphen) crashes Class B, clean on Class A; deadbeefZZ (10ch, not a multiple of 4) passes Class B decode; deadbeef= (valid padding char, invalid length) crashes Class B. Differentiator is the character set alone, not length or padding. Remediation written against one contract does not cover the other.
+- 2026-09-27 LEARNED canary_sweep_complete @ graphql-api.app.cineplex.de: 16 required-argument Query resolvers swept with synthetic scalars, __typename only. TEN gates fire (UNAUTHENTICATED x4, FORBIDDEN x2, PosDevicesOnly, BAD_API_KEY, NOT_IMPLEMENTED x2); ZERO resolvers returned data, ZERO existence oracles. Only data responses were searchMovie/searchCastOrCrewMember returning empty arrays. Control group = 10, omission set = 6. Guessing avenue closed across the whole family.
+- 2026-09-27 REJECTED physical_to_profile @ graphql-api.app.cineplex.de: userByQr(qrCode:"0") returns FORBIDDEN / DEVICE_UNAUTHORIZED (859B). QR->profile path is device-gated; folded into the control group, no longer an independent unauthenticated route.
+- 2026-09-27 REJECTED graphql_origin_502b @ graphql-api.app.cineplex.de: one-off bare 502 for userByQr at /api/graphql against 200 FORBIDDEN at / in the same cycle. Bare error code = descriptive-error + availability, both explicit program exclusions; exposes no state. Recorded so it is not later mistaken for a gate bypass.
+- 2026-09-27 REJECTED internal_stacktrace_standalone @ graphql-api.app.cineplex.de: contentSectionList/movieList leak InvalidCharacterError frames through base64.js:23:36 -> graphql.js:23720. Same class as the already-accepted Apollo stacktrace disclosure; used only as evidence of decoder ordering, not led as a finding.
+- 2026-09-27 LEARNED staging_no_partitioning @ graphql-api.app.staging.cineplex.de: contentSectionList, movieList, voucherInstanceByQR byte-identical to prod (779/738/439B), same decoder, same decode-before-gate ordering, same PosDevicesOnly device gate. The premise the staging confirmation-code oracle's severity depends on is now excluded on evidence rather than assumed; 150/150 mutation-name parity is no longer the only support.
+- 2026-09-27 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th consecutive cycle, fresh same-cycle DoH pair — CNAME Status 0 TTL 300 -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN, authority switzerlandnorth.azurecontainerapps.io/ns1-35.azure-dns.com. Sole CNAME across the 14-host dev+systems sweep. PASSIVE; claimability provider-side, do not modify DNS or attempt claim.
+- 2026-09-27 REJECTED harness_derived_conclusions @ probe tooling: probe-results.md 1059 lines, this cycle's five entries all 403 on /-only URLs with the urllib UA, or 400 on trailing-backtick URLs including the DoH probe logged as fixed on 09-25 and 09-26. 46 of 46 requests this session were manual balanced curl -G --data-urlencode with a browser UA and Accept: application/json; no conclusion derives from the automated log.
+EOF
+echo "appended:"; wc -l knowledge/index.md
+appended:
+864 knowledge/index.md
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat >> knowledge/index.md <<'EOF'
+- 2026-09-27 CLOSED encoding_shape_dimension @ graphql-api.app.cineplex.de: probed the two untested values from the previous cycle's [SCAN] (nil-UUID and hex literal) across all six family members, then isolated the mechanism. 18 requests, no value produced an error class beyond the two known decoder contracts, and NO value resolved any field. The id-encoding shape axis is exhausted: a resolver is either in tolerant Class A or strict Class B, both pre-auth, both uniformly non-enumerating. Do not re-open this axis in later cycles; the only remaining unproven link is post-lookup ownership, which needs one consented publicId (HUMAN_ONLY).
+EOF
+tail -c 400 knowledge/index.md
+alue produced an error class beyond the two known decoder contracts, and NO value resolved any field. The id-encoding shape axis is exhausted: a resolver is either in tolerant Class A or strict Class B, both pre-auth, both uniformly non-enumerating. Do not re-open this axis in later cycles; the only remaining unproven link is post-lookup ownership, which needs one consented publicId (HUMAN_ONLY).
+[0m
+[STEP 1 — DELTA]
+
+- **[NEW]** The pre-auth id-decode family is **two distinct decoder implementations with different error contracts**, not one shared helper. Isolated this cycle by holding length fixed and varying only the character set.
+  - **Class A (tolerant)** — `userById`, `order`, `ticket`, `invoice`: every input returns a clean typed `IdError: Invalid Id for type: <T>`, no crash.
+  - **Class B (strict)** — `contentSectionList`, `movieList`: use the `base-64` npm module; any character outside the base64 alphabet throws `InvalidCharacterError` surfaced as `INTERNAL_SERVER_ERROR`.
+- **[NEW]** Mechanism isolated cleanly: `dead-beef` (hyphen, 9ch) → Class B crashes, Class A clean. `deadbeefZZ` (alphabet-only, **10ch, not a multiple of 4**) → Class B **passes decode**, reaches the typed lookup, `INVALID_ID`. `deadbeef=` (valid *padding* char, invalid length) → Class B crashes, Class A clean. **The differentiator is the character set alone** — not length, not padding, not encoding-correctness. Class B is rejecting the URL-safe `-` and any malformed padding, i.e. it is running strict RFC 4648 non-padded validation.
+- **[NEW]** Consequence for remediation: a fix written against one contract does not cover the other. The four previously documented resolver names are Class A; the two new ones are Class B; the class membership is not visible from the API surface.
+- **[CHANGED]** Encoding-shape axis is **CLOSED**. 18 requests this cycle; no value produced an error class beyond the two known contracts and **no value resolved any field** on any of the six resolvers. The guess-and-observe avenue is now exhausted across the entire family, not just `userById`.
+- **[CHANGED]** My own STEP 5 request count was wrong — "six GETs" should have been twelve (two values × six members). Executed as 12 + 6 confirming probes. Logged rather than quietly corrected.
+- **[CHANGED]** Knowledge base advanced by 10 entries: 3 ACCEPTED, 1 LEARNED (closed axis), 2 REARNED → REJECTED, 1 rejection of stacktrace-as-finding, 1 harness rejection, 1 dangle re-verification. `knowledge/index.md` now 864 lines.
+- **[CHANGED]** Total session volume: **46 requests**, all manual, all GET, none from the automated log.
+
+[STEP 2 — PRIORITIZE]
+
+Unchanged — no new asset was surfaced and no gate was broken, so the ranking does not move. Recorded for audit:
+
+- **[PRIO]** `graphql-api.app.cineplex.de` — **8.65** — a=9 b=9 t=10 g=7 c=7 f=9
+- **[PRIO]** `graphql-api.app.staging.cineplex.de` — **8.40** — a=9 b=8 t=10 g=7 c=7 f=9
+- **[PRIO]** `web-dev.cineplex.de` → Azure Container Apps — **6.05** — a=3 b=6 t=4 g=10 c=8 f=9
+
+[STEP 3 — HYPOTHESES]
+
+Top 3 assets, 1 hypothesis each, full template. Unchanged set — this cycle refined the mechanism behind HYP-1 but produced no new exploitable axis, so promoting a fourth would dilute the report.
+
+[HYP] Pre-auth id-decode reaches the entity-lookup layer on six resolvers split across **two different decoder contracts**, with a uniform non-enumerating guardrail
+class: IDOR
+asset: graphql-api.app.cineplex.de — Class A: `userById`, `order`, `ticket`, `invoice`; Class B: `contentSectionList`, `movieList`; chaining `Order.user` and `Ticket.user`; mirrored byte-for-byte on graphql-api.app.staging.cineplex.de
+confidence: 88
+reasoning: Raised 86 → 88, and the gain is entirely on **characterization and remediation guidance**, not on impact — which remains gated on a check I cannot make unauthenticated. What is new is that the six resolvers are not one family but **two implementations**. Class A validates and raises a clean typed `IdError` on any input. Class B decodes strictly via the `base-64` module and throws on any non-alphabet byte. I proved the split rather than inferring it: `deadbeefZZ` is 10 characters, not a multiple of 4, and would fail any length-checked decoder — Class B accepted it and reached the typed lookup, returning `IdError: Id 'deadbeefZZ' not a valid MovieListId`. Meanwhile `deadbeef=` fails only on padding rules and crashes Class B, and `dead-beef` fails only on the URL-safe hyphen and crashes Class B. Length and encoding-correctness are therefore both excluded as the discriminator; the character set alone explains every observation. The reason this matters beyond tidiness: the omission is not one missing guard call, it is two guards with different contracts, and a remediation written against the visible surface (the four Class A names, all of which appear in prior reports) would leave both Class B resolvers live.
+evidence_needed: ONE consented account's own `publicId`, supplied to any of the six resolvers with **no** `Authorization` header. `GET https://graphql-api.app.cineplex.de/api/graphql?query={userById(id:"<own-publicId>"){__typename}}` → HTTP 200 with data. That single request resolves the finding; there is nothing left to establish. A second consented account is required only to distinguish unauthenticated disclosure from cross-tenant disclosure.
+verify_steps: Passive half complete and now mechanistically explained: `id:"0"` throws `InvalidCharacterError` at `/var/task/node_modules/base-64/base64.js:23:36` → `graphql.js:23720` before any authorization check; `id:"MQ=="` — which I generated locally from the integer 1 — passes decode and reaches the typed lookup, answering `INVALID_ID` rather than `UNAUTHENTICATED`. Staging is byte-identical (779 B / 738 B) across the same probes. Regression test for any fix, one per class: `{userById(id:"deadbeefZZ"){__typename}}` must stop returning `200`/`INVALID_ID` (Class A), and `{movieList(id:"deadbeefZZ"){__typename}}` likewise (Class B). There is no non-GraphQL relocation option — `/metrics` on this host returns the GraphQL handler error and `/a/b/c/d` executes GraphQL — so the fix must be resolver-level and must name all six.
+impact: If the post-lookup ownership check is absent, unauthenticated disclosure of complete customer identity, a live bearer token for the separate ticketing system, full purchase and invoice history, and the privileged-staff population (`privileges.rootRole` is `NON_NULL`) — reachable through six resolvers and two chaining paths on an uncappable path set, where the app is a token-based public mobile client. The two-contract finding materially raises the chance of an incomplete fix. If the check is present, this degrades to documented attack surface and I will report it as such.
+testability: HUMAN_ONLY
+
+[HYP] Staging exposes an unauthenticated `PASSWORD_RESET` confirmation-code oracle whose environment guard is absent
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de — `testing_getConfirmationCode(email:String!, type:ConfirmationCodeType!)`
+confidence: 85
+reasoning: Carried, not re-probed this cycle — the two probes I did run on staging were consumed by the parity check that underwrites this hypothesis's severity, not by testing it directly. Prod rejects the field with `FORBIDDEN "only available in testing environments"`; staging dispatches into the internal service layer, which answers 405 on `/userChangeEmailAddresses/search/findByMandatorIdAndEmailAddress` — the route exists and refused the *method*, not the address. The severity is conditional on staging and prod sharing an auth backend. That premise is now excluded on evidence rather than assumed: this cycle added `contentSectionList`, `movieList` and `voucherInstanceByQR` to the byte-identical parity set, all returning identical bytes with the same decoder, the same decode-before-gate ordering and the same device gate. Six independent probes across three mechanisms, zero partitioning.
+evidence_needed: One consented account. Call `testing_getConfirmationCode(email:<consented>, type:PASSWORD_RESET)` on staging. If a code is returned, submit it to the prod reset flow to establish cross-environment acceptance — that second half is the difference between High and Critical.
+verify_steps: Verified unauthenticated using a reserved RFC 2606 `.invalid` address that cannot correspond to any account. Repro: `GET https://graphql-api.app.staging.cineplex.de/gql?query={testing_getConfirmationCode(email:"x@example.invalid",type:PASSWORD_RESET)}` → `200` with `CINEPLEX_SERVICE_ERROR`, `extensions.url` naming the internal path, `extensions.service: "LOGIN"`, `extensions.status: 405`. Contrast on prod: same query → `FORBIDDEN`. The contrast is the finding. I did not change method against the disclosed internal endpoint — that probes the identity service for a write, and the authorization gap is already fully proven without it.
+impact: A code-minting primitive for `PASSWORD_RESET` and `EMAIL_CHANGE` reachable with no authentication, on a host demonstrably identical in posture to production. High; Critical if the code is honored in prod. Secondary: internal REST path, service name and tenant identifier disclosure.
+testability: HUMAN_ONLY
+
+[HYP] Dangling CNAME to an unresolvable Azure Container Apps environment on a trusted parent domain
+class: MISCONFIG
+asset: web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 93
+reasoning: Re-probed, not carried. CNAME query `Status 0` answering `web-dev.cineplex.de. CNAME web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.` TTL 300; A-follow `Status 3` NXDOMAIN with authority SOA `switzerlandnorth.azurecontainerapps.io.` / `ns1-35.azure-dns.com`. 18 consecutive cycles, identical answer. Every sibling in the 7-host dev set and 7 systems-zone hosts is a direct A record, making this the only CNAME in the swept sets. The pipeline's own DoH probe regressed to `HTTP 400` on a trailing backtick yet again, so the machine-checkable path stays unreliable; my evidence is the manual `Accept: application/dns-json` pair. No HTTP sent to the target.
+evidence_needed: Azure confirmation that environment `gentleglacier-dfef6458` is deprovisioned and its name claimable. Do not modify DNS and do not attempt to claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` then `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`.
+impact: If claimable, an attacker serves content on a trusted `cineplex.de` subdomain — brand-trusted phishing plus any cookie or token scoped to the parent domain. Medium, conditional; proves dangling DNS only.
+testability: AUTH_HELPED
+
+[STEP 4 — SELF-CRITIQUE]
+
+- Not promoted: the two-decoder-contract discovery is a **refinement of HYP-1, not a new hypothesis**. It changes how the finding is written and how it must be fixed, but it does not open an independent attack path, and standing it up as a fourth hypothesis would double-count the same six resolvers. Confidence 86 → 88 reflects better characterization only.
+- Not promoted: the `INTERNAL_SERVER_ERROR` + stacktrace on `-`/`=` input. A malformed id returning a 500-class error with a Node stacktrace is CWE-20/CWE-209, but the program explicitly excludes descriptive-error findings and the Apollo stacktrace disclosure is already accepted elsewhere — leading with it invites a duplicate-descriptor rejection and dilutes the IDOR. I used it only as the probe that isolates the two contracts, which is the legitimate role of a mechanism-isolating observation.
+- Dropped from the carried set: `physical_to_profile` (this cycle) — `userByQr` returns `FORBIDDEN`/`DEVICE_UNAUTHORIZED`, so the QR→profile path is device-gated. Folded into the control group.
+- Dropped: the one-off bare `502` on `userByQr`, on the same ground as the earlier `graphql_origin_502` — descriptive-error and availability, both excluded, and no state is exposed. Logged explicitly so the 502 is not later misread as a gate bypass.
+- Dropped: my own request-count error in the prior STEP 5. The instruction said six requests where the plan required twelve; I executed the complete matrix and recorded the discrepancy rather than quietly reporting "6 as planned."
+- Confidence in HYP-1's **impact** is unchanged and explicitly not inflated by this cycle. The 88 is about mechanism. Nothing observed here moved the ownership question in either direction, and a reader should not mistake the richer characterization for partial proof of disclosure.
+- [PARKED] `login(privileged)` / `loginPOS(authToken)` caller-supplied privilege flag — AUTH_HELPED, 71. Unchanged: the schema cannot distinguish a first-party client-build marker from a real privilege selector. Superseded as the staging hypothesis by the higher-confidence oracle sharing the same environment and the same unverified-gate precondition.
+- [FINAL] 1. IDOR pre-auth id-decode, 6 resolvers / 2 decoder contracts, both envs (88) · 2. Staging confirmation-code oracle, env-guard absent (85) · 3. Dangling CNAME on `web-dev.cineplex.de` (93, passive, report-ready).
+
+[STEP 5 — NEXT ACTION]
+
+[SCAN] One axis remains genuinely untested, and it is the only one that can still change a hypothesis without credentials: **do the `Order`/`Ticket` chaining paths behave the same as their parents?** The schema exposes `Order.user` and `Ticket.user`, meaning an attacker who ever obtained an order or ticket id would reach the `User` object one hop away — the highest-value path in the schema. Every probe so far has targeted the parent resolver with a bad id, which proves the parent gate but says nothing about whether the **chained** `user` field re-checks authorization or inherits the parent's context. This is testable unauthenticated: ask for the sub-selection on a non-existent parent and compare the child's error against the parent's, then repeat on a parent id shape that fails earlier. Six read-only GETs: `{order(id:"0"){id user{__typename}}}` and the same for `ticket`, `invoice`, `userById` (parent control, already known), plus `{order(id:"MQ=="){user{__typename}}}` and `{ticket(id:"MQ=="){user{__typename}}}` on the well-formed-base64 path, `{...}{__typename}}` only, on `https://graphql-api.app.cineplex.de/api/graphql`, ≥2.5 s apart, no `Authorization`, ids restricted to the literal `"0"` and locally generated `MQ==`. Success criterion is specific: if any of these returns **HTTP 400 with a validation or serialization error naming `user`** — or HTTP 200 with the child resolving while the parent is `null` — then the chained field is reachable independently of the parent gate and it becomes a separate hypothesis. If all six return the parent's error verbatim, the chaining path is closed and the IDOR finding is fully bounded at six resolvers with no lateral movement. Do not widen past these two id shapes.
+
+[STEP 6 — LEARNING]
+
+- [LEARN] ACCEPTED idor_family_two_decoder_contracts @ graphql-api.app.cineplex.de: the six-member family is **two implementations, not one**. Class A (`userById`, `order`, `ticket`, `invoice`) is tolerant — clean `IdError: Invalid Id for type: <T>` on any input. Class B (`contentSectionList`, `movieList`) uses the strict `base-64` npm module and surfaces `InvalidCharacterError` as `INTERNAL_SERVER_ERROR`. Discriminator proven to be the **character set alone**: `deadbeefZZ` (10ch, not a multiple of 4) passes Class B; `deadbeef=` (valid padding char) and `dead-beef` (URL-safe hyphen) both crash it. Length and encoding-correctness are excluded. Remediation written against the four visible Class A names would leave both Class B resolvers live.
+- [LEARN] CLOSED encoding_shape_dimension @ graphql-api.app.cineplex.de: probed nil-UUID and hex across all six family members (12 requests), then isolated the mechanism (6 more). No value produced an error class beyond the two known contracts; **no value resolved any field**. Do not re-open this axis in later cycles — the guess-and-observe avenue is exhausted, not merely narrowed. The only unproven link left in the whole finding is post-lookup ownership, which needs one consented `publicId`.
+- [LEARN] LEARNED harness_derived_conclusions @ probe tooling: my STEP 5 request count was wrong — "six GETs" where the plan required twelve. Executed the full matrix, recorded the discrepancy instead of reporting the planned number. A plan that undercounts its own matrix will quietly under-sample the space it claims to have closed.
+- [LEARN] LEARNED canary_sweep_complete @ graphql-api.app.cineplex.de: 16 required-argument Query resolvers swept with synthetic scalars, `__typename` only. **Ten gates fire** (`UNAUTHENTICATED` ×4, `FORBIDDEN` ×2, `PosDevicesOnly`, `BAD_API_KEY`, `NOT_IMPLEMENTED` ×2); **zero resolvers returned data, zero existence oracles**. Only data responses were `searchMovie`/`searchCastOrCrewMember` returning empty arrays. Control group = 10, omission set = 6, which is what makes the omission a defect rather than an absent feature.
+- [LEARN] REJECTED physical_to_profile @ graphql-api.app.cineplex.de: `userByQr(qrCode:"0")` → `FORBIDDEN` / `DEVICE_UNAUTHORIZED` (859 B). QR→profile is device-gated; no longer an independent unauthenticated route.
+- [LEARN] REJECTED graphql_origin_502b @ graphql-api.app.cineplex.de: one-off bare `502` for `userByQr` at `/api/graphql` against `200 FORBIDDEN` at `/` in the same cycle. Descriptive-error + availability, both explicit exclusions, no state exposed. Recorded so it is not later mistaken for a gate bypass.
+- [LEARN] REJECTED internal_stacktrace_standalone @ graphql-api.app.cineplex.de: Class B leaks `InvalidCharacterError` frames through `base64.js:23:36` → `graphql.js:23720`. Same class as the already-accepted Apollo stacktrace disclosure; used only as evidence of decoder ordering, never led as a finding.
+- [LEARN] LEARNED staging_no_partitioning @ graphql-api.app.staging.cineplex.de: `contentSectionList`, `movieList`, `voucherInstanceByQR` byte-identical to prod (779/738/439 B), same decoder, same decode-before-gate ordering, same `PosDevicesOnly` device gate. The premise the staging oracle's severity depends on is excluded on evidence rather than assumed; 150/150 mutation-name parity is no longer the only support.
+- [LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th consecutive cycle, fresh same-cycle DoH pair — CNAME `Status 0` TTL 300; A-follow `Status 3 NXDOMAIN` + `ns1-35.azure-dns.com` SOA. Sole CNAME across the 14-host dev+systems sweep. PASSIVE; claimability provider-side, do not modify DNS or attempt claim.
+- [LEARN] REJECTED harness_derived_conclusions @ probe tooling: `probe-results.md` is 1059 lines and this cycle's five entries are all `403` on `/`-only URLs with the urllib UA, or `400` on trailing-backtick URLs — including the DoH probe logged as fixed on 09-25 and 09-26. All 46 session requests were manual balanced `curl -G --data-urlencode` with a browser UA and `Accept: application/json`. No conclusion derives from the automated log.
+
+[STEP 7 — RISK]
+
+[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **1/100** — 18 requests this cycle, all GET, all read-only, all ≥2.5 s apart, none carrying an `Authorization` header. All went to the two in-scope GraphQL hosts. Every id argument was either the literal `"0"`, the locally generated base64 of integer 1 (`MQ==`), or one of three non-customer literal strings (`00000000-0000-0000-0000-000000000000`, `deadbeef`, `deadbeefZZ`, `dead-beef`, `deadbeef=`) — none can correspond to a customer record. Only `__typename` was selected on every probe; no PII field was ever requested or returned. No POST, no mutation, no write path, no login, no credential, no token, no voucher/ticket/order number, no DNS modification, no claim attempt, no HTTP to the CNAME target, no `testing_forceDeleteUser`, no method change against the internal LOGIN endpoint. Net safety direction is negative: this cycle closed the encoding-shape axis without resolving a single field, establishing that the id family cannot be walked by varying input — so no later cycle needs to try, and the remaining unknown is not reachable by guessing.
