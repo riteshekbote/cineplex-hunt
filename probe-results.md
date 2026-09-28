@@ -1085,3 +1085,10 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403
 https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
 https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22%3Cown-publicId%3E%22%29%7B__typename%7D%7D%7D` -> HTTP 400
+
+## 2026-09-28 02:02:26 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7Btypes%7Bkind%20name%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7Bfields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D -> HTTP 403

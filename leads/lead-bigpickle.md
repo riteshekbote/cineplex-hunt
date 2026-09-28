@@ -7465,3 +7465,7 @@ testability: AUTH_HELPED
 [LEARN] REJECTED harness_derived_conclusions @ probe tooling: same-cycle proof — the pipeline logged 403 for the exact enum URL I fetched at 200.
 [LEARN] REJECTED companies/bonusPrograms/screening enumeration; dangle, relay metrics, api GET-bypass, TLS-dead, staging oracle; all program exclusions: unchanged or closed on negative results.
 [RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: **2/100** — 20 requests, all GET, read-only, all ≥2 s apart, none carrying an `Authorization` header. 19 to the two in-scope GraphQL hosts, 1 to the third-party resolver for an inventoried host. Two returned 400 `GRAPHQL_VALIDATION_FAILED` (missing required argument) before reaching any resolver. Every id argument was `"0"` or a public business identifier from the unauthenticated `cinemas`/`allMovies` catalogues. No customer identifier, no PII field, no order/ticket/invoice/voucher number, no POST, no mutation, no write path, no login, no credential, no token, no DNS modification, no claim attempt, no HTTP to the CNAME target. The one step that carried real interpretive risk — feeding a valid id to a pre-auth resolver — was deliberately confined to the `Cinema` and `Movie` namespaces, which are public marketing data, precisely so it could not touch a person.
+## 2026-09-28 02:02:07 UTC [target] (model bigpickle)
+[CHANGED] **`graphql_entrypoint_inventory` — 2 entry points → 4.**
+[CHANGED] **`cors_allowlist_credentialed_null` — NEW finding, high-value.**
+[CHANGED] **`cors_rejection_is_a_crash` — NEW, mechanism proof.**

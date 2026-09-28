@@ -1,4 +1,14 @@
-## 2026-09-27 23:35:46 UTC [target] (model nemotron3)
+## 2026-09-28 01:58:16 UTC [target] (model nemotron3)
+[NEW] `/graphql` confirmed as second independent unauthenticated GraphQL entry point on `graphql-api.app.{,staging.}cineplex.de` (200/32B `__typename`, `x-powered-by: Express`, identical schema/IDOR surface on both paths)
+[NEW] First-ever full **type inventory** GET on `graphql-api.app.cineplex.de` → 200/18532B, 385 types including 44 INPUT_OBJECT bodies; `CinemaOperatingCompanyData` carries 4 caller-supplied `accessRight*` Booleans + `cinemasIds` list
+[NEW] First-ever **argument-type** enumeration: 8 dangerous args — `login.privileged`, `startWebBooking.freeTicketSpend/linkedUsersIds`, `logUserScreeningInterests.freeTicketSpend/linkedUserIds`, `sendNotifications.authToken/userIds`, `deleteCineplexUser.apiKey`, `capturePaypalOrderAndCreateTickets.bookingProcessId`, `buyAndRedeemVoucher.userId`, `reportApprovedSubscription.paypalApproveLink`
+[NEW] **MASS-ASSIGNMENT CONFIRMATION**: `CinemaOperatingCompanyData.accessRight*` (4 flags) are **identical names** the server derives onto `UserPrivileges`; `updateUser(adminCinemaOperatingCompanyIds)` mirrors `belongsToCinemaOperatingCompanies`/`adminForCinemas`; `increaseUserTestingStatus(testingStatus)` mirrors `User.testingStatus`
+[NEW] **CHAINING**: `ticket(id) → order → user` and `order(id) → user` reach the same 51-field `User` object **without calling `userById`** — three independent pre-auth-decode entry points
+[NEW] **PHYSICAL-TO-PROFILE**: `userByQr(qrCode)` returns `User` — physical ticket stub → digital identity if ownership unchecked
+[NEW] `getOnlineTicketingBooking` mutation **root-gated** (`FORBIDDEN "You must be the root user"` byte-identical with/without args, on staging) — unauth SSRF lead killed by canary
+[CHANGED] `web-dev.cineplex.de` automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA confirmed 17th consecutive cycle
+[CHANGED] `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+[CHANGED] `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 [PRIO] graphql-api.app.cineplex.de,9.9,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,9.6,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
 [PRIO] web-dev.cineplex.de,7.5,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
