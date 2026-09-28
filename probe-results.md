@@ -1106,3 +1106,17 @@ https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%
 https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7BinputFields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D -> HTTP 403
+
+## 2026-09-28 22:33:03 UTC
+https://graphql-api.app.cineplex.de/?query=%7B__schema%7Btypes%7Bkind%20name%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22Mutation%22%29%7Bfields%7Bname%20args%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/?query=%7B__type%28name%3A%22CinemaOperatingCompanyData%22%29%7BinputFields%7Bname%20type%7Bkind%20name%20ofType%7Bkind%20name%7D%7D%7D%7D%7D%7D -> HTTP 403
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://www.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://app.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://graphql-api.app.staging.cineplex.de/graphql?query=%7B__typename%7D -> HTTP 403

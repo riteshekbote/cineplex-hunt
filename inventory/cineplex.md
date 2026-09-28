@@ -1884,3 +1884,29 @@ wwww.cineplex.de
 - CHANGED `api_cineplex_get_bypass` REJECTED — strict 403 persisted across all methods/encodings; separate stricter edge config
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — no reachable web surface
+
+## 2026-09-28 22:32:49 UTC
+- NEW `graphql-api.app.cineplex.de` CORS allowlist contains a DEV origin in production: `Origin: http://localhost:3000` → HTTP 200, `access-control-allow-origin: http://localhost:3000`, `access-control-allo
+- NEW Same allowlist contains a CROSS-ENVIRONMENT origin: `Origin: https://app.staging.cineplex.de` → 200, ACAO exact-reflected, `ACAC: true` on the PRODUCTION host. `https://www.cineplex.de`, `https://app.
+- NEW `Origin: null` → 200 + `ACAO: null` + `ACAC: true` on all four paths (`/`, `/graphql`, `/api/graphql`, `/gql`) and on BOTH envs, verified on a GATED field: `currentUser{id}` returns 200 `UNAUTHENTICAT
+- NEW Disallowed origin → HTTP 500 HTML `Error: Not allowed by CORS` with frame `at origin (/var/task/graphql.js:47459:17)`, reproduced on both `/` and `/graphql` → the allowlist check is a *thrown exceptio
+- CHANGED My own 2026-09-28 hypothesis "CORS-allowlist credentialed reflection without an ambient credential, confidence 10" was scored on the wrong axis. The defect is not the absence of a cookie — it is that 
+- CHANGED Ambient-credential question narrowed but not closed: `currentUser{id}` is byte-identical with and without `Cookie: cineplex_session=AAAA; JSESSIONID=BBBB; jwt=CCCC` (200 `UNAUTHENTICATED`, `graphql.js
+- NEW `graphql-api.app.cineplex.de/` is the ONLY POST-capable route, and it is the ONLY route that answers CORS preflight. `OPTIONS /` → **204** with `ACAO: <origin>`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATC
+- NEW Preflight green-lights the exact request a third-party page would need: `POST` + `content-type: application/json` + `authorization`, credentialed, from an opaque `null` origin. The actual POST then re
+- NEW POST to `/graphql`, `/api/graphql`, `/gql` dies at API Gateway — `x-amzn-errortype: MissingAuthenticationTokenException`, body `{"message":"Missing Authentication Token"}`, and critically **no `x-powe
+- NEW `POST /` on both envs returns 200 with `ACAO: null` + `ACAC: true` and executes GraphQL (`{"data":{"__typename":"Query"}}`). Mutations are reachable over POST on the one route that also passes preflig
+- CHANGED My 2026-09-28 claim of "4 equivalent unauthenticated full-schema GraphQL surfaces", confidence 97, was wrong in a way that mattered. They ARE equivalent for read/introspection — same 83 queries, 140 m
+- CHANGED CORS impact ceiling moved. `ACAH: authorization` next to `ACAC: true` is the tell: a config that allows a bearer header while permitting credentials is a `credentials: true` applied without regard to 
+- NEW `/graphql` confirmed as second independent unauthenticated GraphQL entry point on `graphql-api.app.{,staging.}cineplex.de` (200/32B `__typename`, `x-powered-by: Express`, identical schema/IDOR surface
+- NEW Staging `/graphql` returns 500 Internal Server Error (differs from prod 200) — inconsistent error handling across environments
+- CHANGED `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED `web-dev.cineplex.de` automated DoH CNAME probe now returns **HTTP 200** (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerland
+- CHANGED `graphql-api.app.{,staging.}cineplex.de`: balanced URL-encoded GET `?query=%7B__typename%7D` → 200 manual curl (browser UA, --http2); automated urllib 403 — WAF client-differentiated bot-gate stable
+- CHANGED `idor_booking`: 4/4 resolvers (userById/invoice/order/ticket) GET-verified `id:"0"` → 200 INVALID_ID with decodePublicId stacktrace, NO Authorization; `currentUser` → 200 UNAUTHENTICATED on same surfa
+- CHANGED `staging_testing_oracle` REJECTED as standalone — method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType; no code ever extracted
+- CHANGED `relay_metrics/relay_broker_saturation` REJECTED — IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- CHANGED `api_cineplex_get_bypass` REJECTED — strict 403 persisted across all methods/encodings; separate stricter edge config
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — no reachable web surface
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
