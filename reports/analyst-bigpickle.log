@@ -40209,3 +40209,386 @@ I ran 11 read-only requests this cycle (10 prod + 1 staging, GET/OPTIONS, ≤1 r
 - **success_metrics:** 4/4 entry points now confirmed rather than 2 confirmed plus 2 false failures; 1/1 planned next-step items executed (entry-point resolution, 100%); 0 unsupported severity claims outstanding; 1 falsified finding formally retired; 0 requests exceeding the rate limit; 0 out-of-scope actions.
 - **learning_or_blockers:** Learned to treat every automated status as a claim about the tool rather than the target, and that the most valuable evidence in a rejected-looking 500 is the control flow it exposes. Blocked on a single human-gated item: reading `SameSite` off the session cookie, which is the sole determinant of whether the new CORS finding is High or Low, and the same request pattern already queued for the `userById` ownership test.
 - **recommendation:** Service the two pending authenticated requests in one pass — the `Set-Cookie` header read for CORS severity, and the consented own-`publicId` `userById` `__typename` test for the decoder family. Independently, file `/api/graphql` and `/gql` into the GraphQL exposure report so the remediation scope is four paths, and re-score that finding down from the stale 7.5 to a figure defensible against schema disclosure plus a public-catalogue read. Stop probing this target until the human responses arrive; remaining unblocked surface is exhausted.
+===== ANALYST bigpickle 2026-09-28 08:23:52 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la 2>/dev/null; echo "---GIT---"; git log --oneline -5 2>/dev/null
+total 1016
+drwxr-xr-x 12 runner runner   4096 Sep 28 08:20 .
+drwxr-xr-x  3 runner runner   4096 Sep 28 08:20 ..
+drwxr-xr-x  7 runner runner   4096 Sep 28 08:20 .git
+drwxr-xr-x  3 runner runner   4096 Sep 28 08:20 .github
+-rw-r--r--  1 runner runner   1923 Sep 28 08:20 README.md
+-rw-r--r--  1 runner runner     32 Sep 28 08:20 analyst-out.txt
+-rw-r--r--  1 runner runner 437582 Sep 28 08:20 analyst-prompt.txt
+-rw-r--r--  1 runner runner 433625 Sep 28 08:20 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 inventory
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 knowledge
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 leads
+-rw-r--r--  1 runner runner  70168 Sep 28 08:20 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 recon-notes
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 reports
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Sep 28 08:20 scope.yml
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 scripts
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_laguna.json
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_ling3.json
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_longcat.json
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_mimo.json
+-rw-r--r--  1 runner runner     33 Sep 28 08:20 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Sep 28 08:20 triage
+---GIT---
+0ea25cb triage 2026-09-28-08-13
+[0m
+[0m$ [0mls -la /tmp/opencode 2>/dev/null; ls -la reports 2>/dev/null | head -30; ls -la knowledge 2>/dev/null | head
+total 8
+drwxr-xr-x  2 runner runner 4096 Sep 28 08:20 .
+drwxrwxrwt 15 root   root   4096 Sep 28 08:20 ..
+total 6540
+drwxr-xr-x  2 runner runner    4096 Sep 28 08:20 .
+drwxr-xr-x 12 runner runner    4096 Sep 28 08:20 ..
+-rw-r--r--  1 runner runner 3603031 Sep 28 08:20 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   35588 Sep 28 08:20 analyst-laguna.log
+-rw-r--r--  1 runner runner   35424 Sep 28 08:20 analyst-ling3.log
+-rw-r--r--  1 runner runner   35752 Sep 28 08:20 analyst-longcat.log
+-rw-r--r--  1 runner runner 2354125 Sep 28 08:20 analyst-nemotron3.log
+-rw-r--r--  1 runner runner     271 Sep 28 08:20 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Sep 28 08:20 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Sep 28 08:20 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Sep 28 08:20 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   13115 Sep 28 08:20 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  574520 Sep 28 08:20 hypotheses.md
+-rw-r--r--  1 runner runner    7807 Sep 28 08:20 valid-bugs.md
+total 180
+drwxr-xr-x  2 runner runner   4096 Sep 28 08:20 .
+drwxr-xr-x 12 runner runner   4096 Sep 28 08:20 ..
+-rw-r--r--  1 runner runner 175826 Sep 28 08:20 index.md
+[0m
+[0m$ [0mgrep -n -i "origin" reports/analyst-bigpickle.log | tail -40
+40032:<pre>Error: Not allowed by CORS<br> &nbsp; &nbsp;at origin (/var/task/graphql.js:47459:17)<br> &nbsp; &nbsp;at /var/task/node_modules/cors/lib/index.js:219:13<br> &nbsp; &nbsp;at optionsCallback (/var/task/node_modules/cors/lib/index.js:199:9)<br> &nbsp; &nbsp;at corsMiddleware (/var/task/node_modules/cors/lib/index.js:204:7)<br> &nbsp; &nbsp;at Layer.handle [as handle_request] (/var/task/node_modules/express/lib/router/layer.js:95:5)<br> &nbsp; &nbsp;at trim_prefix (/var/task/node_modules/expres
+40036:  echo "=== Origin: $O ==="
+40037:  curl -s --http2 -D - -o /dev/null -G --data-urlencode 'query={__typename}' -H "User-Agent: $UA" -H 'Accept: application/json' -H "Origin: $O" https://graphql-api.app.cineplex.de/graphql 2>&1 | grep -iE '^(HTTP/|access-control|vary|set-cookie)' 
+40040:=== Origin: null ===
+40042:access-control-allow-origin: null
+40043:vary: Origin
+40045:=== Origin: https://www.cineplex.de ===
+40047:access-control-allow-origin: https://www.cineplex.de
+40048:vary: Origin
+40050:=== Origin: https://cineplex.de ===
+40052:access-control-allow-origin: https://cineplex.de
+40053:vary: Origin
+40055:=== Origin: https://app.cineplex.de ===
+40057:access-control-allow-origin: https://app.cineplex.de
+40058:vary: Origin
+40062:echo "=== J: preflight OPTIONS, Origin: null, custom header + POST ==="
+40064:  -H "User-Agent: $UA" -H 'Origin: null' \
+40069:echo "=== K: staging parity, Origin: null GET ==="
+40070:curl -s --http2 -D - -o /dev/null -G --data-urlencode 'query={__typename}' -H "User-Agent: $UA" -H 'Accept: application/json' -H 'Origin: null' https://graphql-api.app.staging.cineplex.de/graphql 2>&1 | grep -iE '^(HTTP/|access-control|vary|x-powered)'
+40074:=== J: preflight OPTIONS, Origin: null, custom header + POST ===
+40076:=== K: staging parity, Origin: null GET ===
+40078:access-control-allow-origin: null
+40079:vary: Origin
+40095:- Automated `probe-results.md` is unreliable: urllib triggers a client-differentiated Cloudflare 403, while malformed trailing-backtick URLs cause 400. Balanced browser-UA curl requests reach origin. Log silence is not counter-evidence.
+40107:- Closed avenues: staging `testing_getConfirmationCode` is descriptive-only and exists in prod; `getOnlineTicketingBooking` SSRF is root-gated; relay metrics are descriptive; `api.cineplex.de` remains strict 403; dev origin `/gateway/*` remains maintenance-gated.
+40144:- `Origin: null` → `200`, `access-control-allow-origin: null`, `access-control-allow-credentials: true`, `vary: Origin`
+40146:- First-party origins are reflected the same way: `https://cineplex.de`, `https://www.cineplex.de`, `https://app.cineplex.de` → `200` + reflected `ACAO` + `ACAC: true`
+40150:- `Origin: https://attacker.example` → `HTTP 500` with body `Error: Not allowed by CORS<br> &nbsp; at origin (/var/task/graphql.js:47459:17)<br> at /var/task/node_modules/cors/lib/index.js:219:13<br> at corsMiddleware (…/cors/lib/index.js:204:7)<br> at Layer.handle [as handle_request] (…/express/lib/router/layer.js:95:5)`
+40152:- Control (no `Origin`) → `200`. `Referer` alone, no `Origin` → `200`. So the trigger is strictly the `Origin` header.
+40153:- The `cors` library expects an origin callback to return `callback(null, false)`; this app **throws** instead. That is hand-rolled allowlist code, and it independently corroborates finding #1.
+40156:[CONFIRMED] **`cors_simple_requests_only`** — preflight `OPTIONS` with `Origin: null` requesting `POST` + custom headers returns `HTTP 403`. So non-simple requests are blocked at the edge, but simple requests (`GET`, and `POST` with `Content-Type: application/json`) require no preflight and are granted credentialed CORS.
+40167:1. **`cors_allowlist_credentialed_null`** — CORS allowlist with `Access-Control-Allow-Credentials: true` that includes the `null` origin, on prod and staging, with a GET-capable GraphQL surface. Status: `PROMISING`. CVSS: `TBD — pending cookie SameSite`. Evidence: `Origin: null` → 200 / `ACAO: null` / `ACAC: true` / `Vary: Origin`; three first-party origins reflected identically; staging parity; preflight 403 confirms simple-request path is open.
+40171:3. **`cors_rejection_stacktrace`** — non-allowlisted `Origin` yields 500 + `/var/task` + `cors/lib` + `express` stack trace on any path. Status: `OOS (descriptive) but kept as mechanism evidence for #1`. CVSS: `N/A — do not file standalone`.
+40175:1. **`null_origin_cookie_ride` — 96.** The allowlisted `null` origin lets a `file://` page, `data:` URL, or any sandboxed iframe make a **credentialed** simple cross-origin GET to the GraphQL API and read the response. Impact if true: cross-origin account data read, and because simple `POST application/json` needs no preflight, cross-origin **mutations** on the victim's session — a path to account modification. `evidence_needs`: the `Set-Cookie` header from an authenticated API response, to read `SameSite`. `kill_condition`: if the session cookie is `SameSite=Lax` or `Strict` (browser default), the browser will not attach it to a cross-site credentialed XHR, impact collapses to reading the already-public anonymous data → Low.
+40177:2. **`allowlisted_first_party_xss_chain` — 80.** An XSS or user-content injection on any of `https://cineplex.de`, `https://www.cineplex.de`, or `https://app.cineplex.de` combines with credentialed CORS to read and mutate any victim's account through the API. Impact: account takeover. `evidence_needs`: a user-controlled-content surface on an allowlisted origin. `kill_condition`: if none of the three allowlisted origins serves user-generated content and none has a reflected-input injection point, the chain is dead.
+40179:3. **`cors_throw_is_global_preauth_gate` — 70.** Because the CORS middleware runs before routing, every request carrying a non-allowlisted `Origin` — including from a legitimate first-party page that sets an unexpected `Origin`, a mobile WebView, or a corporate proxy that rewrites `Origin` — fails with 500. Impact: availability/robustness regression on a customer-facing path. `evidence_needs`: a legitimate first-party client that sends a non-allowlisted `Origin`. `kill_condition`: if no first-party client ever sends a non-allowlisted `Origin`, this is inert.
+40191:**[NEXT: AUTH_HELPED]** Request the `Set-Cookie` response header from a **single authenticated** `GET https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D%7D` using a consented tester account, and read the `SameSite` attribute off the session cookie. Zero request bodies, zero field data, zero PII — one header, one request. This single observation decides hypothesis #1: `SameSite=None` promotes the CORS finding to a High-severity credentialed cross-origin finding and makes #2 a serious chain; `SameSite=Lax/Strict` collapses it to Low and I close it. This is the same blocked pattern as the `userById` test, so the reporter can service both in one sitting with one request each.
+40202:`2/100`. This cycle: 11 requests total (10 to `graphql-api.app.cineplex.de`, 1 to `graphql-api.app.staging.cineplex.de`), all GET or OPTIONS, all spaced ≥3 s, browser UA, no `Authorization`, no cookies sent, no request bodies, no customer or account identifiers, no PII, no writes, no state change, no DNS or Azure resource touched, no DoM attempt. The 500 was induced by a single standard `Origin` header on a single request and is not a load or availability attack.
+40206:- **what_did_i_find_learned:** Found two previously untested unauthenticated GraphQL entry points, `/api/graphql` and `/gql`, both `200 {"data":{"__typename":"Query"}}`, bringing the confirmed total to four and correcting two false 400s in the log. Found a credentialed CORS allowlist on both prod and staging that includes the `null` origin and reflects first-party origins with `Access-Control-Allow-Credentials: true`, and a non-allowlisted `Origin` crashing the global pre-routing CORS middleware into a `/var/task` stack trace, which is the mechanism proof that the allowlist is hand-rolled. Learned that no status in `probe-results.md` is trustworthy without a manual balanced reproduction, and that a process defect exists where the automated prober replays literal `[NEXT]` block contents against live infrastructure. Formally withdrew `idor_ownership_omission` and marked the 7.5 CVSS stale.
+40207:- **context:** Phase `POC`, target `api`. Both GraphQL hosts sit behind Cloudflare and an allowlist-performing Express/Apollo origin at `/var/task`; a plain `GET` with no query returns a native Express 400. Anthropic models were unavailable, so the deep-hunt ran on the local opencode big-pickle model. The single blocking unknown across both remaining findings is a `SameSite` cookie attribute obtainable only with one consented authenticated request.
+[0m
+[0m$ [0mtail -c 6000 reports/analyst-bigpickle.log
+hese.
+- **S4, bias:** CORS findings are the most over-reported class in bug bounty and the triager has already rejected a CORS item in this engagement. I should expect "descriptive/CORS-without-credentials" as the rejection reason and make sure the `SameSite` evidence is in hand before spending the reporter's credibility on it.
+- **S5, safety:** The 500 is triggered by an ordinary client header, not an attack, and I did not attempt to induce load or repeat it in a loop. Request volume stayed at 11 for the cycle.
+
+## Step 5 — NEXT
+
+**[NEXT: AUTH_HELPED]** Request the `Set-Cookie` response header from a **single authenticated** `GET https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D%7D` using a consented tester account, and read the `SameSite` attribute off the session cookie. Zero request bodies, zero field data, zero PII — one header, one request. This single observation decides hypothesis #1: `SameSite=None` promotes the CORS finding to a High-severity credentialed cross-origin finding and makes #2 a serious chain; `SameSite=Lax/Strict` collapses it to Low and I close it. This is the same blocked pattern as the `userById` test, so the reporter can service both in one sitting with one request each.
+
+## Step 6 — LEARNING
+
+- **A 400 or 403 in an automated log is a claim about the tool, not the target.** Both new entry points and the entire CORS surface were hidden behind malformed URLs and a urllib UA. Every "blocked" result in this engagement deserves one manual balanced reproduction before it is written down as a fact.
+- **Header-triggered 500s are worth chasing precisely because they are usually OOS.** I nearly dismissed `Not allowed by CORS` as a noisy stack trace. Chasing it was what revealed the allowlist, the `null` entry, and the credentials flag. The stack trace was worthless; the control flow it exposed was the finding.
+- **The falsification cascade is now complete.** IDOR is dead, the 7.5 is stale, and the only remaining unblocked question on this target is a cookie attribute. I should resist adding breadth probes here and concentrate on the one human-gated request.
+- **Process defect to flag to the operator:** the automated prober scraped my previous cycle's `[NEXT] HUMAN` block and replayed it literally — `…userById(id:"<own-publicId>")…` appears in the 23:42 log. If I ever place a real identifier inside a `[NEXT]` block, the pipeline will fire it unauthenticated against live infrastructure. No real customer or account identifier may ever appear in a NEXT block; placeholders only.
+
+## Step 7 — RISK
+
+`2/100`. This cycle: 11 requests total (10 to `graphql-api.app.cineplex.de`, 1 to `graphql-api.app.staging.cineplex.de`), all GET or OPTIONS, all spaced ≥3 s, browser UA, no `Authorization`, no cookies sent, no request bodies, no customer or account identifiers, no PII, no writes, no state change, no DNS or Azure resource touched, no DoM attempt. The 500 was induced by a single standard `Origin` header on a single request and is not a load or availability attack.
+
+## Step 8
+
+- **what_did_i_find_learned:** Found two previously untested unauthenticated GraphQL entry points, `/api/graphql` and `/gql`, both `200 {"data":{"__typename":"Query"}}`, bringing the confirmed total to four and correcting two false 400s in the log. Found a credentialed CORS allowlist on both prod and staging that includes the `null` origin and reflects first-party origins with `Access-Control-Allow-Credentials: true`, and a non-allowlisted `Origin` crashing the global pre-routing CORS middleware into a `/var/task` stack trace, which is the mechanism proof that the allowlist is hand-rolled. Learned that no status in `probe-results.md` is trustworthy without a manual balanced reproduction, and that a process defect exists where the automated prober replays literal `[NEXT]` block contents against live infrastructure. Formally withdrew `idor_ownership_omission` and marked the 7.5 CVSS stale.
+- **context:** Phase `POC`, target `api`. Both GraphQL hosts sit behind Cloudflare and an allowlist-performing Express/Apollo origin at `/var/task`; a plain `GET` with no query returns a native Express 400. Anthropic models were unavailable, so the deep-hunt ran on the local opencode big-pickle model. The single blocking unknown across both remaining findings is a `SameSite` cookie attribute obtainable only with one consented authenticated request.
+- **contribution:** Decided the entry-point question that the harness had mis-recorded, raised the only credentialed-CORS candidate this engagement has produced, and closed out the false High so the report set stops carrying an indefensible claim.
+- **success_metrics:** 4/4 entry points now confirmed rather than 2 confirmed plus 2 false failures; 1/1 planned next-step items executed (entry-point resolution, 100%); 0 unsupported severity claims outstanding; 1 falsified finding formally retired; 0 requests exceeding the rate limit; 0 out-of-scope actions.
+- **learning_or_blockers:** Learned to treat every automated status as a claim about the tool rather than the target, and that the most valuable evidence in a rejected-looking 500 is the control flow it exposes. Blocked on a single human-gated item: reading `SameSite` off the session cookie, which is the sole determinant of whether the new CORS finding is High or Low, and the same request pattern already queued for the `userById` ownership test.
+- **recommendation:** Service the two pending authenticated requests in one pass — the `Set-Cookie` header read for CORS severity, and the consented own-`publicId` `userById` `__typename` test for the decoder family. Independently, file `/api/graphql` and `/gql` into the GraphQL exposure report so the remediation scope is four paths, and re-score that finding down from the stale 7.5 to a figure defensible against schema disclosure plus a public-catalogue read. Stop probing this target until the human responses arrive; remaining unblocked surface is exhausted.
+[0m
+[0m$ [0mwhich curl dig nslookup host jq 2>/dev/null; echo "---"; curl --version 2>/dev/null | head -1
+/usr/bin/curl
+/usr/bin/dig
+/usr/bin/nslookup
+/usr/bin/host
+/usr/bin/jq
+---
+curl 8.5.0 (x86_64-pc-linux-gnu) libcurl/8.5.0 OpenSSL/3.0.13 zlib/1.3 brotli/1.1.0 zstd/1.5.5 libidn2/2.3.7 libpsl/0.21.2 (+libidn2/2.3.7) libssh/0.10.6/openssl/zlib nghttp2/1.59.0 librtmp/2.3 OpenLDAP/2.6.10
+[0m
+[0m$ [0mgrep -n -iE "set-cookie|samesite" reports/analyst-bigpickle.log | tail -20
+11930:set-cookie: JSESSIONID=5B9A5325FC2CA96E91C687C7DAEF7863; Path=/; HttpOnly
+12034:set-cookie: JSESSIONID=C6F865744782794EC731186C2743DD07; Path=/; HttpOnly
+12060:- [NEW] profil.cineplex.de (probed 11:15 UTC): `/preference` = 103KB "Einstellungen" form; POST action `/preference/update`; reCAPTCHA sitekey literal `'false'`; GET `/preference/update` → 200 renders same form (no 405); anonymous JSESSIONID HttpOnly, no SameSite; no CSP; showtimeanalytics CDN asset.
+13519:echo "--- headers ---"; grep -iE "set-cookie|server|x-powered|x-|location|referrer-policy|content-security" /tmp/bp_hdr
+13525:set-cookie: JSESSIONID=96AB9D1E10D156C623DA4351A61A7E8B; Path=/; HttpOnly
+14811:- [PARKED] `sameSite`/`errorStatistics`/`saveImagePath`: gated or write-only.
+15302:set-cookie: MATOMO_SESSID=d574d131ab114c31b0924864d2099907; path=/; secure; HttpOnly; SameSite=Lax
+15391:set-cookie: MATOMO_SESSID=eb19f1c7fe2b913c1dcb02f14a36070c; path=/; secure; HttpOnly; SameSite=Lax
+15406:set-cookie: MATOMO_SESSID=53d4e266392244ab8084daa89d47e5fc; path=/; secure; HttpOnly; SameSite=Lax
+39968:curl -s --http2 -D - -o /dev/null -G --data-urlencode 'query={__typename}' -H "User-Agent: $UA" -H 'Accept: application/json' -H 'Origin: https://attacker.example' https://graphql-api.app.cineplex.de/ 2>&1 | grep -iE '^(HTTP|access-control|vary|x-powered|set-cookie|content-type)'
+39971:curl -s --http2 -D - -o /dev/null -G --data-urlencode 'query={__typename}' -H "User-Agent: $UA" -H 'Accept: application/json' -H 'Origin: https://attacker.example' https://graphql-api.app.cineplex.de/graphql 2>&1 | grep -iE '^(HTTP|access-control|vary|x-powered|set-cookie|content-type)'
+40037:  curl -s --http2 -D - -o /dev/null -G --data-urlencode 'query={__typename}' -H "User-Agent: $UA" -H 'Accept: application/json' -H "Origin: $O" https://graphql-api.app.cineplex.de/graphql 2>&1 | grep -iE '^(HTTP/|access-control|vary|set-cookie)' 
+40073:curl -s --http2 -D - -o /dev/null -H "User-Agent: $UA" https://graphql-api.app.cineplex.de/ 2>&1 | grep -iE '^(HTTP/|set-cookie|x-powered|access-control)'
+40167:1. **`cors_allowlist_credentialed_null`** — CORS allowlist with `Access-Control-Allow-Credentials: true` that includes the `null` origin, on prod and staging, with a GET-capable GraphQL surface. Status: `PROMISING`. CVSS: `TBD — pending cookie SameSite`. Evidence: `Origin: null` → 200 / `ACAO: null` / `ACAC: true` / `Vary: Origin`; three first-party origins reflected identically; staging parity; preflight 403 confirms simple-request path is open.
+40175:1. **`null_origin_cookie_ride` — 96.** The allowlisted `null` origin lets a `file://` page, `data:` URL, or any sandboxed iframe make a **credentialed** simple cross-origin GET to the GraphQL API and read the response. Impact if true: cross-origin account data read, and because simple `POST application/json` needs no preflight, cross-origin **mutations** on the victim's session — a path to account modification. `evidence_needs`: the `Set-Cookie` header from an authenticated API response, to read `SameSite`. `kill_condition`: if the session cookie is `SameSite=Lax` or `Strict` (browser default), the browser will not attach it to a cross-site credentialed XHR, impact collapses to reading the already-public anonymous data → Low.
+40186:- **S4, bias:** CORS findings are the most over-reported class in bug bounty and the triager has already rejected a CORS item in this engagement. I should expect "descriptive/CORS-without-credentials" as the rejection reason and make sure the `SameSite` evidence is in hand before spending the reporter's credibility on it.
+40191:**[NEXT: AUTH_HELPED]** Request the `Set-Cookie` response header from a **single authenticated** `GET https://graphql-api.app.cineplex.de/graphql?query=%7B__typename%7D%7D` using a consented tester account, and read the `SameSite` attribute off the session cookie. Zero request bodies, zero field data, zero PII — one header, one request. This single observation decides hypothesis #1: `SameSite=None` promotes the CORS finding to a High-severity credentialed cross-origin finding and makes #2 a serious chain; `SameSite=Lax/Strict` collapses it to Low and I close it. This is the same blocked pattern as the `userById` test, so the reporter can service both in one sitting with one request each.
+40207:- **context:** Phase `POC`, target `api`. Both GraphQL hosts sit behind Cloudflare and an allowlist-performing Express/Apollo origin at `/var/task`; a plain `GET` with no query returns a native Express 400. Anthropic models were unavailable, so the deep-hunt ran on the local opencode big-pickle model. The single blocking unknown across both remaining findings is a `SameSite` cookie attribute obtainable only with one consented authenticated request.
+40210:- **learning_or_blockers:** Learned to treat every automated status as a claim about the tool rather than the target, and that the most valuable evidence in a rejected-looking 500 is the control flow it exposes. Blocked on a single human-gated item: reading `SameSite` off the session cookie, which is the sole determinant of whether the new CORS finding is High or Low, and the same request pattern already queued for the `userById` ownership test.
+40211:- **recommendation:** Service the two pending authenticated requests in one pass — the `Set-Cookie` header read for CORS severity, and the consented own-`publicId` `userById` `__typename` test for the decoder family. Independently, file `/api/graphql` and `/gql` into the GraphQL exposure report so the remediation scope is four paths, and re-score that finding down from the stale 7.5 to a figure defensible against schema disclosure plus a public-catalogue read. Stop probing this target until the human responses arrive; remaining unblocked surface is exhausted.
+[0m
+[0m$ [0mcd /tmp/opencode && cat > doh.sh <<'EOF'
+#!/bin/bash
+# Passive DNS sweep of SaaS CNAME TARGETS already published in Cineplex DNS.
+# DoH only (dns.google). No HTTP is sent to any target.
+for T in web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io \
+         cineplex-preference.showtimeanalytics.com \
+         cineplex.zammad.com \
+         nx37783.your-storageshare.de \
+         cineplex-relay.iocnt.net \
+         ingress-external.n-web-k8s1.web.n.ntxzone.de \
+         talk.tho.ntxzone.de \
+         t.mailjet.com ; do
+  A=$(curl -s -m 12 -H 'Accept: application/dns-json' "https://dns.google/resolve?name=${T}&type=A" | jq -r '[.Status, (.Answer//[]|map(.data)|join(" | "))]|@tsv' 2>/dev/null)
+  sleep 1
+  C=$(curl -s -m 12 -H 'Accept: application/dns-json' "https://dns.google/resolve?name=${T}&type=CNAME" | jq -r '[.Status, (.Answer//[]|map(.data)|join(" | "))]|@tsv' 2>/dev/null)
+  sleep 1
+  printf '%-62s A[%s]  CNAME[%s]\n' "$T" "$A" "$C"
+done
+EOF
+bash doh.sh
+web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A[3	]  CNAME[3	]
+cineplex-preference.showtimeanalytics.com                      A[0	dublin-pro-public.showtimeanalytics.com. | 35.71.139.149 | 52.223.10.255]  CNAME[0	dublin-pro-public.showtimeanalytics.com.]
+cineplex.zammad.com                                            A[0	apn15012.dc.zammad.com. | 144.76.200.51]  CNAME[0	apn15012.dc.zammad.com.]
+nx37783.your-storageshare.de                                   A[0	91.98.240.221]  CNAME[0	]
+cineplex-relay.iocnt.net                                       A[0	relay-client-c01.iocnt.net. | 136.110.231.186]  CNAME[0	relay-client-c01.iocnt.net.]
+ingress-external.n-web-k8s1.web.n.ntxzone.de                   A[0	185.216.237.5]  CNAME[0	]
+talk.tho.ntxzone.de                                            A[0	185.216.237.198]  CNAME[0	]
+t.mailjet.com                                                  A[0	35.205.52.34]  CNAME[0	]
+[0m
+## Objective
+- Continue the scoped Cineplex bug-bounty POC in `POC` phase, target `api`, and produce the requested eight structured analyst blocks with evidence-bounded findings.
+- Resolve the newest GraphQL CORS lead while preserving the corrected IDOR conclusions and exact read-only verification steps.
+
+## Important Details
+- Report channel: `bugs.olivermaicher.eu`; scope is limited to Cineplex-owned infrastructure under `scope.yml` and `inventory/cineplex.md`.
+- Live probes must remain passive-first, `GET`/`HEAD`/`OPTIONS` only, `<=1 rps`; no customer identifiers, PII, credentials, mutations, writes, login attempts, or scanner-only claims.
+- Latest delta at `2026-09-28 02:02:07 UTC`: `graphql_entrypoint_inventory` changed from 2 to 4; `cors_allowlist_credentialed_null` is a new high-value finding; `cors_rejection_is_a_crash` supplies mechanism proof. Confirmed named routes are `/` and `/graphql` on prod and staging—four host-route combinations.
+- Exact CORS request/response details are absent from the supplied context and must be recovered from current artifacts before scoring or submission.
+- `INVALID_ID` versus `UNAUTHENTICATED` proves decoder position, not missing authorization. The former 27-cycle IDOR claim was falsified using a valid public cinema ID.
+- Historical “no injection vectors / CVSS 5.3” claims are superseded by argument-type/input-object evidence and a `CVSS 5.3→7.5` re-score.
+- The “10 staging-only mutations” claim was retracted; both environments expose the same `150` mutations when deprecated fields are included.
+- `staging_testing_oracle` is rejected: the field exists in prod and the only distinguishing signal is a descriptive method-mismatch error.
+- Automated `probe-results.md` is unreliable: urllib UA triggers Cloudflare `403`, malformed/trailing-backtick URLs trigger `400`, and it has zero POST and zero historical `/graphql` coverage.
+- Old priority scores (`9/8/5`) predate the IDOR correction and newest CORS lead; recompute them.
+
+## Work State
+### Completed
+- Exhausted a 132-host inventory baseline, CT diff, and CNAME sweep; no new non-inventory assets were found.
+- Confirmed unauthenticated GraphQL introspection on `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de`: `88` Query fields (`83` active + `5` deprecated), `150` Mutation fields (`140` active + `10` deprecated), and identical environment names.
+- Confirmed both `/` and `/graphql` execute unauthenticated GraphQL on both environments; `/graphql` is a second independent route with `x-powered-by: Express`.
+- Read `385` schema types, including `44` `INPUT_OBJECT` types and all `User`/`Order`/`Invoice`/`Ticket` field lists; this exposed the full potential blast radius but not unauthorized execution.
+- Proven low-severity inconsistent per-resolver authorization using a valid public `Cinema` identifier: `cinema(id:…)` returns data while `contentSectionListByNameAndCinemas(cinemaIds:[…])` returns `UNAUTHENTICATED`; `movie(id:…)` is a second ungated resolver.
+- Bounded pre-auth decoder reach to `15` resolvers, `4` decoder contracts, and `2` argument shapes, including list decoding through `Array.map`; ownership checks remain unresolved on `14` and confirmed present on `1`.
+- Confirmed invalid-id decoder behavior on `/` and `/graphql`; `currentUser` fires `UNAUTHENTICATED` on the same transport.
+- Confirmed dangling CNAME: `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, with target `NXDOMAIN` plus Azure SOA; sole dangle in the swept sets.
+- Parked schema-only mutation/mass-assignment family, `buchung-dev/bms-dev` origin bypass (`/gateway/*` returns `503 "Wartungsarbeiten"`), and all root-gated or descriptive avenues.
+- Rejected relay metrics/broker saturation, TLS-dead hosts, strict `api.cineplex.de` WAF, Nextcloud version-only disclosure, JWT JWKS discovery, and explicit program exclusions.
+
+### Active
+- Validate and characterize `cors_allowlist_credentialed_null` on the GraphQL host/route and determine whether credentialed cross-origin reads are possible without customer data.
+- Recover the exact evidence behind `cors_rejection_is_a_crash`, including request headers, status, body, and whether behavior differs across `/`, `/graphql`, prod, and staging.
+- Keep the GraphQL host as the top POC target while recomputing severity and exploitability after the IDOR correction.
+- Preserve `web-dev.cineplex.de` as a passive, provider-side Medium finding pending Azure claimability confirmation.
+
+### Blocked
+- The decisive customer-namespace test requires one consented account’s own `publicId`; no customer identifier may be sourced autonomously.
+- A populated `User` result would raise impact to High; `UNAUTHENTICATED` leaves the family as a Low decoder oracle.
+- `web-dev.cineplex.de` claimability cannot be proven without Azure/provider confirmation.
+- `buchung-dev` and `bms-dev` backend exploitability remains blocked by `/gateway/*` maintenance `503` responses and intermittent origin reachability.
+- Mutation authorization and mass-assignment execution require credentials and would affect live data; schema evidence alone is insufficient.
+
+## Next Move
+1. Recover the newest CORS capture, then issue one safe preflight such as `OPTIONS https://graphql-api.app.cineplex.de/graphql` with `Origin: https://attacker.invalid`, `Access-Control-Request-Method: POST`, and `Access-Control-Request-Headers: content-type`; compare ACAO/ACAC behavior against a known allowed origin without cookies.
+2. HUMAN: test `GET https://graphql-api.app.cineplex.de/?query=%7BuserById%28id%3A%22%3Cown-publicId%3E%22%29%7B__typename%7D%7D%7D` with no `Authorization` header using one consented account’s own identifier.
+
+## Relevant Files
+- `scope.yml`: authoritative program scope and exclusions.
+- `inventory/cineplex.md`: 132-host inventory and passive recon seed.
+- `knowledge/index.md`: accepted/rejected findings and later corrections; 2026-09-26 corrections supersede historical entries.
+- `probe-results.md`: automated probe log with known UA/backslash defects, zero POST coverage, and no reliable `/graphql` coverage.
+- `hypotheses-nemotron3.txt`: ranked leads and stale `CinemaOperatingCompanyData` follow-up.
+- `art/lead_nemotron3.txt`: dual-entry-point and full type/argument exposure lead.
+- `reports/analyst-nemotron3.log`: another analyst’s output; explicitly untrusted and not evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Task B closed: all 7 other SaaS CNAME targets still resolve (DoH `NOERROR` + A record); only the Azure container app is `NXDOMAIN`. Dangle count stays 1/14 — no new takeover.
+
+Now the decisive test for my own CORS lead: does the GraphQL API have a cookie to ride at all?
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+echo "=== A1: prod /graphql FULL headers, Origin: null ==="
+curl -s --http2 -m 20 -D - -o /dev/null -G --data-urlencode 'query={__typename}' \
+  -H "User-Agent: $UA" -H 'Accept: application/json' -H 'Origin: null' \
+  https://graphql-api.app.cineplex.de/graphql 2>&1 | grep -iE '^(HTTP/|set-cookie|access-control|vary|x-powered|cf-|server)'
+sleep 3
+echo "=== A1b: prod / FULL headers, no Origin (does API ever set a cookie?) ==="
+curl -s --http2 -m 20 -D - -o /dev/null -G --data-urlencode 'query={__typename}' \
+  -H "User-Agent: $UA" -H 'Accept: application/json' \
+  https://graphql-api.app.cineplex.de/ 2>&1 | grep -iE '^(HTTP/|set-cookie|access-control|vary|x-powered)'
+=== A1: prod /graphql FULL headers, Origin: null ===
+HTTP/2 200 
+access-control-allow-origin: null
+vary: Origin
+x-powered-by: Express
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a42157344ffed6c9-IAD
+=== A1b: prod / FULL headers, no Origin (does API ever set a cookie?) ===
+HTTP/2 200 
+vary: Origin
+x-powered-by: Express
+access-control-allow-credentials: true
+[0m
+Decisive: the GraphQL API sets **no `Set-Cookie` at all** on `/` or `/graphql`, with or without `Origin`. `ACAC: true` is emitted unconditionally, but there is no ambient credential to ride — `null_origin_cookie_ride` is falsified for this host.
+
+The host that *does* set a cookie is `profil.cineplex.de` (JSESSIONID, and my earlier note recorded **no `SameSite`**). That's now the higher-value CORS target:
+[0m$ [0mcd /tmp/opencode && UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+for O in "https://attacker.example" "null" "https://profil.cineplex.de"; do
+  echo "=== profil.cineplex.de/preference  Origin: $O ==="
+  curl -s --http2 -m 20 -D - -o /dev/null -H "User-Agent: $UA" -H "Origin: $O" \
+    https://profil.cineplex.de/preference 2>&1 | grep -iE '^(HTTP/|set-cookie|access-control|vary|location)'
+  sleep 3
+done
+=== profil.cineplex.de/preference  Origin: https://attacker.example ===
+HTTP/2 200 
+set-cookie: JSESSIONID=8125E99883CAD53BB3BCE1F2DC91F491; Path=/; HttpOnly
+=== profil.cineplex.de/preference  Origin: null ===
+HTTP/2 200 
+set-cookie: JSESSIONID=B07F5CC05D5E199096772EB333EDB3F3; Path=/; HttpOnly
+=== profil.cineplex.de/preference  Origin: https://profil.cineplex.de ===
+HTTP/2 200 
+set-cookie: JSESSIONID=B947FEFDEAA06480A7BEF53B25DA1522; Path=/; HttpOnly
+[0m
+Both CORS leads are now dead, with positive evidence. `profil.cineplex.de` sets a cookie but emits **no `Access-Control-Allow-Origin` at all** — the browser will not expose the response to any cross-origin page, and the `JSESSIONID` has no `SameSite` attribute (defaults to `Lax` in modern browsers, so it isn't attached to cross-site XHR anyway). And the GraphQL host, which does reflect `null` + `ACAC: true`, sets no cookie whatsoever, and the schema's `login` returns `jwt`/`refreshToken`/`csrf` in the response body (bearer-token auth, no ambient cookie) while custom-header preflight is `403`.
+
+Let me persist these falsifications to the knowledge base:
+[0m$ [0mgrep -n -iE "cors_allowlist_credentialed_null|cors_rejection|null_origin_cookie_ride|allowlisted_first_party|graphql_entrypoint_inventory|cors_simple_requests" knowledge/index.md | head -40
+(no output)
+[0m
+[0m$ [0mtail -30 knowledge/index.md; echo "=====WC====="; wc -l knowledge/index.md
+- 2026-09-27 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+- 2026-09-27 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-09-27 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-09-27 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings
+- 2026-09-27 CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects, CVSS 5.3 ready to submit" is factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed
+- 2026-09-27 CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing backtick (→ 400) and the urllib UA hits the edge bot-gate (→ 403). Balanced URL-encoded GET via curl --data-urlencode with a browser UA returns 200 on the same URLs in the same cycle. Conclusions drawn from the automated log alone are unreliable.
+- 2026-09-27 REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: my own central inference is falsified. `contentSectionListByNameAndCinemas` with a valid public cinema id returns `UNAUTHENTICATED` at `selectedCinemaIdsDb`, not data. The `INVALID_ID`-vs-`UNAUTHENTICATED` split I used as the discriminator for 27 cycles measures *decode position*, not *check presence* — the same signature appears on a resolver that does enforce authorization. Severity must be re-scored down to the decoder oracle until a customer-namespace member is tested.
+- 2026-09-27 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: the pre-auth decoder reach itself stands and is now better bounded — 15 resolvers, 4 decoder contracts, 2 argument shapes including a list decode inside `Array.map`, so a fix scoped to scalar `args.id` is incomplete.
+- 2026-09-27 ACCEPTED public_cinema_namespace @ graphql-api.app.cineplex.de: `cinemas{id name}` is unauthenticated and returns 92 public cinema records; ids are base64 of `Cinema:<n>`. This gave a non-customer id for a decisive test with zero PII exposure — the safe way to falsify a finding of your own.
+- 2026-09-27 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: 83 Query fields with return types (8428 B) and the `ContentSectionListName` enum read this cycle, both unauthenticated GET.
+- 2026-09-27 REJECTED harness_derived_conclusions @ probe tooling: demonstrated same-cycle — the pipeline's log records 403 for the exact `__type(name:"ContentSectionListName")` URL I fetched at 200. The log's silence on any host is not evidence of absence.
+- 2026-09-27 REJECTED web-dev dangle, relay metrics, api.cineplex.de GET-bypass, TLS-dead hosts, and all explicit program exclusions: unchanged, not re-probed.
+- 2026-09-27 REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: falsified by my own test. A syntactically invalid id cannot distinguish "check absent" from "check after decode" — both yield `INVALID_ID` plus a `decodePublicId` frame. Cost: one cycle and a wrong top finding held for 27 cycles.
+- 2026-09-27 ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport, auth state and id value constant, vary only the resolver, and the comparison becomes self-evident. Two ungated resolvers, one gated, same id. No account, no PII, two curl commands a triager can replay.
+- 2026-09-27 ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: enumerating a *non-customer* namespace yields valid ids and converts an untestable question into a testable one. This is how a top finding got falsified safely — reach for public data before reaching for an account.
+- 2026-09-27 ACCEPTED ungated_read_impact_floor @ graphql-api.app.cineplex.de: measure what an ungated read actually returns before scoring it. `MovieStatistics` is two counters, not revenue; the honest severity is Low, and saying so is what makes the High-if-it-spreads argument credible.
+- 2026-09-27 REJECTED enum_milestone @ graphql-api.app.cineplex.de: the `ContentSectionListName` enum was not the decisive step — resolving it produced an id-less field. The decisive step was finding an *enumerable public namespace*, which the enum search never implied.
+- 2026-09-27 REJECTED harness_derived_conclusions @ probe tooling: same-cycle proof — the pipeline logged 403 for the exact enum URL I fetched at 200.
+- 2026-09-27 REJECTED companies/bonusPrograms/screening enumeration; dangle, relay metrics, api GET-bypass, TLS-dead, staging oracle; all program exclusions: unchanged or closed on negative results.
+- 2026-09-28 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+- 2026-09-28 REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returned 200 in the same cycle; a bare error code is a descriptive-error and availability signal, both explicit program exclusions, and it exposes no state
+- 2026-09-28 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's independent schema read places the ungated resolvers directly adjacent to the gated PII selectors, corroborating the omission without touching any customer record
+- 2026-09-28 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 16th consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in the 14-host sweep; PASSIVE, claimability still provider-side
+- 2026-09-28 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- 2026-09-28 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+- 2026-09-28 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-09-28 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-09-28 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings
+- 2026-09-28 CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects, CVSS 5.3 ready to submit" is factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed
+- 2026-09-28 CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing backtick (→ 400) and the urllib UA hits the edge bot-gate (→ 403). Balanced URL-encoded GET via curl --data-urlencode with a browser UA returns 200 on the same URLs in the same cycle. Conclusions drawn from the automated log alone are unreliable.
+=====WC=====
+879 knowledge/index.md
+[0m
+[0m$ [0mgrep -n "^## \|^# " knowledge/index.md | tail -20
+1:# Knowledge Base (seed)
+[0m
+[0m→ [0mRead knowledge/index.md[90m [offset=870, limit=10][0m
+It's a flat append-only list in the established `date STATUS @ host: explanation` format. Let me append this cycle's corrections:
+[0m
+[0m← [0mEdit knowledge/index.md
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md
+@@ -876,4 +876,9 @@
+ - 2026-09-28 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+ - 2026-09-28 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1003 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings
+ - 2026-09-28 CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects, CVSS 5.3 ready to submit" is factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed
+ - 2026-09-28 CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing backtick (→ 400) and the urllib UA hits the edge bot-gate (→ 403). Balanced URL-encoded GET via curl --data-urlencode with a browser UA returns 200 on the same URLs in the same cycle. Conclusions drawn from the automated log alone are unreliable.
++- 2026-09-28 REJECTED cors_allowlist_credentialed_null @ graphql-api.app.cineplex.de: ACAC true + reflected null/first-party origin is real, but there is NO Set-Cookie on any response, on either / or /graphql, with or without Origin (full header dump this cycle). No ambient credential exists to ride, and the schema's login returns jwt/refreshToken/csrf in the response body — bearer-token auth, plus custom-header preflight is 403. A null-origin page can read only unauthenticated public catalogue data it could fetch directly. Downgraded PROMISING → informational; the blocked SameSite request is no longer worth spending on this host.
++- 2026-09-28 REJECTED null_origin_cookie_ride / allowlisted_first_party_xss_chain @ graphql-api.app.cineplex.de: hypothesis #1 (96) and #2 (80) from the 02:02 cycle both die on the same observation — the credential they ride does not exist. Do not ship either as High; the earlier PROMISING status was carried one cycle on an untested premise.
++- 2026-09-28 REJECTED cors_null_on_profil @ profil.cineplex.de: the only in-scope host that does set a cookie (JSESSIONID) emits NO Access-Control-Allow-Origin at all, for attacker origin, null, or first-party. The browser blocks the cross-origin read regardless of cookie attributes, and JSESSIONID carries no SameSite attribute (modern default Lax, not attached to cross-site XHR). Double-gated, not exploitable.
++- 2026-09-28 ACCEPTED saas_cname_target_sweep @ cineplex: swept the 8 published CNAME targets over DoH (dns.google, no HTTP to any target). cineplex-preference.showtimeanalytics.com, cineplex.zammad.com, nx37783.your-storageshare.de, cineplex-relay.iocnt.net, ingress-external.n-web-k8s1.web.n.ntxzone.de, talk.tho.ntxzone.de, t.mailjet.com all return NOERROR + A record; only web.gentleglacier-*.azurecontainerapps.io is NXDOMAIN. Dangle count stays 1/14 — the per-tenant SaaS subdomains are still live and not claimable, so no new takeover.
++- 2026-09-28 CORRECTION @ graphql-api.app.cineplex.de: the earlier "2 entry points" inventory was incomplete — /api/graphql and /gql also return 200 {"data":{"__typename":"Query"}} unauthenticated. Confirmed surface is 4 paths on prod and staging; the 2 logged 400s were harness artifacts (trailing backtick), not server behavior. File all four paths in the GraphQL exposure report.
+
+[0m
+[0m→ [0mRead reports/hypotheses-bigpickle.txt
+[0m
+[0m← [0mWrite reports/hypotheses-bigpickle.txt
+Wrote file successfully.
+[0m
+[0m$ [0mgit -C /home/runner/work/cineplex-hunt/cineplex-hunt status --short; echo "---diffstat---"; git -C /home/runner/work/cineplex-hunt/cineplex-hunt diff --stat
+M knowledge/index.md
+ M reports/hypotheses-bigpickle.txt
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+---diffstat---
+ knowledge/index.md               |  5 +++++
+ reports/hypotheses-bigpickle.txt | 18 ++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+[0m
+Both of my cycle-2 CORS leads are now falsified with positive evidence, and I closed out the CNAME target sweep. Changes are staged in the working tree (not committed, per policy) across `knowledge/index.md` and `reports/hypotheses-bigpickle.txt`.
+
+**What I did this cycle:**
+
+1. **SaaS CNAME target sweep (DoH, no HTTP to targets).** All 7 other published CNAME targets return NOERROR + A record; only the Azure container app is NXDOMAIN. Dangle count stays 1/14 — no new takeover, and it confirms "sole dangle" is true of the *targets*, not just the Cineplex-side CNAMEs.
+
+2. **Killed my own promising CORS finding.** Full header dump on `/` and `/graphql` (with and without `Origin`): the GraphQL API sets **no `Set-Cookie` at all**. `ACAC: true` is unconditional, but there is no ambient credential to ride, and `login` returns bearer tokens in the body while custom-header preflight is 403. The `null_origin_cookie_ride` (96) and `allowlisted_first_party_xss_chain` (80) hypotheses both rested on a cookie that doesn't exist — retired without spending the human `SameSite` request.
+
+3. **Tested the cookie-bearing host.** `profil.cineplex.de` (the only host that sets `JSESSIONID`) emits **no ACAO at all** — double-gated and not exploitable.
+
+4. **Confirmed 4 GraphQL entry points** on prod+staging; the two logged 400s were trailing-backtick harness artifacts.
+
+Net: the last cycle's only "high-value" lead is dead, which is the honest outcome and stops the report set from carrying a CORS claim the triager would reject. The unblocked surface is exhausted — the only remaining hypothesis (the consented own-`publicId` `userById` decoder test) needs a human with an account. I'd recommend we stop probing this target; the reportable set is the GraphQL exposure (4 paths), the Low inconsistent-authz/pre-auth-decoder family, and the passive `web-dev` dangle. Want me to write up the final report bundle, or hold?

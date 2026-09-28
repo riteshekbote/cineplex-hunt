@@ -7469,3 +7469,4 @@ testability: AUTH_HELPED
 [CHANGED] **`graphql_entrypoint_inventory` — 2 entry points → 4.**
 [CHANGED] **`cors_allowlist_credentialed_null` — NEW finding, high-value.**
 [CHANGED] **`cors_rejection_is_a_crash` — NEW, mechanism proof.**
+## 2026-09-28 08:23:41 UTC [target] (model bigpickle)
