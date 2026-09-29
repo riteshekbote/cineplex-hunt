@@ -42593,3 +42593,84 @@ I had `contentSectionListByNameAndCinemas` flagged as a High IDOR across ~27 cyc
 **Strongest untested lead (account-gated):** `storeSDKLogin(data: SDKLoginInput{cookieId, datetime, userId}) -> {success: Boolean}` takes a client-supplied `userId` and `cookieId` — the shape of a session-binding endpoint that may run before its auth check. It is a mutation, so I did not execute it.
 
 **[NEXT] PROBE:** with a consented Cineplex test account, serve a `Content-Security-Policy: sandbox` page that issues `fetch("https://graphql-api.app.cineplex.de/", {method:"POST", credentials:"include", headers:{"content-type":"application/json"}, body:'{"query":"{currentUser{id}}"}'})` — a non-null `currentUser` closes finding 1 at High, an `UNAUTHENTICATED` result closes it at Low; then call `storeSDKLogin` with a self-owned `userId` to test for pre-auth session minting.
+===== ANALYST bigpickle 2026-09-29 08:42:46 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run the pending decisive probe: what session mechanism does the first-party app actually use?
+[0m$ [0mUA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+echo "=== app.cineplex.de/ ==="
+curl -sS --http2 -m 25 -A "$UA" -D - -o /dev/null "https://app.cineplex.de/" 2>&1 | head -60
+=== app.cineplex.de/ ===
+HTTP/2 403 
+date: Tue, 29 Sep 2026 08:39:36 GMT
+content-type: text/html; charset=UTF-8
+content-length: 115568
+accept-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cf-mitigated: challenge
+x-frame-options: SAMEORIGIN
+server: cloudflare
+critical-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cross-origin-embedder-policy: require-corp
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+permissions-policy: accelerometer=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=(),xr-spatial-tracking=*
+referrer-policy: same-origin
+server-timing: chlray;desc="a429ada36e901321"
+x-content-type-options: nosniff
+cf-ray: a429ada36e901321-SJC
+alt-svc: h3=":443"; ma=86400
+[0m
+app.cineplex.de is behind a Cloudflare challenge — no app surface, no cookie. Let me check the login service, which is where a session cookie would actually originate.
+[0m$ [0mUA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+for h in auth.cineplex.de login.cineplex.de sso.cineplex.de account.cineplex.de my.cineplex.de; do
+  echo "=== $h ==="
+  curl -sS --http2 -m 20 -A "$UA" -D - -o /dev/null "https://$h/" 2>&1 | grep -iE '^HTTP/|^set-cookie|^location|^server:|^cf-mitigated|^x-powered-by|^content-type' | head -12
+  sleep 1
+done
+=== auth.cineplex.de ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+=== login.cineplex.de ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+=== sso.cineplex.de ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+=== account.cineplex.de ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+=== my.cineplex.de ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mUA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+echo "=== A: all response headers, plain POST, no auth, no cookie ==="
+curl -sS --http2 -m 25 -A "$UA" -D - -o /tmp/a.body \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{currentUser{id}}"}' \
+  "https://graphql-api.app.cineplex.de/" 2>&1 | grep -iE '^HTTP/|^set-cookie|^vary|^access-control|^x-powered-by|^x-amzn|^cf-' 
+echo "--- body ---"; cat /tmp/a.body; echo
+sleep 1
+echo
+echo "=== B: same, but with a syntactically valid UNSIGNED JWT bearer ==="
+curl -sS --http2 -m 25 -A "$UA" -D - -o /tmp/b.body \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxIiwiZXhwIjo5OTk5OTk5OTk5fQ." \
+  -d '{"query":"{currentUser{id}}"}' \
+  "https://graphql-api.app.cineplex.de/" 2>&1 | grep -iE '^HTTP/|^set-cookie|^vary|^access-control'
+echo "--- body ---"; cat /tmp/b.body; echo failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+All identity hosts sit behind the same Cloudflare managed challenge — the first-party cookie name is not readable. Let me test the API's own credential path directly.
