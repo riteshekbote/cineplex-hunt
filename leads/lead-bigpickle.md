@@ -7714,3 +7714,4 @@ asset: web-dev.cineplex.de
 confidence: 96
 reasoning: CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 0 CNAME / A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA); 17th+ consecutive cycle confirmed; sole dangling CNAME in full 14-host sweep (7 dev + 7 systems-zone); automated DoH probe now succeeds (200) after header-format fix; host HTTP 000; claimability requires registering same Azure Container App name in switzerlandnorth region.
 evidence_needed: Claimability attestation (register target Azure Container App name in switzerlandnorth) — passive precondition fully satisfied.
+## 2026-09-29 20:06:07 UTC [target] (model bigpickle)
