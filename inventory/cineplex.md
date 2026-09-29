@@ -1910,3 +1910,20 @@ wwww.cineplex.de
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths
 - CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — no reachable web surface
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+
+## 2026-09-29 02:21:51 UTC
+- NEW `graphql-api.app.cineplex.de`: CORS allowlist on PRODUCTION reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `access-control-allow-credentials: true` — hostile entries in pr
+- NEW `graphql-api.app.cineplex.de`: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `localhost:3000`, `app.stagin
+- NEW `graphql-api.app.cineplex.de`: `POST /` is the ONLY route accepting credentialed POST + executing GraphQL mutations; `/graphql`, `/api/graphql`, `/gql` return API Gateway 403 `MissingAuthenticationTok
+- NEW `graphql-api.app.staging.cineplex.de`: `/graphql` returns HTTP 500 (differs from prod 200) — inconsistent error handling across environments
+- NEW `graphql-api.app.cineplex.de`: Full type inventory GET (200/18532B) — 385 types including 44 INPUT_OBJECT bodies; `CinemaOperatingCompanyData` carries 4 caller-supplied `accessRight*` Booleans + `cine
+- NEW `graphql-api.app.cineplex.de`: First-ever argument-type enumeration via GET — 8 dangerous args: `login.privileged`, `startWebBooking.freeTicketSpend/linkedUsersIds`, `logUserScreeningInterests.freeTic
+- NEW `graphql-api.app.cineplex.de`: **MASS-ASSIGNMENT CONFIRMED** — `CinemaOperatingCompanyData.accessRight*` (4 flags) are IDENTICAL names server derives onto `UserPrivileges`; `updateUser(adminCinemaOper
+- NEW `graphql-api.app.cineplex.de`: **IDOR CHAINING** — `ticket(id) → order → user` and `order(id) → user` reach same 51-field `User` object WITHOUT calling `userById` — three independent pre-auth-decode e
+- NEW `graphql-api.app.cineplex.de`: **PHYSICAL-TO-PROFILE** — `userByQr(qrCode)` returns `User` — physical ticket stub → digital identity if ownership unchecked
+- NEW `graphql-api.app.cineplex.de`: `getOnlineTicketingBooking` mutation **root-gated** (`FORBIDDEN "You must be the root user"` byte-identical with/without args, on staging) — unauth SSRF lead killed
+- CHANGED `web-dev.cineplex.de`: Automated DoH CNAME probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnor
+- CHANGED `probe-results.md`: 1010 lines, **ZERO POST GraphQL probes** across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121): TCP-reachable again (SPAs 200), `/gateway/*` still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED `graphql-api.app.{,staging.}cineplex.de`: Balanced URL-encoded GET `?query=%7B__typename%7D` → 200 manual curl (browser UA, --http2); automated urllib 403 — WAF client-differentiated bot-gate stable
+- CHANGED `idor_booking`: 4/4 resolvers (userById/invoice/order/ticket) GET-verified `id:"0"` → 200 INVALID_ID with decodePublicId stacktrace, NO Authorization; `currentUser` → 200 UNAUTHENTICATED on same surfa
