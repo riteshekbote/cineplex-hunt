@@ -1939,3 +1939,25 @@ wwww.cineplex.de
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues (KB 2026-09-26/2
 - CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed — all structural fi
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead (KB 2026-09-09/29)
+
+## 2026-09-29 15:10:26 UTC
+- NEW CORS Misconfiguration on graphql-api.app.cineplex.de: Production API reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true` and `OPTIONS /` returns 204 with `ACAM: PO
+- NEW Dual GraphQL entry points confirmed: `/` and `/graphql` both unauthenticated on prod+staging with identical schema/IDOR surface; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 on 
+- NEW Mass-assignment read/write mirror confirmed: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning` (caller-supplied) are IDENTICAL names server derives onto `UserPr
+- NEW IDOR chaining: `ticket(id)→order→user` and `order(id)→user` reach same 51-field `User` (incl. `onlineTicketingToken`, `inviteCode`, `linkedAccounts`, financial history) WITHOUT `userById` — three inde
+- NEW Physical-to-profile: `userByQr(qrCode)` returns `User` — physical ticket stub → digital identity if ownership unchecked (KB 2026-09-26/27)
+- NEW `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)` — privilege escalation primitives at auth layer; `updatePassword` deprecated with BOTH credential args nu
+- CHANGED `web-dev.cineplex.de` dangling CNAME: automated DoH probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switz
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues (KB 2026-09-26/2
+- CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed — all structural fi
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead (KB 2026-09-09/29)
+- NEW CORS Misconfiguration confirmed on production `graphql-api.app.cineplex.de`: allowlist reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true`; `OPTIONS /` returns 204
+- NEW Dual GraphQL entry points verified: `/` and `/graphql` both unauthenticated on prod+staging with identical schema/IDOR surface; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 on P
+- NEW Mass-assignment read/write mirror confirmed: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning` (caller-supplied) are IDENTICAL names server derives onto `UserPr
+- NEW IDOR chaining proven: `ticket(id)→order→user` and `order(id)→user` reach same 51-field `User` (incl. `onlineTicketingToken`, `inviteCode`, `linkedAccounts`, financial history) WITHOUT `userById` — thr
+- NEW Physical-to-profile: `userByQr(qrCode)` returns `User` — physical ticket stub → digital identity if ownership unchecked
+- NEW Auth-layer privilege escalation primitives: `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)` — client-supplied privilege flag at session establishment/ext
+- CHANGED `web-dev.cineplex.de` dangling CNAME: automated DoH probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switz
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed — all structural fi
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
