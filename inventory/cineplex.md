@@ -2003,3 +2003,16 @@ wwww.cineplex.de
 - CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed — all structural fi
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+
+## 2026-09-30 03:43:12 UTC
+- NEW `kb_contradiction` @ `knowledge/index.md` — a falsified claim was resurrected by text copy. The sentence "4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this 
+- NEW `cycle_independence` @ self — my "17th+ consecutive cycle" and "27 cycles" counters conflated re-reads with re-tests. Same-cycle verification requires a fresh request I can point to. A repeated paragr
+- CHANGED `cors_preflight_credentialed_post` @ `graphql-api.app.cineplex.de` — sharpened, not merely re-confirmed. Same-cycle `OPTIONS /` with `Access-Control-Request-Method: POST` and `Access-Control-Request-H
+- CHANGED `dangling_cname_takeover` @ `web-dev.cineplex.de` — same-cycle DoH: CNAME `Status 0` TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow `Status 3` with Azure SOA `
+- NEW CORS preflight on `graphql-api.app.cineplex.de/` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization` for `null`
+- NEW `/graphql` confirmed as second independent unauthenticated GraphQL entry point on both `graphql-api.app.{,staging.}cineplex.de` (200/32B `__typename`, `x-powered-by: Express`), identical schema/IDOR s
+- NEW Staging `/graphql` returns HTTP 500 (differs from prod 200) — inconsistent error handling across environments
+- CHANGED `web-dev.cineplex.de` automated DoH CNAME probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnort
+- CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
+- CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
+- CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
