@@ -4359,3 +4359,30 @@
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1010 lines) consistent with manual-curl-verified 
 - LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
 - LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba
+
+## RANKED HYPOTHESES 2026-09-30 21:07:25 UTC
+- [95] graphql-api.app.cineplex.de: CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled (from art/lead_bigpickle.txt)
+- [95] graphql-api.app.cineplex.de: CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: 
+- LEARN: @ self — the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append-only log competes
+- LEARN: @ self — a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, because it guarantee
+- LEARN: `publish_path_clear` @ `scripts/sync-issues.py` — verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\]` only (scripts/s
+- LEARN: `idor_booking_scope` @ graphql-api.app.cineplex.de — the two claims are separable and I had been collapsing them. **Survives:** pre-auth decoder reach (15 resol
+- LEARN: ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` are both reflected with `ac
+- LEARN: ACCEPTED cors_rejection_is_a_throw @ graphql-api.app.cineplex.de{/,/graphql}: a disallowed `Origin` yields HTTP 500 HTML `Error: Not allowed by CORS` with frame
+- LEARN: REJECTED cors_impact_amplified @ graphql-api.app.cineplex.de: my previous cycle rated this at 10 with the note "no ambient credential — nothing to ride." That r
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including 
+- LEARN: ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST and OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-
+- LEARN: REJECTED my own 2026-09-28 `4 equivalent unauthenticated full-schema GraphQL surfaces` @ graphql-api.app.cineplex.de: I measured equivalence in exactly one dime
+- LEARN: REJECTED my own 2026-09-26 interpretation of "zero POST captures" in `probe-results.md`: those POSTs returned 403, not absence. I read a gateway rejection as a 
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 
+- LEARN: REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returne
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's indep
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulati
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1010 lines) consistent with manual-curl-verified 
+- LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
+- LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba
