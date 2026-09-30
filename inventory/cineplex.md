@@ -2016,3 +2016,10 @@ wwww.cineplex.de
 - CHANGED `buchung-dev.cineplex.de` origin (194.77.169.121) TCP-reachable again; SPAs 200; `/gateway/*` routes still 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues
 - CHANGED `probe-results.md`: 1010 lines, ZERO POST GraphQL probes across all cycles; automated GraphQL GET carries literal trailing backtick → 400, urllib UA → 403; harness defect confirmed
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+
+## 2026-09-30 10:06:16 UTC
+- NEW `graphql-api.app.staging.cineplex.de/graphql` now returns 200 (was 500 in prior cycles) — staging GraphQL entry point parity with prod confirmed live
+- NEW `web-dev.cineplex.de` automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+- NEW `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable this cycle (SPAs 308→403); `/gateway/*` routes still return 403 at CF edge after redirect — exploitability rema
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` CORS preflight on `/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: POST`, `ACAH: authorization` — credentialed mutation primitive confi
+- CHANGED `graphql-api.app.cineplex.de` dual entry points `/` and `/graphql` both unauthenticated, identical schema/IDOR surface — remediation scope doubled (2 paths × 2 envs)
