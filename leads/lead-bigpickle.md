@@ -7971,3 +7971,47 @@ class: 'MISCONFIG' conf: '93'
 class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 93
+## 2026-10-01 19:17:59 UTC [target] (model bigpickle)
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission; GraphQL POST stable 2
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission; GraphQL POST stable 2
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` and `/graphql` reflect `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins (null, localhost:3000, app.staging.cineplex.de). `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Ambient credential question: `currentUser{id}` byte-identical with/without `Cookie: cineplex_session=AAA
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93

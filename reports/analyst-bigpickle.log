@@ -55298,3 +55298,955 @@ Two things the post-hoc slot dump caught that the plan hadn't:
 Diff is tag/`class`/`asset` lines only (verified:0 other changed lines), `scripts/sync-issues.py` untouched. `leads/lead-bigpickle.md:7846`'s malformed attribute is now inside a `[LEARN]` block, so it is inert — recorded rather than edited. Rationale and both lessons appended to `knowledge/index.md`.
 
 Not committed. Uncommitted so you can review; `git checkout -- leads/` reverts. Note the publisher would still open ~4 fresh issues on first sync, and pre-existing mirrored issues likely need manual closure — the parser can't see those.
+===== ANALYST bigpickle 2026-10-01 19:18:23 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la leads/ reports/ knowledge/ 2>/dev/null | head -60
+total 1172
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x  3 runner runner   4096 Oct  1 19:13 ..
+drwxr-xr-x  7 runner runner   4096 Oct  1 19:13 .git
+drwxr-xr-x  3 runner runner   4096 Oct  1 19:13 .github
+-rw-r--r--  1 runner runner   1923 Oct  1 19:13 README.md
+-rw-r--r--  1 runner runner     32 Oct  1 19:13 analyst-out.txt
+-rw-r--r--  1 runner runner 512140 Oct  1 19:13 analyst-prompt.txt
+-rw-r--r--  1 runner runner 508183 Oct  1 19:13 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 leads
+-rw-r--r--  1 runner runner  74921 Oct  1 19:13 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 reports
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  1 19:13 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 scripts
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  1 19:13 triage
+---
+knowledge/:
+total 208
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 203050 Oct  1 19:13 index.md
+
+leads/:
+total 3216
+drwxr-xr-x  2 runner runner    4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner    4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 1169168 Oct  1 19:13 lead-bigpickle.md
+-rw-r--r--  1 runner runner    9129 Oct  1 19:13 lead-laguna.md
+-rw-r--r--  1 runner runner    8950 Oct  1 19:13 lead-ling3.md
+-rw-r--r--  1 runner runner    9308 Oct  1 19:13 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  1 19:13 lead-mimo.md
+-rw-r--r--  1 runner runner 2045693 Oct  1 19:13 lead-nemotron3.md
+-rw-r--r--  1 runner runner   22601 Oct  1 19:13 reposcan-cineplex.md
+
+reports/:
+total 8396
+drwxr-xr-x  2 runner runner    4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner    4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 5049665 Oct  1 19:13 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   38843 Oct  1 19:13 analyst-laguna.log
+-rw-r--r--  1 runner runner   38664 Oct  1 19:13 analyst-ling3.log
+-rw-r--r--  1 runner runner   39022 Oct  1 19:13 analyst-longcat.log
+-rw-r--r--  1 runner runner 2725506 Oct  1 19:13 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    3091 Oct  1 19:13 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct  1 19:13 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct  1 19:13 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct  1 19:13 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   10438 Oct  1 19:13 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  647806 Oct  1 19:13 hypotheses.md
+-rw-r--r--  1 runner runner    7807 Oct  1 19:13 valid-bugs.md
+[0m
+[0m$ [0mgit log --oneline -12; echo "--- STATUS ---"; git status --porcelain | head -40
+33d7ea6 reposcan 2026-10-01-19-00
+--- STATUS ---
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+[0m
+I'll run the 8 steps. Let me first check the current state of the working artifacts before asserting any deltas.
+## Objective
+- Continue the Cineplex bug-bounty POC workflow in `phase: POC`, `target: api`.
+- Clean and consolidate the local issue-publication set so only canonical, evidence-backed findings can reach `bugs.olivermaicher.eu`.
+
+## Important Details
+- Scope is limited to Cineplex-controlled assets in `scope.yml` and `inventory/cineplex.md`.
+- Live testing must remain passive-first: `GET`/`HEAD`/`OPTIONS`, ≤1 rps; no mutations, customer PII, auth bypass, or live-data testing.
+- Explicit exclusions include username enumeration, TLS/SSL findings, descriptive errors/headers, known-vulnerable libraries without exploit proof, logout CSRF, and rate/lockout testing.
+- `scripts/sync-issues.py:57` publishes only blocks beginning `[HYP]` and globs `leads/lead-*.md`; `[LEARN]` retags suppress blocks.
+- `scripts/sync-issues.py:112` fingerprints normalized `asset` plus verbatim `class`; inconsistent asset prose creates duplicate issue slots.
+- The prior systemic IDOR conclusion is falsified. `INVALID_ID` proves pre-auth decoder reach, not missing authorization; valid public cinema IDs still trigger `UNAUTHENTICATED`. Preserve only the Low decoder-oracle fact in `knowledge/index.md` under `SURVIVING`.
+- CORS is the strongest live finding: production reflects `null`, `http://localhost:3000`, and `https://app.staging.cineplex.de`; `OPTIONS /` returns `204`, exact `ACAO`, `ACAC: true`, `ACAH: content-type,authorization`, and broad mutating `ACAM`. Browser impact remains unproven without knowing whether the web client uses an ambient cookie.
+- Only `/` is POST-capable and preflight-capable. `/graphql`, `/api/graphql`, and `/gql` are GET-only mirrors; POST/OPTIONS reach API Gateway `MissingAuthenticationTokenException`.
+- Mass assignment remains schema-inferred: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning`, `updateUser(adminCinemaOperatingCompanyIds)`, and `increaseUserTestingStatus(testingStatus)`. No writes were executed.
+- `web-dev.cineplex.de` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` remains NXDOMAIN; provider-side claimability is unresolved.
+- `probe-results.md` is unreliable: trailing backticks cause `400`, urllib UA triggers Cloudflare `403`, and balanced manual curl requests can return `200`.
+- Later lead appends reintroduced duplicate CORS blocks and a false `[HYP] Production systemic unauthenticated IDOR...`; the 06:36 parser counts are stale.
+
+## Work State
+### Completed
+- Initial offline audit found `1109` `[HYP]` blocks → `59` slots, including `15` dead/rejected slots.
+- Retagged `703` blocks: `366` in `leads/lead-bigpickle.md` and `337` in `leeds/lead-nemotron3.md`.
+- At that point, parser output dropped to `406` blocks → `29` slots → `0` dead/rejected slots; live threads remained CORS, mass-assignment, dangle, and dev-origin.
+- Confirmed `29` slots represented only about `4` underlying findings; dangle alone occupied `5` slots, dev-origin `9`, and mass-assignment `8`.
+- Added canonical `LIVE`/`DEAD`/`SURVIVING`/`METHOD RULES` status to `knowledge/index.md`.
+- Same-cycle CORS preflight verification reached confidence `92`; no mutation or query body was sent.
+
+### Active
+- Re-run the publisher parser over the full, current `leads/lead-*.md` glob because later entries changed the corpus after remediation.
+- Consolidate surviving slots into four canonical findings by rewriting only `[HYP]` `asset:` and `class:` lines:
+  - CORS
+  - Mass assignment
+  - Dangling CNAME
+  - Dev-origin WAF bypass
+- Repair `leads/lead-bigpickle.md:7846`, currently `class: 'MISCONFIG' conf: '93'`; attributes must be one per line.
+- Ensure no residual `[HYP]` block preserves the falsified systemic-IDOR claim.
+
+### Blocked
+- CORS exploitability requires a program-owned test account to establish cookie-based ambient authentication versus bearer authentication.
+- Mass-assignment impact requires an authorized staging round-trip with a consented non-admin account.
+- Dangle claimability requires Azure-side confirmation that the Container Apps environment is unregistered and claimable.
+- Dev-origin `/gateway/*` routes remain `503 "Wartungsarbeiten"` or intermittently unreachable, so backend impact is gated.
+- Parser cleanup does not prove the tracker is clean; previously mirrored duplicate/dead issues may require manual closure.
+- `run-2026-09-26-01:56.md` failed with `UnknownError` / `ref err_b491aaa2`; reposcan remains unconfigured with `TARGET_ORG not configured`.
+
+## Next Move
+1. Re-run `parse_blocks` offline over every `leads/lead-*.md`, fix the malformed attribute line, retag false IDOR blocks, and normalize the four findings to canonical `asset`/`class` pairs until parser output is `≤6` slots.
+2. Assert the resulting fingerprints represent CORS, mass-assignment, dangle, and dev-origin with no rejected/OOS slots; inspect the git diff to ensure no substantive evidence text was removed and no live requests were made.
+
+## Relevant Files
+- `scripts/sync-issues.py`: publisher parser and fingerprint logic; `parse_blocks` at line 57 and `fingerprint()` at line 112.
+- `leads/lead-bigpickle.md`: primary lead corpus; malformed attribute at line 7846 and later recontaminated CORS/IDOR blocks.
+- `leads/lead-nemotron3.md`: peer lead corpus; previously retagged 337 blocks and contains duplicate CORS variants.
+- `.github/workflows/sync-issues.yml`: publication workflow that would expose duplicate fingerprints.
+- `knowledge/index.md`: canonical status and falsification/supersession source.
+- `probe-results.md`: automated harness output; known trailing-backtick and urllib-UA artifacts.
+- `inventory/cineplex.md`: 132-host baseline and scoped asset inventory.
+- `scope.yml`: authoritative in-scope asset rules.
+- `reports/analyst-nemotron3.log`: peer-agent output; explicitly untrusted as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mls -la scripts/ inventory/ recon-notes/ triage/ 2>/dev/null | head -50; echo "=== state files ==="; for f in state_*.json; do printf "%s: " "$f"; cat "$f"; echo; done
+inventory/:
+total 288
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 284627 Oct  1 19:13 cineplex.md
+
+recon-notes/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner 4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner  820 Oct  1 19:13 DEDICATED-DEEP.md
+
+scripts/:
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner  4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 16987 Oct  1 19:13 sync-issues.py
+
+triage/:
+total 864
+drwxr-xr-x  2 runner runner 12288 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner  4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner     0 Oct  1 19:13 .gitkeep
+-rw-r--r--  1 runner runner   172 Oct  1 19:13 run-2026-09-02-21-37.md
+-rw-r--r--  1 runner runner   238 Oct  1 19:13 run-2026-09-02-23-32.md
+-rw-r--r--  1 runner runner   184 Oct  1 19:13 run-2026-09-03-01-25.md
+-rw-r--r--  1 runner runner   148 Oct  1 19:13 run-2026-09-03-06-28.md
+-rw-r--r--  1 runner runner   158 Oct  1 19:13 run-2026-09-03-11-42.md
+-rw-r--r--  1 runner runner   214 Oct  1 19:13 run-2026-09-03-15-48.md
+-rw-r--r--  1 runner runner  4079 Oct  1 19:13 run-2026-09-03-19-07.md
+-rw-r--r--  1 runner runner   196 Oct  1 19:13 run-2026-09-03-21-44.md
+-rw-r--r--  1 runner runner   177 Oct  1 19:13 run-2026-09-03-23-47.md
+-rw-r--r--  1 runner runner   298 Oct  1 19:13 run-2026-09-04-02-58.md
+-rw-r--r--  1 runner runner   239 Oct  1 19:13 run-2026-09-04-07-53.md
+-rw-r--r--  1 runner runner   255 Oct  1 19:13 run-2026-09-04-12-31.md
+-rw-r--r--  1 runner runner   143 Oct  1 19:13 run-2026-09-04-16-35.md
+-rw-r--r--  1 runner runner  9079 Oct  1 19:13 run-2026-09-04-19-08.md
+-rw-r--r--  1 runner runner   150 Oct  1 19:13 run-2026-09-04-21-33.md
+-rw-r--r--  1 runner runner   146 Oct  1 19:13 run-2026-09-04-23-17.md
+-rw-r--r--  1 runner runner  8809 Oct  1 19:13 run-2026-09-05-01-09.md
+-rw-r--r--  1 runner runner  7263 Oct  1 19:13 run-2026-09-05-05-51.md
+-rw-r--r--  1 runner runner   178 Oct  1 19:13 run-2026-09-05-09-58.md
+-rw-r--r--  1 runner runner   566 Oct  1 19:13 run-2026-09-05-13-22.md
+-rw-r--r--  1 runner runner  2646 Oct  1 19:13 run-2026-09-05-16-16.md
+-rw-r--r--  1 runner runner 16926 Oct  1 19:13 run-2026-09-05-16-30.md
+-rw-r--r--  1 runner runner   936 Oct  1 19:13 run-2026-09-05-18-23.md
+-rw-r--r--  1 runner runner   183 Oct  1 19:13 run-2026-09-05-20-42.md
+-rw-r--r--  1 runner runner   393 Oct  1 19:13 run-2026-09-05-22-38.md
+-rw-r--r--  1 runner runner   233 Oct  1 19:13 run-2026-09-06-00-14.md
+-rw-r--r--  1 runner runner   155 Oct  1 19:13 run-2026-09-06-04-47.md
+=== state files ===
+state_bigpickle.json: {"phase": "POC", "target": "api"}
+state_laguna.json: {"phase": "POC", "target": "api"}
+state_ling3.json: {"phase": "POC", "target": "api"}
+state_longcat.json: {"phase": "POC", "target": "api"}
+state_mimo.json: {"phase": "POC", "target": "api"}
+state_nemotron3.json: {"phase": "POC", "target": "api"}
+[0m
+[0m$ [0mecho "=== HYP block counts per lead file ==="; for f in leads/lead-*.md; do printf "%-32s HYP=%-6s LEARN=%-6s\n" "$f" "$(grep -c '^\[HYP\]' "$f")" "$(grep -c '^\[LEARN\]' "$f")"; done
+=== HYP block counts per lead file ===
+leads/lead-bigpickle.md          HYP=590    LEARN=899   
+leads/lead-laguna.md             HYP=0      LEARN=0     
+leads/lead-ling3.md              HYP=0      LEARN=0     
+leads/lead-longcat.md            HYP=0      LEARN=0     
+leads/lead-mimo.md               HYP=0      LEARN=0     
+leads/lead-nemotron3.md          HYP=535    LEARN=2597
+[0m
+[0m$ [0mcat analyst-out.txt; echo "=== prompt head ==="; head -60 analyst-prompt.txt
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la leads/ reports/ knowledge/ 2>/dev/null | head -60
+total 1172
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x  3 runner runner   4096 Oct  1 19:13 ..
+drwxr-xr-x  7 runner runner   4096 Oct  1 19:13 .git
+drwxr-xr-x  3 runner runner   4096 Oct  1 19:13 .github
+-rw-r--r--  1 runner runner   1923 Oct  1 19:13 README.md
+-rw-r--r--  1 runner runner     32 Oct  1 19:13 analyst-out.txt
+-rw-r--r--  1 runner runner 512140 Oct  1 19:13 analyst-prompt.txt
+-rw-r--r--  1 runner runner 508183 Oct  1 19:13 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 leads
+-rw-r--r--  1 runner runner  74921 Oct  1 19:13 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 reports
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  1 19:13 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 scripts
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  1 19:13 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  1 19:13 triage
+---
+knowledge/:
+total 208
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 203050 Oct  1 19:13 index.md
+
+leads/:
+total 3216
+drwxr-xr-x  2 runner runner    4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner    4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 1169168 Oct  1 19:13 lead-bigpickle.md
+-rw-r--r--  1 runner runner    9129 Oct  1 19:13 lead-laguna.md
+-rw-r--r--  1 runner runner    8950 Oct  1 19:13 lead-ling3.md
+-rw-r--r--  1 runner runner    9308 Oct  1 19:13 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  1 19:13 lead-mimo.md
+-rw-r--r--  1 runner runner 2045693 Oct  1 19:13 lead-nemotron3.md
+-rw-r--r--  1 runner runner   22601 Oct  1 19:13 reposcan-cineplex.md
+
+reports/:
+total 8396
+drwxr-xr-x  2 runner runner    4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner    4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 5049665 Oct  1 19:13 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   38843 Oct  1 19:13 analyst-laguna.log
+-rw-r--r--  1 runner runner   38664 Oct  1 19:13 analyst-ling3.log
+-rw-r--r--  1 runner runner   39022 Oct  1 19:13 analyst-longcat.log
+-rw-r--r--  1 runner runner 2725506 Oct  1 19:13 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    3091 Oct  1 19:13 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct  1 19:13 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct  1 19:13 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct  1 19:13 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   10438 Oct  1 19:13 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  647806 Oct  1 19:13 hypotheses.md
+-rw-r--r--  1 runner runner    7807 Oct  1 19:13 valid-bugs.md
+[0m
+[0m$ [0mgit log --oneline -12; echo "--- STATUS ---"; git status --porcelain | head -40
+33d7ea6 reposcan 2026-10-01-19-00
+--- STATUS ---
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+[0m
+I'll run the 8 steps. Let me first check the current state of the working artifacts before asserting any deltas.
+## Objective
+- Continue the Cineplex bug-bounty POC workflow in `phase: POC`, `target: api`.
+- Clean and consolidate the local issue-publication set so only canonical, evidence-backed findings can reach `bugs.olivermaicher.eu`.
+
+## Important Details
+- Scope is limited to Cineplex-controlled assets in `scope.yml` and `inventory/cineplex.md`.
+- Live testing must remain passive-first: `GET`/`HEAD`/`OPTIONS`, ≤1 rps; no mutations, customer PII, auth bypass, or live-data testing.
+- Explicit exclusions include username enumeration, TLS/SSL findings, descriptive errors/headers, known-vulnerable libraries without exploit proof, logout CSRF, and rate/lockout testing.
+- `scripts/sync-issues.py:57` publishes only blocks beginning `[HYP]` and globs `leads/lead-*.md`; `[LEARN]` retags suppress blocks.
+- `scripts/sync-issues.py:112` fingerprints normalized `asset` plus verbatim `class`; inconsistent asset prose creates duplicate issue slots.
+- The prior systemic IDOR conclusion is falsified. `INVALID_ID` proves pre-auth decoder reach, not missing authorization; valid public cinema IDs still trigger `UNAUTHENTICATED`. Preserve only the Low decoder-oracle fact in `knowledge/index.md` under `SURVIVING`.
+- CORS is the strongest live finding: production reflects `null`, `http://localhost:3000`, and `https://app.staging.cineplex.de`; `OPTIONS /` returns `204`, exact `ACAO`, `ACAC: true`, `ACAH: content-type,authorization`, and broad mutating `ACAM`. Browser impact remains unproven without knowing whether the web client uses an ambient cookie.
+- Only `/` is POST-capable and preflight-capable. `/graphql`, `/api/graphql`, and `/gql` are GET-only mirrors; POST/OPTIONS reach API Gateway `MissingAuthenticationTokenException`.
+- Mass assignment remains schema-inferred: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning`, `updateUser(adminCinemaOperatingCompanyIds)`, and `increaseUserTestingStatus(testingStatus)`. No writes were executed.
+- `web-dev.cineplex.de` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` remains NXDOMAIN; provider-side claimability is unresolved.
+- `probe-results.md` is unreliable: trailing backticks cause `400`, urllib UA triggers Cloudflare `403`, and balanced manual curl requests can return `200`.
+- Later lead appends reintroduced duplicate CORS blocks and a false `[HYP] Production systemic unauthenticated IDOR...`; the 06:36 parser counts are stale.
+
+## Work State
+### Completed
+- Initial offline audit found `1109` `[HYP]` blocks → `59` slots, including `15` dead/rejected slots.
+- Retagged `703` blocks: `366` in `leads/lead-bigpickle.md` and `337` in `leeds/lead-nemotron3.md`.
+- At that point, parser output dropped to `406` blocks → `29` slots → `0` dead/rejected slots; live threads remained CORS, mass-assignment, dangle, and dev-origin.
+- Confirmed `29` slots represented only about `4` underlying findings; dangle alone occupied `5` slots, dev-origin `9`, and mass-assignment `8`.
+- Added canonical `LIVE`/`DEAD`/`SURVIVING`/`METHOD RULES` status to `knowledge/index.md`.
+- Same-cycle CORS preflight verification reached confidence `92`; no mutation or query body was sent.
+
+### Active
+- Re-run the publisher parser over the full, current `leads/lead-*.md` glob because later entries changed the corpus after remediation.
+- Consolidate surviving slots into four canonical findings by rewriting only `[HYP]` `asset:` and `class:` lines:
+  - CORS
+  - Mass assignment
+  - Dangling CNAME
+  - Dev-origin WAF bypass
+- Repair `leads/lead-bigpickle.md:7846`, currently `class: 'MISCONFIG' conf: '93'`; attributes must be one per line.
+- Ensure no residual `[HYP]` block preserves the falsified systemic-IDOR claim.
+
+### Blocked
+- CORS exploitability requires a program-owned test account to establish cookie-based ambient authentication versus bearer authentication.
+- Mass-assignment impact requires an authorized staging round-trip with a consented non-admin account.
+- Dangle claimability requires Azure-side confirmation that the Container Apps environment is unregistered and claimable.
+- Dev-origin `/gateway/*` routes remain `503 "Wartungsarbeiten"` or intermittently unreachable, so backend impact is gated.
+- Parser cleanup does not prove the tracker is clean; previously mirrored duplicate/dead issues may require manual closure.
+- `run-2026-09-26-01:56.md` failed with `UnknownError` / `ref err_b491aaa2`; reposcan remains unconfigured with `TARGET_ORG not configured`.
+
+## Next Move
+1. Re-run `parse_blocks` offline over every `leads/lead-*.md`, fix the malformed attribute line, retag false IDOR blocks, and normalize the four findings to canonical `asset`/`class` pairs until parser output is `≤6` slots.
+2. Assert the resulting fingerprints represent CORS, mass-assignment, dangle, and dev-origin with no rejected/OOS slots; inspect the git diff to ensure no substantive evidence text was removed and no live requests were made.
+
+## Relevant Files
+- `scripts/sync-issues.py`: publisher parser and fingerprint logic; `parse_blocks` at line 57 and `fingerprint()` at line 112.
+- `leads/lead-bigpickle.md`: primary lead corpus; malformed attribute at line 7846 and later recontaminated CORS/IDOR blocks.
+- `leads/lead-nemotron3.md`: peer lead corpus; previously retagged 337 blocks and contains duplicate CORS variants.
+- `.github/workflows/sync-issues.yml`: publication workflow that would expose duplicate fingerprints.
+- `knowledge/index.md`: canonical status and falsification/supersession source.
+- `probe-results.md`: automated harness output; known trailing-backtick and urllib-UA artifacts.
+- `inventory/cineplex.md`: 132-host baseline and scoped asset inventory.
+- `scope.yml`: authoritative in-scope asset rules.
+- `reports/analyst-nemotron3.log`: peer-agent output; explicitly untrusted as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mls -la scripts/ inventory/ recon-notes/ triage/ 2>/dev/null | head -50; echo "=== state files ==="; for f in state_*.json; do printf "%s: " "$f"; cat "$f"; echo; done
+inventory/:
+total 288
+drwxr-xr-x  2 runner runner   4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner   4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 284627 Oct  1 19:13 cineplex.md
+
+recon-notes/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner 4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner  820 Oct  1 19:13 DEDICATED-DEEP.md
+
+scripts/:
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner  4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner 16987 Oct  1 19:13 sync-issues.py
+
+triage/:
+total 864
+drwxr-xr-x  2 runner runner 12288 Oct  1 19:13 .
+drwxr-xr-x 12 runner runner  4096 Oct  1 19:13 ..
+-rw-r--r--  1 runner runner     0 Oct  1 19:13 .gitkeep
+-rw-r--r--  1 runner runner   172 Oct  1 19:13 run-2026-09-02-21-37.md
+-rw-r--r--  1 runner runner   238 Oct  1 19:13 run-2026-09-02-23-32.md
+-rw-r--r--  1 runner runner   184 Oct  1 19:13 run-2026-09-03-01-25.md
+-rw-r--r--  1 runner runner   148 Oct  1 19:13 run-2026-09-03-06-28.md
+-rw-r--r--  1 runner runner   158 Oct  1 19:13 run-2026-09-03-11-42.md
+-rw-r--r--  1 runner runner   214 Oct  1 19:13 run-2026-09-03-15-48.md
+-rw-r--r--  1 runner runner  4079 Oct  1 19:13 run-2026-09-03-19-07.md
+-rw-r--r--  1 runner runner   196 Oct  1 19:13 run-2026-09-03-21-44.md
+-rw-r--r--  1 runner runner   177 Oct  1 19:13 run-2026-09-03-23-47.md
+-rw-r--r--  1 runner runner   298 Oct  1 19:13 run-2026-09-04-02-58.md
+-rw-r--r--  1 runner runner   239 Oct  1 19:13 run-2026-09-04-07-53.md
+-rw-r--r--  1 runner runner   255 Oct  1 19:13 run-2026-09-04-12-31.md
+-rw-r--r--  1 runner runner   143 Oct  1 19:13 run-2026-09-04-16-35.md
+-rw-r--r--  1 runner runner  9079 Oct  1 19:13 run-2026-09-04-19-08.md
+-rw-r--r--  1 runner runner   150 Oct  1 19:13 run-2026-09-04-21-33.md
+-rw-r--r--  1 runner runner   146 Oct  1 19:13 run-2026-09-04-23-17.md
+-rw-r--r--  1 runner runner  8809 Oct  1 19:13 run-2026-09-05-01-09.md
+-rw-r--r--  1 runner runner  7263 Oct  1 19:13 run-2026-09-05-05-51.md
+-rw-r--r--  1 runner runner   178 Oct  1 19:13 run-2026-09-05-09-58.md
+-rw-r--r--  1 runner runner   566 Oct  1 19:13 run-2026-09-05-13-22.md
+-rw-r--r--  1 runner runner  2646 Oct  1 19:13 run-2026-09-05-16-16.md
+-rw-r--r--  1 runner runner 16926 Oct  1 19:13 run-2026-09-05-16-30.md
+-rw-r--r--  1 runner runner   936 Oct  1 19:13 run-2026-09-05-18-23.md
+-rw-r--r--  1 runner runner   183 Oct  1 19:13 run-2026-09-05-20-42.md
+-rw-r--r--  1 runner runner   393 Oct  1 19:13 run-2026-09-05-22-38.md
+-rw-r--r--  1 runner runner   233 Oct  1 19:13 run-2026-09-06-00-14.md
+-rw-r--r--  1 runner runner   155 Oct  1 19:13 run-2026-09-06-04-47.md
+=== state files ===
+state_bigpickle.json: {"phase": "POC", "target": "api"}
+state_laguna.json: {"phase": "POC", "target": "api"}
+state_ling3.json: {"phase": "POC", "target": "api"}
+state_longcat.json: {"phase": "POC", "target": "api"}
+state_mimo.json: {"phase": "POC", "target": "api"}
+state_nemotron3.json: {"phase": "POC", "target": "api"}
+[0m
+[0m$ [0mecho "=== HYP block counts per lead file ==="; for f in leads/lead-*.md; do printf "%-32s HYP=%-6s LEARN=%-6s\n" "$f" "$(grep -c '^\[HYP\]' "$f")" "$(grep -c '^\[LEARN\]' "$f")"; done
+=== HYP block counts per lead file ===
+leads/lead-bigpickle.md          HYP=590    LEARN=899   
+leads/lead-laguna.md             HYP=0      LEARN=0     
+leads/lead-ling3.md              HYP=0      LEARN=0     
+leads/lead-longcat.md            HYP=0      LEARN=0     
+leads/lead-mimo.md               HYP=0      LEARN=0     
+leads/lead-nemotron3.md          HYP=535    LEARN=2597
+[0m
+=== prompt head ===
+=== KNOWLEDGE BASE ===
+# Knowledge Base (seed)
+- 2026-09-03 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-03 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-03 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-03 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-03 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-03 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-03 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-03 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+- 2026-09-04 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but auth.cineplex.de/.well-known/jwks.json returns 404, no passive JWKS fetch possible
+- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-04 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-04 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-04 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-04 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-04 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- 2026-09-04 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-04 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-04 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-04 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-04 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-04 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-04 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-04 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114-115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+- 2026-09-05 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-05 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+- 2026-09-05 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+- 2026-09-05 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114-115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+- 2026-09-05 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-05 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-05 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-05 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-05 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-05 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics body now examined and fully understood — internal IOMB broker architecture (mode IOMB, writer queue 30k capacity, 273.9M messages queued, 0 dropped), no PII/sensitive data; descriptive-infra info only, not reportable alone.
+- 2026-09-05 REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data.
+- 2026-09-05 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope — reaffirmed for /metrics infra disclosure.
+- 2026-09-05 `/metrics` body fully understood — descriptive infra only (IOMB broker stats), not reportable alone
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && git show --stat HEAD | head -30; echo "=== is HEAD the only commit? ==="; git rev-list --count HEAD; echo "=== any commit touching leads/ ? ==="; git log --oneline -- leads/ | head
+commit 33d7ea627cf1ffeeaec6d9b7da811dbab3803ff8
+Author: github-actions <actions@github.com>
+Date:   Thu Oct 1 19:00:30 2026 +0000
+
+    reposcan 2026-10-01-19-00
+
+ .github/workflows/hunt.yml        |   250 +
+ .github/workflows/reposcan.yml    |   109 +
+ .github/workflows/sync-issues.yml |    44 +
+ .github/workflows/triage.yml      |   138 +
+ README.md                         |    34 +
+ inventory/cineplex.md             |  2115 ++
+ knowledge/index.md                |   960 +
+ leads/lead-bigpickle.md           |  7973 ++++++
+ leads/lead-laguna.md              |   179 +
+ leads/lead-ling3.md               |   179 +
+ leads/lead-longcat.md             |   179 +
+ leads/lead-mimo.md                |     1 +
+ leads/lead-nemotron3.md           | 11126 ++++++++
+ leads/reposcan-cineplex.md        |   411 +
+ probe-results.md                  |  1173 +
+ recon-notes/DEDICATED-DEEP.md     |    21 +
+ reports/analyst-bigpickle.log     | 55300 ++++++++++++++++++++++++++++++++++++
+ reports/analyst-laguna.log        |  1432 +
+ reports/analyst-ling3.log         |  1432 +
+ reports/analyst-longcat.log       |  1432 +
+ reports/analyst-nemotron3.log     | 22036 ++++++++++++++
+ reports/hypotheses-bigpickle.txt  |    27 +
+ reports/hypotheses-laguna.txt     |     1 +
+ reports/hypotheses-ling3.txt      |     1 +
+=== is HEAD the only commit? ===
+1
+=== any commit touching leads/ ? ===
+33d7ea6 reposcan 2026-10-01-19-00
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== HEAD vs worktree diff for leads/ ==="; git diff --stat HEAD -- leads/ knowledge/ scripts/; echo "(empty means worktree == HEAD)"; echo "=== line 7846 of bigpickle ==="; sed -n '7840,7852p' leads/lead-bigpickle.md
+=== HEAD vs worktree diff for leads/ ===
+(empty means worktree == HEAD)
+=== line 7846 of bigpickle ===
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission; GraphQL POST stable 2
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+[0m
+[0m→ [0mRead scripts/sync-issues.py
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && mkdir -p /tmp/opencode/pub && cat > /tmp/opencode/pub/audit.py <<'PY'
+import re, sys, hashlib
+from pathlib import Path
+from collections import Counter, defaultdict
+sys.path.insert(0, "scripts")
+# import pure functions without triggering module-level env reads
+src = Path("scripts/sync-issues.py").read_text()
+ns = {}
+for fn in ("split_inline","parse_blocks","norm_asset","coarse_target","norm_title","fingerprint","coarse_match"):
+    m = re.search(rf"^def {fn}\(.*?(?=^def |\Z)", src, re.S|re.M)
+    exec("import re\nfrom pathlib import Path\n"+m.group(0), ns)
+parse_blocks = ns["parse_blocks"]; fingerprint = ns["fingerprint"]
+norm_asset = ns["norm_asset"]
+
+blocks=[]
+for f in sorted(Path(".").glob("leads/lead-*.md")):
+    t=f.read_text(errors="ignore")
+    mh=re.search(r'\(model\s+(\w+)\)',t); model=mh.group(1) if mh else "unknown"
+    b=parse_blocks(t,model)
+    print(f"{f.name:32s} blocks={len(b)}")
+    for x in b: x["_file"]=f.name
+    blocks+=b
+print("TOTAL BLOCKS:",len(blocks))
+by=defaultdict(list)
+for b in blocks: by[fingerprint(b)].append(b)
+print("UNIQUE FINGERPRINTS:",len(by))
+print()
+rows=[]
+for fp,lst in by.items():
+    c=lst[0].get("class","(none)"); a=lst[0].get("asset","(none)")
+    confs=sorted({b.get("confidence","?") for b in lst})
+    rows.append((len(lst),c,norm_asset(a)[:70],fp,lst[0]["title"][:60]))
+for n,c,a,fp,t in sorted(rows,reverse=True):
+    print(f"{n:4d}  {str(c)[:22]:22s} {a:70s} {fp}  {t}")
+PY
+python3 /tmp/opencode/pub/audit.py 2>&1 | tail -80
+Traceback (most recent call last):
+  File "/tmp/opencode/pub/audit.py", line 18, in <module>
+    b=parse_blocks(t,model)
+      ^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 15, in parse_blocks
+NameError: name 'STOP' is not defined
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat > /tmp/opencode/pub/audit.py <<'PY'
+import os, re
+from pathlib import Path
+from collections import defaultdict
+os.environ.setdefault("GITHUB_REPOSITORY","x/y"); os.environ.setdefault("GITHUB_TOKEN","none")
+src = Path("scripts/sync-issues.py").read_text()
+src = src.split('def main(')[0]          # pure helpers only, no network
+ns={}; exec(src, ns)
+parse_blocks=ns["parse_blocks"]; fingerprint=ns["fingerprint"]; norm_asset=ns["norm_asset"]
+
+blocks=[]
+for f in sorted(Path(".").glob("leads/lead-*.md")):
+    t=f.read_text(errors="ignore")
+    mh=re.search(r'\(model\s+(\w+)\)',t); model=mh.group(1) if mh else "unknown"
+    b=parse_blocks(t,model)
+    for x in b: x["_file"]=f.name
+    print(f"{f.name:34s} blocks={len(b)}")
+    blocks+=b
+print("TOTAL HYP BLOCKS:",len(blocks))
+by=defaultdict(list)
+for b in blocks: by[fingerprint(b)].append(b)
+print("UNIQUE FINGERPRINTS (issue slots):",len(by))
+print()
+rows=[]
+for fp,lst in by.items():
+    rows.append((len(lst), str(lst[0].get("class","(none)")), norm_asset(lst[0].get("asset",""))[:66],
+                 fp, lst[0].get("title","")[:58], len({b["_file"] for b in lst})))
+for n,c,a,fp,t,nf in sorted(rows,key=lambda r:-r[0]):
+    print(f"{n:4d} {nf}f  {c[:20]:20s} {a:66s} {fp}  {t}")
+PY
+python3 /tmp/opencode/pub/audit.py
+Traceback (most recent call last):
+  File "/tmp/opencode/pub/audit.py", line 7, in <module>
+    ns={}; exec(src, ns)
+           ^^^^^^^^^^^^^
+  File "<string>", line 4, in <module>
+ModuleNotFoundError: No module named 'github'
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat > /tmp/opencode/pub/audit.py <<'PY'
+import os, re
+from pathlib import Path
+from collections import defaultdict
+os.environ.setdefault("GITHUB_REPOSITORY","x/y"); os.environ.setdefault("GITHUB_TOKEN","none")
+src = Path("scripts/sync-issues.py").read_text().split('def main(')[0]
+src = src.replace("from github import Github", "")
+ns={}; exec(src, ns)
+parse_blocks=ns["parse_blocks"]; fingerprint=ns["fingerprint"]; norm_asset=ns["norm_asset"]
+
+blocks=[]
+for f in sorted(Path(".").glob("leads/lead-*.md")):
+    t=f.read_text(errors="ignore")
+    mh=re.search(r'\(model\s+(\w+)\)',t); model=mh.group(1) if mh else "unknown"
+    b=parse_blocks(t,model)
+    for x in b: x["_file"]=f.name
+    print(f"{f.name:34s} blocks={len(b)}")
+    blocks+=b
+print("TOTAL HYP BLOCKS:",len(blocks))
+by=defaultdict(list)
+for b in blocks: by[fingerprint(b)].append(b)
+print("UNIQUE FINGERPRINTS (issue slots):",len(by))
+print()
+rows=[]
+for fp,lst in by.items():
+    rows.append((len(lst), str(lst[0].get("class","(none)")), norm_asset(lst[0].get("asset",""))[:64],
+                 fp, lst[0].get("title","")[:56], len({b["_file"] for b in lst})))
+for n,c,a,fp,t,nf in sorted(rows,key=lambda r:-r[0]):
+    print(f"{n:4d} {nf}f  {c[:20]:20s} {a:64s} {fp}  {t}")
+PY
+python3 /tmp/opencode/pub/audit.py
+lead-bigpickle.md                  blocks=587
+lead-laguna.md                     blocks=0
+lead-ling3.md                      blocks=0
+lead-longcat.md                    blocks=0
+lead-mimo.md                       blocks=0
+lead-nemotron3.md                  blocks=535
+TOTAL HYP BLOCKS: 1122
+UNIQUE FINGERPRINTS (issue slots): 62
+
+ 251 2f  IDOR                 graphql-api.app.cineplex.de                                      ed36cb0858b4  Unauthenticated IDOR/BOLA on user/order/ticket/voucher G
+ 208 2f  AUTH                 graphql-api.app.staging.cineplex.de                              8a609bcb6221  Staging GraphQL testing_* resolvers active with no role 
+ 136 2f  MISCONFIG            web-dev.cineplex.de                                              e6de2c14ee92  Dangling-CNAME takeover precondition on dev host
+  84 2f  MISCONFIG            graphql-api.app.cineplex.de                                      3001dc0881c6  Production GraphQL introspection leakage
+  55 2f  AUTH                 auth.cineplex.de                                                 91921efadb3c  JWT alg/key confusion on login-issued tokens (auth / Gra
+  32 1f  MISCONFIG            web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnort 1aed4a435f01  web-dev dangle claimability (submission-bundled)
+  31 2f  BUSLOGIC             graphql-api.app.cineplex.de                                      0c3a6747db5d  Mutation authorization gap / admin-mutation exposed via 
+  30 1f  MISCONFIG            buchung-dev.cineplex.de + bms-dev.cineplex.de                    9d770a7d547e  Dev-origin WAF-bypass full-impact chain (gated on mainte
+  28 2f  MISCONFIG            data-9fc27eb430.cineplex.de                                      03b00cba1b6d  Relay/internal-service path disclosure via exposed healt
+  27 2f  MISCONFIG            graphql-api.app.staging.cineplex.de                              09e3cdc822c7  Staging GraphQL env confusion / relaxed auth on sibling
+  20 1f  IDOR                 graphql-api.app.                                                 2de7539eee9e  Systemic unauth'd IDOR — decodePublicId-before-gate (top
+  18 2f  MISCONFIG            graphql-api.app.                                                 384eae3a082d  WAF client-differentiated bot-gate with origin direct re
+  15 1f  OTHER                graphql-api.app.                                                 485b11accd71  Production GraphQL introspection exposes full schema wit
+  15 2f  OTHER                web-dev.cineplex.de                                              e78904d56917  Dangling CNAME Takeover on web-dev.cineplex.de
+  13 1f  AUTH                 api.cineplex.de                                                  6cb207103dff  JWT alg confusion / weak signing on auth API
+  13 2f  MISCONFIG            booking-dev.cineplex.de                                          d2a0d561467c  Booking-Dev Origin Bypass via No-WAF Dev Environment
+  12 2f  BUSLOGIC             profil.cineplex.de                                               83f5e4ca5a0b  profil.cineplex.de preference-update reachable authless 
+  12 1f  MISCONFIG            web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnor 0dd618354bfc  Dangling CNAME on a scoped dev host
+   9 1f  AUTH                 auth.cineplex.de / graphql-api.app.cineplex.de                   fbf12b49c2e5  JWT Algorithm Confusion via GraphQL login Mutation — RS2
+   8 1f  OTHER                github.com/cineplex-deutschland                                  f11b7fc93119  No public repos available for audit
+   7 2f  IDOR                 data-9fc27eb430.cineplex.de                                      bbe908ec1b70  Relay host undocumented API routes beyond /health and /m
+   7 1f  MISCONFIG            buchung-dev/bms-dev.cineplex.de                                  cb9b327889e9  Dev origin WAF bypass exposing booking/CMS tier
+   6 2f  MISCONFIG            buchung-dev.cineplex.de / bms-dev.cineplex.de                    83764a9bb56e  Cloudflare WAF bypass exposing dev booking/CMS tier at o
+   6 1f  AUTH                 buchung-dev.cineplex.de                                          d8de11e70995  Dev-origin gateway maintenance lift enables unauth OAuth
+   5 1f  MISCONFIG            cloud.systems.cineplex.de                                        6e61822aac92  Nextcloud 33.0.8 on cloud.systems.cineplex.de — /public.
+   5 1f  MISCONFIG            buchung-dev.cineplex.de origin                                   1206ac1807a3  Dev origin WAF bypass + OAuth redirect_uri validation ga
+   5 1f  OTHER                graphql-api.app.cineplex.de                                      9b18ac1464b9  GraphQL Introspection & Unauthorized Mutations on Produc
+   4 2f  MISCONFIG            graphql-api.app.couat.cineplex.de                                c04466382ec2  couat GraphQL accepts introspection POST and exposes sch
+   4 2f  MISCONFIG            api.cineplex.de                                                  2f7a938a94cf  api.cineplex.de root GET 403 is WAF-gated while POST / s
+   4 1f  OTHER                graphql-api.app.staging.cineplex.de                              6d4eadc837fe  Internal architecture disclosure via introspection on st
+   3 1f  AUTH                 graphql-api.app.cineplex.de                                      139f59d22d25  JWT issued by this GraphQL host with weak alg (alg confu
+   3 1f  MISCONFIG            wildcard.systems / systems-zone hosts                            7f9a42d37bd0  wildcard.systems dangle replication
+   3 1f  AUTH                 graphql-api.app.staging.cineplex.de — mutationtype login / refre 80827631dab0  Privilege level is a client-supplied input on the authen
+   3 1f  AUTH                 graphql-api.app.staging.cineplex.de — `testing_getconfirmationco b48a55c4bc83  Staging exposes an unauthenticated `PASSWORD_RESET` conf
+   3 1f  IDOR                 booking.cineplex.de                                              f86bb4538483  IDOR/BOLA on Booking API — Cross-User Booking Access
+   2 1f  IDOR                 api.cineplex.de                                                  e69ee778136d  GET-based GraphQL execution on api.cineplex.de (third or
+   2 1f  MISCONFIG            194.77.169.121                                                   d8d22eb6a8fb  Ingress virtual-host enumeration on shared dev origin
+   2 1f  MISCONFIG            wildcard.systems.cineplex.de + vpn-openvpn-cpz/hz-apphost/es-hz- a0d256aa8ea2  Systems-zone dangle replication after web-dev failure mo
+   2 1f  BUSLOGIC             graphql-api.app.cineplex.de — mutationtype createcinemaoperating 7b9220f4b3cf  Authorization flags and tenant membership are settable f
+   2 1f  AUTH                 graphql-api.app.cineplex.de — mutationtype updatepassword / addl 58fead0ee829  Deprecated credential mutations accept a password change
+   2 1f  IDOR                 graphql-api.app.cineplex.de — querytype userbyid / order / ticke befdc38f75d7  Unauthenticated id-decode reach into a 51-field user obj
+   2 1f  IDOR                 graphql-api.app.cineplex.de — `userbyid` / `order` / `ticket` /  b39000e040ad  Unauthenticated pre-auth id-decode into the 51-field `Us
+   2 1f  IDOR                 graphql-api.app.staging.cineplex.de                              272540c980bb  Staging carries the identical 14-resolver pre-auth omiss
+   2 1f  'MISCONFIG' conf: '9 graphql-api.app.cineplex.de                                      58ac107c6a91  15 resolvers across 4 decoder contracts and 2 argument s
+   2 1f  SSRF                 data-9fc27eb430.cineplex.de                                      3be38e4d99be  Undocumented Relay API Routes / SSRF Primitive on Franch
+   1 1f  OTHER                data-9fc27eb430.cineplex.de                                      e80ddfe71f7a  Relay broker saturation indicates write-path DoS / messa
+   1 1f  (none)                                                                                98abe2e61f03  HUMAN_ONLY on both remaining POCs: cross-tenant IDOR PII
+   1 1f  MISCONFIG            buchung-dev.cineplex.de                                          951029dd75e5  Dev-cluster origin bypass still exploitable once gateway
+   1 1f  MISCONFIG            buchung-dev.cineplex.de origin 194.77.169.121                    6b6fdd6b0f31  Dev-cluster OAuth gateway emerging from maintenance expo
+   1 1f  OTHER                staging.cineplex.de                                              2e4a07b40285  staging.cineplex.de live staging surface identification
+   1 1f  MISCONFIG            wildcard.systems.cineplex.de + cname'd systems hosts             b77e91e502d3  Systems-zone second dangle sweep
+   1 1f  BUSLOGIC             graphql-api.app.cineplex.de — mutationtype `startwebbooking` / ` 3e81a79ea41f  Client-supplied user-ID lists and a client-supplied free
+   1 1f  BUSLOGIC             graphql-api.app.cineplex.de - mutationtype startwebbooking / log 8646c687f906  Client-supplied user-ID lists and client-supplied free-s
+   1 1f  BUSLOGIC             graphql-api.app.cineplex.de — mutationtype updateuser and increa 305aeee0153d  Role and tenant assignment are settable from the request
+   1 1f  AUTH                 graphql-api.app.staging.cineplex.de — `login ` / `refreshlogin ` 22bf29ba11b4  Caller-supplied privilege flag at session establishment 
+   1 1f  IDOR                 graphql-api.app.cineplex.de — `userbyid`                         f785bab51204  Pre-auth id-decode reaches the entity-lookup layer on **
+   1 1f  IDOR                 graphql-api.app.cineplex.de — class a: `userbyid`                331ec6aa94f3  Pre-auth id-decode reaches the entity-lookup layer on si
+   1 1f  (none)                                                                                3f935e1b84ed  
+   1 1f  SUBDOMAIN_TAKEOVER   web-dev.cineplex.de                                              cfe7cf61bb9c  `web-dev.cineplex.de` CNAME target is a deregistered Azu
+   1 1f  MISCONFIG            https://graphql-api.app.cineplex.de.                             f2b9ca325ede  CORS preflight grants credentialed mutating verbs from a
+   1 1f  BUSLOGIC             https://graphql-api.app.staging.cineplex.de.                     85b7022d62d1  Client-settable tenant/privilege fields mirror the serve
+   1 1f  MISCONFIG                                                                             52828ed0c09b  Dangling CNAME on a trusted parent domain pointing at a
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== claimed canonical status section in knowledge/index.md ==="; grep -n -iE '^\s*[-#]*\s*(LIVE|DEAD|SURVIVING|METHOD RULES|Canonical)' knowledge/index.md | head -30; echo "=== tail of index.md ==="; tail -25 knowledge/index.md
+=== claimed canonical status section in knowledge/index.md ===
+=== tail of index.md ===
+- 2026-10-01 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+- 2026-10-01 REJECTED graphql_origin_502 @ graphql-api.app.cineplex.de: the combined two-type introspection query returned a one-off 502 while both single-type forms returned 200 in the same cycle; a bare error code is a descriptive-error and availability signal, both explicit program exclusions, and it exposes no state
+- 2026-10-01 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate and 6/6 sibling controls fire their gate, unchanged; this cycle's independent schema read places the ungated resolvers directly adjacent to the gated PII selectors, corroborating the omission without touching any customer record
+- 2026-10-01 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive cycle, CNAME Status 0 TTL 300 / A-follow Status 3 NXDOMAIN + azure SOA, sole dangle in the 14-host sweep; PASSIVE, claimability still provider-side
+- 2026-10-01 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 persisted across every method and encoding tried; separate stricter edge config, hypothesis dead
+- 2026-10-01 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+- 2026-10-01 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-01 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-01 ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1010 lines) consistent with manual-curl-verified bundle; correct behavior is no-op on empty delta, not fabricated findings
+- 2026-10-01 CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input objects, CVSS 5.3 ready to submit" is factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed
+- 2026-10-01 CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing backtick (→ 400) and the urllib UA hits the edge bot-gate (→ 403). Balanced URL-encoded GET via curl --data-urlencode with a browser UA returns 200 on the same URLs in the same cycle. Conclusions drawn from the automated log alone are unreliable.
+- 2026-10-01 Two failure modes reproduced the same way this cycle. First, a claim about a *system* ("only three live hypotheses exist") was established by inspecting a *part* (one lead file) and reported as a system property — scope the evidence to the blast radius before asserting it, and say which files were read. Second, suppression by tag is not suppression by default: `[HYP]` blocks are never retracted by later `[LEARN]` lines about the same finding, so a falsification written anywhere in the corpus leaves the original claim fully publishable until the block header itself is changed. Corrections need a position that outranks the claim — for an append-only log, that means editing the block tag, not appending a correction. Third, structural dedupe (`fingerprint`) is a trust boundary: it decides what a human reviewer sees, so prose inconsistency in an `asset` field silently becomes issue duplication, and any "N findings" count should be reported as distinct fingerprints plus distinct underlying findings, because here they differed by ~7x.
+- 2026-10-01 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
+- 2026-10-01 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
+- 2026-10-01 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 2 paths × 2 envs.
+- 2026-10-01 REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-01 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauth GET verification 12th+ cycle — prod 83 queries + 140 mutations, staging 83 identical, zero env partitioning.
+- 2026-10-01 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate, 6/6 sibling controls fire gate; structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-01 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-01 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-01 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-01 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-01 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-01 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-01 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== CORS blocks across corpus ==="; grep -rn -iE '^\[HYP\].*cors' leads/lead-*.md | head -20; echo; echo "=== count of CORS-titled HYP lines ==="; grep -rc -iE '^\[HYP\].*cors' leads/lead-bigpickle.md leads/lead-nemotron3.md
+=== CORS blocks across corpus ===
+leads/lead-bigpickle.md:7568:[HYP] CORS-allowlist credentialed reflection without an ambient credential
+leads/lead-bigpickle.md:7587:[HYP] Production GraphQL API reflects credentialed CORS to a dev loopback origin and to a staging-environment origin
+leads/lead-bigpickle.md:7596:[HYP] Staging GraphQL API carries the identical `null`-origin credentialed CORS grant, over the same four paths
+leads/lead-bigpickle.md:7605:[HYP] One global CORS allowlist governs all four GraphQL routes, so the allowlist entries apply to the entire 223-operation surface
+leads/lead-bigpickle.md:7693:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-bigpickle.md:7770:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-bigpickle.md:7941:[HYP] CORS preflight grants credentialed mutating verbs from a dev loopback origin on production GraphQL — confidence 92, class MISCONFIG, testability PASSIVE, asset https://graphql-api.app.cineplex.de. Same-cycle 2/2 `OPTIONS /` with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`. The prior record said "POST included"; the grant is materially broader. verify_steps: replay the exact read-only preflight above against both envs; compare `ACAM` and `Vary` byte-for-byte. evidence_needed: a program-owned test account showing whether the web client authenticates with an ambient cookie or a bearer token — that single fact sets the impact. reasoning: the preflight, not the reflected ACAO, is what makes a third-party page able to issue the write; enumeration of the allowlist is what produced the hostile entries, and enumeration of `ACAM` is what produced this revision.
+leads/lead-bigpickle.md:7948:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-bigpickle.md:7953:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-bigpickle.md:7958:[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+leads/lead-nemotron3.md:9956:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10026:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10096:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10170:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10227:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10296:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10369:[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+leads/lead-nemotron3.md:10492:[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+leads/lead-nemotron3.md:10557:[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+leads/lead-nemotron3.md:10692:[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+
+=== count of CORS-titled HYP lines ===
+leads/lead-bigpickle.md:10
+leads/lead-nemotron3.md:16
+[0m
+Working tree is identical to HEAD, and the parser numbers in the handoff don't reproduce. Checking that discrepancy before I touch anything.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== IDOR HYP blocks asserting auth-omission (the falsified claim) ==="; grep -c -iE '^\[HYP\].*(IDOR|BOLA)' leads/lead-bigpickle.md leads/lead-nemotron3.md; echo; echo "=== does the valid-id UNAUTHENTICATED control exist in corpus? ==="; grep -rn -iE 'UNAUTHENTICATED' leads/lead-*.md | grep -iE 'valid|contentSection|cinema' | head -8
+=== IDOR HYP blocks asserting auth-omission (the falsified claim) ===
+leads/lead-bigpickle.md:144
+leads/lead-nemotron3.md:151
+
+=== does the valid-id UNAUTHENTICATED control exist in corpus? ===
+leads/lead-bigpickle.md:834:reasoning: `currentUser` (no token) → UNAUTHENTICATED, but `userById` with fabricated ID reaches `decodePublicId` (INVALID_ID) — ID decode runs BEFORE any auth check on prod AND staging (probe 2026-09-06, HTTP 200 both). Schema exposes userById→User(email, fullName, telephone, street, birthDate). No directive/app-level gate visible pre-decode.
+leads/lead-bigpickle.md:857:[NEXT] HUMAN: Request bugs.olivermaicher.eu consent for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email execution of `testing_getConfirmationCode` on staging — cite prod+staging `userById` resolving past the auth gate (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both).
+leads/lead-bigpickle.md:864:reasoning: Re-confirmed 2026-09-06 04:47 UTC over GET — `userById` fabricated ID returns `INVALID_ID` from `decodePublicId`, resolves past auth while `currentUser` (no token) returns UNAUTHENTICATED; schema maps `userById`→User(email, fullName, telephone, street, birthDate); no directive in schema; IDOR/BOLA prioritized.
+leads/lead-bigpickle.md:873:reasoning: Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity with prod now shown on two methods (POST prior, GET now: INVALID_ID, not UNAUTHENTICATED); no auth directive at schema level; build-identical envs routinely ship laxer RBAC.
+leads/lead-bigpickle.md:887:[NEXT] HUMAN: submit `bugs.olivermaicher.eu` consent request for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email `testing_getConfirmationCode` execution on staging — cite re-confirmed gate-skip on prod AND staging over GET+POST (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both, 2026-09-06) plus active WAF method-gate attenuation as fresh evidence.
+leads/lead-bigpickle.md:898:[NEXT] HUMAN: Request bugs.olivermaicher.eu consent for (a) two disposable sandbox accounts to prove `userById`/`searchUsers`/`adminUsers` IDOR and (b) one fabricated-email execution of `testing_getConfirmationCode` on staging — cite prod+staging `userById` resolving past the auth gate (INVALID_ID at `decodePublicId`, never UNAUTHENTICATED, HTTP 200 both).
+leads/lead-bigpickle.md:904:reasoning: Re-confirmed 2026-09-06 04:47 UTC over GET — `userById` fabricated ID returns `INVALID_ID` from `decodePublicId`, resolves past auth while `currentUser` (no token) returns UNAUTHENTICATED; schema maps `userById`→User(email, fullName, telephone, street, birthDate); no directive in schema; IDOR/BOLA prioritized.
+leads/lead-bigpickle.md:913:reasoning: Staging introspection exposes `testing_getConfirmationCode`/`testing_forceDeleteUser`; gate-skip parity with prod now shown on two methods (POST prior, GET now: INVALID_ID, not UNAUTHENTICATED); no auth directive at schema level; build-identical envs routinely ship laxer RBAC.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== any LEARN-tag lines that retag blocks? ==="; grep -rhn '^\[LEARN\]' leads/lead-bigpickle.md leads/lead-nemotron3.md | grep -icE 'retag|downgrad|supersed' ; echo "=== LEARN distribution by leading token ==="; grep -rhoE '^\[LEARN\][^ ]*( [A-Z_]+)?' leads/lead-bigpickle.md leads/lead-nemotron3.md | sort | uniq -c | sort -rn | head -20
+=== any LEARN-tag lines that retag blocks? ===
+2
+=== LEARN distribution by leading token ===
+   1652 [LEARN] ACCEPTED
+   1631 [LEARN] REJECTED
+    101 [LEARN] NEW
+     75 [LEARN] CORRECTION
+     15 [LEARN] PARKED
+     13 [LEARN]
+      6 [LEARN] CHANGED
+      2 [LEARN] ROOT_CAUSE
+      1 [LEARN] T
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== falsification evidence present in knowledge/index.md? ==="; for p in contentSectionListByNameAndCinemas selectedCinemaIdsDb 'auth omission' falsified 'SURVIVING' 'METHOD RULES'; do printf "%-34s index=%s leads=%s\n" "$p" "$(grep -ic "$p" knowledge/index.md)" "$(grep -ic "$p" leads/lead-bigpickle.md leads/lead-nemotron3.md | tr '\n' ' ')"; done
+=== falsification evidence present in knowledge/index.md? ===
+contentSectionListByNameAndCinemas index=1 leads=leads/lead-bigpickle.md:6 leads/lead-nemotron3.md:0 
+selectedCinemaIdsDb                index=1 leads=leads/lead-bigpickle.md:4 leads/lead-nemotron3.md:0 
+auth omission                      index=0 leads=leads/lead-bigpickle.md:4 leads/lead-nemotron3.md:0 
+falsified                          index=4 leads=leads/lead-bigpickle.md:15 leads/lead-nemotron3.md:4 
+SURVIVING                          index=1 leads=leads/lead-bigpickle.md:8 leads/lead-nemotron3.md:4 
+METHOD RULES                       index=0 leads=leads/lead-bigpickle.md:2 leads/lead-nemotron3.md:4
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== malformed attribute lines (class+conf on one line) ==="; grep -rn "^class: '.*conf:" leads/lead-*.md | head; echo "=== count ==="; grep -rc "^class: '.*conf:" leads/lead-bigpickle.md leads/lead-nemotron3.md
+=== malformed attribute lines (class+conf on one line) ===
+leads/lead-bigpickle.md:7846:class: 'MISCONFIG' conf: '93'
+leads/lead-bigpickle.md:7969:class: 'MISCONFIG' conf: '93'
+=== count ===
+leads/lead-bigpickle.md:2
+leads/lead-nemotron3.md:0
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "===== BLOCK A (around 7846) ====="; sed -n '7838,7852p' leads/lead-bigpickle.md; echo; echo "===== BLOCK B (around 7969) ====="; sed -n '7959,7975p' leads/lead-bigpickle.md
+===== BLOCK A (around 7846) =====
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers enforce FORBIDDEN (searchUsers), DEVICE_UNAUTHORIZED (userByQr), UNAUTHENTICATED (currentUser) proving auth-omission; GraphQL POST stable 2
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+
+===== BLOCK B (around 7969) =====
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` and `/graphql` reflect `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins (null, localhost:3000, app.staging.cineplex.de). `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Ambient credential question: `currentUser{id}` byte-identical with/without `Cookie: cineplex_session=AAA
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== count variants to test 1109/59 and 406/29 ==="; cat > /tmp/opencode/pub/count.py <<'PY'
+import os,re
+from pathlib import Path
+from collections import defaultdict
+os.environ.setdefault("GITHUB_REPOSITORY","x/y"); os.environ.setdefault("GITHUB_TOKEN","n")
+src=Path("scripts/sync-issues.py").read_text().split('def main(')[0].replace("from github import Github","")
+ns={};exec(src,ns)
+pb=ns["parse_blocks"];fp=ns["fingerprint"]
+def run(files,label):
+    bs=[]
+    for f in files:
+        t=Path(f).read_text(errors="ignore")
+        mh=re.search(r'\(model\s+(\w+)\)',t)
+        bs+=pb(t, mh.group(1) if mh else "unknown")
+    s={fp(b) for b in bs}
+    print(f"{label:44s} blocks={len(bs):5d} slots={len(s):4d}")
+g=sorted(Path(".").glob("leads/lead-*.md"))
+run(g,"glob leads/lead-*.md")
+run([f for f in g if 'nemotron3' not in str(f)],"lead-* minus nemotron3")
+run(sorted(Path(".").glob("leads/*.md")),"glob leads/*.md")
+# grep-based raw HYP line counts
+tot=0
+for f in g:
+    n=sum(1 for l in Path(f).read_text(errors='ignore').splitlines() if l.strip().startswith('[HYP]'))
+    tot+=n
+print(f"{'raw ^[HYP] lines (strip-aware)':44s} lines={tot:5d}")
+PY
+python3 /tmp/opencode/pub/count.py
+=== count variants to test 1109/59 and 406/29 ===
+glob leads/lead-*.md                         blocks= 1122 slots=  62
+lead-* minus nemotron3                       blocks=  587 slots=  58
+glob leads/*.md                              blocks= 1128 slots=  64
+raw ^[HYP] lines (strip-aware)               lines= 1125
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '7820,7846p' leads/lead-bigpickle.md | cat -n
+1	[CHANGED] `dangling_cname_takeover` @ `web-dev.cineplex.de` — same-cycle DoH: CNAME `Status 0` TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow `Status 3` with Azure SOA `ns1-35.azure-dns.com`. The correct `Accept: application/dns-json` header is load-bearing — omitting it returns a malformed answer, which is how this check has intermittently appeared to "break" in past cycles.
+     2	[NEW] `kb_contradiction` @ `knowledge/index.md` — RESOLVED, not just re-noted. Root cause identified: the file is a flat 924-line append-only log with **no canonical status section**, one line per verdict per cycle. A falsified conclusion re-emitted verbatim therefore sits at the *bottom* of the file and reads as current truth. Quantified before fixing: the falsified `idor_booking` "corroborating the omission" line had been stamped `ACCEPTED` on 09-25/26/27/28/29/30 (6x verbatim) while `REJECTED idor_ownership_omission` appeared only 2x, both buried on 09-27. The "no injection vectors / CVSS 5.3 ready to submit" claim appeared 19x across 6 wording variants against only 6 corrections. Ratio was 19:6 and 6:2 — the false claim outnumbered its own falsification in both cases.
+     3	[NEW] `kb_fix` @ `knowledge/index.md` — added a `## CANONICAL STATUS (2026-09-30)` section above the history, partitioned into LIVE / DEAD / SURVIVING / METHOD RULES, and stamped every one of the 11 resurrected false lines with an inline `[SUPERSEDED <date> — <reason>]` marker (6 idor lines + 5 injection-vector variants; exact-match `replaceAll` caught 6 of 10 injection variants, the other 5 needed per-line edits because wording drifted across cycles). History preserved, not deleted — this is an audit trail and the corrections are the evidence. 924 → 980 lines.
+     4	[LEARN] @ self — the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append-only log competes with the claim it corrects and loses on recency. Corrections need a position that outranks the claim, not a later timestamp.
+     5	[LEARN] @ self — a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, because it guarantees a re-derivation from the most recent line. This is now the same failure as the `INVALID_ID` inference: I kept re-reading a stale answer because it was the easiest thing to find.
+     6	[LEARN] `publish_path_clear` @ `scripts/sync-issues.py` — verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\]` only (scripts/sync-issues.py:57) and globs `leads/lead-*.md`; the falsified `idor_booking` lines in my lead file are tagged `[LEARN]`, so they are invisible to the publisher. The only live `[HYP]` blocks are the three real ones (CORS, mass-assignment, dangle). Also confirmed `sync-issues.py` never reads `knowledge/index.md`, so the new section cannot break the parser.
+     7	[LEARN] `idor_booking_scope` @ graphql-api.app.cineplex.de — the two claims are separable and I had been collapsing them. **Survives:** pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 argument shapes incl. a list decode inside `Array.map`; a fix scoped to scalar `args.id` is incomplete). **Dead:** the authorization omission inferred from that reach. Marking the whole finding REJECTED would have destroyed a real result; leaving it ACCEPTED preserves a false one. Recorded both halves explicitly under SURVIVING and DEAD.
+     8	[CHANGED] `cycle_artifact` @ self — no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with zero 16:2x entries, so the harness did not run. Recording an honest no-op on the finding side while making a real fix on the integrity side. `OPTIONS /` was **not** re-probed: the 3/3 prod + staging parity from 10:03 is the cleanest observation and re-issuing it would repeat the exact cycle-inflation error this entry is about.
+     9	[HYP] Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup resolvers are individually unauthenticated in some cases and gated in others
+    10	class: IDOR
+    11	asset: graphql-api.app.cineplex.de
+    12	confidence: 92
+    13	reasoning: Single-variable comparison holds transport, auth state and id value constant and varies only the resolver: `cinema(id:…)` 200/44B `{"data":{"cinema":…}}` versus `contentSectionListByNameAndCinemas(cinemaIds:[…])` 200/665B UNAUTHENTICATED. `movie(id:…)` 200/44B ungated on a second decoder contract. The check that does exist is a narrow session check (`Object.selectedCinemaIdsDb` :40870), not a shared guard.
+    14	evidence_needed: A consented account's own `publicId` against `userById` with no `Authorization`. `UNAUTHENTICATED` → the defect stays Low (public catalogue). Populated `User` → High.
+    15	verify_steps: Replay the four requests in the report; read `extensions.exception.stacktrace` to separate the decoder frame from the authorization frame.
+    16	impact: **Low as demonstrated** — public cinema/film catalogue plus two internal counters, no PII, no revenue. The finding's value is that it *demonstrates* absent checks exist in this codebase while the same id pattern is applied to `userById`/`order`/`ticket`/`invoice`/`notification`, where absence would be High. That escalation is a falsifiable prediction, not a claim.
+    17	testability: PASSIVE
+    18	[HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before any authorization decision
+    19	class: IDOR
+    20	asset: graphql-api.app.cineplex.de
+    21	confidence: 85
+    22	reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+    23	evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+    24	verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+    25	impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+    26	testability: HUMAN_ONLY
+    27	class: 'MISCONFIG' conf: '93'
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== find the HYP line that owns the block ending at 7846 ==="; awk 'NR<=7846 && /^(\[HYP\]|\[LEARN\]|\[NEXT\]|\[PRIO\]|\[CHANGED\]|\[PARKED\]|\[FINAL\]|\[RISK\]|\[NEW\])/ {ln=NR; tag=$0} END{}' leads/lead-bigpickle.md; awk 'NR<=7846 && /^\[/ {ln=NR; t=$0} NR==7846 {print "owning tag line "ln": "substr(t,1,90)}' leads/lead-bigpickle.md; awk 'NR<=7969 && /^\[/ {ln=NR; t=$0} NR==7969 {print "owning tag line "ln": "substr(t,1,90)}' leads/lead-bigpickle.md
+=== find the HYP line that owns the block ending at 7846 ===
+owning tag line 7837: [HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids befo
+owning tag line 7958: [HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origi
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== [LEARN] lines claiming retags were applied ==="; grep -rn "retag" leads/lead-*.md knowledge/index.md | head -10
+=== [LEARN] lines claiming retags were applied ===
+leads/lead-bigpickle.md:7932:[NEW] `publish_set_remediated` @ leads/lead-bigpickle.md, leads/lead-nemotron3.md — 703 `[HYP]` → `[LEARN]` retags (366 + 337), using the repo's own suppression convention (`parse_blocks` opens only on `^\[HYP\]`; `STOP` already terminates on `[LEARN]`). Re-run of the publisher's parser: **406 blocks → 29 slots → 0 dead/rejected-class slots**. Live threads intact (CORS 20, mass-assignment 28, dangle 150). Git diff is 703 tag swaps and nothing else.
+leads/lead-bigpickle.md:7936:[CHANGED] `idor_booking` publish state DEAD → suppressed @ graphql-api.app.cineplex.de — the residual 5 blocks were decoder-oracle framings that explicitly say "not a demonstrated IDOR"; publishing them as `class: IDOR` was the last path by which the falsified claim could reach the tracker. All retagged `[LEARN]`; surviving fact (pre-auth decoder reach, 15 resolvers) is preserved in `knowledge/index.md` under SURVIVING.
+leads/lead-bigpickle.md:7937:[PRIO] P1 — done: publish-set remediation (703 retags, 15 dead slots removed, 0 remaining).
+leads/lead-bigpickle.md:7946:[RISK] Editing a peer's lead file (`leads/lead-nemotron3.md`, 337 retags) is a shared-artifact change; it is reversible from git, the diff is tag-only and machine-verified, and leaving falsified blocks publishable was the larger risk — but it should be visible to whoever owns that file. Probing production with `OPTIONS` is passive and sends no query body, though the reflected allowlist means the check is only meaningful while I hold no credentials; acquiring any real account without explicit authorization would cross the stated boundary. Verification of the remediation is parser-level only — it proves which blocks *would* be published, not what the tracker currently contains, so existing issues mirrored from these files before today may still need manual closure. Finally, suppressing703 blocks is a large mechanical change; if any of the retagged findings is later rehabilitated by program clarification, it must be restored deliberately, not assumed.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && echo "=== does CANONICAL STATUS section exist? ==="; grep -n "CANONICAL STATUS" knowledge/index.md || echo "NOT FOUND"; echo; echo "=== file line counts vs claimed 924->980 ==="; wc -l knowledge/index.md; echo; echo "=== SUPERSEDED markers (claimed 11) ==="; grep -c "SUPERSEDED" knowledge/index.md; echo "=== stashes / refs ==="; git stash list; git reflog --oneline | head
+=== does CANONICAL STATUS section exist? ===
+NOT FOUND
+
+=== file line counts vs claimed 924->980 ===
+960 knowledge/index.md
+
+=== SUPERSEDED markers (claimed 11) ===
+0
+=== stashes / refs ===
+33d7ea6 HEAD@{0}: checkout: moving from master to main
+[0m
+Two things don't line up with the handoff. Checking before I touch anything destructive.
+I'm stopping here rather than executing the planned edit, because verification contradicts the handoff in ways that make the planned change unsafe.
+
+**The 703 retags were never applied.** `git diff HEAD` over `leads/` is empty and there's only one commit (`33d7ea6`). The current corpus parses to **1122 `[HYP]` blocks → 62 issue slots**, not 406 → 29. The log entry at `leads/lead-bigpickle.md:7932` claims the retags happened and that the diff is "703 tag swaps and nothing else" — that diff does not exist in this tree. Same for `knowledge/index.md`: the log claims a `## CANONICAL STATUS (2026-09-30)` section with 11 `SUPERSEDED` markers and a 924→980 line growth; the file is 960 lines with zero `CANONICAL STATUS` and zero `SUPERSEDED` markers.
+
+So this is a fresh checkout where the prior cycle's remediation is recorded as prose but absent as edits. The handoff's "06:36 parser counts are stale" framing has it backwards: 406/29 were never true here, and the 62 slots include 15+ dead/rejected classes the retags were supposed to remove.
+
+That matters because the planned next move is not a repair, it's the destructive step. Normalizing `asset`/`class` across ~1122 blocks to force `≤6` slots would rest on the claim that 29 slots ≈ 4 real findings — a claim I'd be acting on without the evidence for it, and I'd be doing it over a corpus whose falsification work (the `## CANONICAL STATUS` section) is itself missing. The corpus's own method rule is that corrections must *outrank* the claim in the file, not just be appended; if that section isn't there, appending more `[LEARN]` lines doesn't suppress anything, since `parse_blocks` only opens on `^[HYP]`.
+
+Two smaller findings I did confirm:
+
+- The malformed line is real and there's a second one. `leads/lead-bigpickle.md:7846` and `:7969` both read `class: 'MISCONFIG' conf: '93'`. That parses as class `'MISCONFIG' conf: '9` (20-char truncation) and yields the junk slot `58ac107c6a91`. Both sit at the *tail* of a preceding block, after a well-formed `class: IDOR` — line 7837's block already has `class: IDOR`, so the malformed line is a stray append, not the block's real class.
+- The falsified IDOR claim is still fully publishable. 144 `[HYP]` IDOR/BOLA lines in bigpickle and 151 in nemotron3, including `Production systemic unauthenticated IDOR via single-entity resolvers` at `class: IDOR, confidence: 93` (line 7847), reasoning that sibling `UNAUTHENTICATED` proves auth omission. The `contentSectionListByNameAndCinemas` valid-ID control that falsifies that inference is in the corpus (6 mentions in bigpickle) but nothing suppresses the blocks.
+
+How do you want to proceed?
+
+1. **Re-apply the retags for real** — I can do the 703 retags, the two malformed-line fixes, and add the `## CANONICAL STATUS` section, then report actual parser numbers rather than the logged ones.
+2. **Just the two low-risk fixes** — the malformed lines at 7846/7969, plus retagging the falsified systemic-IDOR `[HYP]` blocks. Small, verifiable, no mass rewrite.
+3. **Investigate first** — figure out why the committed tree diverges from the logged cycle before changing anything, since a mismatch this size suggests the checkout is wrong or a commit was lost.
+
+I'd suggest 2 as the immediate step and treating 1 as a follow-up, since option 1's premise (that 29 slots already represent 4 findings) is the one thing I can't verify from here. Also worth noting: `github` isn't installed in this environment, so `sync-issues.py` can't be run end-to-end — I loaded its pure helpers directly to audit, which means my counts match the real parser but nothing has touched the tracker.
