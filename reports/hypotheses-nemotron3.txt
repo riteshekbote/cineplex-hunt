@@ -1,7 +1,7 @@
-## 2026-10-01 06:35:28 UTC [target] (model nemotron3)
-[NEW] Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns 200 (was 500 HTTP, inconsistent error handling resolved) (KB 2026-10-01)
+## 2026-10-01 13:55:14 UTC [target] (model nemotron3)
+[NEW] Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns 200 (was 500 HTTP, inconsistent error handling resolved)
 [NEW] KB canonical status section added (2026-09-30) — partitioned LIVE/DEAD/SURVIVING/METHOD RULES; resolved 11 resurrected falsified claims from append-only log
-[CHANGED] Automated probe harness defect CONFIRMED: `probe-results.md` 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-encoded GET via curl returns 200 (KB 2026-09-26/30)
+[CHANGED] Automated probe harness defect CONFIRMED: `probe-results.md` 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-encoded GET via curl returns 200
 [CHANGED] All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
 [PRIO] graphql-api.app.cineplex.de,9.9,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=10
 [PRIO] graphql-api.app.staging.cineplex.de,9.6,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
@@ -35,6 +35,10 @@ evidence_needed: Claimability attestation (register target Azure Container App n
 verify_steps: dig @8.8.8.8 web-dev.cineplex.de CNAME + dig @8.8.8.8 web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A
 impact: Subdomain takeover on scoped dev domain — attacker claims Azure Container App, serves arbitrary content on `web-dev.cineplex.de`; Medium severity (CVSS 5.3–6.1), PASSIVE
 testability: PASSIVE
+[PARKED] jwt_alg_confusion @ auth.cineplex.de: JWKS endpoint 404, no passive key acquisition; auth.cineplex.de login/sso endpoints TLS-dead (525) — no reachable auth surface for active testing
+[PARKED] idor_booking cross-tenant PII proof @ graphql-api.app.cineplex.de: Structural POC complete (4/4 resolvers, 6/6 control gates), but program PII rule requires HUMAN_ONLY for cross-tenant proof — cannot demonstrate without live customer data
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Field exists in prod queryType too; only distinguishing signal is method-mismatch error (descriptive, explicit program exclusion); no code ever extracted
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin SPAs reachable (200), but `/gateway/*` routes return 403/503 at CF edge — exploitability backend-gated, not dead but not actionable without backend state change
 [FINAL] Ranked survivors (by testability × impact):
 [NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -` — confirm credentialed preflight response for dev origin on production (6/6 origins)
 [LEARN] ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.

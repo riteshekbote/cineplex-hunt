@@ -2107,3 +2107,9 @@ wwww.cineplex.de
 - NEW KB canonical status section added (2026-09-30) — partitioned LIVE/DEAD/SURVIVING/METHOD RULES; resolved 11 resurrected falsified claims from append-only log
 - CHANGED Automated probe harness defect CONFIRMED: `probe-results.md` 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-e
 - CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
+
+## 2026-10-01 13:59:33 UTC
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns 200 (was 500 HTTP, inconsistent error handling resolved)
+- NEW KB canonical status section added (2026-09-30) — partitioned LIVE/DEAD/SURVIVING/METHOD RULES; resolved 11 resurrected falsified claims from append-only log
+- CHANGED Automated probe harness defect CONFIRMED: `probe-results.md` 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-e
+- CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET

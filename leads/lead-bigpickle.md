@@ -7944,3 +7944,30 @@ asset: graphql-api.app.cineplex.de
 [NEXT] Run an offline consolidation of the 29 surviving slots into their 4 canonical findings — map each slot to (canonical asset, canonical class) and rewrite only the `asset:`/`class:` attribute lines of the affected `[HYP]` blocks so the next `sync-issues.yml` run opens ~4 issues instead of ~29 — then re-run `parse_blocks` and assert the slot count drops to ≤6 with CORS, mass-assignment and dangle each still represented; no live requests, no change to `scripts/sync-issues.py`.
 [LEARN] Two failure modes reproduced the same way this cycle. First, a claim about a *system* ("only three live hypotheses exist") was established by inspecting a *part* (one lead file) and reported as a system property — scope the evidence to the blast radius before asserting it, and say which files were read. Second, suppression by tag is not suppression by default: `[HYP]` blocks are never retracted by later `[LEARN]` lines about the same finding, so a falsification written anywhere in the corpus leaves the original claim fully publishable until the block header itself is changed. Corrections need a position that outranks the claim — for an append-only log, that means editing the block tag, not appending a correction. Third, structural dedupe (`fingerprint`) is a trust boundary: it decides what a human reviewer sees, so prose inconsistency in an `asset` field silently becomes issue duplication, and any "N findings" count should be reported as distinct fingerprints plus distinct underlying findings, because here they differed by ~7x.
 [RISK] Editing a peer's lead file (`leads/lead-nemotron3.md`, 337 retags) is a shared-artifact change; it is reversible from git, the diff is tag-only and machine-verified, and leaving falsified blocks publishable was the larger risk — but it should be visible to whoever owns that file. Probing production with `OPTIONS` is passive and sends no query body, though the reflected allowlist means the check is only meaningful while I hold no credentials; acquiring any real account without explicit authorization would cross the stated boundary. Verification of the remediation is parser-level only — it proves which blocks *would* be published, not what the tracker currently contains, so existing issues mirrored from these files before today may still need manual closure. Finally, suppressing703 blocks is a large mechanical change; if any of the retagged findings is later rehabilitated by program clarification, it must be restored deliberately, not assumed.
+## 2026-10-01 13:58:47 UTC [target] (model bigpickle)
+[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` and `/graphql` reflect `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins. `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Ambient credential question: `currentUser{id}` byte-identical with/without `Cookie: cineplex_session=AAAA; JSESSIONID=BBBB; jwt=CCCC` (200 
+[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` and `/graphql` reflect `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins. `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Ambient credential question: `currentUser{id}` byte-identical with/without `Cookie: cineplex_session=AAAA; JSESSIONID=BBBB; jwt=CCCC` (200 
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` and `/graphql` reflect `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins (null, localhost:3000, app.staging.cineplex.de). `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Ambient credential question: `currentUser{id}` byte-identical with/without `Cookie: cineplex_session=AAA
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded in `Array.map` :15095:127, so a fix scoped to `args.id` is incomplete. 6/6 sibling controls fire, same-cycle `currentUser` → 836B UNAUTHENTICATED.
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven — pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Reaches further only if a post-decode check is absent upstream.
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
