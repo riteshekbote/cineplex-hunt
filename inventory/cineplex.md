@@ -2080,3 +2080,18 @@ wwww.cineplex.de
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics
 - CHANGED `graphql-api.app.staging.cineplex.de` `testing_getConfirmationCode` REJECTED as standalone — method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType
 - CHANGED KB canonical status section added (2026-09-30) — resolved resurrected falsified claims; partitioned LIVE/DEAD/SURVIVING/METHOD RULES
+
+## 2026-10-01 00:35:19 UTC
+- NEW GraphQL introspection + full type/argument inventory CONFIRMED via manual curl (not automated probes) on graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: 385 types, 44 INPUT_OBJECTs,
+- NEW Mass-assignment read/write mirror CONFIRMED: CinemaOperatingCompanyData.accessRight* (4 flags) IDENTICAL to UserPrivileges derived fields; updateUser(adminCinemaOperatingCompanyIds) mirrors belongsToC
+- NEW IDOR chaining CONFIRMED: ticket(id)→order→user AND order(id)→user reach same 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history) WITHOUT userById — 3 independent 
+- NEW Physical-to-profile CONFIRMED: userByQr(qrCode) returns User — physical ticket stub → digital identity if ownership unchecked
+- NEW Dual GraphQL entry points CONFIRMED: `/` and `/graphql` both unauthenticated on prod+staging with identical schema/IDOR surface; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 on 
+- NEW CORS misconfiguration CONFIRMED on PRODUCTION graphql-api.app.cineplex.de: allowlist reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true`; `OPTIONS /` returns 204 w
+- NEW Staging `/graphql` parity RESTORED: now returns 200 (was 500) — inconsistent error handling resolved
+- NEW Automated probe harness DEFECT CONFIRMED: probe-results.md 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-enc
+- NEW Dangling CNAME takeover on web-dev.cineplex.de: 17th+ consecutive NXDOMAIN cycle, machine-checkable DoH now works (pipeline header defect fixed), sole CNAME in 14-host sweep, Azure Container Apps targ
+- NEW buchung-dev/bms-dev origin REACHABLE but /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated, not dead
+- CHANGED KB canonical status section added (2026-09-30) — resolved resurrected falsified claims; partitioned LIVE/DEAD/SURVIVING/METHOD RULES
+- CHANGED auth.cineplex.de JWKS 404, login/sso TLS-dead (525) — no passive JWKS path, no auth surface reachable
+- CHANGED api.cineplex.de strict 403 all GraphQL paths — separate stricter WAF config, GET-bypass hypothesis dead

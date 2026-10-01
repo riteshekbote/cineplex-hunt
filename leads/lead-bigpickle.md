@@ -7926,3 +7926,4 @@ testability: PASSIVE
 [HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before any authorization decision
 class: IDOR
 asset: graphql-api.app.cineplex.de
+## 2026-10-01 00:35:09 UTC [target] (model bigpickle)
