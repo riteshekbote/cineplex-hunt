@@ -958,3 +958,5 @@
 - 2026-10-01 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
 - 2026-10-01 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
 - 2026-10-01 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+- 2026-10-01 HUMAN_ONLY on both remaining POCs: cross-tenant IDOR PII (consent + 2 accounts) and staging POST oracle (fabrica
+- 2026-10-01 The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missing ownership check" inf

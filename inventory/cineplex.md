@@ -2120,3 +2120,12 @@ wwww.cineplex.de
 - NEW `/graphql` endpoint on both envs is GET-only mirror (GET 200, POST 403 MissingAuthenticationToken, OPTIONS 403) while root `/` accepts full CORS preflight + POST — dual entry point confirmed, remediat
 - CHANGED Automated probe harness defect confirmed: `probe-results.md` 1173 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; 
 - CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
+
+## 2026-10-01 23:20:01 UTC
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns 200 (was 500 HTTP, inconsistent error handling resolved)
+- NEW CORS preflight on both `graphql-api.app.cineplex.de/` and `graphql-api.app.staging.cineplex.de/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPT
+- NEW `/graphql` endpoint on both envs is GET-only mirror (GET 200, POST 403 MissingAuthenticationToken, OPTIONS 403) while root `/` accepts full CORS preflight + POST — dual entry point confirmed, remediat
+- CHANGED Automated probe harness defect confirmed: `probe-results.md` 1177 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; 
+- CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
+- NEW Dangling CNAME on `web-dev.cineplex.de` → 17th+ consecutive NXDOMAIN cycle confirmed via manual DoH; sole CNAME in 14-host sweep; machine-checkable DoH now works (pipeline header defect fixed)
+- NEW `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable this cycle (SPAs 308→403); `/gateway/*` routes still return 403 at CF edge after redirect — exploitability rema
