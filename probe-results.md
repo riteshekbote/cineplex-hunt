@@ -1161,3 +1161,9 @@ https://buchung-dev.cineplex.de/gateway/booking-session/session` -> HTTP 403
 ## 2026-10-01 00:35:22 UTC
 https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-01 06:37:05 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de -> HTTP 403
+https://graphql-api.app.staging.cineplex.de -> HTTP 403

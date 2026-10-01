@@ -2095,3 +2095,15 @@ wwww.cineplex.de
 - CHANGED KB canonical status section added (2026-09-30) — resolved resurrected falsified claims; partitioned LIVE/DEAD/SURVIVING/METHOD RULES
 - CHANGED auth.cineplex.de JWKS 404, login/sso TLS-dead (525) — no passive JWKS path, no auth surface reachable
 - CHANGED api.cineplex.de strict 403 all GraphQL paths — separate stricter WAF config, GET-bypass hypothesis dead
+
+## 2026-10-01 06:37:00 UTC
+- NEW `publish_set_contaminated` @ scripts/sync-issues.py + leads/lead-*.md — executing the publisher's own `parse_blocks` offline over the globbed lead files yields 1109 `[HYP]` blocks → 59 asset+class fin
+- NEW `publish_set_remediated` @ leads/lead-bigpickle.md, leads/lead-nemotron3.md — 703 `[HYP]` → `[LEARN]` retags (366 + 337), using the repo's own suppression convention (`parse_blocks` opens only on `^\[
+- NEW `fingerprint_fragmentation` @ scripts/sync-issues.py:112 — `fingerprint()` hashes `norm_asset(asset)`+`class` verbatim, so one finding with inconsistent asset prose becomes many issue slots. The **sin
+- NEW `malformed_attribute_line` @ leads/lead-bigpickle.md:7846 — `class: 'MISCONFIG' conf: '93'` on one line. `KV` regex captures everything after the first colon, so class becomes `'MISCONFIG' conf: '93'`
+- CHANGED `cors_preflight_credentialed_post` confidence 90 → 92 @ graphql-api.app.cineplex.de — first live capture this cycle, read-only `OPTIONS`, browser UA, 2/2 same-cycle (prod then staging, >1 s apart, no 
+- CHANGED `idor_booking` publish state DEAD → suppressed @ graphql-api.app.cineplex.de — the residual 5 blocks were decoder-oracle framings that explicitly say "not a demonstrated IDOR"; publishing them as `cla
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns 200 (was 500 HTTP, inconsistent error handling resolved) (KB 2026-10-01)
+- NEW KB canonical status section added (2026-09-30) — partitioned LIVE/DEAD/SURVIVING/METHOD RULES; resolved 11 resurrected falsified claims from append-only log
+- CHANGED Automated probe harness defect CONFIRMED: `probe-results.md` 1154 lines, ZERO POST GraphQL probes; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; balanced URL-e
+- CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET

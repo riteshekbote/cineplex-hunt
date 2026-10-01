@@ -4408,3 +4408,23 @@
 - LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host baseline + CT diff + CNAME sweep exhausted; zero-POST probe log (1010 lines) consistent with manual-curl-verified 
 - LEARN: CORRECTION @ knowledge/index.md: the 2026-09-12..09-19 entry "full mutation arg enumeration (35KB) confirms no injection vectors, all args scalar/named input ob
 - LEARN: CORRECTION harness_defect @ probe tooling: the 403/400 wall in probe-results.md is the harness, not the server — pipeline probe URLs carry a literal trailing ba
+
+## RANKED HYPOTHESES 2026-10-01 06:37:00 UTC
+- [95] graphql-api.app.cineplex.de: CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins (from art/lead_nemotron3.txt)
+- [0] ?: CORS preflight grants credentialed mutating verbs from a dev loopback origin on production GraphQL — confidence 92, class MISCONFIG, testability PASSIVE, asset https://graphql-api.app.cineplex.de. Same-cycle 2/2 `OPTIONS /` with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`. The prior record said "POST included"; the grant is materially broader. verify_steps: replay the exact read-only preflight above against both envs; compare `ACAM` and `Vary` byte-for-byte. evidence_needed: a program-owned test account showing whether the web client authenticates with an ambient cookie or a bearer token — that single fact sets the impact. reasoning: the preflight, not the reflected ACAO, is what makes a third-party page able to issue the write; enumeration of the allowlist is what produced the hostile entries, and enumeration of `ACAM` is what produced this revision. (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): Run an offline consolidation of the 29 surviving slots into their 4 canonical findings — map each slot to (canonical asset, canonical class) and rewrite only th
+- NEXT(hypotheses-nemotron3.txt): PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: 
+- LEARN: Two failure modes reproduced the same way this cycle. First, a claim about a *system* ("only three live hypotheses exist") was established by inspecting a *part
+- LEARN: ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true`
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including 
+- LEARN: ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 4
+- LEARN: REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST beha
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauth GET verification 12th+ cycle — prod 83 queries + 140 mutations, stagi
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate, 6/6 sibling controls fire gate; structural POC complete; HUMAN_ONLY cr
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read miss
+- LEARN: CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA
