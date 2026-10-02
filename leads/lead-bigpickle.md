@@ -8170,3 +8170,153 @@ testability: PASSIVE
 [RISK] **Medium** — mass assignment is schema-inferred only; describing it as demonstrated privilege escalation in the report would repeat the exact INVALID_ID inference failure.
 [RISK] **Low** — I deliberately did **not** append three new `[HYP]` blocks to `leads/lead-bigpickle.md` this cycle: writing more publishable blocks into an unaudited corpus is the mechanism that produced this contamination. They are in STEP 3–5 above and should be filed only after the STEP 7 audit lands.
 [RISK] **Low** — `probe-results.md` can only ever contribute positives; its 403/ERR rows are harness artifacts (trailing backtick, urllib UA) and must never be read as absence.
+## 2026-10-02 15:10:30 UTC [target] (model bigpickle)
+[CHANGED] `dangling_cname_takeover` @ `web-dev.cineplex.de` M-bM-^@M-^T same-cycle DoH: CNAME `Status 0` TTL 300 M-bM-^FM-^R `web.gentleglacier-dfef6458.switzer
+[NEW] `kb_contradiction` @ `knowledge/index.md` M-bM-^@M-^T RESOLVED, not just re-noted. Root cause identified: the file is a flat 924-line append-only log with
+[NEW] `kb_fix` @ `knowledge/index.md` M-bM-^@M-^T added a `## CANONICAL STATUS (2026-09-30)` section above the history, partitioned into LIVE / DEAD / SURVIVING
+[LEARN] @ self M-bM-^@M-^T the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append
+[LEARN] @ self M-bM-^@M-^T a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, be
+[LEARN] `publish_path_clear` @ `scripts/sync-issues.py` M-bM-^@M-^T verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\
+[LEARN] `idor_booking_scope` @ graphql-api.app.cineplex.de M-bM-^@M-^T the two claims are separable and I had been collapsing them. **Survives:** pre-auth decod
+[CHANGED] `cycle_artifact` @ self M-bM-^@M-^T no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with ze
+[HYP] Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup resolvers are individually unauthenticated in some cases and gated in 
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: Single-variable comparison holds transport, auth state and id value constant and varies only the resolver: `cinema(id:M-bM-^@M-&)` 200/44B `{"data":{
+evidence_needed: A consented account's own `publicId` against `userById` with no `Authorization`. `UNAUTHENTICATED` M-bM-^FM-^R the defect stays Low (public cat
+verify_steps: Replay the four requests in the report; read `extensions.exception.stacktrace` to separate the decoder frame from the authorization frame.
+impact: **Low as demonstrated** M-bM-^@M-^T public cinema/film catalogue plus two internal counters, no PII, no revenue. The finding's value is that it *demonst
+testability: PASSIVE
+[HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before any authorization decision
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded 
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven M-bM-^@M-^T pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Re
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login M-bM-^FM-^R JWT M-bM-^FM-^R own publicId; POST {userById(id:"<otherId>"){email,fullName,telephone
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblin
+[PRIO] graphql-api.app.staging.cineplex.de,9.6,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,7.5,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
+[PRIO] buchung-dev.cineplex.de,6.8,attack_surface=8,business_value=7,tech_exposure=7,gate_ease=8,cloud_surface=6,freshness=6
+[PRIO] bms-dev.cineplex.de,6.5,attack_surface=7,business_value=6,tech_exposure=8,gate_ease=8,cloud_surface=6,freshness=6
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins on Production GraphQL API
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` reflects `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins (null, localhost:3000, app.staging.cineplex.de). `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Staging `/graphql` now 200 parity. `currentUser{id}` byte-identical with/without test cookies (200 UNAUTHENTICATED) — ambient credential acceptance unproven.
+evidence_needed: 1) Confirm a browser from `http://localhost:3000` can issue credentialed POST to prod `/` with `authorization` header and execute a mutation. 2) Verify if any valid session/cookie from `app.cineplex.de` is accepted by prod (test with real session). 3) Confirm staging `/graphql` 200 parity stable.
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -
+impact: If a valid session/cookie is accepted, any page on `localhost:3000` or `app.staging.cineplex.de` can issue credentialed mutations on production — ATO, booking manipulation, notification broadcast, account deletion. Even without ambient credential, reflected dev/staging origins in prod allowlist is a misconfiguration. CVSS 7.5–8.5 depending on credential acceptance.
+testability: AUTH_HELPED (requires valid session for mutation execution; preflight is PASSIVE)
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserPrivileges
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: `CinemaOperatingCompanyData` input object (used in `createCinemaOperatingCompany`/`updateCinemaOperatingCompany`) carries four caller-supplied `accessRight*` Booleans (`accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, `accessRightCampaigning`) plus `cinemasIds` list; these **exact four names** appear on `UserPrivileges` as NON_NULL Booleans derived by server (`accessRightDashboard:Boolean!`, `accessRightFilmStatistics:Boolean!`, `accessRightBonusProgram:Boolean!`, `accessRightCampaigning:Boolean!`); `updateUser(adminCinemaOperatingCompanyIds:[ID!])` mirrors `belongsToCinemaOperatingCompanies`/`adminForCinemas`; staging field sets equal — flags not environment-partitioned.
+evidence_needed: Execute `createCinemaOperatingCompany`/`updateCinemaOperatingCompany` with crafted `accessRight*` + `cinemasIds` against a consented test account (AUTH_HELPED) and verify `UserPrivileges` reflects caller-supplied values.
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+impact: If gates missing or permissive, caller can grant themselves dashboard/film-statistics/bonus-program/campaigning access across arbitrary cinemas — privilege escalation to cinema-operating-company admin; CVSS ~8.0 if exploitable
+testability: AUTH_HELPED
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 96
+reasoning: CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 0 CNAME / A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA); 17th+ consecutive cycle confirmed; sole dangling CNAME in full 14-host sweep (7 dev + 7 systems-zone); automated DoH probe now succeeds (200) after header-format fix; host HTTP 000; claimability requires registering same Azure Container App name in switzerlandnorth region.
+evidence_needed: Claimability attestation (register target Azure Container App name in switzerlandnorth) — passive precondition fully satisfied.
+verify_steps: dig @8.8.8.8 web-dev.cineplex.de CNAME + dig @8.8.8.8 web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A
+impact: Subdomain takeover on scoped dev domain — attacker claims Azure Container App, serves arbitrary content on `web-dev.cineplex.de`; Medium severity (CVSS 5.3–6.1), PASSIVE
+testability: PASSIVE
+[PARKED] jwt_alg_confusion @ auth.cineplex.de: JWKS endpoint 404, no passive key acquisition; auth.cineplex.de login/sso endpoints TLS-dead (525) — no reachable auth surface for active testing
+[PARKED] idor_booking cross-tenant PII proof @ graphql-api.app.cineplex.de: Structural POC complete (4/4 resolvers, 6/6 control gates), but program PII rule requires HUMAN_ONLY for cross-tenant proof — cannot demonstrate without live customer data
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Field exists in prod queryType too; only distinguishing signal is method-mismatch error (descriptive, explicit program exclusion); no code ever extracted
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin SPAs reachable (200), but `/gateway/*` routes return 403/503 at CF edge — exploitability backend-gated, not dead but not actionable without backend state change
+[FINAL] Ranked survivors (by testability × impact):
+[PRIO] graphql-api.app.staging.cineplex.de,9.45,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,7.25,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
+[HYP] CORS Misconfiguration Permits Credentialed Cross-Origin Mutation Calls Against Production GraphQL Root
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 90
+reasoning: Allowlist enumerates `null`, `http://localhost:3000`, `https://app.staging.cineplex.de`; each reflects exactly with `access-control-allow-credentials: true`. Preflight on `/` returns 204 with `ACAM` containing POST and `ACAH: content-type,authorization` on both environments, so a browser on an allowlisted origin is permitted to issue the credentialed write to the one route that actually accepts POST. Mechanism is confirmed twice-over (response pair + preflight); the residual uncertainty is only whether a real session cookie is accepted. Downgraded95 → 90: impact language in the peer lead ("mutation execution", CVSS 8.5) outruns what was demonstrated.
+evidence_needed: A consented, low-privilege session cookie accepted by the production root, executed from an allowlisted origin; or an explicit statement from the program that bearer tokens in `localStorage` are not ambiently reachable.
+verify_steps: Read-only only — re-run the same preflight against `/` on both envs to confirm stability; enumerate the full allowlist with varied `Origin` values to check for regex/prefix matches such as `https://app.staging.cineplex.de.evil.tld` or a wildcard subdomain pattern.
+impact: Confirmed: unauthorized-origin credentialed write primitive into a mutation-capable production API (booking manipulation, notification broadcast, account deletion reachable through gated mutations). Unproven: theft of an actual session or execution of any mutation. Report as CORS-policy defect with browser-permitted-write impact; do not claim ATO.
+testability: PASSIVE for mechanism, AUTH_HELPED for impact
+[HYP] Caller-Controlled accessRight* / adminCinemaOperatingCompanyIds Inputs Mirror Server-Derived Privilege Fields (Mass Assignment)
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: `CinemaOperatingCompanyData` — the input object for `createCinemaOperatingCompany`/`updateCinemaOperatingCompany` — carries `accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, `accessRightCampaigning` and `cinemasIds`. Those four names reappear on the output type `UserPrivileges` as server-derived NON_NULL Booleans. `updateUser(userId:ID!, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` and `increaseUserTestingStatus(testingStatus: TestingStatus!)` likewise accept caller-supplied authorization state. The signature is identical on staging, so nothing is environment-partitioned. This is a read/write mirror, which is a strong prior for a mass-assignment defect — and nothing more than a prior until a gate is exercised.
+evidence_needed: One consented low-privilege account creating or updating a cinema-operating-company with `accessRight*` flipped away from the server's own computed values, then reading back `UserPrivileges`; plus the sibling control showing the resolver rejects the same input for an unprivileged caller.
+verify_steps: No live execution from this session — all writes are out of scope here. Offline: enumerate every mutation whose input object contains a field name that also appears on an output privilege type, to size the family before any consented test is scheduled.
+impact: If gates are missing or field-scoped rather than role-scoped, a low-privilege user self-grants dashboard, film-statistics, bonus-program and campaigning rights over arbitrary cinemas — privilege escalation to operating-company admin. Conditional on gate testing; nothing here proves escalation.
+testability: AUTH_HELPED
+[HYP] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 95
+reasoning: CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` returns Status 0; the target resolves NXDOMAIN (Status 3) against the Azure SOA, reproducibly across cycles, as the sole dangle in the 14-host sweep. The precondition half of a subdomain takeover is fully satisfied and the host serves no HTTP surface.
+evidence_needed: Provider-side claimability attestation — that a specific actor can register the exact `web.gentleglacier-dfef6458` name in `switzerlandnorth`, and that doing so yields control of the CNAME.
+verify_steps: PASSIVE — re-resolve CNAME and target via DoH on separate cycles; confirm the target is not merely a typo'd or retired deployment of an existing tenant.
+impact: Takeover precondition only. NXDOMAIN proves the name is unresolvable, not that it is unclaimed; submitting this without claimability evidence is a precondition report, and it must be worded that way.
+testability: PASSIVE
+[PARKED] `idor_booking` authorization omission — **dead**, do not re-open. `contentSectionListByNameAndCinemas` with a valid public cinema ID returns `UNAUTHENTICATED`, which falsifies the decode-before-gate inference. What survives is a Low `MISCONFIG` pre-auth decoder oracle (15 resolvers, 4 contracts) — currently mis-filed under `class: IDOR` in 14 blocks.
+[PARKED] staging confirmation-code oracle (75+ blocks) — REJECTED standalone: field exists in production too, no code extracted, only difference is a descriptive method-mismatch error (excluded class).
+[PARKED] JWT alg/key confusion (26 blocks) — dead: `auth.cineplex.de`/`sso.cineplex.de` have no reachable web surface, JWKS 404.
+[PARKED] `getOnlineTicketingBooking` SSRF (2 blocks) — resolver is root-gated.
+[FINAL] `graphql_introspection` @ both envs — verified13+ cycles, prod 83 queries / 140 mutations, staging identical, zero env partitioning; historically CVSS 7.5 and report-ready in its own right, but displaced from the top-3 by three hypotheses with live impact headroom.
+[FINAL] CORS mechanism — report-ready now; impact section must state "browser-permitted credentialed write primitive", not ATO.
+[HYP] Unauthenticated GraphQL schema and mutation surface exposure
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 98
+reasoning: Existing redacted manual evidence reports HTTP 200 full introspection on both environments, including 140 mutations and 83 queries on staging and PII-typed authentication/administration operations; no mutation or customer data was executed. Automated records contain no POST evidence, so reproduction remains manual-evidence-dependent.
+evidence_needed: Redacted metadata-only schema reproduction on both hosts with no field values or customer data.
+verify_steps: `GET https://graphql-api.app.cineplex.de/?query=%7B__schema%7BqueryType%7Bfields%7Bname%7D%7D%7D%7D` and the equivalent staging request, with `Accept: application/json` and no Authorization; stop at metadata-only schema data.
+impact: Unauthenticated disclosure of operation names, argument types, PII field names, and mutation surface; Medium-High, previously assessed CVSS 7.5, with no account takeover or data extraction proven.
+testability: PASSIVE
+[HYP] Dangling CNAME for web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: Repeated DoH evidence records an active CNAME to an Azure Container Apps target whose A lookup is NXDOMAIN, with Azure SOA and HTTP 000; 12+ cycles and sole dangle in the swept inventory. Provider-side claimability remains unverified.
+evidence_needed: Azure confirmation that the target resource is released and claimable; do not modify DNS or claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` and `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`; do not send HTTP requests to the target.
+impact: If claimable, trusted-subdomain takeover enabling phishing or trusted-host abuse; Medium and conditional; current evidence proves dangling DNS only.
+testability: AUTH_HELPED
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin reachability oscillates and `/gateway/*` returns 503 `Wartungsarbeiten`; no reachable authentication logic or reportable impact.  
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Authless 200/405 behavior is suggestive, but confirmation-code extraction is unproven and remains corroboration only.
+verify_steps: No live execution from this session — all writes are out of scope here. Offline: enumerate every mutation whose input object contains a field name that also appears on an output privilege type, to size the family before any consented test is scheduled.
+impact: If gates are missing or field-scoped rather than role-scoped, a low-privilege user self-grants dashboard, film-statistics, bonus-program and campaigning rights over arbitrary cinemas — privilege escalation to operating-company admin. Conditional on gate testing; nothing here proves escalation.
+testability: AUTH_HELPED
+[HYP] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+class: MISCONFIG
+asset: web-dev.cineplex.de
+[RISK] cineplex: 7/100 — target "api" fully 403-gated at edge; remaining live 200 surface (data-9fc27eb430 relay, profil/preference, cloud, support, mailing, vpn-portal) is the only reachable perimeter; franchise relay carries moderate internal-exposure potential; program forbids touching customer/employee/financial/auth data, so stay strictly passive read-only on the health/build surface and never point a relay reflector at cloud metadata or customer endpoints.
+[PARKED] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+[FINAL]
+[PARKED] 
+[LEARN]
+[NEW]
+[NEXT]

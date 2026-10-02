@@ -59755,3 +59755,2300 @@ STEP 8 — LEARN / RISK
 [RISK] **Medium** — mass assignment is schema-inferred only; describing it as demonstrated privilege escalation in the report would repeat the exact INVALID_ID inference failure.
 [RISK] **Low** — I deliberately did **not** append three new `[HYP]` blocks to `leads/lead-bigpickle.md` this cycle: writing more publishable blocks into an unaudited corpus is the mechanism that produced this contamination. They are in STEP 3–5 above and should be filed only after the STEP 7 audit lands.
 [RISK] **Low** — `probe-results.md` can only ever contribute positives; its 403/ERR rows are harness artifacts (trailing backtick, urllib UA) and must never be read as absence.
+===== ANALYST bigpickle 2026-10-02 15:10:43 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; wc -l probe-results.md knowledge/index.md 2>/dev/null; echo "---"; ls leads/ 2>/dev/null; echo "---"; ls reports/ 2>/dev/null | head -20
+total 1180
+drwxr-xr-x 12 runner runner   4096 Oct  2 14:59 .
+drwxr-xr-x  3 runner runner   4096 Oct  2 14:59 ..
+drwxr-xr-x  7 runner runner   4096 Oct  2 14:59 .git
+drwxr-xr-x  3 runner runner   4096 Oct  2 14:59 .github
+-rw-r--r--  1 runner runner   1923 Oct  2 14:59 README.md
+-rw-r--r--  1 runner runner     32 Oct  2 14:59 analyst-out.txt
+-rw-r--r--  1 runner runner 517609 Oct  2 14:59 analyst-prompt.txt
+-rw-r--r--  1 runner runner 513652 Oct  2 14:59 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 leads
+-rw-r--r--  1 runner runner  75787 Oct  2 14:59 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 reports
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  2 14:59 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  2 14:59 scripts
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  2 14:59 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  2 14:59 triage
+---
+  1192 probe-results.md
+   980 knowledge/index.md
+  2172 total
+---
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-cineplex.md
+---
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+[0m
+## Objective
+- Continue the authorized Cineplex bug-bounty POC for target `api` (`phase: POC`), producing evidence-based 8-step findings for scoped assets.
+- Reconcile stale lead/KB contradictions and prevent falsified hypotheses from entering reports or the tracker.
+
+## Important Details
+- Scope is limited to Cineplex-owned assets in `scope.yml` and `inventory/cineplex.md`; report channel is `bugs.olivermaicher.eu`.
+- Use passive-first, request-level evidence; live probing is limited to `<=1 rps` and read-only `GET`/`HEAD`/`OPTIONS`; do not execute mutations or access customer PII.
+- Explicit OOS: username enumeration, TLS best practices/attacks, CSRF logout/anonymous forms, descriptive errors/headers, known-vulnerable libraries without exploit, network DoS, public login panels, and similar classes.
+- Current priorities: `graphql-api.app.cineplex.de` score `9.8`; `graphql-api.app.staging.cineplex.de` `9.45`; `web-dev.cineplex.de` `7.25`.
+- Canonical correction: the historical “full mutation argument enumeration confirms no injection vectors” claim was false; it came from a name-only read and missed URL/credential-shaped arguments. Historical CVSS `5.3` framing must be re-scored toward the current `7.5` report framing.
+- `probe-results.md` is not reliable counter-evidence: the harness has produced literal trailing-backtick `400`s and urllib-UA Cloudflare `403`s; balanced URL-encoded requests via browser-UA `curl` reach the origin. The log currently has 1187 lines and no usable POST evidence.
+- CORS status: `OPTIONS /` on both GraphQL environments returned `204` with `ACAO` reflected for `null`, `http://localhost:3000`, and `https://app.staging.cineplex.de`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, and `ACAH: content-type,authorization`; stale text claiming `OPTIONS` appears in `ACAM` is wrong.
+- CORS impact is a browser-permitted credentialed write primitive only; no valid victim session or mutation execution has been demonstrated, so do not claim ATO.
+- GraphQL `/` and `/graphql` are unauthenticated GET surfaces. `/graphql`, `/api/graphql`, and `/gql` reject POST/OPTIONS at API Gateway with `MissingAuthenticationTokenException`; root `/` accepts GraphQL POST.
+- The former authorization-omission/IDOR claim is falsified: `contentSectionListByNameAndCinemas` with a valid public cinema ID returns `UNAUTHENTICATED`. `INVALID_ID` versus `UNAUTHENTICATED` proves decode-before-gate, not missing ownership.
+- Surviving IDOR-related result is a Low `MISCONFIG` pre-auth decoder oracle: 15 resolvers, 4 decoder contracts, 2 argument shapes including list decoding inside `Array.map`; cross-tenant PII remains `HUMAN_ONLY`.
+- Staging `testing_getConfirmationCode` is rejected standalone: the field exists in production too, no code was extracted, and the distinguishing method-mismatch error is descriptive/OOS.
+- Mass assignment is schema-inferred only: `CinemaOperatingCompanyData.accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, and `accessRightCampaigning` mirror derived `UserPrivileges` fields; no writes were executed.
+- `web-dev.cineplex.de` CNAME target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` remains NXDOMAIN with Azure SOA and is the sole dangle in the 14-host sweep; provider-side claimability is still unproven.
+- `scripts/sync-issues.py` parses only blocks beginning `^\[HYP\]` from `leads/lead-*.md`; `knowledge/index.md` is not read by the publisher.
+
+## Work State
+### Completed
+- Established a 132-host inventory; passive CT, CNAME, and breadth sweeps are effectively exhausted with no new asset delta.
+- Re-verified GraphQL introspection manually on both environments: 83 active queries and 140 active mutations; with deprecated fields, 88 queries and 150 mutations; 385 types and 44 input objects; no environment partitioning.
+- Re-verified CORS preflight on both environments at `08:42:02Z` and `08:42:15Z`; corrected the observed `ACAM` value.
+- Falsified the systemic IDOR authorization claim using a safe public cinema namespace; retained only the decoder-oracle observation.
+- Confirmed `getOnlineTicketingBooking` is root-gated with `FORBIDDEN "You must be the root user"`; closed the prior SSRF hypothesis.
+- Measured the publish corpus with the publisher’s own parser: 1138 publishable `[HYP]` blocks, 62 distinct fingerprints, and 245 distinct `(class,title)` pairs; counts include `MISCONFIG 431`, `AUTH 304`, `IDOR 291`, `BUSLOGIC 52`, `OTHER 49`, `SSRF 2`, `SUBDOMAIN_TAKEOVER 1`, absent `2`, and malformed `6`.
+- Added a canonical LIVE/DEAD/SURVIVING/METHOD RULES section to `knowledge/index.md`, but the independent lead corpus remains contaminated.
+
+### Active
+- CORS finding remains reportable as a credentialed cross-origin write-policy defect; actual session impact is unproven.
+- Mass-assignment hypothesis remains `BUSLOGIC`, confidence `85`, `AUTH_HELPED`; requires consented low-privilege testing.
+- GraphQL introspection remains a stable report-ready schema exposure, but final wording must reflect the retracted “no injection vectors” claim and distinguish `/` POST from GET-only mirrors.
+- Dangling CNAME remains a passive takeover-precondition finding, not a confirmed takeover.
+- Lead cleanup is the immediate work: 146 residual blocks belong to the falsified single-entity IDOR family (143 tagged `IDOR`), alongside 75+ staging confirmation-oracle blocks, 26 JWT alg-confusion blocks, and 2 root-gated SSRF blocks.
+
+### Blocked
+- Running `scripts/sync-issues.py` is unsafe: it would publish falsified IDOR and staging-oracle claims, including confidence up to `98`.
+- Cross-tenant IDOR/PII impact and staging POST confirmation-code extraction require `HUMAN_ONLY` or consented access; neither has been performed.
+- Mass-assignment authorization gates and valid credential/session behavior are unverified.
+- Azure Container App claimability attestation is provider-side and unavailable.
+- `auth.cineplex.de` JWKS remains `404`; `login.cineplex.de` and `sso.cineplex.de` are TLS-dead/`525`, so passive JWT key acquisition is closed.
+
+## Next Move
+1. Do not run the publisher; use `scripts/sync-issues.py`’s `parse_blocks` logic across `leads/lead-*.md` and per-block retag the 146 IDOR-family blocks, 75+ staging blocks, 26 JWT blocks, 2 SSRF blocks, and malformed `leads/lead-bigpickle.md:7846` block; reconcile `knowledge/index.md` before any sync.
+2. Perform one read-only CORS check against `OPTIONS https://graphql-api.app.cineplex.de/` and the staging equivalent using `Origin: http://localhost:3000`, `Access-Control-Request-Method: POST`, and `Access-Control-Request-Headers: content-type,authorization`; record raw headers and report only the browser-permitted write primitive.
+
+## Relevant Files
+- `scope.yml`: authoritative program scope and exclusions.
+- `inventory/cineplex.md`: 132-host Cineplex asset inventory and passive-recon baseline.
+- `knowledge/index.md`: canonical status, corrections, dead avenues, and GraphQL history.
+- `leads/lead-bigpickle.md`: contaminated lead corpus; malformed class literal at line `7846`.
+- `leads/lead-nemotron3.md`: second contaminated lead corpus.
+- `leads/lead-*.md`: all publisher-visible `[HYP]` blocks; requires per-block audit.
+- `scripts/sync-issues.py`: publisher parser (`parse_blocks` at line `57`) and fingerprint logic (line `112`).
+- `probe-results.md`: automated probe log with known trailing-backtick/urllib harness defects.
+- `reports/analyst-nemotron3.log`: peer-agent output; untrusted and not evidence.
+- `art/lead_nemotron3.txt`: peer ranked-hypothesis artifact.
+- `hypotheses-nemotron3.txt`: peer next-probe artifact; not authoritative.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m→ [0mRead scripts/sync-issues.py[90m [limit=140][0m
+[0m
+[0m$ [0mfor f in leads/lead-*.md; do printf '%s: ' "$f"; grep -c '^\[HYP\]' "$f"; done; echo '--- total lines'; wc -l leads/lead-*.md
+leads/lead-bigpickle.md: 607
+leads/lead-laguna.md: 0
+leads/lead-ling3.md: 0
+leads/lead-longcat.md: 0
+leads/lead-mimo.md: 0
+leads/lead-nemotron3.md: 547
+--- total lines
+   8172 leads/lead-bigpickle.md
+    183 leads/lead-laguna.md
+    183 leads/lead-ling3.md
+    183 leads/lead-longcat.md
+      1 leads/lead-mimo.md
+  11350 leads/lead-nemotron3.md
+  20072 total
+[0m
+[0m← [0mWrite /tmp/opencode/audit.py
+Wrote file successfully.
+[0m
+[0m$ [0mcd /tmp/opencode && python3 audit.py
+total publishable [HYP] blocks: 1151
+
+by file:
+  lead-bigpickle.md: 604
+  lead-nemotron3.md: 547
+
+class distribution (raw value as parsed):
+  'MISCONFIG': 438
+  'AUTH': 304
+  'IDOR': 292
+  'BUSLOGIC': 56
+  'OTHER': 49
+  "'MISCONFIG' conf: '93'": 7
+  '<absent>': 2
+  'SSRF': 2
+  'SUBDOMAIN_TAKEOVER': 1
+
+malformed/odd class literals: 9
+  lead-bigpickle.md:2502 class=None title='HUMAN_ONLY on both remaining POCs: cross-tenant IDOR PII (consent + 2 '
+  lead-bigpickle.md:7534 class=None title=''
+  lead-bigpickle.md:7837 class="'MISCONFIG' conf: '93'" title='15 resolvers across 4 decoder contracts and 2 argument shapes decode e'
+  lead-bigpickle.md:7958 class="'MISCONFIG' conf: '93'" title='CORS Misconfiguration Enables Credentialed Mutation Execution from Dev'
+  lead-bigpickle.md:7970 class="'MISCONFIG' conf: '93'" title='Production systemic unauthenticated IDOR via single-entity resolvers'
+  lead-bigpickle.md:7982 class="'MISCONFIG' conf: '93'" title='Production systemic unauthenticated IDOR via single-entity resolvers'
+  lead-bigpickle.md:7997 class="'MISCONFIG' conf: '93'" title='Production systemic unauthenticated IDOR via single-entity resolvers'
+  lead-bigpickle.md:8040 class="'MISCONFIG' conf: '93'" title='Production GraphQL introspection leakage'
+  lead-bigpickle.md:8103 class="'MISCONFIG' conf: '93'" title='Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+
+IDOR-classified blocks: 292
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '7820,7860p' leads/lead-bigpickle.md | cat -A | sed -n '1,45p' | sed 's/\$$//' | cut -c1-160
+[CHANGED] `dangling_cname_takeover` @ `web-dev.cineplex.de` M-bM-^@M-^T same-cycle DoH: CNAME `Status 0` TTL 300 M-bM-^FM-^R `web.gentleglacier-dfef6458.switzer
+[NEW] `kb_contradiction` @ `knowledge/index.md` M-bM-^@M-^T RESOLVED, not just re-noted. Root cause identified: the file is a flat 924-line append-only log with
+[NEW] `kb_fix` @ `knowledge/index.md` M-bM-^@M-^T added a `## CANONICAL STATUS (2026-09-30)` section above the history, partitioned into LIVE / DEAD / SURVIVING
+[LEARN] @ self M-bM-^@M-^T the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append
+[LEARN] @ self M-bM-^@M-^T a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, be
+[LEARN] `publish_path_clear` @ `scripts/sync-issues.py` M-bM-^@M-^T verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\
+[LEARN] `idor_booking_scope` @ graphql-api.app.cineplex.de M-bM-^@M-^T the two claims are separable and I had been collapsing them. **Survives:** pre-auth decod
+[CHANGED] `cycle_artifact` @ self M-bM-^@M-^T no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with ze
+[HYP] Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup resolvers are individually unauthenticated in some cases and gated in 
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: Single-variable comparison holds transport, auth state and id value constant and varies only the resolver: `cinema(id:M-bM-^@M-&)` 200/44B `{"data":{
+evidence_needed: A consented account's own `publicId` against `userById` with no `Authorization`. `UNAUTHENTICATED` M-bM-^FM-^R the defect stays Low (public cat
+verify_steps: Replay the four requests in the report; read `extensions.exception.stacktrace` to separate the decoder frame from the authorization frame.
+impact: **Low as demonstrated** M-bM-^@M-^T public cinema/film catalogue plus two internal counters, no PII, no revenue. The finding's value is that it *demonst
+testability: PASSIVE
+[HYP] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before any authorization decision
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Complete enumeration: 20 Query fields take entity ids, 15 reach decode-or-lookup pre-auth, 6 gates fire. Scalar `id` plus list `cinemaIds[]` decoded 
+evidence_needed: Same consented-account request; the decoder-reach half is already proven.
+verify_steps: Per-resolver invalid-id canary, expect the decoder frame; then a valid-id canary in that namespace.
+impact: Proven M-bM-^@M-^T pre-auth decoder reach yielding a typed-error oracle and server stack frames (paths, line numbers, internal function names) = Low. Re
+testability: HUMAN_ONLY
+class: 'MISCONFIG' conf: '93'
+[HYP] Production systemic unauthenticated IDOR via single-entity resolvers
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 93
+reasoning: userById/invoice/order/ticket reach decodePublicId (/var/task/graphql.js:43450) returning INVALID_ID with no auth/role/device gate; sibling resolvers
+evidence_needed: valid publicId returns cross-tenant entity PII without session (two-account proof); INVALID_ID gate-skip is structural proof
+verify_steps: consent + two disposable sandbox accounts; login M-bM-^FM-^R JWT M-bM-^FM-^R own publicId; POST {userById(id:"<otherId>"){email,fullName,telephone
+impact: cross-tenant mass PII + financial (invoice/order) dump / GDPR breach; critical
+testability: HUMAN_ONLY
+[HYP] Production systemic IDOR via single-entity id-resolvers (control-complete)
+class: IDOR
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblin
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n 'CANONICAL STATUS' knowledge/index.md
+(no output)
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -nE '^#{1,3} ' knowledge/index.md | head -40
+1:# Knowledge Base (seed)
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -niE 'canonical|^### |SURVIVING|DEAD|LIVE \|' knowledge/index.md | head -30; echo "--- head"; sed -n '1,12p' knowledge/index.md
+64:- 2026-09-05 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable.
+79:- 2026-09-06 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+89:- 2026-09-06 REJECTED app.staging.cineplex.de @ TLS-dead: no web surface.
+106:- 2026-09-07 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+117:- 2026-09-07 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+121:- 2026-09-07 REJECTED graphql-api.app.couat.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+140:- 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+155:- 2026-09-08 REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+156:- 2026-09-08 REJECTED graphql-api.app.couat.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+173:- 2026-09-08 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable.
+176:- 2026-09-08 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+184:- 2026-09-09 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
+193:- 2026-09-09 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable
+197:- 2026-09-09 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+204:- 2026-09-09 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge.
+205:- 2026-09-09 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+215:- 2026-09-09 REJECTED api.cineplex.de GET-based GraphQL: 6 automated probes all 403 (root, /graphql, query-param, URL-encoded); WAF stricter than graphql-api pair; hypothesis dead.
+222:- 2026-09-10 REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead.
+229:- 2026-09-10 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable
+233:- 2026-09-10 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+239:- 2026-09-10 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead.
+246:- 2026-09-10 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all methods; hypothesis dead.
+250:- 2026-09-10 REJECTED api.cineplex.de GET bypass: strict 403 all probes; hypothesis dead.
+267:- 2026-09-11 REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+271:- 2026-09-11 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead
+276:- 2026-09-11 REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+279:- 2026-09-11 REJECTED login_sso_tls-dead @ login.cineplex.de + sso.cineplex.de: both return HTTP 525 (Cloudflare SSL handshake failed); TLS-dead at CF edge; join couat/app.staging as unreachable
+282:- 2026-09-11 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+288:- 2026-09-12 REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure)
+290:- 2026-09-12 REJECTED api.cineplex.de @ GET-based bypass: strict 403 across all methods/encodings; separate stricter WAF config; hypothesis dead
+--- head
+# Knowledge Base (seed)
+- 2026-09-03 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-03 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-03 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-03 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-03 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-03 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-03 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -niE 'falsif|UNAUTHENTICATED|decoder|authorization omission' knowledge/index.md | tail -25
+864:- 2026-09-27 ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: enumerating a *non-customer* namespace yields valid ids and converts an untestable question into a testable one. This is how a top finding got falsified safely — reach for public data before reaching for an account.
+869:- 2026-09-28 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+874:- 2026-09-28 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+885:- 2026-09-28 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+887:- 2026-09-28 REJECTED my own 2026-09-28 `4 equivalent unauthenticated full-schema GraphQL surfaces` @ graphql-api.app.cineplex.de: I measured equivalence in exactly one dimension — the GET response body — and generalised it to the transport. Identical bytes on GET says nothing about what the route accepts on POST, and the answer differs. Method-vary every equivalence claim I make about an endpoint. Two of my three headline claims this cycle rested on a single method, and one of them was wrong.
+892:- 2026-09-29 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+894:- 2026-09-29 REJECTED my own 2026-09-28 `4 equivalent unauthenticated full-schema GraphQL surfaces` @ graphql-api.app.cineplex.de: I measured equivalence in exactly one dimension — the GET response body — and generalised it to the transport. Identical bytes on GET says nothing about what the route accepts on POST, and the answer differs. Method-vary every equivalence claim I make about an endpoint. Two of my three headline claims this cycle rested on a single method, and one of them was wrong.
+896:- 2026-09-29 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+901:- 2026-09-29 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+910:- 2026-09-30 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+912:- 2026-09-30 REJECTED my own 2026-09-28 `4 equivalent unauthenticated full-schema GraphQL surfaces` @ graphql-api.app.cineplex.de: I measured equivalence in exactly one dimension — the GET response body — and generalised it to the transport. Identical bytes on GET says nothing about what the route accepts on POST, and the answer differs. Method-vary every equivalence claim I make about an endpoint. Two of my three headline claims this cycle rested on a single method, and one of them was wrong.
+914:- 2026-09-30 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+919:- 2026-09-30 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+925:- 2026-09-30 @ self — the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append-only log competes with the claim it corrects and loses on recency. Corrections need a position that outranks the claim, not a later timestamp.
+927:- 2026-09-30 `publish_path_clear` @ `scripts/sync-issues.py` — verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\]` only (scripts/sync-issues.py:57) and globs `leads/lead-*.md`; the falsified `idor_booking` lines in my lead file are tagged `[LEARN]`, so they are invisible to the publisher. The only live `[HYP]` blocks are the three real ones (CORS, mass-assignment, dangle). Also confirmed `sync-issues.py` never reads `knowledge/index.md`, so the new section cannot break the parser.
+928:- 2026-09-30 `idor_booking_scope` @ graphql-api.app.cineplex.de — the two claims are separable and I had been collapsing them. **Survives:** pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 argument shapes incl. a list decode inside `Array.map`; a fix scoped to scalar `args.id` is incomplete). **Dead:** the authorization omission inferred from that reach. Marking the whole finding REJECTED would have destroyed a real result; leaving it ACCEPTED preserves a false one. Recorded both halves explicitly under SURVIVING and DEAD.
+932:- 2026-10-01 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+934:- 2026-10-01 REJECTED my own 2026-09-28 `4 equivalent unauthenticated full-schema GraphQL surfaces` @ graphql-api.app.cineplex.de: I measured equivalence in exactly one dimension — the GET response body — and generalised it to the transport. Identical bytes on GET says nothing about what the route accepts on POST, and the answer differs. Method-vary every equivalence claim I make about an endpoint. Two of my three headline claims this cycle rested on a single method, and one of them was wrong.
+936:- 2026-10-01 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauthenticated GET verification on both envs for the 12th+ cycle — prod 83 queries + 140 mutations, staging 83 queries identical, zero env partitioning
+941:- 2026-10-01 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters are descriptive telemetry with no unauthenticated manipulation path
+947:- 2026-10-01 Two failure modes reproduced the same way this cycle. First, a claim about a *system* ("only three live hypotheses exist") was established by inspecting a *part* (one lead file) and reported as a system property — scope the evidence to the blast radius before asserting it, and say which files were read. Second, suppression by tag is not suppression by default: `[HYP]` blocks are never retracted by later `[LEARN]` lines about the same finding, so a falsification written anywhere in the corpus leaves the original claim fully publishable until the block header itself is changed. Corrections need a position that outranks the claim — for an append-only log, that means editing the block tag, not appending a correction. Third, structural dedupe (`fingerprint`) is a trust boundary: it decides what a human reviewer sees, so prose inconsistency in an `asset` field silently becomes issue duplication, and any "N findings" count should be reported as distinct fingerprints plus distinct underlying findings, because here they differed by ~7x.
+951:- 2026-10-01 REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST behavior differs.
+962:- 2026-10-01 The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missing ownership check" inf
+966:- 2026-10-02 REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST behavior differs.
+978:- 2026-10-02 `class` is the wrong suppression axis here. 14 of 15 decoder-oracle blocks carry `class: IDOR`, so the one real Low result is camouflaged inside the falsified class; blanket per-class retagging would have destroyed it — the same error as line 928, reached from the opposite direction.
+[0m
+[0m→ [0mRead knowledge/index.md[90m [offset=947, limit=34][0m
+[0m
+[0m← [0mWrite /tmp/opencode/groups.py
+Wrote file successfully.
+[0m
+[0m$ [0mcd /tmp/opencode && python3 groups.py 2>&1 | head -120
+1151 blocks in 265 distinct (class, asset, title-head) groups
+
+  86  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+      conf: 95,96  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=7475
+
+  75  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Confirmation Code Oracle Enables Account Takeover via testing_getCo'
+      conf: 97  files: ['lead-nemotron3.md'] first_line=4276
+
+  65  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePu'
+      conf: 95,97,98  files: ['lead-nemotron3.md'] first_line=5390
+
+  29  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL Systemic IDOR via Single-Entity Resolvers'
+      conf: 65,70,85,95,98  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1687
+
+  26  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT alg/key confusion on login-issued tokens'
+      conf: 40,45  files: ['lead-bigpickle.md'] first_line=848
+
+  25  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Testing Mutation Auth Bypass Oracle'
+      conf: 75,80,90,95,97  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1678
+
+  21  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de'
+      title: 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserP'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=7702
+
+  18  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_* confirmation-code oracle without environment guard'
+      conf: 82,83  files: ['lead-bigpickle.md'] first_line=1329
+
+  17  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic unauthenticated IDOR via single-entity resolvers'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=1504
+
+  15  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=688
+
+  15  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT Algorithm Confusion via auth.cineplex.de login Mutation'
+      conf: 55  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1696
+
+  15  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Stag'
+      conf: 95  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=8056
+
+  15  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT'
+      conf: 85  files: ['lead-nemotron3.md'] first_line=261
+
+  14  class='AUTH'                         asset='api.cineplex.de'
+      title: 'JWT alg confusion / weak signing on auth API'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=18
+
+  14  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL env confusion / relaxed auth on sibling'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=27
+
+  14  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth'
+      conf: 88,91  files: ['lead-bigpickle.md'] first_line=830
+
+  14  class='OTHER'                        asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=3729
+
+  14  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'web-dev dangle claimability (submission-bundled)'
+      conf: 90,92  files: ['lead-bigpickle.md'] first_line=5364
+
+  13  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway maintenance-exit → auth/IDOR surface'
+      conf: 38,40  files: ['lead-bigpickle.md'] first_line=5784
+
+  13  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Testing Mutation Auth Bypass Oracle (testing_getConfirmationCode)'
+      conf: 97  files: ['lead-nemotron3.md'] first_line=3301
+
+  12  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL introspection leakage'
+      conf: 70  files: ['lead-bigpickle.md'] first_line=9
+
+  12  class='MISCONFIG'                    asset='booking-dev.cineplex.de'
+      title: 'Booking-Dev Origin Bypass via No-WAF Dev Environment'
+      conf: 75,85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=3012
+
+  12  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Introspection Enabled on Production via POST'
+      conf: 60,65,70,90,95  files: ['lead-nemotron3.md'] first_line=2575
+
+  11  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_* confirmation-code oracle without role gating'
+      conf: 70,72,74,82  files: ['lead-bigpickle.md'] first_line=797
+
+  11  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging env-guard omission on testing_getConfirmationCode (password-reset o'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3144
+
+  11  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME takeover on web-dev.cineplex.de'
+      conf: 92,93  files: ['lead-bigpickle.md'] first_line=4108
+
+  11  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins '
+      conf: 95  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=7693
+
+  10  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay /metrics endpoint discloses internal service topology or Prometheus s'
+      conf: 72  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=475
+
+  10  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging confirmation-code oracle enables intra-tenant ATO'
+      conf: 78,80  files: ['lead-bigpickle.md'] first_line=3664
+
+  10  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Productio'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 groups.py 2>&1 | sed -n '120,400p'
+title: 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Productio'
+      conf: 99  files: ['lead-nemotron3.md'] first_line=9331
+
+   9  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode oracle without role gating'
+      conf: 70,80,85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1115
+
+   9  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR — decodePublicId-before-gate"
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5747
+
+   9  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Systemic Unauthenticated IDOR Across 4 GraphQL Resolvers (userById/invoice/'
+      conf: 95  files: ['lead-nemotron3.md'] first_line=4805
+
+   8  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de'
+      title: 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserP'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=8065
+
+   8  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Full Introspection + Mutation Surface Exposure on Production'
+      conf: 98,99  files: ['lead-nemotron3.md'] first_line=8551
+
+   7  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay/internal-service path disclosure via exposed health/build endpoint'
+      conf: 60,?  files: ['lead-bigpickle.md'] first_line=84
+
+   7  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode authless oracle — missing environment g'
+      conf: 85,87  files: ['lead-bigpickle.md'] first_line=2523
+
+   7  class='BUSLOGIC'                     asset='profil.cineplex.de'
+      title: 'Unauthenticated email-keyed preference overwrite (profil)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=3153
+
+   7  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (con'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=3270
+
+   7  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+      conf: 75,80,82  files: ['lead-bigpickle.md'] first_line=3521
+
+   7  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway maintenance-exit → auth/IDOR surface (only live thread)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5450
+
+   7  class='AUTH'                         asset='auth.cineplex.de / graphql-api.app.cineplex.de'
+      title: 'JWT Algorithm Confusion via GraphQL login Mutation — RS256→HS256 Key Confus'
+      conf: 55  files: ['lead-nemotron3.md'] first_line=279
+
+   7  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT algorithm confusion via auth.cineplex.de login mutation'
+      conf: 55  files: ['lead-nemotron3.md'] first_line=1238
+
+   7  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de'
+      title: 'Mass Assignment via CinemaOperatingCompanyData accessRight* Flags Mirrors U'
+      conf: 85  files: ['lead-nemotron3.md'] first_line=10501
+
+   7  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de'
+      conf: 96  files: ['lead-nemotron3.md'] first_line=10510
+
+   6  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic IDOR via single-entity id-resolvers (control-complete)'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=2880
+
+   6  class='OTHER'                        asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Production+Staging GraphQL Introspection with WAF Method-Gate Bypass'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3787
+
+   6  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR on single-entity resolvers'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=4994
+
+   6  class='MISCONFIG'                    asset='web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azu'
+      title: 'Dangling CNAME on a scoped dev host'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=6844
+
+   6  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL Systemic IDOR via Single-Entity Resolvers (GET-Verified '
+      conf: 98  files: ['lead-nemotron3.md'] first_line=3579
+
+   5  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'REST/JSON API shim reachable on relay (method-based gating bypass)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=93
+
+   5  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging env-guard omission on testing_getConfirmationCode (oracle)'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=2889
+
+   5  class='OTHER'                        asset='github.com/Cineplex-Deutschland'
+      title: 'No public GitHub repositories exist for Cineplex Deutschland GmbH & Co. KG'
+      conf: 100,?  files: ['lead-bigpickle.md'] first_line=3590
+
+   5  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Confirmation-Code Oracle Enables Intra-Tenant ATO'
+      conf: 78  files: ['lead-bigpickle.md'] first_line=3805
+
+   5  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name claimability (submission path)'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=5052
+
+   5  class='MISCONFIG'                    asset='web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azu'
+      title: 'Dangling CNAME to an unresolvable Azure Container Apps environment on a tru'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=7246
+
+   5  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode Auth Bypass Oracle'
+      conf: 90,95  files: ['lead-nemotron3.md'] first_line=1655
+
+   5  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Full Introspection + Mutation Argument Surface Exposure on Producti'
+      conf: 99  files: ['lead-nemotron3.md'] first_line=9020
+
+   4  class='MISCONFIG'                    asset='graphql-api.app.couat.cineplex.de'
+      title: 'couat GraphQL accepts introspection POST and exposes schema differing from '
+      conf: 55,65  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=646
+
+   4  class='IDOR'                         asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay host undocumented API routes beyond /health and /metrics'
+      conf: 35  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1124
+
+   4  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: "Production systemic unauth'd IDOR on single-entity resolvers — decoder-befo"
+      conf: 98  files: ['lead-bigpickle.md'] first_line=2645
+
+   4  class='OTHER'                        asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Production+staging GraphQL introspection with WAF method-gate bypass'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3643
+
+   4  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Azure Container Apps claimability attestation for web-dev dangle'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=4833
+
+   4  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR via decodePublicId-before-gate (report-ready, unchan"
+      conf: 97  files: ['lead-bigpickle.md'] first_line=6267
+
+   4  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'GraphQL introspection exposure (report-ready, unchanged)'
+      conf: 91  files: ['lead-bigpickle.md'] first_line=6285
+
+   4  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL Systemic IDOR via Single-Entity Resolvers (GET-Verified)'
+      conf: 98  files: ['lead-nemotron3.md'] first_line=3292
+
+   4  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production Cross-Tenant PII Dump via Systemic IDOR on 4 Resolvers with Vali'
+      conf: 98  files: ['lead-nemotron3.md'] first_line=4267
+
+   4  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Introspection Full Schema Exposure — Mutation Attack Surface Enumer'
+      conf: 95  files: ['lead-nemotron3.md'] first_line=4346
+
+   3  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL endpoint accepts introspection POST with relaxed WAF rules'
+      conf: 52,55  files: ['lead-bigpickle.md'] first_line=437
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic unauthenticated IDOR via single-entity resolvers (userB'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=1383
+
+   3  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'WAF client-differentiated bot-gate with origin direct reach via HTTP/2'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=2227
+
+   3  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode authless oracle (missing env guard)'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=2403
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: "Production systemic unauth'd IDOR via single-entity resolvers — decoder-bef"
+      conf: 97  files: ['lead-bigpickle.md'] first_line=2514
+
+   3  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Edge WAF is client-differentiated bot-gate, not auth — GET origin reach sta'
+      conf: 96  files: ['lead-bigpickle.md'] first_line=2532
+
+   3  class='MISCONFIG'                    asset='cloud.systems.cineplex.de'
+      title: 'Nextcloud 33.0.8 on cloud.systems.cineplex.de — /public.php 500 server erro'
+      conf: 42  files: ['lead-bigpickle.md'] first_line=2705
+
+   3  class='OTHER'                        asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Production GraphQL introspection exposes full schema with 140+ mutations on'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3512
+
+   3  class='OTHER'                        asset='graphql-api.app.staging.cineplex.de'
+      title: 'Internal architecture disclosure via introspection on staging GraphQL'
+      conf: 70  files: ['lead-bigpickle.md'] first_line=3530
+
+   3  class='OTHER'                        asset='github.com/Cineplex-Deutschland'
+      title: 'No public repos available for audit'
+      conf: 100  files: ['lead-bigpickle.md'] first_line=3583
+
+   3  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (sole dangle in 7-'
+      conf: 88  files: ['lead-bigpickle.md'] first_line=3859
+
+   3  class='MISCONFIG'                    asset='buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev origin WAF bypass exposing booking/CMS tier'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=4117
+
+   3  class='MISCONFIG'                    asset='buchung-dev.cineplex.de origin (194.77.169.121), /gateway/auth/oauth/a'
+      title: 'Dev origin WAF bypass + OAuth redirect_uri validation gap once gateway back'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=4244
+
+   3  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging confirmation-code oracle enables prod ATO if code format shared acr'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=4497
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR with authorized program accounts'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=4903
+
+   3  class='MISCONFIG'                    asset='wildcard.systems / systems-zone hosts'
+      title: 'wildcard.systems dangle replication'
+      conf: 0  files: ['lead-bigpickle.md'] first_line=5468
+
+   3  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'web-dev dangle claimability'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6041
+
+   3  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Web-dev dangling CNAME (report-ready, unchanged)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6315
+
+   3  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Dangling CNAME on a scoped dev host'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=6540
+
+   3  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de — mutationType login(privileged) /'
+      title: 'Privilege level is a client-supplied input on the authentication mutations '
+      conf: 71  files: ['lead-bigpickle.md'] first_line=6959
+
+   3  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de — `testing_getConfirmationCode(ema'
+      title: 'Staging exposes an unauthenticated `PASSWORD_RESET` confirmation-code oracl'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=7257
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: '15 resolvers across 4 decoder contracts and 2 argument shapes decode entity'
+      conf: 85,?  files: ['lead-bigpickle.md'] first_line=7438
+
+   3  class="'MISCONFIG' conf: '93'"       asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic unauthenticated IDOR via single-entity resolvers'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=7970
+
+   3  class='MISCONFIG'                    asset='api.cineplex.de'
+      title: 'api.cineplex.de/graphql accepts introspection POST bypassing Cloudflare WAF'
+      conf: 60  files: ['lead-nemotron3.md'] first_line=878
+
+   3  class='IDOR'                         asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay host data-9fc27eb430.cineplex.de exposes undocumented API routes beyo'
+      conf: 45  files: ['lead-nemotron3.md'] first_line=887
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL Systemic IDOR via decodePublicId-Before-Auth on 4 Resolv'
+      conf: 98  files: ['lead-nemotron3.md'] first_line=4046
+
+   3  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production Cross-Tenant PII Dump via Systemic IDOR on 4 Resolvers'
+      conf: 98  files: ['lead-nemotron3.md'] first_line=4536
+
+   2  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay metrics endpoint discloses internal service topology / Prometheus sta'
+      conf: 68  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=419
+
+   2  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL introspection POST bypasses WAF to expose full schema with IDOR-cap'
+      conf: 70  files: ['lead-bigpickle.md'] first_line=484
+
+   2  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL mirrors prod destructive mutation surface with no network g'
+      conf: 62  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=634
+
+   2  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL testing_* resolvers active with no role gating'
+      conf: 60  files: ['lead-bigpickle.md'] first_line=697
+
+   2  class='IDOR'                         asset='api.cineplex.de'
+      title: 'GET-based GraphQL execution on api.cineplex.de (third origin reach)'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 groups.py 2>&1 | sed -n '400,700p'
+title: 'GET-based GraphQL execution on api.cineplex.de (third origin reach)'
+      conf: 50,55  files: ['lead-bigpickle.md'] first_line=2134
+
+   2  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Edge WAF is a client/bot-gate, not auth — GET origin reach is stable'
+      conf: 95,96  files: ['lead-bigpickle.md'] first_line=2438
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'adminUsers/searchUsers ROOT/ROLE hook firmness'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=2898
+
+   2  class='MISCONFIG'                    asset='cloud.systems.cineplex.de'
+      title: "Nextcloud unauth'd server/app inventory beyond OCS caps"
+      conf: 45  files: ['lead-bigpickle.md'] first_line=2910
+
+   2  class='BUSLOGIC'                     asset='profil.cineplex.de'
+      title: 'profil.cineplex.de preference-update reachable authless with captcha disabl'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=2939
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic IDOR via decodePublicId-before-auth (control-complete)'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=3172
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling-CNAME takeover precondition on dev host'
+      conf: 60,65  files: ['lead-bigpickle.md'] first_line=3368
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (full Azure env na'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3822
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de / bms-dev.cineplex.de (dev origin 194.77.169.1'
+      title: 'Cloudflare WAF bypass exposing dev booking/CMS tier at origin'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=3952
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME subdomain takeover on web-dev.cineplex.de (sole dangle in de'
+      conf: 88  files: ['lead-bigpickle.md'] first_line=3961
+
+   2  class='OTHER'                        asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Production+staging GraphQL introspection with env-confusion testing mutatio'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=3970
+
+   2  class='MISCONFIG'                    asset='buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev origin WAF bypass exposes booking/CMS tier once gateway backend returns'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=4201
+
+   2  class='MISCONFIG'                    asset='buchung-dev/bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev origin WAF bypass re-emerges once origin returns'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=4229
+
+   2  class='AUTH'                         asset='buchung-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin gateway maintenance lift enables unauth OAuth/booking-session su'
+      conf: 50  files: ['lead-bigpickle.md'] first_line=4815
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name claimability attestation'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=4973
+
+   2  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_* env-guard omission oracle'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=5113
+
+   2  class='MISCONFIG'                    asset='wildcard.systems.cineplex.de + vpn-openvpn-cpz/hz-apphost/es-hz-apphos'
+      title: 'Systems-zone dangle replication after web-dev failure mode'
+      conf: 40  files: ['lead-bigpickle.md'] first_line=5228
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR (unchanged bundle companion)'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5237
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway/* leaves maintenance → auth/IDOR surface'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5246
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway/* maintenance-exit → auth/IDOR surface (unchanged)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5355
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged, only l'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5376
+
+   2  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR — decodePublicId-before-gate (unchanged, top)"
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5567
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'web-dev dangling CNAME takeover (claimability)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=5948
+
+   2  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR — decodePublicId-before-gate (unchanged, re-verified"
+      conf: 85  files: ['lead-bigpickle.md'] first_line=6065
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'web-dev dangle claimability (unchanged)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6135
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway maintenance-exit → auth/IDOR surface (unchanged)'
+      conf: 38  files: ['lead-bigpickle.md'] first_line=6144
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de (+staging)'
+      title: "Systemic unauth'd IDOR via decodePublicId-before-gate (unchanged)"
+      conf: 97  files: ['lead-bigpickle.md'] first_line=6184
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Authorization omission before ID decoding in four GraphQL resolvers'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=6427
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de (userById / invoice / order / ticket)'
+      title: 'Authorization is omitted ahead of ID decoding in four single-entity resolve'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=6531
+
+   2  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de'
+      title: 'Unauthenticated GraphQL introspection discloses the full operation and argu'
+      conf: 99  files: ['lead-bigpickle.md'] first_line=6681
+
+   2  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de — mutationType createCinemaOperatingCompan'
+      title: 'Authorization flags and tenant membership are settable from the request bod'
+      conf: 66  files: ['lead-bigpickle.md'] first_line=6886
+
+   2  class='AUTH'                         asset='graphql-api.app.cineplex.de — mutationType updatePassword (deprecated)'
+      title: 'Deprecated credential mutations accept a password change authorized by neit'
+      conf: 64  files: ['lead-bigpickle.md'] first_line=6895
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Authorization is enforced per-resolver by hand, not by a shared guard, so i'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=7429
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: '15 resolvers decode caller-supplied ids before any authz gate'
+      conf: 60  files: ['lead-bigpickle.md'] first_line=7559
+
+   2  class='IDOR'                         asset='booking.cineplex.de'
+      title: 'IDOR/BOLA on Booking API — Cross-User Booking Access via Numeric IDs'
+      conf: 70  files: ['lead-nemotron3.md'] first_line=71
+
+   2  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT Algorithm Confusion (RS256→HS256) on Central Auth'
+      conf: 65  files: ['lead-nemotron3.md'] first_line=80
+
+   2  class='OTHER'                        asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL Introspection Enabled on Production — Full Schema + Dangerous Mutat'
+      conf: 95  files: ['lead-nemotron3.md'] first_line=161
+
+   2  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'IDOR/BOLA via GraphQL userById/searchUsers/adminUsers — Cross-User PII Acce'
+      conf: 85  files: ['lead-nemotron3.md'] first_line=170
+
+   2  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT Algorithm Confusion (RS256→HS256) on Central Auth — Token Forgery via P'
+      conf: 70  files: ['lead-nemotron3.md'] first_line=179
+
+   2  class='SSRF'                         asset='data-9fc27eb430.cineplex.de'
+      title: 'Undocumented Relay API Routes / SSRF Primitive on Franchise Relay'
+      conf: 62  files: ['lead-nemotron3.md'] first_line=270
+
+   2  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode auth bypass oracle'
+      conf: 90  files: ['lead-nemotron3.md'] first_line=1523
+
+   2  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Spring Data JPA REST Endpoint Exposure'
+      conf: 65,80  files: ['lead-nemotron3.md'] first_line=1901
+
+   2  class='AUTH'                         asset='auth.cineplex.de / graphql-api.app.cineplex.de'
+      title: 'JWT Algorithm Confusion via GraphQL login Mutation'
+      conf: 55  files: ['lead-nemotron3.md'] first_line=2461
+
+   2  class='MISCONFIG'                    asset='buchung-dev.cineplex.de / bms-dev.cineplex.de (dev origin 194.77.169.1'
+      title: 'Dev-Origin WAF Bypass Exposes Booking/Payment Tier + CMS at Direct Origin'
+      conf: 75  files: ['lead-nemotron3.md'] first_line=5399
+
+   2  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de (Sole Dangle in Dev Set)'
+      conf: 93  files: ['lead-nemotron3.md'] first_line=5504
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Unauthenticated IDOR/BOLA on user/order/ticket/voucher GraphQL queries'
+      conf: 62  files: ['lead-bigpickle.md'] first_line=326
+
+   1  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de'
+      title: 'Mutation authorization gap / admin-mutation exposed via anonymous POST'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=335
+
+   1  class='AUTH'                         asset='graphql-api.app.cineplex.de'
+      title: 'JWT issued by this GraphQL host with weak alg (alg confusion/none)'
+      conf: 50  files: ['lead-bigpickle.md'] first_line=344
+
+   1  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'Undocumented API surface / relay-forwarding SSRF primitive on franchise rel'
+      conf: 62  files: ['lead-bigpickle.md'] first_line=362
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL introspection via POST root on production — schema disclosure enabl'
+      conf: 65  files: ['lead-bigpickle.md'] first_line=371
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL WAF bypass / relaxed auth on graphql-api.app.staging.cinepl'
+      conf: 52  files: ['lead-bigpickle.md'] first_line=380
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL introspection POST returns full schema despite GET being WAF-blocke'
+      conf: 65  files: ['lead-bigpickle.md'] first_line=428
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=576
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL accepts introspection POST with relaxed WAF'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=585
+
+   1  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'IOMB relay exposes realtime publish/subscribe channel without auth'
+      conf: 35  files: ['lead-bigpickle.md'] first_line=594
+
+   1  class='AUTH'                         asset='graphql-api.app.cineplex.de'
+      title: 'Testing-only confirmation-code oracle / forced-delete shipped to production'
+      conf: 72  files: ['lead-bigpickle.md'] first_line=606
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Publicly reachable staging GraphQL with identical schema + test resolvers ('
+      conf: 60  files: ['lead-bigpickle.md'] first_line=615
+
+   1  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'IOMB relay metrics queue-depth disclosure'
+      conf: 35  files: ['lead-bigpickle.md'] first_line=624
+
+   1  class='MISCONFIG'                    asset='api.cineplex.de'
+      title: 'api.cineplex.de root GET 403 is WAF-gated while POST / subpaths reach a liv'
+      conf: 42  files: ['lead-bigpickle.md'] first_line=655
+
+   1  class='AUTH'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production `testing_*` backdoor resolvers remain the top reportable finding'
+      conf: 72  files: ['lead-bigpickle.md'] first_line=664
+
+   1  class='MISCONFIG'                    asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay metrics queue-depth disclosure reveals internal architecture'
+      conf: 35  files: ['lead-bigpickle.md'] first_line=706
+
+   1  class='OTHER'                        asset='data-9fc27eb430.cineplex.de'
+      title: 'Relay broker saturation indicates write-path DoS / message-tampering surfac'
+      conf: 20  files: ['lead-bigpickle.md'] first_line=751
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL WAF method-gate bypass mirrors confirmed prod POST introspe'
+      conf: 60  files: ['lead-bigpickle.md'] first_line=766
+
+   1  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT alg/key confusion on login-issued tokens (auth / GraphQL)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=784
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=806
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging admin/destructive mutations role-gated weaker than prod'
+      conf: 50  files: ['lead-bigpickle.md'] first_line=815
+
+   1  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode missing environment guard — authless or'
+      conf: 82  files: ['lead-bigpickle.md'] first_line=1185
+
+   1  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_getConfirmationCode missing environment guard — authless re'
+      conf: 82  files: ['lead-bigpickle.md'] first_line=1262
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: "Production systemic unauth'd IDOR via single-entity resolvers"
+      conf: 95  files: ['lead-bigpickle.md'] first_line=2385
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'WAF client-differentiated bot-gate, origin direct reach via GET'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=2394
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: "Production systemic unauth'd IDOR via single-entity resolvers — GET-verifie"
+      conf: 96  files: ['lead-bigpickle.md'] first_line=2420
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: "Production systemic unauth'd IDOR via all 4 single-entity resolvers — full "
+      conf: 97  files: ['lead-bigpickle.md'] first_line=2468
+
+   1  class='<absent>'                     asset='<none>'
+      title: 'HUMAN_ONLY on both remaining POCs: cross-tenant IDOR PII (consent + 2 accou'
+      conf: ?  files: ['lead-bigpickle.md'] first_line=2502
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Edge WAF is client-differentiated bot-gate, not auth'
+      conf: 96  files: ['lead-bigpickle.md'] first_line=2663
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL introspection enabled (ready to report)'
+      conf: 95  files: ['lead-bigpickle.md'] first_line=3078
+
+   1  class='BUSLOGIC'                     asset='profil.cineplex.de'
+      title: 'Unauthenticated email-keyed preference write (profil)'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 groups.py 2>&1 | sed -n '700,1000p'
+title: 'Unauthenticated email-keyed preference write (profil)'
+      conf: 50  files: ['lead-bigpickle.md'] first_line=3125
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic IDOR via decodePublicId-before-auth on 4 single-entity '
+      conf: 95  files: ['lead-bigpickle.md'] first_line=3135
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic IDOR via decodePublicId-before-auth (control-complete, '
+      conf: 95  files: ['lead-bigpickle.md'] first_line=3237
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling-CNAME takeover precondition confirmed-stable on sole dev host'
+      conf: 70  files: ['lead-bigpickle.md'] first_line=3450
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling-CNAME takeover precondition confirmed-stable on sole dev host (4th'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=3482
+
+   1  class='OTHER'                        asset='graphql-api.app.staging.cineplex.de'
+      title: 'Missing environment guard on staging testing-confirmation oracle'
+      conf: 72  files: ['lead-bigpickle.md'] first_line=3652
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Subdomain Takeover on web-dev.cineplex.de'
+      conf: 82  files: ['lead-bigpickle.md'] first_line=3796
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de / bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Cloudflare WAF bypass exposing dev booking/CMS tier at origin'
+      conf: 75  files: ['lead-bigpickle.md'] first_line=4080
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de origin (194.77.169.121), /gateway/auth/oauth/a'
+      title: 'Dev origin WAF bypass + OAuth redirect_uri gap still gated on gateway 503-t'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=4381
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de'
+      title: 'Dev-cluster origin bypass still exploitable once gateway backend leaves mai'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=4506
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de origin'
+      title: 'Dev-cluster origin gateway leaving maintenance exposes OAuth/business-logic'
+      conf: 60  files: ['lead-bigpickle.md'] first_line=4673
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de origin 194.77.169.121'
+      title: 'Dev-cluster OAuth gateway emerging from maintenance exposes booking/auth en'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=4783
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant proof of the 4-resolver decode-before-gate IDOR with authorize'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=4801
+
+   1  class='MISCONFIG'                    asset='194.77.169.121 (buchung-dev/bms-dev origin ingress)'
+      title: 'Ingress virtual-host enumeration on shared dev origin'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=4824
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant proof of 4-resolver decode-before-gate IDOR with authorized ac'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=4856
+
+   1  class='MISCONFIG'                    asset='194.77.169.121 (buchung-dev/bms-dev nginx-ingress)'
+      title: 'Ingress virtual-host enumeration on shared dev origin'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=4884
+
+   1  class='AUTH'                         asset='buchung-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-gateway maintenance lift enables unauth OAuth/booking-session surface'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=4893
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR persists; only remaining unproven link'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=4945
+
+   1  class='AUTH'                         asset='buchung-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-gateway upstream reachable at non-/gateway prefixes (blanket flag is pr'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=4954
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name remains claimable (attestation for submis'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=4963
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name claimability attestation pending before s'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5003
+
+   1  class='AUTH'                         asset='buchung-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev /gateway maintenance flag is upstream-wide; backend state may be reacha'
+      conf: 30  files: ['lead-bigpickle.md'] first_line=5012
+
+   1  class='OTHER'                        asset='staging.cineplex.de'
+      title: 'staging.cineplex.de live staging surface identification'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5022
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name claimability attestation (submission path'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=5031
+
+   1  class='AUTH'                         asset='buchung-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev /gateway maintenance flag is upstream-wide'
+      conf: 30  files: ['lead-bigpickle.md'] first_line=5061
+
+   1  class='MISCONFIG'                    asset="wildcard.systems.cineplex.de + CNAME'd systems hosts"
+      title: 'Systems-zone second dangle sweep'
+      conf: 40  files: ['lead-bigpickle.md'] first_line=5182
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR on single-entity resolvers (unchanged,'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5194
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'web-dev Azure Container Apps name claimability (submission path, intact)'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=5203
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin WAF-bypass full-impact chain (gated on maintenance window)'
+      conf: 45  files: ['lead-bigpickle.md'] first_line=5212
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Cross-tenant decode-before-gate IDOR (unchanged, re-scored top)'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5346
+
+   1  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR — decodePublicId-before-gate (top; unchanged)"
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5441
+
+   1  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR — decodePublicId-before-gate (re-verified, unchanged"
+      conf: 85  files: ['lead-bigpickle.md'] first_line=5688
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Web-dev dangling CNAME — claimability/submission prep (unchanged)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6205
+
+   1  class='IDOR'                         asset='graphql-api.app.{,staging.}cineplex.de'
+      title: "Systemic unauth'd IDOR via decodePublicId-before-gate (unchanged)"
+      conf: 97  files: ['lead-bigpickle.md'] first_line=6233
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Web-dev dangling CNAME — submission prep (unchanged)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6242
+
+   1  class='MISCONFIG'                    asset='buchung-dev.cineplex.de + bms-dev.cineplex.de (origin 194.77.169.121)'
+      title: 'Dev-origin /gateway maintenance-exit → auth/IDOR surface (on hold)'
+      conf: 38  files: ['lead-bigpickle.md'] first_line=6251
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Web-dev dangling CNAME — submission prep (report-ready, unchanged)'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6276
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Full GraphQL introspection and mutation surface exposed without authenticat'
+      conf: 98  files: ['lead-bigpickle.md'] first_line=6436
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'web-dev CNAME points to an NXDOMAIN Azure Container Apps target'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6445
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Unauthenticated GraphQL schema and mutation surface exposure'
+      conf: 98  files: ['lead-bigpickle.md'] first_line=6481
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azur'
+      title: 'Dangling CNAME for web-dev.cineplex.de'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=6490
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.{,staging.}cineplex.de'
+      title: 'Unauthenticated full introspection exposes the complete 223-operation surfa'
+      conf: 99  files: ['lead-bigpickle.md'] first_line=6522
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de'
+      title: 'Unauthenticated GraphQL introspection discloses the complete 223-operation '
+      conf: 99  files: ['lead-bigpickle.md'] first_line=6598
+
+   1  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de — mutationType `startWebBooking` / `logUse'
+      title: 'Client-supplied user-ID lists and a client-supplied free-spend amount on bo'
+      conf: 62  files: ['lead-bigpickle.md'] first_line=6672
+
+   1  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de - mutationType startWebBooking / logUserSc'
+      title: 'Client-supplied user-ID lists and client-supplied free-spend amount on book'
+      conf: 62  files: ['lead-bigpickle.md'] first_line=6826
+
+   1  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de — mutationType updateUser(userId, adminCin'
+      title: 'Role and tenant assignment are settable from the request body on the canoni'
+      conf: 78  files: ['lead-bigpickle.md'] first_line=6950
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de — queryType userById(id) / order(id) / tic'
+      title: 'Unauthenticated id-decode reach into a 51-field user object containing bear'
+      conf: 82  files: ['lead-bigpickle.md'] first_line=7081
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de — queryType userById(id) / order(id) / tic'
+      title: 'Unauthenticated id-decode reach into a 51-field user object, now reachable '
+      conf: 82  files: ['lead-bigpickle.md'] first_line=7137
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de (and graphql-api.app.staging.cineplex.de) '
+      title: 'Unauthenticated pre-auth id-decode into the 51-field `User` object, reachab'
+      conf: 84  files: ['lead-bigpickle.md'] first_line=7228
+
+   1  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de — `login(privileged)` / `refreshLo'
+      title: 'Caller-supplied privilege flag at session establishment and refresh, on a p'
+      conf: 71  files: ['lead-bigpickle.md'] first_line=7237
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de — `userById` / `order` / `ticket` / `invoi'
+      title: 'Unauthenticated pre-auth id-decode into the 51-field `User` object, on a pa'
+      conf: 84  files: ['lead-bigpickle.md'] first_line=7266
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlandnorth.azu'
+      title: 'Dangling CNAME to an unresolvable Azure Container Apps environment'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=7275
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de — `userById`, `order`, `ticket`, `invoice`'
+      title: 'Pre-auth id-decode reaches the entity-lookup layer on **six** resolvers, no'
+      conf: 86  files: ['lead-bigpickle.md'] first_line=7289
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de — Class A: `userById`, `order`, `ticket`, '
+      title: 'Pre-auth id-decode reaches the entity-lookup layer on six resolvers split a'
+      conf: 88  files: ['lead-bigpickle.md'] first_line=7317
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'The unauthenticated pre-auth id-decode family is 14 resolvers across four d'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=7347
+
+   1  class='IDOR'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging carries the identical 14-resolver pre-auth omission with no environ'
+      conf: 88  files: ['lead-bigpickle.md'] first_line=7356
+
+   1  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME to an unresolvable Azure Container Apps environment on a tru'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=7365
+
+   1  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR '
+      conf: 80  files: ['lead-bigpickle.md'] first_line=7386
+
+   1  class='IDOR'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging carries the identical 15-member pre-auth decoder family and the sam'
+      conf: 88  files: ['lead-bigpickle.md'] first_line=7395
+
+   1  class='<absent>'                     asset='<none>'
+      title: ''
+      conf: ?  files: ['lead-bigpickle.md'] first_line=7534
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}'
+      title: '4 equivalent unauthenticated full-schema GraphQL surfaces'
+      conf: 97  files: ['lead-bigpickle.md'] first_line=7550
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'CORS-allowlist credentialed reflection without an ambient credential'
+      conf: 10  files: ['lead-bigpickle.md'] first_line=7568
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL API reflects credentialed CORS to a dev loopback origin '
+      conf: 75  files: ['lead-bigpickle.md'] first_line=7587
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging GraphQL API carries the identical `null`-origin credentialed CORS g'
+      conf: 60  files: ['lead-bigpickle.md'] first_line=7596
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}'
+      title: 'One global CORS allowlist governs all four GraphQL routes, so the allowlist'
+      conf: 55  files: ['lead-bigpickle.md'] first_line=7605
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'The production GraphQL API preflight-approves credentialed cross-origin POS'
+      conf: 90  files: ['lead-bigpickle.md'] first_line=7635
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging carries the identical hostile-origin credentialed POST grant, over '
+      conf: 78  files: ['lead-bigpickle.md'] first_line=7643
+
+   1  class='SUBDOMAIN_TAKEOVER'           asset='web-dev.cineplex.de'
+      title: '`web-dev.cineplex.de` CNAME target is a deregistered Azure Container Apps e'
+      conf: 96  files: ['lead-bigpickle.md'] first_line=7652
+
+   1  class="'MISCONFIG' conf: '93'"       asset='graphql-api.app.cineplex.de'
+      title: '15 resolvers across 4 decoder contracts and 2 argument shapes decode entity'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=7837
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de.'
+      title: 'CORS preflight grants credentialed mutating verbs from a dev loopback origi'
+      conf: 92  files: ['lead-bigpickle.md'] first_line=7941
+
+   1  class='BUSLOGIC'                     asset='graphql-api.app.staging.cineplex.de.'
+      title: 'Client-settable tenant/privilege fields mirror the server-derived `UserPriv'
+      conf: 80  files: ['lead-bigpickle.md'] first_line=7942
+
+   1  class='MISCONFIG'                    asset='<none>'
+      title: 'Dangling CNAME on a trusted parent domain pointing at a deregistered Azure '
+      conf: 90  files: ['lead-bigpickle.md'] first_line=7943
+
+   1  class="'MISCONFIG' conf: '93'"       asset='graphql-api.app.cineplex.de'
+      title: 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Stag'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=7958
+
+   1  class="'MISCONFIG' conf: '93'"       asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL introspection leakage'
+      conf: 70  files: ['lead-bigpickle.md'] first_line=8040
+
+   1  class="'MISCONFIG' conf: '93'"       asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+      conf: 85  files: ['lead-bigpickle.md'] first_line=8103
+
+   1  class='MISCONFIG'                    asset='graphql-api.app.cineplex.de'
+      title: 'CORS Misconfiguration Permits Credentialed Cross-Origin Mutation Calls Agai'
+[0m
+[0m← [0mWrite /tmp/opencode/triage_rules.py
+Wrote file successfully.
+[0m
+Now I have the full landscape. Let me build a per-block classifier with a dry-run report before touching anything.
+[0m$ [0mcd /tmp/opencode && python3 triage_rules.py 2>&1 | tail -70
+lead-bigpickle.md:4609 class='MISCONFIG' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+    lead-bigpickle.md:4766 class='MISCONFIG' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+    lead-bigpickle.md:4963 class='MISCONFIG' 'web-dev Azure Container Apps name remains claimable (attestation for submission)'
+    lead-bigpickle.md:4973 class='MISCONFIG' 'web-dev Azure Container Apps name claimability attestation'
+    lead-bigpickle.md:5003 class='MISCONFIG' 'web-dev Azure Container Apps name claimability attestation pending before submission'
+
+--- LIVE_CORS (33) samples:
+    lead-bigpickle.md:7568 class='MISCONFIG' 'CORS-allowlist credentialed reflection without an ambient credential'
+    lead-bigpickle.md:7587 class='MISCONFIG' 'Production GraphQL API reflects credentialed CORS to a dev loopback origin and to a stag'
+    lead-bigpickle.md:7596 class='MISCONFIG' 'Staging GraphQL API carries the identical `null`-origin credentialed CORS grant, over th'
+    lead-bigpickle.md:7605 class='MISCONFIG' 'One global CORS allowlist governs all four GraphQL routes, so the allowlist entries appl'
+    lead-bigpickle.md:7693 class='MISCONFIG' 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credenti'
+    lead-bigpickle.md:7770 class='MISCONFIG' 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credenti'
+    lead-bigpickle.md:7941 class='MISCONFIG' 'CORS preflight grants credentialed mutating verbs from a dev loopback origin on producti'
+    lead-bigpickle.md:7948 class='MISCONFIG' 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credenti'
+    lead-bigpickle.md:7953 class='MISCONFIG' 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credenti'
+    lead-bigpickle.md:7958 class="'MISCONFIG' conf: '93'" 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins'
+    lead-bigpickle.md:8056 class='MISCONFIG' 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins o'
+    lead-bigpickle.md:8085 class='MISCONFIG' 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins o'
+    lead-bigpickle.md:8128 class='MISCONFIG' 'CORS Misconfiguration Permits Credentialed Cross-Origin Mutation Calls Against Productio'
+    lead-nemotron3.md:9956 class='MISCONFIG' 'CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credenti'
+
+--- LIVE_INTROSPECTION (97) samples:
+    lead-bigpickle.md:9 class='MISCONFIG' 'Production GraphQL introspection leakage'
+    lead-bigpickle.md:47 class='MISCONFIG' 'Production GraphQL introspection leakage'
+    lead-bigpickle.md:223 class='MISCONFIG' 'Production GraphQL introspection leakage'
+    lead-bigpickle.md:260 class='MISCONFIG' 'Production GraphQL introspection leakage'
+    lead-bigpickle.md:371 class='MISCONFIG' 'GraphQL introspection via POST root on production — schema disclosure enabling targeted '
+    lead-bigpickle.md:428 class='MISCONFIG' 'GraphQL introspection POST returns full schema despite GET being WAF-blocked'
+    lead-bigpickle.md:437 class='MISCONFIG' 'Staging GraphQL endpoint accepts introspection POST with relaxed WAF rules'
+    lead-bigpickle.md:484 class='MISCONFIG' 'GraphQL introspection POST bypasses WAF to expose full schema with IDOR-capable mutation'
+    lead-bigpickle.md:493 class='MISCONFIG' 'Staging GraphQL endpoint accepts introspection POST with relaxed WAF rules'
+    lead-bigpickle.md:540 class='MISCONFIG' 'GraphQL introspection POST bypasses WAF to expose full schema with IDOR-capable mutation'
+    lead-bigpickle.md:549 class='MISCONFIG' 'Staging GraphQL endpoint accepts introspection POST with relaxed WAF rules'
+    lead-bigpickle.md:585 class='MISCONFIG' 'Staging GraphQL accepts introspection POST with relaxed WAF'
+    lead-bigpickle.md:646 class='MISCONFIG' 'couat GraphQL accepts introspection POST and exposes schema differing from prod/staging'
+    lead-bigpickle.md:766 class='MISCONFIG' 'Staging GraphQL WAF method-gate bypass mirrors confirmed prod POST introspection'
+
+--- LIVE_MASSASSIGN (42) samples:
+    lead-bigpickle.md:6886 class='BUSLOGIC' 'Authorization flags and tenant membership are settable from the request body on cinema-o'
+    lead-bigpickle.md:6950 class='BUSLOGIC' 'Role and tenant assignment are settable from the request body on the canonical user-upda'
+    lead-bigpickle.md:7005 class='BUSLOGIC' 'Authorization flags and tenant membership are settable from the request body on cinema-o'
+    lead-bigpickle.md:7237 class='AUTH' 'Caller-supplied privilege flag at session establishment and refresh, on a path set with '
+    lead-bigpickle.md:7702 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:7730 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:7779 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:7802 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:7942 class='BUSLOGIC' 'Client-settable tenant/privilege fields mirror the server-derived `UserPrivileges` objec'
+    lead-bigpickle.md:8065 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:8094 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserPrivileges'
+    lead-bigpickle.md:8137 class='BUSLOGIC' 'Caller-Controlled accessRight* / adminCinemaOperatingCompanyIds Inputs Mirror Server-Der'
+    lead-nemotron3.md:9340 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+    lead-nemotron3.md:9403 class='BUSLOGIC' 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserPrivileges'
+
+--- LIVE_DANGLE (199) samples:
+    lead-bigpickle.md:3368 class='MISCONFIG' 'Dangling-CNAME takeover precondition on dev host'
+    lead-bigpickle.md:3420 class='MISCONFIG' 'Dangling-CNAME takeover precondition on dev host'
+    lead-bigpickle.md:3450 class='MISCONFIG' 'Dangling-CNAME takeover precondition confirmed-stable on sole dev host'
+    lead-bigpickle.md:3482 class='MISCONFIG' 'Dangling-CNAME takeover precondition confirmed-stable on sole dev host (4th cycle)'
+    lead-bigpickle.md:3521 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3558 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3609 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3634 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3673 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3703 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3729 class='OTHER' 'Dangling CNAME Takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3753 class='MISCONFIG' 'Dangling CNAME subdomain takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3796 class='MISCONFIG' 'Dangling CNAME Subdomain Takeover on web-dev.cineplex.de'
+    lead-bigpickle.md:3822 class='MISCONFIG' 'Dangling CNAME Subdomain Takeover on web-dev.cineplex.de (full Azure env namespace vacan'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 triage_rules.py 2>&1 | sed -n '1,45p'
+1151 blocks in 265 distinct (class, asset, title-head) groups
+
+  86  class='MISCONFIG'                    asset='web-dev.cineplex.de'
+      title: 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+      conf: 95,96  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=7475
+
+  75  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Confirmation Code Oracle Enables Account Takeover via testing_getCo'
+      conf: 97  files: ['lead-nemotron3.md'] first_line=4276
+
+  65  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePu'
+      conf: 95,97,98  files: ['lead-nemotron3.md'] first_line=5390
+
+  29  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL Systemic IDOR via Single-Entity Resolvers'
+      conf: 65,70,85,95,98  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1687
+
+  26  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT alg/key confusion on login-issued tokens'
+      conf: 40,45  files: ['lead-bigpickle.md'] first_line=848
+
+  25  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging Testing Mutation Auth Bypass Oracle'
+      conf: 75,80,90,95,97  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1678
+
+  21  class='BUSLOGIC'                     asset='graphql-api.app.cineplex.de'
+      title: 'Mass Assignment via CinemaOperatingCompanyData.accessRight* Mirror on UserP'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=7702
+
+  18  class='AUTH'                         asset='graphql-api.app.staging.cineplex.de'
+      title: 'Staging testing_* confirmation-code oracle without environment guard'
+      conf: 82,83  files: ['lead-bigpickle.md'] first_line=1329
+
+  17  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production systemic unauthenticated IDOR via single-entity resolvers'
+      conf: 93  files: ['lead-bigpickle.md'] first_line=1504
+
+  15  class='IDOR'                         asset='graphql-api.app.cineplex.de'
+      title: 'Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT'
+      conf: 85  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=688
+
+  15  class='AUTH'                         asset='auth.cineplex.de'
+      title: 'JWT Algorithm Confusion via auth.cineplex.de login Mutation'
+      conf: 55  files: ['lead-bigpickle.md', 'lead-nemotron3.md'] first_line=1696
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF' 2>&1 | tail -40
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+from collections import defaultdict
+import triage_rules as T
+
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+buckets=defaultdict(list)
+for b in blocks: buckets[T.classify(b)].append(b)
+print("total", len(blocks))
+for k,v in sorted(buckets.items(), key=lambda kv:-len(kv[1])):
+    print(f"{len(v):5d}  {k}")
+print("\n--- REVIEW bucket (needs manual decision):")
+for b in buckets.get("REVIEW", []):
+    print(f"  {b['file']}:{b['line']} class={(b.get('class') or '?')!r} asset={(b.get('asset') or '-')[:40]!r} {b['title'][:80]!r}")
+print("\n--- DECODER_SURVIVOR bucket:")
+for b in buckets.get("DECODER_SURVIVOR", []):
+    print(f"  {b['file']}:{b['line']} class={(b.get('class') or '?')!r} {b['title'][:88]!r}")
+EOF
+lead-nemotron3.md:6925 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:6981 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7037 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7093 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7152 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7202 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7258 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7315 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7373 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7425 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7486 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7547 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7608 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7669 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7730 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7792 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7845 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7908 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:7969 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8021 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8083 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8148 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8212 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8277 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8342 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8416 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8487 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8560 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8626 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8684 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8738 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8800 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8863 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8922 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:8972 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:9029 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:9087 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:9148 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:9210 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+  lead-nemotron3.md:9277 class='IDOR' 'Systemic Unauthenticated IDOR Across 4 Single-Entity Resolvers via decodePublicId-Before'
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF' 2>&1 | sed -n '1,40p'
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+from collections import defaultdict
+import triage_rules as T
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+buckets=defaultdict(list)
+for b in blocks: buckets[T.classify(b)].append(b)
+print("total", len(blocks))
+for k,v in sorted(buckets.items(), key=lambda kv:-len(kv[1])):
+    print(f"{len(v):5d}  {k}")
+EOF
+total 1151
+  199  LIVE_DANGLE
+  190  DEAD_STAGING_ORACLE
+  132  DECODER_SURVIVOR
+  117  DEAD_IDOR_FALSIFIED
+  101  DEAD_JWT
+   97  LIVE_INTROSPECTION
+   73  NO_BOUNDARY_DEV_ORIGIN
+   63  REVIEW
+   42  LIVE_MASSASSIGN
+   40  SCHEMA_INFERRED
+   33  LIVE_CORS
+   26  DEAD_SSRF_RELAY
+   17  DEAD_API_WAF
+   12  UNVERIFIED_WRITE
+    9  NOT_A_FINDING
+[0m
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -36,18 +36,25 @@
+     "NOT_A_FINDING": r'no public (github|repos)|github\.com/cineplex|wildcard\.systems|vpn-openvpn|systems-zone|staging\.cineplex\.de live',
+ }
+ 
+ 
++# Blocks whose primary claim is unauthorized entity access. This is the falsified
++# family: knowledge/index.md records that a valid *public* cinema id returns
++# UNAUTHENTICATED, so there is no missing ownership check. Decode-before-gate
++# reach survives as a Low decoder-oracle MISCONFIG, but only where the block does
++# not itself claim entity access.
++CLAIMS_ENTITY_ACCESS = r'idor|bola|cross-tenant|cross-user|pii|ownership check|dump'
++
++
+ def classify(b):
+     t = b["title"].lower()
+     a = (b.get("asset") or "").lower()
+     cls = (b.get("class") or "").strip().upper()
+ 
+-    # live families win, but only when the block is not claiming cross-tenant data access
+     for name, pat in LIVE.items():
++        if name == "DECODER":
++            continue
+         if re.search(pat, t):
+-            if name == "DECODER":
+-                return "DECODER_SURVIVOR"
+             return f"LIVE_{name}"
+ 
+     if "api.cineplex.de" in a and "graphql-api" not in a:
+         return "DEAD_API_WAF"
+
+[0m
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -73,8 +73,12 @@
+     if re.search(DEAD["DEV_ORIGIN"], t) or re.search(r'194\.77\.169|origin', t):
+         return "NO_BOUNDARY_DEV_ORIGIN"
+     if cls == "IDOR" or re.search(DEAD["IDOR_FALSIFIED"], t):
+         return "DEAD_IDOR_FALSIFIED"
++    if re.search(CLAIMS_ENTITY_ACCESS, t):
++        return "DEAD_IDOR_FALSIFIED"
++    if re.search(LIVE["DECODER"], t):
++        return "DECODER_SURVIVOR"
+     return "REVIEW"
+ 
+ 
+ if __name__ == "__main__":
+
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF' 2>&1 | sed -n '1,90p'
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+from collections import defaultdict
+import triage_rules as T
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+buckets=defaultdict(list)
+for b in blocks: buckets[T.classify(b)].append(b)
+print("total", len(blocks))
+for k,v in sorted(buckets.items(), key=lambda kv:-len(kv[1])):
+    print(f"{len(v):5d}  {k}")
+print("\n=== REVIEW bucket:")
+for b in buckets.get("REVIEW", []):
+    print(f"  {b['file']}:{b['line']} class={(b.get('class') or '?')!r} asset={(b.get('asset') or '-')[:38]!r} {b['title'][:78]!r}")
+print("\n=== DECODER_SURVIVOR bucket:")
+for b in buckets.get("DECODER_SURVIVOR", []):
+    print(f"  {b['file']}:{b['line']} class={(b.get('class') or '?')!r} {b['title'][:86]!r}")
+EOF
+total 1151
+  248  DEAD_IDOR_FALSIFIED
+  199  LIVE_DANGLE
+  190  DEAD_STAGING_ORACLE
+  101  DEAD_JWT
+   97  LIVE_INTROSPECTION
+   73  NO_BOUNDARY_DEV_ORIGIN
+   63  REVIEW
+   42  LIVE_MASSASSIGN
+   40  SCHEMA_INFERRED
+   33  LIVE_CORS
+   26  DEAD_SSRF_RELAY
+   17  DEAD_API_WAF
+   12  UNVERIFIED_WRITE
+    9  NOT_A_FINDING
+    1  DECODER_SURVIVOR
+
+=== REVIEW bucket:
+  lead-bigpickle.md:84 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:145 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:179 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:297 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:335 class='BUSLOGIC' asset='graphql-api.app.cineplex.de' 'Mutation authorization gap / admin-mutation exposed via anonymous POST'
+  lead-bigpickle.md:1678 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1753 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1819 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1987 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:4609 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:4766 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-bigpickle.md:4963 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name remains claimable (attestation for submissio'
+  lead-bigpickle.md:4973 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability attestation'
+  lead-bigpickle.md:5003 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability attestation pending before subm'
+  lead-bigpickle.md:5031 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability attestation (submission path)'
+  lead-bigpickle.md:5052 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path)'
+  lead-bigpickle.md:5083 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path)'
+  lead-bigpickle.md:5104 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path)'
+  lead-bigpickle.md:5134 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path)'
+  lead-bigpickle.md:5173 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path)'
+  lead-bigpickle.md:5203 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability (submission path, intact)'
+  lead-bigpickle.md:6672 class='BUSLOGIC' asset='graphql-api.app.cineplex.de — mutation' 'Client-supplied user-ID lists and a client-supplied free-spend amount on booki'
+  lead-bigpickle.md:6826 class='BUSLOGIC' asset='graphql-api.app.cineplex.de - mutation' 'Client-supplied user-ID lists and client-supplied free-spend amount on booking'
+  lead-bigpickle.md:6895 class='AUTH' asset='graphql-api.app.cineplex.de — mutation' 'Deprecated credential mutations accept a password change authorized by neither'
+  lead-bigpickle.md:6959 class='AUTH' asset='graphql-api.app.staging.cineplex.de — ' 'Privilege level is a client-supplied input on the authentication mutations the'
+  lead-bigpickle.md:7014 class='AUTH' asset='graphql-api.app.cineplex.de — mutation' 'Deprecated credential mutations accept a password change authorized by neither'
+  lead-bigpickle.md:7090 class='AUTH' asset='graphql-api.app.staging.cineplex.de — ' 'Privilege level is a client-supplied input on the authentication mutations the'
+  lead-bigpickle.md:7146 class='AUTH' asset='graphql-api.app.staging.cineplex.de — ' 'Privilege level is a client-supplied input on the authentication mutations the'
+  lead-bigpickle.md:7534 class='?' asset='-' ''
+  lead-bigpickle.md:7550 class='MISCONFIG' asset='graphql-api.app.cineplex.de{/,/graphql' '4 equivalent unauthenticated full-schema GraphQL surfaces'
+  lead-bigpickle.md:7883 class='MISCONFIG' asset='web-dev.cineplex.de' 'web-dev Azure Container Apps name claimability attestation'
+  lead-bigpickle.md:7901 class='MISCONFIG' asset='data-9fc27eb430.cineplex.de' 'Relay/internal-service path disclosure via exposed health/build endpoint'
+  lead-nemotron3.md:2015 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2079 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2155 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2221 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2284 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2339 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2395 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2452 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2509 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2566 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2623 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2681 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2741 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2804 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2865 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2941 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2968 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3046 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3109 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3172 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3235 class='AUTH' asset='graphql-api.app.staging.cineplex.de' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:9331 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9394 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9457 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9519 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9572 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9625 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9688 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9752 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9823 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+  lead-nemotron3.md:9888 class='MISCONFIG' asset='graphql-api.app.cineplex.de' 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production'
+
+=== DECODER_SURVIVOR bucket:
+  lead-bigpickle.md:7837 class="'MISCONFIG' conf: '93'" '15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before'
+[0m
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -7,14 +7,18 @@
+ # ---------------------------------------------------------------- canonical verdicts
+ # Live families that must survive publication (one canonical block each).
+ LIVE = {
+     "CORS": r'cors',
+-    "INTROSPECTION": r'introspect|full schema|mutation surface exposure|schema and mutation|223-operation|operation and argument',
+-    "MASSASSIGN": r'mass assignment|accessright|privilege flag|client-settable tenant|authorization flags and tenant membership|role and tenant assignment',
+-    "DANGLE": r'dangl|cname',
++    "INTROSPECTION": r'introspect|full schema|mutation surface exposure|schema and mutation|223-operation|operation and argument|full type/argument surface',
++    "MASSASSIGN": r'mass assignment|accessright|privilege flag|client-settable tenant|authorization flags and tenant membership|role and tenant assignment|privilege level is a client-supplied|caller-controlled accessright',
++    "DANGLE": r'dangl|cname|claimab',
+     "DECODER": r'decoder oracle|decode before|decode-before|decodepublicid|id-decode|decode caller-supplied|decode entity ids|pre-auth decode|typed-error',
+ }
+ 
++# Falsified equivalence claim (KB REJECTED 2026-09-28..10-02): only GET bodies were
++# compared; POST behaviour differs (/graphql,/api/graphql,/gql are gateway-blocked).
++DEAD_EQUIVALENCE = r'4 equivalent|equivalent unauthenticated|equivalent full-schema'
++
+ # Dead families: each is a closed verdict recorded in knowledge/index.md.
+ DEAD = {
+     # falsified: valid public cinema id returns UNAUTHENTICATED -> no missing ownership check
+     "IDOR_FALSIFIED": r'idor|bola|cross-tenant|cross-user|pii|ownership|userbyid|searchusers|adminusers',
+
+[0m
+The classifier needs a few more family routes. Let me finalize rules, then apply.
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -25,16 +25,16 @@
+ # rejected: no code extracted, field exists in prod, distinguishing error is descriptive/OOS
+ "STAGING_ORACLE": r'confirmation.code|confirmation_code|getconfirmationcode|testing_|testing-only|env-guard|environment guard|password.reset|testing mutations|test resolvers',
+ # dead: JWKS 404, login/sso TLS-dead -> no auth surface to confuse
+ "JWT": r'\bjwt\b|alg(orithm)? confusion|rs256|hs256|weak signing|token forgery',
+-# dead/OOS: root-gated getOnlineTicketingBooking; relay counters are descriptive
+-"SSRF_RELAY": r'\bssrf\b|relay api routes|relay/forwarding|broker saturation|queue-depth|service topology|iomb|/metrics|undocumented relay',
++# descriptive telemetry / health-build disclosure is OOS (KB REJECTED)
++"SSRF_RELAY": r'\bssrf\b|relay api routes|relay/forwarding|broker saturation|queue-depth|service topology|iomb|/metrics|undocumented relay|relay/internal-service|health/build endpoint',
+ # dead: strict 403 across all methods/encodings for 20+ cycles
+ "API_WAF": r'',
+ # no security boundary crossed: vendor origin IP is their own host; gateway 503 anyway
+ "DEV_ORIGIN": r'origin|waf bypass|194\.77\.169|maintenance|gateway',
+ # unverifiable without a state-changing mutation -> out of bounds
+-"WRITE_UNVERIFIED": r'preference|profil\.cineplex|free-ticket|freespend|free_ticket',
++"WRITE_UNVERIFIED": r'preference|profil\.cineplex|free-ticket|freespend|free_ticket|user-id lists|anonymous post|deprecated credential mutation',
+ # schema-inference only, never observed live
+ "SCHEMA_INFERRED": r'spring data jpa|jpa rest|rest/json api shim|role-gated weaker|destructive mutation|nextcloud|public\.php|env confusion|relaxed auth|bot-gate|waf client|waf method-gate|method-gate',
+ # not a finding at all
+ "NOT_A_FINDING": r'no public (github|repos)|github\.com/cineplex|wildcard\.systems|vpn-openvpn|systems-zone|staging\.cineplex\.de live',
+
+[0m
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -59,8 +59,10 @@
+         continue
+     if re.search(pat, t):
+         return f"LIVE_{name}"
+ 
++if re.search(DEAD_EQUIVALENCE, t):
++    return "DEAD_EQUIVALENCE_CLAIM"
+ if "api.cineplex.de" in a and "graphql-api" not in a:
+     return "DEAD_API_WAF"
+ if cls == "SSRF" or re.search(DEAD["SSRF_RELAY"], t):
+     return "DEAD_SSRF_RELAY"
+
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF' 2>&1 | sed -n '1,60p'
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+from collections import defaultdict
+import triage_rules as T
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+buckets=defaultdict(list)
+for b in blocks: buckets[T.classify(b)].append(b)
+print("total", len(blocks))
+for k,v in sorted(buckets.items(), key=lambda kv:-len(kv[1])):
+    print(f"{len(v):5d}  {k}")
+print("\n=== REVIEW:")
+for b in buckets.get("REVIEW", []):
+    print(f"  {b['file']}:{b['line']} class={(b.get('class') or '?')!r} {b['title'][:82]!r}")
+EOF
+total 1151
+  248  DEAD_IDOR_FALSIFIED
+  210  LIVE_DANGLE
+  190  DEAD_STAGING_ORACLE
+  107  LIVE_INTROSPECTION
+  101  DEAD_JWT
+   73  NO_BOUNDARY_DEV_ORIGIN
+   45  LIVE_MASSASSIGN
+   40  SCHEMA_INFERRED
+   33  DEAD_SSRF_RELAY
+   33  LIVE_CORS
+   26  REVIEW
+   17  DEAD_API_WAF
+   17  UNVERIFIED_WRITE
+    9  NOT_A_FINDING
+    1  DEAD_EQUIVALENCE_CLAIM
+    1  DECODER_SURVIVOR
+
+=== REVIEW:
+  lead-bigpickle.md:1678 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1753 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1819 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:1987 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-bigpickle.md:7534 class='?' ''
+  lead-nemotron3.md:2015 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2079 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2155 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2221 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2284 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2339 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2395 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2452 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2509 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2566 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2623 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2681 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2741 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2804 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2865 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2941 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:2968 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3046 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3109 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3172 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+  lead-nemotron3.md:3235 class='AUTH' 'Staging Testing Mutation Auth Bypass Oracle'
+[0m
+[0m← [0mEdit /tmp/opencode/triage_rules.py
+Index: /tmp/opencode/triage_rules.py
+===================================================================
+--- /tmp/opencode/triage_rules.py
++++ /tmp/opencode/triage_rules.py
+@@ -22,9 +22,9 @@
+ DEAD = {
+     # falsified: valid public cinema id returns UNAUTHENTICATED -> no missing ownership check
+     "IDOR_FALSIFIED": r'idor|bola|cross-tenant|cross-user|pii|ownership|userbyid|searchusers|adminusers',
+     # rejected: no code extracted, field exists in prod, distinguishing error is descriptive/OOS
+-    "STAGING_ORACLE": r'confirmation.code|confirmation_code|getconfirmationcode|testing_|testing-only|env-guard|environment guard|password.reset|testing mutations|test resolvers',
++    "STAGING_ORACLE": r'confirmation.code|confirmation_code|getconfirmationcode|testing_|testing-only|testing mutation|test resolvers|env-guard|environment guard|password.reset',
+     # dead: JWKS 404, login/sso TLS-dead -> no auth surface to confuse
+     "JWT": r'\bjwt\b|alg(orithm)? confusion|rs256|hs256|weak signing|token forgery',
+     # descriptive telemetry / health-build disclosure is OOS (KB REJECTED)
+     "SSRF_RELAY": r'\bssrf\b|relay api routes|relay/forwarding|broker saturation|queue-depth|service topology|iomb|/metrics|undocumented relay|relay/internal-service|health/build endpoint',
+
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF' 2>&1 | sed -n '1,70p'
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+from collections import defaultdict
+import triage_rules as T
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+buckets=defaultdict(list)
+for b in blocks: buckets[T.classify(b)].append(b)
+print("total", len(blocks), "| unclassified REVIEW:", len(buckets.get("REVIEW",[])))
+for k,v in sorted(buckets.items(), key=lambda kv:-len(kv[1])):
+    print(f"{len(v):5d}  {k}")
+
+def score(b):
+    fields = sum(1 for k in ('reasoning','evidence_needed','verify_steps','impact','testability') if b.get(k))
+    try: conf = int(b.get('confidence'))
+    except: conf = 0
+    return (fields, conf, b['line'])
+
+print("\n=== best candidate per live family (fields, conf, line):")
+for fam in ('LIVE_CORS','LIVE_INTROSPECTION','LIVE_MASSASSIGN','LIVE_DANGLE'):
+    cands = sorted(buckets[fam], key=score, reverse=True)
+    print(f"\n{fam}  ({len(cands)} candidates) top5:")
+    for b in cands[:5]:
+        print(f"   {b['file']}:{b['line']} score={score(b)} {b['title'][:74]!r}")
+EOF
+total 1151 | unclassified REVIEW: 1
+  248  DEAD_IDOR_FALSIFIED
+  215  DEAD_STAGING_ORACLE
+  210  LIVE_DANGLE
+  107  LIVE_INTROSPECTION
+  101  DEAD_JWT
+   73  NO_BOUNDARY_DEV_ORIGIN
+   45  LIVE_MASSASSIGN
+   40  SCHEMA_INFERRED
+   33  DEAD_SSRF_RELAY
+   33  LIVE_CORS
+   17  DEAD_API_WAF
+   17  UNVERIFIED_WRITE
+    9  NOT_A_FINDING
+    1  REVIEW
+    1  DEAD_EQUIVALENCE_CLAIM
+    1  DECODER_SURVIVOR
+
+=== best candidate per live family (fields, conf, line):
+
+LIVE_CORS  (33 candidates) top5:
+   lead-nemotron3.md:11304 score=(5, 95, 11304) 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Sta'
+   lead-nemotron3.md:11251 score=(5, 95, 11251) 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Sta'
+   lead-nemotron3.md:11198 score=(5, 95, 11198) 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Sta'
+   lead-nemotron3.md:11138 score=(5, 95, 11138) 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Sta'
+   lead-nemotron3.md:11080 score=(5, 95, 11080) 'CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Sta'
+
+LIVE_INTROSPECTION  (107 candidates) top5:
+   lead-nemotron3.md:9888 score=(5, 99, 9888) 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Producti'
+   lead-nemotron3.md:9823 score=(5, 99, 9823) 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Producti'
+   lead-nemotron3.md:9752 score=(5, 99, 9752) 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Producti'
+   lead-nemotron3.md:9688 score=(5, 99, 9688) 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Producti'
+   lead-nemotron3.md:9625 score=(5, 99, 9625) 'GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Producti'
+
+LIVE_MASSASSIGN  (45 candidates) top5:
+   lead-nemotron3.md:11313 score=(5, 85, 11313) 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on User'
+   lead-nemotron3.md:11260 score=(5, 85, 11260) 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on User'
+   lead-nemotron3.md:11207 score=(5, 85, 11207) 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on User'
+   lead-nemotron3.md:11147 score=(5, 85, 11147) 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on User'
+   lead-nemotron3.md:11089 score=(5, 85, 11089) 'Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on User'
+
+LIVE_DANGLE  (210 candidates) top5:
+   lead-nemotron3.md:11322 score=(5, 96, 11322) 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+   lead-nemotron3.md:11269 score=(5, 96, 11269) 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+   lead-nemotron3.md:11216 score=(5, 96, 11216) 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+   lead-nemotron3.md:11156 score=(5, 96, 11156) 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+   lead-nemotron3.md:11098 score=(5, 96, 11098) 'Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps'
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '11300,11335p' leads/lead-nemotron3.md
+[PRIO] graphql-api.app.staging.cineplex.de,9.6,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,7.5,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
+[PRIO] buchung-dev.cineplex.de,6.8,attack_surface=8,business_value=7,tech_exposure=7,gate_ease=8,cloud_surface=6,freshness=6
+[PRIO] bms-dev.cineplex.de,6.5,attack_surface=7,business_value=6,tech_exposure=8,gate_ease=8,cloud_surface=6,freshness=6
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins on Production GraphQL API
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: Production `/` reflects `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` with `ACAO: exact origin` + `ACAC: true`. `OPTIONS /` returns 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`, `ACAH: content-type,authorization`, `ACAC: true` for all three origins (null, localhost:3000, app.staging.cineplex.de). `POST /` executes GraphQL mutations with `ACAO: null` + `ACAC: true`. Staging `/graphql` now 200 parity. `currentUser{id}` byte-identical with/without test cookies (200 UNAUTHENTICATED) — ambient credential acceptance unproven.
+evidence_needed: 1) Confirm a browser from `http://localhost:3000` can issue credentialed POST to prod `/` with `authorization` header and execute a mutation. 2) Verify if any valid session/cookie from `app.cineplex.de` is accepted by prod (test with real session). 3) Confirm staging `/graphql` 200 parity stable.
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -
+impact: If a valid session/cookie is accepted, any page on `localhost:3000` or `app.staging.cineplex.de` can issue credentialed mutations on production — ATO, booking manipulation, notification broadcast, account deletion. Even without ambient credential, reflected dev/staging origins in prod allowlist is a misconfiguration. CVSS 7.5–8.5 depending on credential acceptance.
+testability: AUTH_HELPED (requires valid session for mutation execution; preflight is PASSIVE)
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserPrivileges
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: `CinemaOperatingCompanyData` input object (used in `createCinemaOperatingCompany`/`updateCinemaOperatingCompany`) carries four caller-supplied `accessRight*` Booleans (`accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, `accessRightCampaigning`) plus `cinemasIds` list; these **exact four names** appear on `UserPrivileges` as NON_NULL Booleans derived by server (`accessRightDashboard:Boolean!`, `accessRightFilmStatistics:Boolean!`, `accessRightBonusProgram:Boolean!`, `accessRightCampaigning:Boolean!`); `updateUser(adminCinemaOperatingCompanyIds:[ID!])` mirrors `belongsToCinemaOperatingCompanies`/`adminForCinemas`; staging field sets equal — flags not environment-partitioned.
+evidence_needed: Execute `createCinemaOperatingCompany`/`updateCinemaOperatingCompany` with crafted `accessRight*` + `cinemasIds` against a consented test account (AUTH_HELPED) and verify `UserPrivileges` reflects caller-supplied values.
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+impact: If gates missing or permissive, caller can grant themselves dashboard/film-statistics/bonus-program/campaigning access across arbitrary cinemas — privilege escalation to cinema-operating-company admin; CVSS ~8.0 if exploitable
+testability: AUTH_HELPED
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 96
+reasoning: CNAME→`web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 0 CNAME / A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA); 17th+ consecutive cycle confirmed; sole dangling CNAME in full 14-host sweep (7 dev + 7 systems-zone); automated DoH probe now succeeds (200) after header-format fix; host HTTP 000; claimability requires registering same Azure Container App name in switzerlandnorth region.
+evidence_needed: Claimability attestation (register target Azure Container App name in switzerlandnorth) — passive precondition fully satisfied.
+verify_steps: dig @8.8.8.8 web-dev.cineplex.de CNAME + dig @8.8.8.8 web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A
+impact: Subdomain takeover on scoped dev domain — attacker claims Azure Container App, serves arbitrary content on `web-dev.cineplex.de`; Medium severity (CVSS 5.3–6.1), PASSIVE
+testability: PASSIVE
+[PARKED] jwt_alg_confusion @ auth.cineplex.de: JWKS endpoint 404, no passive key acquisition; auth.cineplex.de login/sso endpoints TLS-dead (525) — no reachable auth surface for active testing
+[PARKED] idor_booking cross-tenant PII proof @ graphql-api.app.cineplex.de: Structural POC complete (4/4 resolvers, 6/6 control gates), but program PII rule requires HUMAN_ONLY for cross-tenant proof — cannot demonstrate without live customer data
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Field exists in prod queryType too; only distinguishing signal is method-mismatch error (descriptive, explicit program exclusion); no code ever extracted
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin SPAs reachable (200), but `/gateway/*` routes return 403/503 at CF edge — exploitability backend-gated, not dead but not actionable without backend state change
+[FINAL] Ranked survivors (by testability × impact):
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '8126,8160p' leads/lead-bigpickle.md
+[PRIO] graphql-api.app.staging.cineplex.de,9.45,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,7.25,attack_surface=6,business_value=5,tech_exposure=8,gate_ease=10,cloud_surface=10,freshness=8
+[HYP] CORS Misconfiguration Permits Credentialed Cross-Origin Mutation Calls Against Production GraphQL Root
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 90
+reasoning: Allowlist enumerates `null`, `http://localhost:3000`, `https://app.staging.cineplex.de`; each reflects exactly with `access-control-allow-credentials: true`. Preflight on `/` returns 204 with `ACAM` containing POST and `ACAH: content-type,authorization` on both environments, so a browser on an allowlisted origin is permitted to issue the credentialed write to the one route that actually accepts POST. Mechanism is confirmed twice-over (response pair + preflight); the residual uncertainty is only whether a real session cookie is accepted. Downgraded95 → 90: impact language in the peer lead ("mutation execution", CVSS 8.5) outruns what was demonstrated.
+evidence_needed: A consented, low-privilege session cookie accepted by the production root, executed from an allowlisted origin; or an explicit statement from the program that bearer tokens in `localStorage` are not ambiently reachable.
+verify_steps: Read-only only — re-run the same preflight against `/` on both envs to confirm stability; enumerate the full allowlist with varied `Origin` values to check for regex/prefix matches such as `https://app.staging.cineplex.de.evil.tld` or a wildcard subdomain pattern.
+impact: Confirmed: unauthorized-origin credentialed write primitive into a mutation-capable production API (booking manipulation, notification broadcast, account deletion reachable through gated mutations). Unproven: theft of an actual session or execution of any mutation. Report as CORS-policy defect with browser-permitted-write impact; do not claim ATO.
+testability: PASSIVE for mechanism, AUTH_HELPED for impact
+[HYP] Caller-Controlled accessRight* / adminCinemaOperatingCompanyIds Inputs Mirror Server-Derived Privilege Fields (Mass Assignment)
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: `CinemaOperatingCompanyData` — the input object for `createCinemaOperatingCompany`/`updateCinemaOperatingCompany` — carries `accessRightDashboard`, `accessRightFilmStatistics`, `accessRightBonusProgram`, `accessRightCampaigning` and `cinemasIds`. Those four names reappear on the output type `UserPrivileges` as server-derived NON_NULL Booleans. `updateUser(userId:ID!, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` and `increaseUserTestingStatus(testingStatus: TestingStatus!)` likewise accept caller-supplied authorization state. The signature is identical on staging, so nothing is environment-partitioned. This is a read/write mirror, which is a strong prior for a mass-assignment defect — and nothing more than a prior until a gate is exercised.
+evidence_needed: One consented low-privilege account creating or updating a cinema-operating-company with `accessRight*` flipped away from the server's own computed values, then reading back `UserPrivileges`; plus the sibling control showing the resolver rejects the same input for an unprivileged caller.
+verify_steps: No live execution from this session — all writes are out of scope here. Offline: enumerate every mutation whose input object contains a field name that also appears on an output privilege type, to size the family before any consented test is scheduled.
+impact: If gates are missing or field-scoped rather than role-scoped, a low-privilege user self-grants dashboard, film-statistics, bonus-program and campaigning rights over arbitrary cinemas — privilege escalation to operating-company admin. Conditional on gate testing; nothing here proves escalation.
+testability: AUTH_HELPED
+[HYP] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 95
+reasoning: CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` returns Status 0; the target resolves NXDOMAIN (Status 3) against the Azure SOA, reproducibly across cycles, as the sole dangle in the 14-host sweep. The precondition half of a subdomain takeover is fully satisfied and the host serves no HTTP surface.
+evidence_needed: Provider-side claimability attestation — that a specific actor can register the exact `web.gentleglacier-dfef6458` name in `switzerlandnorth`, and that doing so yields control of the CNAME.
+verify_steps: PASSIVE — re-resolve CNAME and target via DoH on separate cycles; confirm the target is not merely a typo'd or retired deployment of an existing tenant.
+impact: Takeover precondition only. NXDOMAIN proves the name is unresolvable, not that it is unclaimed; submitting this without claimability evidence is a precondition report, and it must be worded that way.
+testability: PASSIVE
+[PARKED] `idor_booking` authorization omission — **dead**, do not re-open. `contentSectionListByNameAndCinemas` with a valid public cinema ID returns `UNAUTHENTICATED`, which falsifies the decode-before-gate inference. What survives is a Low `MISCONFIG` pre-auth decoder oracle (15 resolvers, 4 contracts) — currently mis-filed under `class: IDOR` in 14 blocks.
+[PARKED] staging confirmation-code oracle (75+ blocks) — REJECTED standalone: field exists in production too, no code extracted, only difference is a descriptive method-mismatch error (excluded class).
+[PARKED] JWT alg/key confusion (26 blocks) — dead: `auth.cineplex.de`/`sso.cineplex.de` have no reachable web surface, JWKS 404.
+[PARKED] `getOnlineTicketingBooking` SSRF (2 blocks) — resolver is root-gated.
+[FINAL] `graphql_introspection` @ both envs — verified13+ cycles, prod 83 queries / 140 mutations, staging identical, zero env partitioning; historically CVSS 7.5 and report-ready in its own right, but displaced from the top-3 by three hypotheses with live impact headroom.
+[FINAL] CORS mechanism — report-ready now; impact section must state "browser-permitted credentialed write primitive", not ATO.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && cat state_bigpickle.json; echo; cat state_nemotron3.json; echo; cat scope.yml | head -40
+{"phase": "POC", "target": "api"}
+{"phase": "POC", "target": "api"}
+programs:
+  cineplex:
+    name: Cineplex Deutschland GmbH & Co. KG / Cineplex Group Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && awk '/^\[HYP\]/{n=NR} /introspect/{print NR": "substr($0,1,100)}' leads/lead-bigpickle.md | tail -12; echo "=== 6481 block:"; sed -n '6481,6500p' leads/lead-bigpickle.md
+7674: [RISK] cineplex: 68 (up 8). Driven by one thing measured six times this cycle: a production API that
+7721: [NEW] `cycle_independence` @ self — my "17th+ consecutive cycle" and "27 cycles" counters conflated 
+7746: [NEW] `cycle_independence` @ self — my "17th+ consecutive cycle" and "27 cycles" counters conflated 
+7795: [NEW] `cycle_independence` @ self — my "17th+ consecutive cycle" and "27 cycles" counters conflated 
+7818: [NEW] `cycle_independence` @ self — my "17th+ consecutive cycle" and "27 cycles" counters conflated 
+7869: reasoning: Full introspection confirmed via POST (200 OK); schema exposes userById(id: ID!), searchU
+8019: [HYP] Production GraphQL introspection leakage
+8023: reasoning: Endpoint not in any REJECTED class; introspection is a known high-value passive check; st
+8039: verify_steps: (1) GET https://graphql-api.app.staging.cineplex.de/ Accept application/json; (2) intr
+8040: [HYP] Production GraphQL introspection leakage
+8044: reasoning: Endpoint not in any REJECTED class; introspection is a known high-value passive check; st
+8159: [FINAL] `graphql_introspection` @ both envs — verified13+ cycles, prod 83 queries / 140 mutations, s
+=== 6481 block:
+[HYP] Unauthenticated GraphQL schema and mutation surface exposure
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 98
+reasoning: Existing redacted manual evidence reports HTTP 200 full introspection on both environments, including 140 mutations and 83 queries on staging and PII-typed authentication/administration operations; no mutation or customer data was executed. Automated records contain no POST evidence, so reproduction remains manual-evidence-dependent.
+evidence_needed: Redacted metadata-only schema reproduction on both hosts with no field values or customer data.
+verify_steps: `GET https://graphql-api.app.cineplex.de/?query=%7B__schema%7BqueryType%7Bfields%7Bname%7D%7D%7D%7D` and the equivalent staging request, with `Accept: application/json` and no Authorization; stop at metadata-only schema data.
+impact: Unauthenticated disclosure of operation names, argument types, PII field names, and mutation surface; Medium-High, previously assessed CVSS 7.5, with no account takeover or data extraction proven.
+testability: PASSIVE
+[HYP] Dangling CNAME for web-dev.cineplex.de
+class: MISCONFIG
+asset: web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io
+confidence: 92
+reasoning: Repeated DoH evidence records an active CNAME to an Azure Container Apps target whose A lookup is NXDOMAIN, with Azure SOA and HTTP 000; 12+ cycles and sole dangle in the swept inventory. Provider-side claimability remains unverified.
+evidence_needed: Azure confirmation that the target resource is released and claimable; do not modify DNS or claim it.
+verify_steps: `GET https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` and `GET https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A`, each with `Accept: application/dns-json`; do not send HTTP requests to the target.
+impact: If claimable, trusted-subdomain takeover enabling phishing or trusted-host abuse; Medium and conditional; current evidence proves dangling DNS only.
+testability: AUTH_HELPED
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: Origin reachability oscillates and `/gateway/*` returns 503 `Wartungsarbeiten`; no reachable authentication logic or reportable impact.  
+[PARKED] staging_testing_oracle @ graphql-api.app.staging.cineplex.de: Authless 200/405 behavior is suggestive, but confirmation-code extraction is unproven and remains corroboration only.
+[0m
+[0m→ [0mRead scripts/sync-issues.py[90m [offset=141, limit=130][0m
+[0m→ [0mRead scripts/sync-issues.py[90m [limit=80, offset=271][0m
+[0m
+[0m← [0mWrite /tmp/opencode/apply_triage.py
+Wrote file successfully.
+[0m
+Now I'll apply the triage. Writing the retag script with a per-bucket verdict trail (tags only — no text is deleted):
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && git stash list && git status --porcelain && cp leads/lead-bigpickle.md /tmp/opencode/backup-bigpickle.md && cp leads/lead-nemotron3.md /tmp/opencode/backup-nemotron3.md && echo "backups made"
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+backups made
+[0m
+[0m$ [0mcd /tmp/opencode && python3 apply_triage.py
+decision counts:
+    392  DUP_LIVE
+    248  DEAD_IDOR_FALSIFIED
+    215  DEAD_STAGING_ORACLE
+    101  DEAD_JWT
+     73  NO_BOUNDARY_DEV_ORIGIN
+     40  SCHEMA_INFERRED
+     33  DEAD_SSRF_RELAY
+     17  DEAD_API_WAF
+     17  UNVERIFIED_WRITE
+      9  NOT_A_FINDING
+      3  KEEP
+      1  REVIEW
+      1  DEAD_EQUIVALENCE_CLAIM
+      1  DECODER_SURVIVOR
+
+lead-bigpickle.md: retagged 604 [HYP]->[PARKED], removed 7 stray class lines
+
+lead-laguna.md: retagged 0 [HYP]->[PARKED], removed 0 stray class lines
+
+lead-ling3.md: retagged 0 [HYP]->[PARKED], removed 0 stray class lines
+
+lead-longcat.md: retagged 0 [HYP]->[PARKED], removed 0 stray class lines
+
+lead-mimo.md: retagged 0 [HYP]->[PARKED], removed 0 stray class lines
+
+lead-nemotron3.md: retagged 547 [HYP]->[PARKED], removed 0 stray class lines
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import io, contextlib, sys
+sys.path.insert(0,'/tmp/opencode')
+buf=io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+print("remaining publishable [HYP]:", len(blocks))
+for b in blocks:
+    print(f"  {b['file']}:{b['line']} class={b.get('class')!r} conf={b.get('confidence')!r} asset={b.get('asset')!r}\n     {b['title'][:80]}")
+EOF
+echo "=== line 8145-8150 in backup:"; sed -n '8143,8148p' /tmp/opencode/backup-bigpickle.md
+remaining publishable [HYP]: 3
+  lead-bigpickle.md:6971 class='MISCONFIG' conf='98' asset='graphql-api.app.{,staging.}cineplex.de'
+     Unauthenticated GraphQL schema and mutation surface exposure
+  lead-bigpickle.md:8724 class='MISCONFIG' conf='90' asset='graphql-api.app.cineplex.de'
+     CORS Misconfiguration Permits Credentialed Cross-Origin Mutation Calls Against P
+  lead-bigpickle.md:8733 class='BUSLOGIC' conf='85' asset='graphql-api.app.cineplex.de'
+     Caller-Controlled accessRight* / adminCinemaOperatingCompanyIds Inputs Mirror Se
+=== line 8145-8150 in backup:
+verify_steps: No live execution from this session — all writes are out of scope here. Offline: enumerate every mutation whose input object contains a field name that also appears on an output privilege type, to size the family before any consented test is scheduled.
+impact: If gates are missing or field-scoped rather than role-scoped, a low-privilege user self-grants dashboard, film-statistics, bonus-program and campaigning rights over arbitrary cinemas — privilege escalation to operating-company admin. Conditional on gate testing; nothing here proves escalation.
+testability: AUTH_HELPED
+[HYP] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+class: MISCONFIG
+asset: web-dev.cineplex.de
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n 'Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App' leads/lead-bigpickle.md
+8742:[PARKED] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+[0m
+[0m→ [0mRead leads/lead-bigpickle.md[90m [limit=4, offset=8741][0m
+[0m
+[0m← [0mEdit leads/lead-bigpickle.md
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
+@@ -8738,10 +8738,9 @@
+ evidence_needed: One consented low-privilege account creating or updating a cinema-operating-company with `accessRight*` flipped away from the server's own computed values, then reading back `UserPrivileges`; plus the sibling control showing the resolver rejects the same input for an unprivileged caller.
+ verify_steps: No live execution from this session — all writes are out of scope here. Offline: enumerate every mutation whose input object contains a field name that also appears on an output privilege type, to size the family before any consented test is scheduled.
+ impact: If gates are missing or field-scoped rather than role-scoped, a low-privilege user self-grants dashboard, film-statistics, bonus-program and campaigning rights over arbitrary cinemas — privilege escalation to operating-company admin. Conditional on gate testing; nothing here proves escalation.
+ testability: AUTH_HELPED
+-[PARKED] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+-verdict: DUPLICATE of the canonical live block for this finding; retained for provenance, not published.
++[HYP] Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container App
+ class: MISCONFIG
+ asset: web-dev.cineplex.de
+ confidence: 95
+ reasoning: CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` returns Status 0; the target resolves NXDOMAIN (Status 3) against the Azure SOA, reproducibly across cycles, as the sole dangle in the 14-host sweep. The precondition half of a subdomain takeover is fully satisfied and the host serves no HTTP surface.
+
+[0m
+[0m$ [0mcd /tmp/opencode && python3 - <<'EOF'
+import io, contextlib, sys, hashlib, re
+sys.path.insert(0,'/tmp/opencode')
+buf=io.StringIO()
+with contextlib.redirect_stdout(buf):
+    from groups import parse_blocks, ROOT
+sys.argv=['x']
+# reuse publisher fingerprint/norm_asset
+import importlib.util
+spec = importlib.util.spec_from_file_location("si", "/home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py")
+# can't import (needs env vars); re-implement identical logic
+def norm_asset(a):
+    a=(a or "").strip().lower().strip("`")
+    a=re.sub(r'^((get|post|put|patch|delete|head|options)s?)[/,\s]+','',a,flags=re.I)
+    a=re.sub(r'\s*\(.*?\)',' ',a); a=re.sub(r'[{}[\],].*$','',a)
+    return re.sub(r'\s+',' ',a).strip()[:120]
+def fingerprint(b):
+    a=norm_asset(b.get("asset","")); c=(b.get("class","OTHER") or "OTHER").strip().lower()[:20]
+    if a: return hashlib.md5(f"{a}|{c}".encode()).hexdigest()[:12]
+blocks=[]
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    blocks += parse_blocks(f.read_text(errors="replace"), f.stem, f.name)
+print("publishable [HYP] blocks:", len(blocks))
+fps={}
+for b in blocks:
+    fp=fingerprint(b); fps.setdefault(fp,[]).append(b)
+    print(f"  {fp}  {b['file']}:{b['line']}  class={b.get('class')} conf={b.get('confidence')}  {b['title'][:66]}")
+print("\ndistinct fingerprints (= tracker issues that would be created):", len(fps))
+# parked counts
+import collections
+c=collections.Counter()
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    for l in f.read_text().splitlines():
+        if l.startswith('[PARKED]'): c[f.name]+=1
+print("\nPARKED tag lines per file:", dict(c), "total", sum(c.values()))
+v=collections.Counter()
+for f in sorted(ROOT.glob("leads/lead-*.md")):
+    for l in f.read_text().splitlines():
+        if l.startswith('verdict:'): v[l[:60]]+=1
+print("\nverdict trail:")
+for k,n in v.most_common(): print(f"  {n:5d}  {k}...")
+EOF
+publishable [HYP] blocks: 4
+  384eae3a082d  lead-bigpickle.md:6971  class=MISCONFIG conf=98  Unauthenticated GraphQL schema and mutation surface exposure
+  3001dc0881c6  lead-bigpickle.md:8724  class=MISCONFIG conf=90  CORS Misconfiguration Permits Credentialed Cross-Origin Mutation C
+  0c3a6747db5d  lead-bigpickle.md:8733  class=BUSLOGIC conf=85  Caller-Controlled accessRight* / adminCinemaOperatingCompanyIds In
+  e6de2c14ee92  lead-bigpickle.md:8742  class=MISCONFIG conf=95  Dangling CNAME web-dev.cineplex.de → Unregistered Azure Container 
+
+distinct fingerprints (= tracker issues that would be created): 4
+
+PARKED tag lines per file: {'lead-bigpickle.md': 850, 'lead-nemotron3.md': 1289} total 2139
+
+verdict trail:
+    391  verdict: DUPLICATE of the canonical live block for this find...
+    248  verdict: FALSIFIED 2026-09-27: a valid public cinema id retu...
+    215  verdict: REJECTED: field also present in production queryTyp...
+    101  verdict: DEAD: auth.cineplex.de JWKS 404 and login/sso are T...
+     73  verdict: NOT REPORTABLE: 194.77.169.121 is Cineplex's own or...
+     40  verdict: SCHEMA-INFERRED ONLY: no live request ever observed...
+     33  verdict: REJECTED: getOnlineTicketingBooking is root-gated (...
+     17  verdict: DEAD: api.cineplex.de returns strict 403 on every m...
+     17  verdict: UNVERIFIABLE HERE: confirming it requires a state-c...
+      9  verdict: NOT A FINDING: no vulnerability asserted (negative ...
+      4  verdict: PARKED pending review: could not be mapped to a con...
+      1  verdict: FALSIFIED: equivalence was measured on GET bodies o...
+      1  verdict: SURVIVING BUT NOT REPORTABLE ON CURRENT EVIDENCE: p...
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n -A1 '^verdict: PARKED pending review' leads/lead-bigpickle.md leads/lead-nemotron3.md
+leads/lead-bigpickle.md:224:verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+leads/lead-bigpickle.md-225-class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+--
+leads/lead-bigpickle.md:8083:verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+leads/lead-bigpickle.md-8084-[LEARN]
+--
+leads/lead-bigpickle.md:8091:verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+leads/lead-bigpickle.md-8092-class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+--
+leads/lead-bigpickle.md:8468:verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+leads/lead-bigpickle.md-8469-class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '222,228p;8081,8086p' leads/lead-bigpickle.md
+[RISK] cineplex: 7/100 — target "api" fully 403-gated at edge; remaining live 200 surface (data-9fc27eb430 relay, profil/preference, cloud, support, mailing, vpn-portal) is the only reachable perimeter; franchise relay carries moderate internal-exposure potential; program forbids touching customer/employee/financial/auth data, so stay strictly passive read-only on the health/build surface and never point a relay reflector at cloud metadata or customer endpoints.
+[PARKED] <title>
+verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+[FINAL]
+[PARKED] 
+verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.
+[LEARN]
+[NEW]
+[NEXT]
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 - <<'EOF'
+from pathlib import Path
+p = Path("leads/lead-bigpickle.md")
+lines = p.read_text().splitlines()
+TEMPLATE = "verdict: NOT A FINDING: unfilled lead template with placeholder fields (<title>, <host/endpoint>); never publishable, the publisher skips titles containing '<'."
+EMPTY = "verdict: NOT A FINDING: empty block artifact from a truncated write; no title, no fields, nothing asserted."
+n = 0
+for i, l in enumerate(lines):
+    if l == "verdict: PARKED pending review: could not be mapped to a confirmed live finding or a recorded verdict.":
+        prev = lines[i-1] if i else ""
+        lines[i] = TEMPLATE if "<" in prev else EMPTY
+        n += 1
+p.write_text("\n".join(lines) + "\n")
+print("rewrote", n, "verdict lines")
+EOF
+grep -c '^verdict:' leads/lead-bigpickle.md leads/lead-nemotron3.md
+rewrote 4 verdict lines
+leads/lead-bigpickle.md:603
+leads/lead-nemotron3.md:547
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mcd /tmp && time curl -sS --http2 -m 20 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36" -H "Origin: https://attacker.example" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D - -o /dev/null 2>&1 | head -25 failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+Publish path is now 4 blocks / 4 fingerprints. Now the CORS open question — does the allowlist reflect *arbitrary* origins, or only the enumerated three?

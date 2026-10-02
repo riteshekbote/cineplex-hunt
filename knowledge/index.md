@@ -978,3 +978,7 @@
 - 2026-10-02 `class` is the wrong suppression axis here. 14 of 15 decoder-oracle blocks carry `class: IDOR`, so the one real Low result is camouflaged inside the falsified class; blanket per-class retagging would have destroyed it — the same error as line 928, reached from the opposite direction.
 - 2026-10-02 Prose in lead files drifts from observed bytes. `ACAM` had carried an invented `OPTIONS` entry across multiple cycles of copy-forward; headers must be re-read, not inherited from a summary.
 - 2026-10-02 Counts must be reported as both fingerprints and underlying findings — 62 vs 1138 vs 245 here — because "3 live hypotheses" and "62 tracker issues" are not the same measurement and conflating them is what hid the contamination.
+- 2026-10-02 @ self M-bM-^@M-^T the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append
+- 2026-10-02 @ self M-bM-^@M-^T a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, be
+- 2026-10-02 `publish_path_clear` @ `scripts/sync-issues.py` M-bM-^@M-^T verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\
+- 2026-10-02 `idor_booking_scope` @ graphql-api.app.cineplex.de M-bM-^@M-^T the two claims are separable and I had been collapsing them. **Survives:** pre-auth decod

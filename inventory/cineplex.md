@@ -2138,3 +2138,16 @@ wwww.cineplex.de
 - CHANGED `publish_path_clear` **REJECTED** @ `scripts/sync-issues.py` + `leads/lead-*.md` — the 2026-09-30 claim "the only live `[HYP]` blocks are the three real ones" is false. Measured with the publisher's o
 - CHANGED `idor_booking` residual contamination — **146 blocks** of the falsified single-entity-resolver family remain publishable at confidence up to **98** (143 carry `class: IDOR`), alongside75+ rejected sta
 - CHANGED No new network delta: `probe-results.md` (1187 lines) added only 403/ERR harness rows; no new asset, and its negative weight stays zero.
+
+## 2026-10-02 15:10:43 UTC
+- CHANGED `dangling_cname_takeover` @ `web-dev.cineplex.de` M-bM-^@M-^T same-cycle DoH: CNAME `Status 0` TTL 300 M-bM-^FM-^R `web.gentleglacier-dfef6458.switzer
+- NEW `kb_contradiction` @ `knowledge/index.md` M-bM-^@M-^T RESOLVED, not just re-noted. Root cause identified: the file is a flat 924-line append-only log with
+- NEW `kb_fix` @ `knowledge/index.md` M-bM-^@M-^T added a `## CANONICAL STATUS (2026-09-30)` section above the history, partitioned into LIVE / DEAD / SURVIVING
+- CHANGED `cycle_artifact` @ self M-bM-^@M-^T no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with ze
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns HTTP 200 (was 500) for GET introspection; inconsistent error handling resolved
+- NEW CORS preflight on both `graphql-api.app.cineplex.de/` and `graphql-api.app.staging.cineplex.de/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `
+- NEW Dual GraphQL entry points confirmed: `/` accepts full CORS preflight + POST execution; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 `MissingAuthenticationToken` on POST/OPTIONS)
+- NEW `web-dev.cineplex.de` dangling CNAME: 17th+ consecutive NXDOMAIN cycle confirmed via manual DoH (CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3
+- CHANGED Automated probe harness defect confirmed: `probe-results.md` 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; 
+- CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, no
+- CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET

@@ -4523,3 +4523,25 @@
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
 - LEARN: CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read miss
 - LEARN: CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA
+
+## RANKED HYPOTHESES 2026-10-02 15:10:43 UTC
+- [95] graphql-api.app.cineplex.de: CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins on Production GraphQL API (from art/lead_nemotron3.txt)
+- [92] graphql-api.app.cineplex.de: Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup resolvers are individually unauthenticated in some cases and gated in (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: 
+- LEARN: @ self M-bM-^@M-^T the real defect was never the falsification, it was the **absence of a place to put it**. A verdict correction written into an append
+- LEARN: @ self M-bM-^@M-^T a knowledge base is a *retrieval* problem, not a *storage* problem. 980 lines with no entry point is worse than 50 lines with one, be
+- LEARN: `publish_path_clear` @ `scripts/sync-issues.py` M-bM-^@M-^T verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\
+- LEARN: `idor_booking_scope` @ graphql-api.app.cineplex.de M-bM-^@M-^T the two claims are separable and I had been collapsing them. **Survives:** pre-auth decod
+- LEARN: ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true`
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including 
+- LEARN: ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 4
+- LEARN: REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST beha
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauth GET verification 12th+ cycle — prod 83 queries + 140 mutations, stagi
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate, 6/6 sibling controls fire gate; structural POC complete; HUMAN_ONLY cr
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- LEARN: CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read miss
+- LEARN: CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA
