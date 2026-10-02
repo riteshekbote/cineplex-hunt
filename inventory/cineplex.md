@@ -2153,3 +2153,18 @@ wwww.cineplex.de
 - CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
 
 ## 2026-10-02 20:01:24 UTC
+
+## 2026-10-02 23:37:25 UTC
+- NEW `graphql_arbitrary_path_catchall` @ graphql-api.app.{,staging.}cineplex.de — the GraphQL server serves the full schema under **any unshadowed path**. Same-cycle, fresh bytes: `GET /zz-cpx-count-probe`
+- CHANGED `getonly_graphql_mirrors` @ graphql-api.app.cineplex.de — remediation scope was recorded as "2 paths × 2 envs". That is wrong and understates the fix. `/graphql`, `/api/graphql`, `/gql` return 403 `Mi
+- CHANGED `idor_booking` — the falsified claim has left the publish path. `class: IDOR` blocks went **297 → 0**, verified by executing `parse_blocks` + `fingerprint` from `scripts/sync-issues.py` over the glob.
+- CHANGED publish path — junk fingerprint `58ac107c6a91` went 8 blocks → **0**. It had been merging the live CORS finding, the falsified systemic IDOR, the decoder oracle and introspection into **one tracker is
+- CHANGED `decoder_error_oracle` @ graphql-api.app.cineplex.de — retained and promoted to `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`). Low severity. 15 resolvers across 4 decoder contracts and 2 argume
+- CHANGED graphql-api.app.staging.cineplex.de/graphql: now returns 200 (was 500) — staging GraphQL entry point parity with prod restored
+- CHANGED web-dev.cineplex.de: automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121): TCP-reachable (SPAs 200/308→403); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED cors_preflight_credentialed_post: re-verified same-cycle 2/2 (prod + staging) with Origin: https://app.staging.cineplex.de → 204, ACAC: true, ACAM: GET,HEAD,PUT,PATCH,POST,DELETE, ACAH: authorization
+- CHANGED ACAM method list: observed value does NOT include OPTIONS (GET,HEAD,PUT,PATCH,POST,DELETE) — immaterial to finding
+- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+- CHANGED idor_booking residual contamination: 146 blocks of falsified single-entity-resolver family remain in leads at confidence up to 98 alongside 75+ rejected staging oracle blocks

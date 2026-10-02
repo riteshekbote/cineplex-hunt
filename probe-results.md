@@ -1201,3 +1201,8 @@ https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
 ## 2026-10-02 20:01:26 UTC
 https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-02 23:37:29 UTC
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403

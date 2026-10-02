@@ -8346,3 +8346,20 @@ class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 95
 reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) throw FORBIDDEN — on the identical endpoint, both envs, n
+## 2026-10-02 23:37:10 UTC [target] (model bigpickle)
+[HYP] BLOCKS     1173
+[HYP] headers asserting IDOR/BOLA/ownership (retag candidates): 302
+[HYP] BLOCKS     874
+[HYP] BLOCKS     851
+[NEW] `graphql_arbitrary_path_catchall` @ graphql-api.app.{,staging.}cineplex.de — the GraphQL server serves the full schema under **any unshadowed path**. Same-cycle, fresh bytes: `GET /zz-cpx-count-probe` → 200 introspection and `GET /nonexistent-cpx-probe-8472` → 200 introspection, on prod **and** staging. There is no path routing in the app. `/playground`, `/graphiql`, `/sandbox` are not console surfaces — each returns GraphQL's own `Must provide query.` (HTTP 400, 18 bytes), i.e. the same catch-all. Severity: Medium, class MISCONFIG, confidence 95.
+[CHANGED] `getonly_graphql_mirrors` @ graphql-api.app.cineplex.de — remediation scope was recorded as "2 paths × 2 envs". That is wrong and understates the fix. `/graphql`, `/api/graphql`, `/gql` return 403 `MissingAuthenticationTokenException` with `x-amzn-requestid` (re-verified same-cycle), but they are the *exception*, not the rule. Closing two paths leaves the schema exposed everywhere else. Remediation must be app-level (introspection off, or auth required) plus removal of the three GW routes.
+[CHANGED] `idor_booking` — the falsified claim has left the publish path. `class: IDOR` blocks went **297 → 0**, verified by executing `parse_blocks` + `fingerprint` from `scripts/sync-issues.py` over the glob. Total `[HYP]` blocks 1173 → 851, fingerprints 63 → 52, distinct titles 251 → 184.
+[CHANGED] publish path — junk fingerprint `58ac107c6a91` went 8 blocks → **0**. It had been merging the live CORS finding, the falsified systemic IDOR, the decoder oracle and introspection into **one tracker issue slot**, so the falsified IDOR was reaching a reviewer *inside* the live CORS issue no matter how IDOR-class blocks were retagged.
+[CHANGED] `decoder_error_oracle` @ graphql-api.app.cineplex.de — retained and promoted to `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`). Low severity. 15 resolvers across 4 decoder contracts and 2 argument shapes reach the entity-lookup layer pre-auth and return a typed decoder error with stack frames. It is an ordering/error oracle, never an IDOR.
+[PRIO]
+[HYP]
+[PARKED]
+[FINAL]
+[NEXT]
+[LEARN]
+[RISK]
