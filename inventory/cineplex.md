@@ -2131,3 +2131,10 @@ wwww.cineplex.de
 - NEW `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable this cycle (SPAs 308→403); `/gateway/*` routes still return 403 at CF edge after redirect — exploitability rema
 
 ## 2026-10-02 02:20:52 UTC
+
+## 2026-10-02 08:45:45 UTC
+- CHANGED `cors_preflight_credentialed_post` @ `graphql-api.app.{,staging.}cineplex.de` — re-verified same-cycle 2/2 (08:42:02Z / 08:42:15Z, 13s apart): `OPTIONS /` with `Origin: https://app.staging.cineplex.de
+- CHANGED `cors_acam_method_list` @ same — lead text and multiple knowledge entries claim `ACAM` includes `OPTIONS`; observed value does **not** (`GET,HEAD,PUT,PATCH,POST,DELETE`). Immaterial to the finding, wr
+- CHANGED `publish_path_clear` **REJECTED** @ `scripts/sync-issues.py` + `leads/lead-*.md` — the 2026-09-30 claim "the only live `[HYP]` blocks are the three real ones" is false. Measured with the publisher's o
+- CHANGED `idor_booking` residual contamination — **146 blocks** of the falsified single-entity-resolver family remain publishable at confidence up to **98** (143 carry `class: IDOR`), alongside75+ rejected sta
+- CHANGED No new network delta: `probe-results.md` (1187 lines) added only 403/ERR harness rows; no new asset, and its negative weight stays zero.

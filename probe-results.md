@@ -1185,3 +1185,8 @@ https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
 ## 2026-10-02 02:20:55 UTC
 https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-02 08:45:49 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://app.staging.cineplex.de.evil.tld` -> ERR <urlopen error [Errno -2] Name or service not know
