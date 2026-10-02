@@ -2151,3 +2151,5 @@ wwww.cineplex.de
 - CHANGED Automated probe harness defect confirmed: `probe-results.md` 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate; 
 - CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, no
 - CHANGED All structural findings (introspection, IDOR, mass-assignment, CORS, IDOR chaining, physical-to-profile) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
+
+## 2026-10-02 20:01:24 UTC
