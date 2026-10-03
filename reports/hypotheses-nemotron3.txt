@@ -1,7 +1,10 @@
-## 2026-10-02 23:31:53 UTC [target] (model nemotron3)
-[CHANGED] graphql-api.app.staging.cineplex.de/graphql: now returns 200 (was 500) — staging GraphQL entry point parity with prod restored
-[CHANGED] web-dev.cineplex.de: automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
-[CHANGED] buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121): TCP-reachable (SPAs 200/308→403); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+## 2026-10-03 02:19:10 UTC [target] (model nemotron3)
+[NEW] graphql-api.app.staging.cineplex.de/graphql: now returns 200 (was 500) — staging GraphQL entry point parity with prod restored
+[NEW] web-dev.cineplex.de: automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+[NEW] buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121): TCP-reachable (SPAs 200/308→403); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+[NEW] graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de — GraphQL server serves full schema under any unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema)
+[CHANGED] getonly_graphql_mirrors remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
+[CHANGED] idor_booking residual contamination cleared from publish path: `class: IDOR` blocks went 297→0 via publisher's parse_blocks; decoder oracle retained as `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`)
 [CHANGED] probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
 [CHANGED] cors_preflight_credentialed_post: re-verified same-cycle 2/2 (prod + staging) with Origin: https://app.staging.cineplex.de → 204, ACAC: true, ACAM: GET,HEAD,PUT,PATCH,POST,DELETE, ACAH: authorization
 [CHANGED] ACAM method list: observed value does NOT include OPTIONS (GET,HEAD,PUT,PATCH,POST,DELETE) — immaterial to finding
@@ -47,7 +50,7 @@ testability: PASSIVE
 [NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -` — confirm credentialed preflight response for dev origin on production (6/6 origins across prod+staging, all methods)
 [LEARN] ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
 [LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
-[LEARN] ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 2 paths × 2 envs.
+[LEARN] ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 4 paths × 2 envs.
 [LEARN] REJECTED my own 2026-09-28 "4 equivalent unauthenticated full-schema GraphQL surfaces" — measured only GET body equivalence, generalized to transport; POST behavior differs.
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: same-cycle unauth GET verification 12th+ cycle — prod 83 queries + 140 mutations, staging 83 identical, zero env partitioning.
 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 id-resolvers decode-before-gate, 6/6 sibling controls fire gate; structural POC complete; HUMAN_ONLY cross-tenant proof.

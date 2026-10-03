@@ -2168,3 +2168,24 @@ wwww.cineplex.de
 - CHANGED ACAM method list: observed value does NOT include OPTIONS (GET,HEAD,PUT,PATCH,POST,DELETE) — immaterial to finding
 - CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
 - CHANGED idor_booking residual contamination: 146 blocks of falsified single-entity-resolver family remain in leads at confidence up to 98 alongside 75+ rejected staging oracle blocks
+
+## 2026-10-03 02:26:36 UTC
+- CHANGED graphql-api.app.staging.cineplex.de/graphql: now returns 200 (was 500) — staging GraphQL entry point parity with prod restored
+- CHANGED web-dev.cineplex.de: automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121): TCP-reachable (SPAs 200/308→403); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED cors_preflight_credentialed_post: re-verified same-cycle 2/2 (prod + staging) with Origin: https://app.staging.cineplex.de → 204, ACAC: true, ACAM: GET,HEAD,PUT,PATCH,POST,DELETE, ACAH: authorization
+- CHANGED ACAM method list: observed value does NOT include OPTIONS (GET,HEAD,PUT,PATCH,POST,DELETE) — immaterial to finding
+- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+- CHANGED idor_booking residual contamination: 146 blocks of falsified single-entity-resolver family remain in leads at confidence up to 98 alongside 75+ rejected staging oracle blocks
+- NEW graphql-api.app.staging.cineplex.de/graphql: now returns 200 (was 500) — staging GraphQL entry point parity with prod restored
+- NEW web-dev.cineplex.de: automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121): TCP-reachable (SPAs 200/308→403); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- NEW graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de — GraphQL server serves full schema under any unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema)
+- CHANGED getonly_graphql_mirrors remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
+- CHANGED idor_booking residual contamination cleared from publish path: `class: IDOR` blocks went 297→0 via publisher's parse_blocks; decoder oracle retained as `class: ACCESS_CONTROL` (fingerprint `4ad65631f7
+- CHANGED probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED cors_preflight_credentialed_post: re-verified same-cycle 2/2 (prod + staging) with Origin: https://app.staging.cineplex.de → 204, ACAC: true, ACAM: GET,HEAD,PUT,PATCH,POST,DELETE, ACAH: authorization
+- CHANGED ACAM method list: observed value does NOT include OPTIONS (GET,HEAD,PUT,PATCH,POST,DELETE) — immaterial to finding
+- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+- CHANGED idor_booking residual contamination: 146 blocks of falsified single-entity-resolver family remain in leads at confidence up to 98 alongside 75+ rejected staging oracle blocks
