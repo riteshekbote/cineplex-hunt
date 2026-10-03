@@ -1220,3 +1220,8 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 ## 2026-10-03 13:32:52 UTC
 https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-03 17:38:46 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400

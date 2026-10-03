@@ -2212,3 +2212,17 @@ wwww.cineplex.de
 - CHANGED `publish_path_clear` REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
 - CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
 - CHANGED `probe-results.md`: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+
+## 2026-10-03 17:38:42 UTC
+- NEW `cycle_artifact` @ self — `probe-results.md` cycle `## 2026-10-03 13:32:52 UTC` executed but is the same malformed-harness output class (trailing-backtick URLs, `SSLV3_ALERT_HANDSHAKE_FAILURE`, bare-G
+- CHANGED `cors_preflight_credentialed_post` @ graphql-api.app.cineplex.de — reverified same-cycle with balanced curl. `OPTIONS /` prod → `HTTP/2 204`, `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HE
+- CHANGED `graphql_arbitrary_path_catchall` @ graphql-api.app.cineplex.de — prior remediation scope "2 paths × 2 envs" was measured on the three named GET mirrors only. `GET /totally/unknown/path/xyz?query={__t
+- CHANGED `harness_defect` @ .github/workflows/hunt.yml:207-225 — root cause located. Line 207 `pat=re.compile(r'https?://[^\s"\)\]\}]+')` excludes whitespace/`"`/`)`/`]`/`}` but **not** backtick, and line 210 
+- CHANGED `graphql-api.app.staging.cineplex.de/graphql` now returns 200 (was 500) — staging GraphQL entry point parity with prod confirmed live
+- CHANGED `web-dev.cineplex.de` automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED `probe-results.md`: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED `graphql_arbitrary_path_catchall` @ `graphql-api.app.{,staging.}cineplex.de` — GraphQL server serves full schema under any unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema)
+- CHANGED `getonly_graphql_mirrors` remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
+- CHANGED `idor_booking` residual contamination cleared from publish path: `class: IDOR` blocks went 297→0 via publisher's `parse_blocks`; decoder oracle retained as `class: ACCESS_CONTROL` (fingerprint `4ad656
+- CHANGED `cors_preflight_credentialed_post` re-verified same-cycle 2/2 (prod + staging) with `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` → 204, `ACAC: true`, `ACAM: GET,HEAD,P
