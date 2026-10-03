@@ -8447,3 +8447,4 @@ class: IDOR
 asset: graphql-api.app.cineplex.de
 confidence: 95
 reasoning: Authless GET shows 4/4 id-resolvers (userById/invoice/order/ticket) reach resolver decode with 200 INVALID_ID + decodePublicId, while 4/4 gate siblings (searchUsers ROLE, adminUsers ROOT, userByQr DEVICE, voucherInstanceByQR POS) throw FORBIDDEN — on the identical endpoint, both envs, n
+## 2026-10-03 13:32:39 UTC [target] (model bigpickle)

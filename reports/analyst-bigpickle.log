@@ -68893,3 +68893,170 @@ Both fixed in `scripts/sync-issues.py:112` + the lead file. Result: **1187 block
 **302 IDOR blocks are still live in the corpus**, including titles asserting "resolver auth gate absent", which our canonical status *falsifies*. The earlier claim that IDOR went 297→0 was wrong — and my junk-line fix actually raised it 297→302, because it restored those blocks' declared `class: IDOR`. Retagging them to `ACCESS_CONTROL` changes what ships, so I stopped rather than bulk-editing 302 blocks unilaterally.
 
 Want me to (a) bulk-retag the falsified IDOR blocks to `ACCESS_CONTROL`, (b) suppress them as `LEARN`, or (c) leave them for per-block review?
+===== ANALYST bigpickle 2026-10-03 13:32:49 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+H="https://graphql-api.app.cineplex.de"
+echo "=== P1: attacker origin (arbitrary) preflight on / ==="
+curl -sS --http2 -m 20 -A "$UA" -o /tmp/p1.txt -D - -X OPTIONS "$H/" \
+  -H "Origin: https://attacker-cpx-probe.example" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type,authorization" | sed -n '1,25p'
+echo "--- body ---"; head -c 300 /tmp/p1.txt; echo
+sleep 2
+echo "=== P2: preflight on ARBITRARY unshadowed path (catchall x CORS) ==="
+curl -sS --http2 -m 20 -A "$UA" -o /tmp/p2.txt -D - -X OPTIONS "$H/zz-cpx-probe-cors" \
+  -H "Origin: https://app.staging.cineplex.de" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type,authorization" | sed -n '1,25p'
+echo "--- body ---"; head -c 300 /tmp/p2.txt; echo
+=== P1: attacker origin (arbitrary) preflight on / ===
+HTTP/2 500 
+date: Sat, 03 Oct 2026 13:29:12 GMT
+content-type: text/html; charset=utf-8
+x-amzn-requestid: a4c7ac30-9603-447f-99f6-34289a952779
+x-amzn-remapped-content-length: 1004
+content-security-policy: default-src 'none'
+x-amz-apigw-id: Eq1uXHQcFiAEOHw=
+x-content-type-options: nosniff
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6ac10328-368ae0ed716ed811249cfb8c;Parent=2cb88484fdf8c108;Sampled=0;Lineage=1:2b27107c:0
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a44c4b5a0f645f97-IAD
+alt-svc: h3=":443"; ma=86400
+
+--- body ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Error: Not allowed by CORS<br> &nbsp; &nbsp;at origin (/var/task/graphql.js:47459:17)<br> &nbsp; &nbsp;at /var/task/node_modules/cors/lib/index.js:219:13<br> &nbsp; &nbsp;at optionsCallback (/var/
+=== P2: preflight on ARBITRARY unshadowed path (catchall x CORS) ===
+HTTP/2 403 
+date: Sat, 03 Oct 2026 13:29:14 GMT
+content-type: application/json
+content-length: 42
+x-amzn-requestid: 99e61081-a06c-4c11-8e27-061cdd1abcc1
+x-amzn-errortype: MissingAuthenticationTokenException
+x-amz-apigw-id: Eq1uuEcwFiAEfpQ=
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a44c4b68bc34787b-IAD
+alt-svc: h3=":443"; ma=86400
+
+--- body ---
+{"message":"Missing Authentication Token"}
+[0m
+## Objective
+- Continue the Cineplex API POC/triage with `phase=POC` and `target=api`, reconciling stale findings before producing the required eight-step structured report.
+- Prioritize evidence-backed logic flaws; use only passive/read-only probes and never expose customer, employee, financial, or authentication data.
+
+## Important Details
+- Scope is limited to Cineplex-owned infrastructure; primary high-value surfaces are `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, and scoped dev infrastructure.
+- Live probing is passive-first, ≤1 rps, and limited to GET/HEAD/OPTIONS; no live mutations, auth bypasses, or customer-data tests. Mass-assignment execution is `AUTH_HELPED` only.
+- The eventual output must contain only: `[NEW]/[CHANGED]` or `NO_DELTA`, `[PRIO]`, at most three strict-schema `[HYP]` blocks, `[PARKED]/[FINAL]`, exactly one `[NEXT]`, `[LEARN]`, and `[RISK]`.
+- Priority formula: `priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f`, using attack surface, business value, tech exposure, gate ease, cloud surface, and freshness.
+- `knowledge/index.md` has a `## CANONICAL STATUS (2026-09-30)` section that supersedes contradictory append-only history; later corrections outrank older accepted claims.
+- Automated evidence is unreliable: `probe-results.md` has zero successful POST captures, urllib commonly receives Cloudflare 403, and malformed trailing-backtick URLs receive 400. Prefer balanced `curl --http2` with browser UA.
+
+## Work State
+### Completed
+- Passive inventory/CT sweep is exhausted at the 132-host baseline; no new non-inventory asset was found.
+- Unauthenticated GraphQL schema exposure is manually confirmed on production and staging: 385 types, 44 `INPUT_OBJECT` types, 83 active Query names/140 active Mutation names, and identical environment partitioning. Full schema and object/input bodies were read.
+- `graphql-api.app.cineplex.de/` accepts historical GraphQL POST execution; `/graphql`, `/api/graphql`, and `/gql` are GET-only mirrors returning API Gateway `MissingAuthenticationTokenException` on POST/OPTIONS. Arbitrary unshadowed GET paths also expose the schema.
+- CORS is confirmed on production and staging: allowlist reflects `http://localhost:3000`, `https://app.staging.cineplex.de`, and `null` with `Access-Control-Allow-Credentials: true`; `OPTIONS /` returns 204 with credentialed POST/authorization preflight support.
+- Observed `ACAM` is `GET,HEAD,PUT,PATCH,POST,DELETE`; it does **not** include `OPTIONS`, correcting copied lead text.
+- The old systemic IDOR claim was falsified: a valid public cinema ID returned `UNAUTHENTICATED` on a gated resolver. `INVALID_ID` versus `UNAUTHENTICATED` proves decoder ordering, not missing authorization.
+- A low-severity pre-auth decoder oracle remains: 15 resolvers, four decoder contracts, scalar and list ID decoding; no cross-tenant PII or IDOR has been demonstrated.
+- `getOnlineTicketingBooking` is root-gated; the SSRF hypothesis is closed. `staging_testing_oracle` is rejected as descriptive/method-mismatch evidence with no code extracted.
+- `web-dev.cineplex.de` remains a passive dangling-CNAME candidate: CNAME `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN plus Azure SOA, host HTTP 000; provider claimability is still unproven.
+- `auth.cineplex.de` JWKS/OIDC paths are 404; `login.cineplex.de` and `sso.cineplex.de` are TLS-dead/525; `api.cineplex.de` remains strict-403 across tested methods.
+- Relay `/metrics`/broker saturation is descriptive IOMB telemetry with no unauthenticated manipulation path and is rejected.
+- Historical mutation-argument claim “no injection vectors” was corrected: the earlier name-only read missed URL/credential-shaped arguments; severity must not rely on that old claim.
+
+### Active
+- Highest-confidence live hypothesis is CORS misconfiguration on the production GraphQL API, currently ranked around 95; it is a policy/browser-impact finding, not a standalone OPTIONS report.
+- `BUSLOGIC` mass-assignment lead at `graphql-api.app.cineplex.de` remains schema-supported but unproven: `CinemaOperatingCompanyData` accepts four `accessRight*` flags and `cinemasIds`; matching fields appear on derived `UserPrivileges`; `updateUser` and `increaseUserTestingStatus` are additional candidates. Testability is `AUTH_HELPED`.
+- The decoder oracle should be reported only as low-severity `ACCESS_CONTROL`; the old `class: IDOR` hypothesis and cross-tenant claims must be suppressed.
+- `graphql_arbitrary_path_catchall` and the root-versus-mirror transport distinction need to be included in remediation scope, not treated as separate duplicate vulnerabilities.
+- `buchung-dev.cineplex.de`/`bms-dev.cineplex.de` origin access remains backend-gated: public Cloudflare responses are 403 while origin SPAs sometimes return 200; `/gateway/*` is 503/403 depending on redirect/state.
+- The lead ranking still contains a stale high-confidence “systemic unauthenticated IDOR” entry; it must be replaced by the falsification and decoder-oracle result.
+
+### Blocked
+- Mass-assignment confirmation requires a consented test account and mutation execution, which current rules prohibit.
+- Any cross-tenant PII/ownership proof remains `HUMAN_ONLY`; no live customer IDs may be used.
+- Dangling-CNAME claimability requires provider-side registration/attestation.
+- The publisher state is contradictory: one entry reports `class: IDOR` blocks `297→0`, while the current lead tail still says `class: IDOR lines: 158` and contains stale `[HYP]` blocks. Measure the corpus directly before publishing.
+- `probe-results.md` remains harness-limited and cannot establish absence of POST capability or route behavior.
+- `reposcan` is unconfigured (`TARGET_ORG not configured`); one triage run ended with `UnknownError`.
+
+## Next Move
+1. Run the single read-only CORS preflight request: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -`
+2. Execute the publisher’s own `parse_blocks`/`fingerprint` logic from `scripts/sync-issues.py` over `leads/lead-*.md`; confirm the actual `class: IDOR` count is zero before generating the final `[NEXT]`/`[FINAL]` blocks. Do not execute the mass-assignment mutation.
+
+## Relevant Files
+- `scope.yml`: authoritative program scope and exclusions.
+- `inventory/cineplex.md`: 132-host Cineplex inventory and passive-recon baseline.
+- `knowledge/index.md`: canonical status section, corrections, historical findings, and superseded claims.
+- `probe-results.md`: automated probe log; latest context reports 1192 lines and zero POST probes.
+- `scripts/sync-issues.py`: publisher parser (`parse_blocks`, `[HYP]` matching near line 57) and asset/class fingerprint logic near line 112.
+- `leads/lead-bigpickle.md`: source of stale IDOR and decoder-oracle hypotheses.
+- `leads/lead-nemotron3.md`: source of CORS and mass-assignment hypotheses.
+- `art/lead_bigpickle.txt`: stale ranked IDOR hypothesis requiring correction.
+- `art/lead_nemotron3.txt`: ranked CORS hypothesis and preflight lead.
+- `reports/analyst-nemotron3.log`: cross-analyst output; explicitly untrusted and not evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+H="https://graphql-api.app.cineplex.de"
+echo "=== P3: GET arbitrary path, no Origin ==="
+curl -sS --http2 -m 20 -A "$UA" -o /tmp/p3.txt -D - "$H/zz-cpx-probe-cors" | sed -n '1,14p'
+echo "len=$(wc -c </tmp/p3.txt)"; sleep 2
+echo "=== P4: GET arbitrary path WITH allowlisted Origin ==="
+curl -sS --http2 -m 20 -A "$UA" -o /tmp/p4.txt -D - "$H/zz-cpx-probe-cors" -H "Origin: https://app.staging.cineplex.de" | sed -n '1,20p'
+echo "len=$(wc -c </tmp/p4.txt)"
+=== P3: GET arbitrary path, no Origin ===
+HTTP/2 400 
+date: Sat, 03 Oct 2026 13:32:28 GMT
+content-type: text/html; charset=utf-8
+content-length: 18
+x-amzn-requestid: 584f8f47-d289-454a-8f65-feb71c53e3af
+x-amzn-remapped-content-length: 18
+x-amz-apigw-id: Eq2M-FctliAEQfg=
+vary: Origin
+etag: W/"12-7JEJwpG8g89ii7CR/6hhfN27Q+k"
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6ac103ec-2457947909eb801522d2c43e;Parent=42362bc470f336a7;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+len=18
+=== P4: GET arbitrary path WITH allowlisted Origin ===
+HTTP/2 400 
+date: Sat, 03 Oct 2026 13:32:30 GMT
+content-type: text/html; charset=utf-8
+content-length: 18
+x-amzn-requestid: a913ca87-6227-4259-b855-9a1fd3e78b90
+access-control-allow-origin: https://app.staging.cineplex.de
+x-amzn-remapped-content-length: 18
+x-amz-apigw-id: Eq2NUHvBFiAEC0g=
+vary: Origin
+etag: W/"12-7JEJwpG8g89ii7CR/6hhfN27Q+k"
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6ac103ee-186c1aa77cb132dd4cc905e7;Parent=17586db1c0aa150b;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a44c50315c9a1b5c-IAD
+alt-svc: h3=":443"; ma=86400
+
+len=18
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mecho "--- P1 body (attacker origin) ---"; head -c 700 /tmp/p1.txt; echo; echo "--- P2 body ---"; cat /tmp/p2.txt; echo; echo "--- P3 body ---"; cat /tmp/p3.txt; echo; echo "--- P4 body ---"; cat /tmp/p4.txt failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
