@@ -1,11 +1,8 @@
-## 2026-10-04 09:16:55 UTC [target] (model nemotron3)
-[NEW] graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point now matches prod exactly
-[NEW] graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: GraphQL server serves full schema under ANY unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema) — remediation scope is path-pattern × 2 envs, not named mirrors
-[NEW] getonly_graphql_mirrors remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
-[NEW] harness_defect @ .github/workflows/hunt.yml:207-225: root cause located — URL regex excludes whitespace/`"`/`)`/`]`/`}` but NOT backtick; urllib UA carries `(passive verifier)` suffix (→ WAF 403 bot-gate); `urls[:12]` truncates coverage; automated log 403/400 are harness artifacts
-[CHANGED] cors_preflight_credentialed_post re-verified same-cycle 2/2 (prod + staging) with `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` → 204, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`
-[CHANGED] publish_path_clear REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
-[CHANGED] idor_booking residual contamination cleared from publish path: `class: IDOR` blocks went 297→0 via publisher's `parse_blocks`; decoder oracle retained as `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`)
+## 2026-10-04 14:50:30 UTC [target] (model nemotron3)
+[CHANGED] graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point now matches prod exactly
+[CHANGED] graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: GraphQL server serves full schema under ANY unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema) — remediation scope is path-pattern × 2 envs, not named mirrors
+[CHANGED] getonly_graphql_mirrors remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
+[CHANGED] harness_defect @ .github/workflows/hunt.yml:207-225: root cause located — URL regex excludes whitespace/`"`/`)`/`]`/`}` but NOT backtick; urllib UA carries `(passive verifier)` suffix (→ WAF 403 bot-gate); `urls[:12]` truncates coverage
 [CHANGED] web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
 [CHANGED] buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
 [CHANGED] probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
@@ -24,7 +21,7 @@ reasoning: Production `/` reflects `Origin: http://localhost:3000` and `Origin: 
 evidence_needed: 1) Confirm a browser from `http://localhost:3000` can issue credentialed POST to prod `/` with `authorization` header and execute a mutation. 2) Verify if any valid session/cookie from `app.cineplex.de` is accepted by prod (test with real session). 3) Confirm staging `/graphql` 200 parity stable.
 verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -X OPTIONS "https://graphql-api.app.cineplex.de/" -D -
 impact: If a valid session/cookie is accepted, any page on `localhost:3000` or `app.staging.cineplex.de` can issue credentialed mutations on production — ATO, booking manipulation, notification broadcast, account deletion. Even without ambient credential, reflected dev/staging origins in prod allowlist is a misconfiguration. CVSS 7.5–8.5 depending on credential acceptance.
-testability: AUTH_HELPED (requires valid session for mutation execution; preflight is PASSIVE)
+testability: AUTH_HELPED
 [HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Mirror on UserPrivileges
 class: BUSLOGIC
 asset: graphql-api.app.cineplex.de
