@@ -8658,3 +8658,4 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200); remediation scope is path-pattern × 2 envs, not named mirrors.
 [LEARN] CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: backtick not excluded (→ 400), UA includes “(passive verifier)” (→ WAF 403 bot-gate), urls[:12] truncates coverage. Automated log 403/400 are harness artifacts; conclusions must not rely on its silence.
 [RISK] cineplex: 88 reason: top three survivors require human execution (AUTH_HELPED/HUMAN_ONLY) and cannot be validated by automated probes; automated probe-results.md is known-defective harness (400/403 artifacts), so coverage metrics unreliable. Confidence in those three is high from same-cycle manual reads; program-wide automated confidence is low.
+## 2026-10-04 02:49:04 UTC [target] (model bigpickle)
