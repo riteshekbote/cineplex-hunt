@@ -2294,3 +2294,14 @@ wwww.cineplex.de
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics
 
 ## 2026-10-04 18:43:45 UTC
+
+## 2026-10-04 22:09:21 UTC
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- NEW data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11
+- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+- CHANGED harness_defect @ .github/workflows/hunt.yml — prior cycle recorded "three verifier defects (backtick, UA, urls[:12])". That was an UNDERCOUNT. Working the fix and re-running the extractor offline foun
+- CHANGED harness_defect @ .github/workflows/hunt.yml — all seven fixed and verified offline (YAML parses, embedded ROBOT_PY compiles, extractor re-run against the real 16-file corpus). Post-fix extraction: 414
+- CHANGED publisher_defect @ scripts/sync-issues.py — fingerprint is md5(asset|class), so cosmetic asset-string differences in the leads mint separate tracker issues for one root cause. Added in-run near-duplic
+- CHANGED publisher_defect @ scripts/sync-issues.py:153 — `ensure_label()` never returned the label object in either branch (get_label result discarded, create_label result discarded). Latent until the retracti
