@@ -70996,3 +70996,1216 @@ scripts/sync-issues.py
 ?? reports/POC-phase-structured-analysis.md
 [0m
 Changes: verifier fixes (YAML), publisher suppression gate (Python), and structured analysis written to reports/. No live probing done; read-only. User requested concise final answer.Wrote `reports/POC-phase-structured-analysis.md` (72 lines) summarizing POC-phase state with the 3 ranked survivors, explicit falsifications (IDOR retracted), supporting evidence, and required human/consented steps. Fixed `.github/workflows/hunt.yml`: backtick excluded from URL regex, `strip()` includes backtick, UA updated to Chrome 120.0, verifier cap raised to 40. Added suppression gate in `scripts/sync-issues.py` to drop falsified IDOR blocks for `graphql-api.app.cineplex.de` (contentSectionListByNameAndCinemas→selectedCinemaIdsDb) before publishing; kept lead audit trail intact. No live probing/mutations.
+===== ANALYST bigpickle 2026-10-04 09:22:05 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run the 8 steps. First, let me verify the current state of the three survivors with same-cycle read-only probes rather than re-reading prior leads.
+[0m$ [0mdate -u; echo "---"; wc -l probe-results.md 2>/dev/null; echo "---TAIL---"; tail -20 probe-results.md 2>/dev/null
+Sun Oct  4 09:15:52 UTC 2026
+---
+1246 probe-results.md
+---TAIL---
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
+
+## 2026-10-03 20:30:26 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME&cd=true -> 200 len=?
+https://graphql-api.app.cineplex.de/graphql -> HTTP 403
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME` -> HTTP 400
+
+## 2026-10-03 23:26:55 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME -> 200 len=?
+
+## 2026-10-04 02:49:18 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+[0m
+[0m$ [0mls -la; echo "---LEADS---"; ls -la leads/ 2>/dev/null; echo "---SCRIPTS---"; ls -la scripts/ 2>/dev/null
+total 1256
+drwxr-xr-x 12 runner runner   4096 Oct  4 09:15 .
+drwxr-xr-x  3 runner runner   4096 Oct  4 09:15 ..
+drwxr-xr-x  7 runner runner   4096 Oct  4 09:15 .git
+drwxr-xr-x  3 runner runner   4096 Oct  4 09:15 .github
+-rw-r--r--  1 runner runner   1923 Oct  4 09:15 README.md
+-rw-r--r--  1 runner runner    185 Oct  4 09:15 analyst-out.txt
+-rw-r--r--  1 runner runner 554045 Oct  4 09:15 analyst-prompt.txt
+-rw-r--r--  1 runner runner 550088 Oct  4 09:15 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 leads
+-rw-r--r--  1 runner runner  78659 Oct  4 09:15 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 reports
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  4 09:15 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  4 09:15 scripts
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  4 09:15 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  4 09:15 triage
+---LEADS---
+total 3480
+drwxr-xr-x  2 runner runner    4096 Oct  4 09:15 .
+drwxr-xr-x 12 runner runner    4096 Oct  4 09:15 ..
+-rw-r--r--  1 runner runner 1279571 Oct  4 09:15 lead-bigpickle.md
+-rw-r--r--  1 runner runner    9843 Oct  4 09:15 lead-laguna.md
+-rw-r--r--  1 runner runner    9650 Oct  4 09:15 lead-ling3.md
+-rw-r--r--  1 runner runner   10036 Oct  4 09:15 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  4 09:15 lead-mimo.md
+-rw-r--r--  1 runner runner 2203699 Oct  4 09:15 lead-nemotron3.md
+-rw-r--r--  1 runner runner   24099 Oct  4 09:15 reposcan-cineplex.md
+---SCRIPTS---
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct  4 09:15 .
+drwxr-xr-x 12 runner runner  4096 Oct  4 09:15 ..
+-rw-r--r--  1 runner runner 16987 Oct  4 09:15 sync-issues.py
+[0m
+## Objective
+- Continue the Cineplex bug-hunt in `POC` phase for target `api`, validate only high-value scoped findings, and emit the required structured blocks.
+- Prioritize passive-first, same-cycle evidence while avoiding rejected classes and live customer-data mutations.
+
+## Important Details
+- Canonical survivors: CORS credentialed cross-origin write primitive (88), mass assignment on privilege fields (85), dangling Azure Container Apps domain (72).
+- CORS: `OPTIONS /` on both `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de` returns `204`, reflected `ACAO`, `ACAC: true`, `ACAH: content-type,authorization`, and `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`; `OPTIONS` is not in `ACAM`. Root `/` is POST-capable. Actual authenticated browser impact remains `AUTH_HELPED`.
+- CORS allowlist includes `http://localhost:3000` and `https://app.staging.cineplex.de` on production; the staging-origin trust is the practical cross-environment pairing.
+- GraphQL exposes the full schema through root and any unshadowed path; remediation scope is a path pattern across both environments, not four named routes. `/graphql`, `/api/graphql`, and `/gql` are GET-only API Gateway mirrors; POST/OPTIONS return `403 MissingAuthenticationTokenException`.
+- GraphQL schema evidence: 83 active queries, 140 active mutations, 385 types, 44 `INPUT_OBJECT` types; introspection is supporting evidence, not currently a standalone report.
+- Mass-assignment evidence: `CinemaOperatingCompanyData.accessRight*` mirrors derived `UserPrivileges`; `updateUser(adminCinemaOperatingCompanyIds, resetAppChangeBlockedUntil)` and `increaseUserTestingStatus` remain unexecuted pending a consented sandbox account.
+- Dangling CNAME: `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; CNAME Status 0 TTL 300, target A Status 3 NXDOMAIN with Azure SOA. Azure-side claimability and mapping release remain unverified.
+- Retraction: the systemic IDOR is falsified. A valid public cinema ID against `contentSectionListByNameAndCinemas` returned `UNAUTHENTICATED`; `INVALID_ID` versus `UNAUTHENTICATED` proves decoder position, not missing ownership. Do not republish the IDOR claim.
+- Retracted/downgraded claims: “four equivalent GraphQL transports,” “two paths × two environments” for named routes, `getOnlineTicketingBooking` SSRF, staging `testing_getConfirmationCode` oracle, and standalone introspection scoring.
+- `probe-results.md` is not authoritative: current probe URLs can contain trailing backticks, use a bot-identifying urllib UA, and truncate candidates. Use balanced URL encoding and direct same-cycle reads.
+- Program exclusions remain active: username enumeration, TLS best practices, logout CSRF, descriptive errors/headers, known-vulnerable libraries without exploit, DoS, scanner-only claims, and customer-data exposure.
+- Live work must remain passive-first, ≤1 rps, and limited to read-only requests; no live mutations or cross-tenant customer-data access.
+
+## Work State
+### Completed
+- Exhausted the 132-host baseline with CT and CNAME sweeps; no new non-inventory asset was found.
+- Re-verified CORS preflight on both GraphQL environments with direct same-cycle reads.
+- Read GraphQL argument types, all 44 input-object bodies, object field lists, and identified mass-assignment mirrors.
+- Confirmed arbitrary unshadowed-path GraphQL GET handling and corrected route-equivalence/remediation claims.
+- Re-verified `web-dev.cineplex.de` as the sole dangle in the swept dev/systems sets.
+- Falsified and retracted the systemic IDOR; residual pre-auth decoding is only a Low decoder/error oracle.
+- Located three verifier defects in `.github/workflows/hunt.yml:207-225`.
+- Added `## CANONICAL STATUS (2026-09-30)` to `knowledge/index.md`; later retrieval should prefer it over append-only historical contradictions.
+- Killed `getOnlineTicketingBooking` SSRF: authorization rejects before input handling with root-gate `FORBIDDEN`.
+
+### Active
+- Patch `.github/workflows/hunt.yml` so automated evidence is trustworthy.
+- Validate CORS impact using an authenticated browser and test-owned object only.
+- Validate mass assignment using a consented sandbox account and test-owned records only.
+- Obtain Azure provider attestation for `web.gentleglacier-dfef6458`; do not attempt a claim.
+- Re-run the publisher parser to confirm stale IDOR `[HYP]` blocks cannot publish.
+
+### Blocked
+- CORS impact lacks a real authenticated browser round trip.
+- Mass assignment lacks a consented low-privilege sandbox account.
+- CNAME takeover lacks Azure claimability/custom-domain-release attestation.
+- Automated coverage is unreliable until the workflow defects are fixed.
+- Cross-tenant IDOR proof would require prohibited customer-data access and the hypothesis itself is retracted.
+- Live GraphQL mutations against production booking/user data are prohibited.
+
+## Next Move
+1. Patch `.github/workflows/hunt.yml:207-225`: add backtick to the line 207 URL character class and line 210 `strip()` set, replace the line 225 UA with `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36`, and raise/remove `urls[:12]`.
+2. Validate one known balanced GraphQL GET and one DoH lookup through the repaired workflow, confirming neither receives the prior backtick-induced `400` nor bot-gate `403`.
+
+## Relevant Files
+- `.github/workflows/hunt.yml`: verifier defects at lines 207-225.
+- `probe-results.md`: unreliable historical automated output; zero successful POST captures and known parser/UA/truncation artifacts.
+- `knowledge/index.md`: canonical status plus append-only historical contradictions and retractions.
+- `leads/lead-bigpickle.md`: primary lead corpus; contains stale/suppressed hypotheses requiring parser verification.
+- `leads/lead-nemotron3.md`: secondary lead corpus with duplicate and stale hypotheses.
+- `scripts/sync-issues.py`: `parse_blocks`, `fingerprint`, and actual publication logic; use it to verify publishable `[HYP]` blocks.
+- `inventory/cineplex.md`: 132-host scoped asset inventory.
+- `scope.yml`: program scope and exclusions.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Continuing with the workflow patch. Let me read the defect region first.
+[0m→ [0mRead .github/workflows/hunt.yml[90m [offset=190, limit=50][0m
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && git status --short; echo "---LOG---"; git log --oneline -5
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+---LOG---
+6b6c930 reposcan 2026-10-04-09-09
+[0m
+[0m← [0mEdit .github/workflows/hunt.yml
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+@@ -206,9 +206,9 @@
+ run: |
+   python3 << 'ROBOT_PY'
+   import re, glob, ssl, urllib.request, os, time
+   allow=os.environ.get('PROBE_ALLOW','').lower()
+-  pat=re.compile(r'https?://[^\s"\)\]\}]+')
++  pat=re.compile(r'https?://[^\s"\)\]\}`]+')
+   urls,seen=[],set()
+   for f in glob.glob('art/lead_*.txt')+glob.glob('lead_*.txt')+glob.glob('analyst-*.out'):
+       try: txt=open(f,errors='ignore').read()
+       except OSError: continue
+
+[0m
+Found the defects. Actual locations: regex L210, strip set L216, slice L222, UA L225. Applying all four fixes.
+[0m← [0mEdit .github/workflows/hunt.yml
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+@@ -212,9 +212,9 @@
+ for f in glob.glob('art/lead_*.txt')+glob.glob('lead_*.txt')+glob.glob('analyst-*.out'):
+     try: txt=open(f,errors='ignore').read()
+     except OSError: continue
+     for m in pat.findall(txt):
+-        u=m.strip('.,;)]}>')
++        u=m.strip('.,;)]}>`')
+         if u in seen or not u.startswith('https://'): continue
+         seen.add(u)
+         if allow and not any(a in u.lower() for a in allow.split('|')): continue
+         urls.append(u[:300])
+
+[0m
+[0m← [0mEdit .github/workflows/hunt.yml
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+@@ -218,9 +218,9 @@
+         seen.add(u)
+         if allow and not any(a in u.lower() for a in allow.split('|')): continue
+         urls.append(u[:300])
+ ctx=ssl.create_default_context(); rows=[]
+-for u in urls[:12]:
++for u in urls[:60]:
+     time.sleep(1)
+     try:
+         req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (passive verifier)'})
+         with urllib.request.urlopen(req,timeout=12,context=ctx) as r:
+
+[0m
+[0m← [0mEdit .github/workflows/hunt.yml
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/.github/workflows/hunt.yml
+@@ -221,9 +221,9 @@
+ ctx=ssl.create_default_context(); rows=[]
+ for u in urls[:60]:
+     time.sleep(1)
+     try:
+-        req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (passive verifier)'})
++        req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'})
+         with urllib.request.urlopen(req,timeout=12,context=ctx) as r:
+             rows.append('%s -> %s len=%s'%(u,r.status,r.headers.get('Content-Length','?')))
+     except urllib.error.HTTPError as e:
+         rows.append('%s -> HTTP %s'%(u,e.code))
+
+[0m
+Now validating the fixed extraction logic against the actual corrupted URLs that produced the backtick 400s.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '207,235p' .github/workflows/hunt.yml
+python3 << 'ROBOT_PY'
+          import re, glob, ssl, urllib.request, os, time
+          allow=os.environ.get('PROBE_ALLOW','').lower()
+          pat=re.compile(r'https?://[^\s"\)\]\}`]+')
+          urls,seen=[],set()
+          for f in glob.glob('art/lead_*.txt')+glob.glob('lead_*.txt')+glob.glob('analyst-*.out'):
+              try: txt=open(f,errors='ignore').read()
+              except OSError: continue
+              for m in pat.findall(txt):
+                  u=m.strip('.,;)]}>`')
+                  if u in seen or not u.startswith('https://'): continue
+                  seen.add(u)
+                  if allow and not any(a in u.lower() for a in allow.split('|')): continue
+                  urls.append(u[:300])
+          ctx=ssl.create_default_context(); rows=[]
+          for u in urls[:60]:
+              time.sleep(1)
+              try:
+                  req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'})
+                  with urllib.request.urlopen(req,timeout=12,context=ctx) as r:
+                      rows.append('%s -> %s len=%s'%(u,r.status,r.headers.get('Content-Length','?')))
+              except urllib.error.HTTPError as e:
+                  rows.append('%s -> HTTP %s'%(u,e.code))
+              except Exception as e:
+                  rows.append('%s -> ERR %s'%(u,str(e)[:50]))
+          print('\n'.join(rows) if rows else 'no probes (allow=%s)'%allow)
+          with open('probe-results.md','a') as fo:
+              fo.write('\n## %s\n%s\n'%(time.strftime('%Y-%m-%d %H:%M:%S UTC',time.gmtime()),'\n'.join(rows)))
+          ROBOT_PY
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 -c "
+import re
+old_pat=re.compile(r'https?://[^\s\"\\\\)\\\\]\\\\}]+')
+new_pat=re.compile(r'https?://[^\s\"\\\\)\\\\]\\\\}\\\\`]')
+samples=[
+ 'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME\`',
+ 'https://app.staging.cineplex.de\`',
+ 'see https://graphql-api.app.cineplex.de/ (200)',
+ 'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME&cd=true',
+ '[\"https://example.com/a\"]',
+]
+print('=== OLD ===')
+for s in samples:
+    for m in old_pat.findall(s):
+        print(repr(m.strip('.,;)]}>')))
+print('=== NEW ===')
+for s in samples:
+    for m in new_pat.findall(s):
+        print(repr(m.strip('.,;)]}>\`')))
+"
+/bin/bash: -c: line 4: unexpected EOF while looking for matching ``'
+[0m
+[0m← [0mWrite /tmp/opencode/test_urlpat.py
+Wrote file successfully.
+[0m
+Shell escaping broke on the backtick. Writing the test as a file instead.
+[0m$ [0mcd /tmp/opencode && python3 test_urlpat.py
+=== OLD ===
+'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME`'
+'https://app.staging.cineplex.de`'
+'https://graphql-api.app.cineplex.de/'
+'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME&cd=true'
+'https://example.com/a'
+'https://web-dev.cineplex.de`'
+
+=== NEW ===
+'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME'
+'https://app.staging.cineplex.de'
+'https://graphql-api.app.cineplex.de/'
+'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME&cd=true'
+'https://example.com/a'
+'https://web-dev.cineplex.de'
+
+OLD yielded URLs still containing backtick: 3
+NEW yielded URLs still containing backtick: 0
+[0m
+Fix confirmed: 3 contaminated URLs eliminated, all legitimate URLs preserved. Now validating YAML and running the two live read-only verifications.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 -c "
+import yaml,sys
+d=yaml.safe_load(open('.github/workflows/hunt.yml'))
+steps=d['jobs'][list(d['jobs'])[0]]['steps']
+print('YAML OK, steps:',len(steps))
+for s in steps:
+    if 'verifier' in str(s.get('name','')).lower():
+        print('found step:',s['name'])
+" 2>&1 | tail -5
+YAML OK, steps: 5
+[0m
+[0m← [0mWrite /tmp/opencode/verify_live.py
+Wrote file successfully.
+[0m
+[0m$ [0mcd /tmp/opencode && timeout 90 python3 verify_live.py
+### 1. balanced GraphQL GET, arbitrary unshadowed path
+url: https://graphql-api.app.cineplex.de/verify-t0r1ng-cors-check?query=%7B%22query%22%3A%22%7B__typename%7D%22%7D
+status: 400
+ctype: application/json; charset=utf-8
+body: b'{"errors":[{"message":"Syntax Error: Expected Name, found String \\"query\\"","extensions":{"code":"GRAPHQL_PARSE_FAILED","exception":{"stacktrace":["GraphQLError: Syntax Error: Expected Name, found String \\"query\\"","    at syntaxError (/var/task/node_modules/graphql/error/syntaxError.js:15:10)","   '
+
+### 2. DoH CNAME lookup (web-dev.cineplex.de)
+status: 200 ctype: application/json; charset=UTF-8
+Status: 0
+  Answer 5 300 web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+[0m
+[0m← [0mWrite /tmp/opencode/verify_live2.py
+Wrote file successfully.
+[0m
+DoH confirmed (Status 0, CNAME TTL 300, no backtick 400 / bot 403). The GraphQL 400 is my own double-encoding error — I wrapped the whole JSON as the query. Re-running with correct balanced encoding.
+[0m$ [0mcd /tmp/opencode && timeout 90 python3 verify_live2.py
+balanced query param -> %7B__typename%7D
+url: https://graphql-api.app.cineplex.de/verify-t0r1ng-cors-check?query=%7B__typename%7D
+status: 200
+body: b'{"data":{"__typename":"Query"}}\n'
+
+### CORS preflight: arbitrary unshadowed path, staging origin vs prod
+https://graphql-api.app.cineplex.de
+  status: 400
+https://graphql-api.app.staging.cineplex.de
+  status: 400
+[0m
+[0m← [0mWrite /tmp/opencode/verify_cors.py
+Wrote file successfully.
+[0m
+Balanced GET works: `200 {"data":{"__typename":"Query"}}` on an arbitrary unshadowed path. The 400s are again my error — I sent GET, not OPTIONS. Correcting the method.
+[0m$ [0mcd /tmp/opencode && timeout 120 python3 verify_cors.py
+https://graphql-api.app.cineplex.de/  <- https://app.staging.cineplex.de
+   status: 204
+https://graphql-api.app.cineplex.de/  <- http://localhost:3000
+   status: 204
+https://graphql-api.app.cineplex.de/verify-t0r1ng-cors-check  <- https://app.staging.cineplex.de
+   status: 403
+https://graphql-api.app.cineplex.de/verify-t0r1ng-cors-check  <- http://localhost:3000
+   status: 403
+https://graphql-api.app.staging.cineplex.de/  <- https://app.staging.cineplex.de
+   status: 204
+https://graphql-api.app.staging.cineplex.de/  <- http://localhost:3000
+   status: 204
+https://graphql-api.app.staging.cineplex.de/verify-t0r1ng-cors-check  <- https://app.staging.cineplex.de
+   status: 403
+https://graphql-api.app.staging.cineplex.de/verify-t0r1ng-cors-check  <- http://localhost:3000
+   status: 403
+[0m
+[0m← [0mWrite /tmp/opencode/raw_headers.py
+Wrote file successfully.
+[0m
+204 returned but no CORS headers surfaced — likely a header-case mismatch in my lookup. Dumping raw headers to be sure.
+[0m$ [0mcd /tmp/opencode && timeout 60 python3 raw_headers.py
+status: 204
+--- RAW HEADERS (as sent) ---
+  'Date': 'Sun, 04 Oct 2026 09:18:49 GMT'
+  'Connection': 'close'
+  'x-amzn-requestid': '8d520161-617f-4c51-b383-c05b35725cd9'
+  'access-control-allow-origin': 'https://app.staging.cineplex.de'
+  'access-control-allow-headers': 'content-type,authorization'
+  'x-amzn-remapped-content-length': '0'
+  'x-amz-apigw-id': 'Etj-_E4WliAEd7w='
+  'vary': 'Origin, Access-Control-Request-Headers'
+  'access-control-allow-methods': 'GET,HEAD,PUT,PATCH,POST,DELETE'
+  'x-powered-by': 'Express'
+  'x-amzn-trace-id': 'Root=1-6ac219f9-41dab98578365c9a1b7dd161;Parent=3118ecb9750cf3d9;Sampled=0;Lineage=1:2b27107c:0'
+  'access-control-allow-credentials': 'true'
+  'cf-cache-status': 'DYNAMIC'
+  'Server': 'cloudflare'
+  'CF-RAY': 'a45319f3e861f0b8-DFW'
+  'alt-svc': 'h3=":443"; ma=86400'
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n "def parse_blocks" -A 40 scripts/sync-issues.py
+55:def parse_blocks(text, model):
+56-    blocks, lines, i = [], text.splitlines(), 0
+57-    while i < len(lines):
+58-        m = re.match(r'^\[HYP\]\s*(.*)$', lines[i].strip())
+59-        if not m:
+60-            i += 1
+61-            continue
+62-        raw_title = m.group(1).strip()
+63-        b = {"title": raw_title, "model": model}
+64-        j = i + 1
+65-        while j < len(lines):
+66-            l = lines[j].strip()
+67-            if not l or STOP.match(l):
+68-                break
+69-            kv = KV.match(l)
+70-            if kv:
+71-                b[kv.group(1).lower()] = kv.group(2).strip()
+72-            j += 1
+73-        if "<" not in str(raw_title):
+74-            if not any(k in b for k in ('class', 'asset', 'confidence', 'reasoning', 'verify_steps')):
+75-                clean, attrs = split_inline(raw_title)
+76-                b['title'] = clean
+77-                for k, v in attrs.items():
+78-                    b.setdefault(k.lower(), v)
+79-            blocks.append(b)
+80-        i = j
+81-    return blocks
+82-
+83-
+84-def norm_asset(a):
+85-    a = (a or "").strip().lower().strip("`")
+86-    a = re.sub(r'^((get|post|put|patch|delete|head|options)s?)[/,\s]+', '', a, flags=re.I)
+87-    a = re.sub(r'\s*\(.*?\)', ' ', a)
+88-    a = re.sub(r'[{}[\],].*$', '', a)
+89-    a = re.sub(r'\s+', ' ', a).strip()
+90-    return a[:120]
+91-
+92-
+93-def coarse_target(a):
+94-    """Bare scheme+host+path of an asset (drops credentials, queries, parens)."""
+95-    a = (a or "").strip().lower()
+[0m
+Headers confirmed present (sent lowercase — my earlier lookup was case-sensitive). CORS re-confirmed same-cycle on production. Now checking the publisher hygiene item.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n -i "retract\|suppress\|reject\|denylist\|block_class\|SKIP\|EXCLUD" scripts/sync-issues.py
+318:            # re-discovery of a CLOSED (rejected/duplicate) finding with a
+375:    rejected = []
+378:        for m in re.finditer(r'^\[LEARN\]\s*REJECTED\s+\S+\s+@\s+(\S+)', text, re.M):
+379:            rejected.append(m.group(1))
+385:        if any(a.lower()[:30] in low for a in rejected):
+388:                iss.create_comment("Closed automatically: this class was REJECTED for this asset by a later analyst run.")
+426:          f"closed_rejected={closed} dup_closed={dup_closed} title_closed={title_closed}")
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '1,54p' scripts/sync-issues.py
+import os, re, hashlib
+from difflib import SequenceMatcher
+from pathlib import Path
+from github import Github
+
+REPO = os.environ["GITHUB_REPOSITORY"]
+TOKEN = os.environ["GITHUB_TOKEN"]
+GLOB = os.environ.get("LEAD_GLOB", "leads/lead-*.md")
+TARGET = os.environ.get("TARGET_NAME", "hunt")
+MODEL_FROM_FILENAME = os.environ.get("MODEL_FROM_FILENAME", "0") == "1"
+
+STOP = re.compile(r'^\[(HYP|PARKED|FINAL|NEXT|LEARN|RISK|NEW|CHANGED|PRIO)\]')
+KV = re.compile(r'^([a-z_]+):\s*(.*)$', re.I)
+
+TITLE_SIM_THRESHOLD = float(os.environ.get("TITLE_SIM_THRESHOLD", "0.82"))
+COARSE_SIM_THRESHOLD = float(os.environ.get("COARSE_SIM_THRESHOLD", "0.55"))
+
+
+def split_inline(title):
+    """Extract inline attributes from a single-line lead of the form:
+    [HYP] Title: confidence 96, class MISCONFIG, verify_steps ..., asset https://...
+    Attribute matches are removed; the title is cut at the first attribute."""
+    attrs = {}
+    pats = [
+        (r'confidence\s*(?:=|:|\s+)\s*(\d{1,3})', 'confidence', None),
+        (r'conf\s*(?:=|:|\s+)\s*(\d{1,3})', 'confidence', None),
+        (r'\((\d{2,3})\)\s*[:;]', 'confidence', None),
+        (r'class\s*(?:=|:|\s+)\s*([A-Za-z_]+)', 'class', str.upper),
+        (r'asset\s*(?:=|:|\s+)\s*(https?://[^\s,;]+|/[^\s,;]+)', 'asset', None),
+        (r'severity\s*(?:=|:|\s+)\s*([A-Za-z]+)', 'severity', None),
+        (r'testability\s*(?:=|:|\s+)\s*([A-Za-z_]+)', 'testability', str.upper),
+        (r'verify[_\s]steps\s*(?:=|:|\s+)\s*([^\n|]+)', 'verify_steps', None),
+        (r'impact\s*(?:=|:|\s+)\s*([^\n|]+)', 'impact', None),
+        (r'reasoning\s*(?:=|:|\s+)\s*([^\n|]+)', 'reasoning', None),
+    ]
+    cut = None
+    for pat, key, transform in pats:
+        m = re.search(pat, title, re.I)
+        if m:
+            v = m.group(1).strip()
+            if transform:
+                v = transform(v)
+            if key not in attrs:
+                attrs[key] = v
+            cut = m.start() if cut is None else min(cut, m.start())
+    if cut is not None:
+        t = title[:cut]
+    else:
+        t = title
+    t = re.sub(r'^\s*[:,\s-]+\s*', '', t)
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t, attrs
+[0m
+[0m← [0mWrite /tmp/opencode/dryrun_parse.py
+Wrote file successfully.
+[0m
+Parser has no class denylist — retraction only closes *existing* issues via `[LEARN] REJECTED`. Running a dry-run to see what would actually publish.
+[0m$ [0mcd /tmp/opencode && timeout 120 python3 dryrun_parse.py 2>&1 | tail -60
+import failed: ModuleNotFoundError No module named 'github'
+[0m
+[0m$ [0mmkdir -p /tmp/opencode/stub/github && cat > /tmp/opencode/stub/github/__init__.py <<'PYEOF'
+class Github:
+    def __init__(self, *a, **k):
+        raise RuntimeError('stub')
+PYEOF
+ls -R /tmp/opencode/stub
+/tmp/opencode/stub:
+github
+
+/tmp/opencode/stub/github:
+__init__.py
+[0m
+PyGithub missing — stubbing it to test the parser logic in isolation.
+[0m$ [0mcd /tmp/opencode && PYTHONPATH=/tmp/opencode/stub timeout 180 python3 dryrun_parse.py 2>&1 | tail -70
+parse_blocks OK; STOP= ^\[(HYP|PARKED|FINAL|NEXT|LEARN|RISK|NEW|CHANGED|PRIO)\]
+
+== leads/lead-bigpickle.md | HYP blocks: 644
+   REJECTED tokens: 233
+   class MISCONFIG        268
+   class AUTH             147
+   class IDOR             146
+   class OTHER            35
+   class BUSLOGIC         31
+   class 'MISCONFIG' CONF: '93' 9
+   class NONE             7
+   class SUBDOMAIN_TAKEOVER 1
+   blocks in retracted classes: 146
+      - IDOR | graphql-api.app.cineplex.de | Unauthenticated IDOR/BOLA on user/order/ticket/voucher GraphQL queries
+      - IDOR | graphql-api.app.cineplex.de | GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
+      - IDOR | graphql-api.app.cineplex.de | Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid
+      - IDOR | graphql-api.app.cineplex.de | Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid
+      - IDOR | graphql-api.app.cineplex.de | Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid
+      - IDOR | graphql-api.app.cineplex.de | Production GraphQL IDOR via userById/searchUsers/adminUsers with valid
+
+== leads/lead-nemotron3.md | HYP blocks: 577
+   REJECTED tokens: 813
+   class MISCONFIG        203
+   class AUTH             157
+   class IDOR             155
+   class BUSLOGIC         42
+   class OTHER            18
+   class SSRF             2
+   blocks in retracted classes: 155
+      - IDOR | booking.cineplex.de | IDOR/BOLA on Booking API — Cross-User Booking Access
+      - IDOR | booking.cineplex.de | IDOR/BOLA on Booking API — Cross-User Booking Access via Numeric IDs
+      - IDOR | booking.cineplex.de | IDOR/BOLA on Booking API — Cross-User Booking Access via Numeric IDs
+      - IDOR | graphql-api.app.cineplex.de | IDOR/BOLA via GraphQL userById/searchUsers/adminUsers — Cross-User PII
+      - IDOR | graphql-api.app.cineplex.de | IDOR/BOLA via GraphQL userById/searchUsers/adminUsers — Cross-User PII
+      - IDOR | graphql-api.app.cineplex.de | GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+[0m
+Significant: the retraction is **not** in effect on disk — 146 + 155 IDOR blocks still parse. Checking whether anything downstream blocks their creation.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '300,340p' scripts/sync-issues.py
+# no exact fingerprint match: try fuzzy title match against
+            # open issues before creating a duplicate (handles title drift
+            # in asset-less leads across model runs)
+            match = best_title_match(b, open_issues, None)
+            if match is not None:
+                cur = {l.name for l in match.labels}
+                new = set(labels) | cur
+                if new != cur:
+                    match.edit(labels=list(new))
+                try:
+                    match.create_comment(
+                        f"Fuzzy-matched to lead (title similarity ≥ {TITLE_SIM_THRESHOLD}). "
+                        "No new issue created. If this is a genuinely different finding, "
+                        "reword the title so it differs in the first ~6 words.")
+                except Exception:
+                    pass
+                fuzzy_matched += 1
+                continue
+            # re-discovery of a CLOSED (rejected/duplicate) finding with a
+            # drifted asset field: same title+class -> do not re-create
+            closed_match = best_title_match(b, closed_issues, None)
+            if closed_match is not None:
+                try:
+                    closed_match.create_comment(
+                        "Re-discovered in a later analyst lead; kept closed (title matched "
+                        f"a previously closed issue at similarity ≥ {TITLE_SIM_THRESHOLD}).")
+                except Exception:
+                    pass
+                fuzzy_matched += 1
+                continue
+            # same bare target+class with a similar title -> duplicate
+            coarse = coarse_match(b, existing)
+            if coarse is not None:
+                cur = {l.name for l in coarse.labels}
+                new = set(labels) | cur
+                if new != cur:
+                    try:
+                        coarse.edit(labels=list(new))
+                    except Exception:
+                        pass
+                try:
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '370,400p' scripts/sync-issues.py
+verified_now += 1
+            except Exception:
+                pass
+    print(f"auto-verified issues: {verified_now}")
+
+    rejected = []
+    for f in files:
+        text = f.read_text(errors="ignore")
+        for m in re.finditer(r'^\[LEARN\]\s*REJECTED\s+\S+\s+@\s+(\S+)', text, re.M):
+            rejected.append(m.group(1))
+    closed = 0
+    for iss in existing:
+        if iss.state != "open":
+            continue
+        low = (iss.title + " " + (iss.body or "")).lower()
+        if any(a.lower()[:30] in low for a in rejected):
+            try:
+                iss.edit(state="closed", labels=list({l.name for l in iss.labels} | {"false-positive"}))
+                iss.create_comment("Closed automatically: this class was REJECTED for this asset by a later analyst run.")
+                closed += 1
+            except Exception:
+                pass
+
+    dup_closed = 0
+    for fp, isslist in by_fp.items():
+        if len(isslist) > 1:
+            keep = min(isslist, key=lambda i: i.number)
+            for dup in isslist:
+                if dup != keep and dup.state == "open":
+                    try:
+                        dup.edit(state="closed", labels=list({l.name for l in dup.labels} | {"duplicate"}))
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -h "^\[LEARN\] *REJECTED" leads/lead-bigpickle.md | sort | uniq -c | sort -rn | head -20
+14 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+     14 [LEARN] REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+     11 [LEARN] REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+     11 [LEARN] REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+     11 [LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+     11 [LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+     11 [LEARN] REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+      9 [LEARN] REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+      7 [LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable surface; DoS class not applicable; no sensitive data.
+      6 [LEARN] REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipulation surface; DoS class not applicable absent injection route; no sensitive data
+      6 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+      6 [LEARN] REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+      6 [LEARN] REJECTED api.cineplex.de @ GET-based bypass: strict 403 all probes; hypothesis dead
+      5 [LEARN] REJECTED username_enumeration/ssl_tls_best_practices/csrf_logout/descriptive_errors/known_vuln_library/OAuth-JWKS-passive @ all: unchanged out-of-scope/dead, reaffirmed
+      5 [LEARN] REJECTED relay_metrics/relay_broker_saturation @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone
+      5 [LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: descriptive IOMB infra only, not reportable alone (reaffirmed)
+      5 [LEARN] REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead (SSLv3 handshake failure).
+      5 [LEARN] REJECTED api.cineplex.de GET-bypass + TLS-dead hosts (app.staging/graphql-api.app.couat/login/sso): dead/denied
+      5 [LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+      4 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -hc "^\[HYP\]" leads/lead-bigpickle.md leads/lead-nemotron3.md; echo "---IDOR blocks w/ class IDOR---"; grep -c "class: IDOR\|class IDOR" leads/lead-bigpickle.md leads/lead-nemotron3.md
+649
+577
+---IDOR blocks w/ class IDOR---
+leads/lead-bigpickle.md:177
+leads/lead-nemotron3.md:169
+[0m
+Root cause confirmed: `rejected` is built **after** creation and only closes existing issues — never guards `create`. Let me check the actual REJECTED line format.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n "RETRACT\|IDOR" knowledge/index.md | head -30
+8:- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+13:- 2026-09-03 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+15:- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+18:- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+22:- 2026-09-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+29:- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+33:- 2026-09-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+44:- 2026-09-05 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+49:- 2026-09-05 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+68:- 2026-09-06 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+80:- 2026-09-06 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
+81:- 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
+90:- 2026-09-06 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET 400 native Express reconfirmed live (X-Powered-By: Express, 18B) this cycle; direct authless backend reach + IDOR/staging-oracle testability basis stable.
+95:- 2026-09-07 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+107:- 2026-09-07 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
+108:- 2026-09-07 ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
+112:- 2026-09-07 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET now 200 Apollo landing page (further attenuation from 400). Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+118:- 2026-09-07 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET 403 (WAF) does not affect GraphQL POST reach. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+122:- 2026-09-07 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 but GraphQL POST 200. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+125:- 2026-09-07 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 (WAF) but GraphQL POST fully reachable — direct backend access confirmed. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+131:- 2026-09-07 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule.
+144:- 2026-09-08 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+157:- 2026-09-08 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 but GraphQL POST 200. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+162:- 2026-09-08 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET 403 (automated) / 400 Express (curl). Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+169:- 2026-09-08 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule.
+180:- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule.
+189:- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule
+200:- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed; HUMAN_ONLY per program PII rule.
+208:- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach claimed — NOT verified in probe-results.md (verification gap)
+212:- 2026-09-09 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed via curl HTTP/2; HUMAN_ONLY per program PII rule. probe-results.md verification gap noted (zero POST probes in automated log) but structural proof independent.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -h "^\[LEARN\].*\(RETRACT\|IDOR\|BOLA\)" leads/*.md | sort | uniq -c | sort -rn | head -20
+38 [LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+     21 [LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+     12 [LEARN] ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: root GET now 400 native Express (not Cloudflare 403), stable this cycle — direct authless backend reach on both envs; raises IDOR/staging oracle testability basis.
+     12 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: `userById` gate-skip re-confirmed live over GET (INVALID_ID vs currentUser UNAUTHENTICATED) with root WAF gate attenuated to 400 — the decisive IDOR surface; still HUMAN_ONLY per program PII rule.
+     10 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET stable 403 but GraphQL POST 200. Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+      5 [LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+      3 [LEARN] ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives  
+      3 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach returns 400 — NOT verified in probe-results.md (verification gap)
+      3 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed; HUMAN_ONLY per program PII rule.
+      3 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule.
+      3 [LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+      2 [LEARN] `publish_path_clear` @ `scripts/sync-issues.py` — verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\]` only (scripts/sync-issues.py:57) and globs `leads/lead-*.md`; the falsified `idor_booking` lines in my lead file are tagged `[LEARN]`, so they are invisible to the publisher. The only live `[HYP]` blocks are the three real ones (CORS, mass-assignment, dangle). Also confirmed `sync-issues.py` never reads `knowledge/index.md`, so the new section cannot break the parser.
+      2 [LEARN] REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system. Measured scope is 1 path-pattern × 2 environments. Generalizing from named mirrors to catch-all behavior was the same scope error that produced the retracted IDOR claim.
+      2 [LEARN] ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference + /preference/update (GET 200 renders form, no 405) POST-action form, reCAPTCHA sitekey literal 'false', anonymous JSESSIONID, no CSP — candidate BUSLOGIC/IDOR surface on customer preference app; AUTH_HELPED.
+      2 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach confirmed live; HUMAN_ONLY per program PII rule
+      2 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket); GET-based origin reach claimed — NOT verified in probe-results.md (verification gap)  
+      2 [LEARN] ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) with adjacent role/device gates proving auth-omission. Root GET 403 (automated) / 400 Express (curl). Structural POC reportable; full cross-tenant proof HUMAN_ONLY.
+      2 [LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule  
+      1 [LEARN] `publish_path_clear` @ `scripts/sync-issues.py` M-bM-^@M-^T verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\
+      1 [LEARN] `class` is the wrong suppression axis here. 14 of 15 decoder-oracle blocks carry `class: IDOR`, so the one real Low result is camouflaged inside the falsified class; blanket per-class retagging would have destroyed it — the same error as line 928, reached from the opposite direction.
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && sed -n '255,302p' scripts/sync-issues.py
+if fp:
+            by_fp.setdefault(fp, []).append(i)
+    open_issues = [i for i in existing if i.state == "open"]
+    closed_issues = [i for i in existing if i.state != "open"]
+    print("existing issues:", len(existing), "open:", len(open_issues))
+
+    # in-run dedup: same fingerprint multiple times in this batch -> keep first
+    seen_fp = set()
+    uniq_blocks = []
+    for b in blocks:
+        fp = fingerprint(b)
+        if fp not in seen_fp:
+            seen_fp.add(fp)
+            uniq_blocks.append(b)
+    if len(uniq_blocks) != len(blocks):
+        print(f"in-run dedup: {len(blocks)} -> {len(uniq_blocks)}")
+
+    created = updated = 0
+    fuzzy_matched = 0
+    for b in uniq_blocks:
+        conf = _conf(b)
+        fp = fingerprint(b)
+        title = f"[{conf}%] {b['title'][:90]}"
+        labels = ["bug-bounty", "ai-hypothesis", "pending", TARGET,
+                  f"model-{b['model']}", f"confidence-{conf//10*10}"] \
+            + (["high-confidence"] if conf >= 80 else [])
+        body = (f"<!-- fingerprint:{fp} -->\n\n"
+                f"## Title\n{b.get('title','')}\n\n"
+                f"## Target\n`{b.get('asset','?')}`\n\n"
+                f"## Class\n{b.get('class','OTHER')}\n\n"
+                f"## Confidence\n{conf}/100\n\n"
+                f"## Reasoning\n{b.get('reasoning','')}\n\n"
+                f"## Evidence needed\n{b.get('evidence_needed','')}\n\n"
+                f"## Verify steps\n{b.get('verify_steps','')}\n\n"
+                f"## Impact\n{b.get('impact','')}\n\n"
+                f"## Testability\n{b.get('testability','')}\n\n"
+                f"_model: {b['model']} · auto-synced from {GLOB}_")
+        if fp in by_fp:
+            iss = by_fp[fp][0]
+            cur = {l.name for l in iss.labels}
+            new = set(labels) | cur
+            if new != cur:
+                iss.edit(labels=list(new))
+                updated += 1
+        else:
+            # no exact fingerprint match: try fuzzy title match against
+            # open issues before creating a duplicate (handles title drift
+            # in asset-less leads across model runs)
+[0m
+The prior `publish_path_clear` claim is falsified. Let me read the creation loop to place a guard correctly.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && grep -n "def fingerprint" -A 20 scripts/sync-issues.py; echo "=== main loop head ==="; sed -n '230,256p' scripts/sync-issues.py
+112:def fingerprint(b):
+113-    a = norm_asset(b.get("asset", ""))
+114-    c = (b.get("class", "OTHER") or "OTHER").strip().lower()[:20]
+115-    if a:
+116-        return hashlib.md5(f"{a}|{c}".encode()).hexdigest()[:12]
+117-    # no asset -> include normalized title so distinct leads get distinct fps
+118-    t = norm_title(b.get("title", ""))
+119-    return hashlib.md5(f"{t}|{c}".encode()).hexdigest()[:12]
+120-
+121-
+122-def issue_fingerprint(iss):
+123-    """Return the canonical fingerprint for an existing issue.
+124-
+125-    The stored <!-- fingerprint:xxx --> comment is the single source of
+126-    truth: it was computed from the original lead and is stable across
+127-    runs. Only fall back to recomputing from the body for issues created
+128-    before the comment existed."""
+129-    body = iss.body or ""
+130-    m = re.search(r'<!-- fingerprint:([0-9a-f]{12}) -->', body)
+131-    if m:
+132-        return m.group(1)
+=== main loop head ===
+
+    def _conf(b):
+        v = b.get("confidence", 0) or 0
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            try:
+                return int(float(v))
+            except (ValueError, TypeError):
+                return 0
+
+    confs = sorted({_conf(b) // 10 * 10 for b in blocks})
+    models = sorted({b["model"] for b in blocks})
+    all_labels = ["bug-bounty", "ai-hypothesis", "pending", "false-positive", TARGET] \
+        + [f"model-{m}" for m in models] + [f"confidence-{c}" for c in confs]
+    for l in all_labels:
+        ensure_label(repo, l)
+
+    try:
+        existing = list(repo.get_issues(state="all", labels=["bug-bounty"]))
+    except Exception:
+        existing = list(repo.get_issues(state="all"))
+    by_fp = {}
+    for i in existing:
+        fp = issue_fingerprint(i)
+        if fp:
+            by_fp.setdefault(fp, []).append(i)
+[0m
+[0m← [0mWrite /tmp/opencode/dryrun_fp.py
+Wrote file successfully.
+[0m
+Before changing anything — fingerprint is `md5(asset|class)`, so in-run dedup collapses duplicates. Let me quantify the real blast radius.
+[0m$ [0mcd /tmp/opencode && PYTHONPATH=/tmp/opencode/stub timeout 180 python3 dryrun_fp.py 2>&1 | head -70
+total HYP blocks parsed: 1221
+after in-run dedup: 70 (collapsed 1151)
+unique fingerprints in retracted class: 10
+   fp=ed36cb0858b4 class=IDOR asset=graphql-api.app.cineplex.de
+      title: Unauthenticated IDOR/BOLA on user/order/ticket/voucher GraphQL queries
+   fp=bbe908ec1b70 class=IDOR asset=data-9fc27eb430.cineplex.de
+      title: Relay host undocumented API routes beyond /health and /metrics
+   fp=e69ee778136d class=IDOR asset=api.cineplex.de
+      title: GET-based GraphQL execution on api.cineplex.de (third origin reach)
+   fp=2de7539eee9e class=IDOR asset=graphql-api.app.{,staging.}cineplex.de
+      title: Systemic unauth'd IDOR — decodePublicId-before-gate (top; unchanged)
+   fp=befdc38f75d7 class=IDOR asset=graphql-api.app.cineplex.de — queryType userById(id) / order(id) / ticket(id) / userByQr(qrCode), chaining through Order.user and Ticket.user (staging identical)
+      title: Unauthenticated id-decode reach into a 51-field user object containing bearer tokens, financial
+   fp=b39000e040ad class=IDOR asset=graphql-api.app.cineplex.de (and graphql-api.app.staging.cineplex.de) — `userById` / `order` / `ticket` / `invoice` / `userByQr`, chaining `Order.user` and `Ticket.user`
+      title: Unauthenticated pre-auth id-decode into the 51-field `User` object, reachable on an unbounded, 
+   fp=f785bab51204 class=IDOR asset=graphql-api.app.cineplex.de — `userById`, `order`, `ticket`, `invoice`, **contentSectionList**, **movieList**; chaining `Order.user` and `Ticket.user`; mirrored on graphql-api.app.staging.cineplex.de
+      title: Pre-auth id-decode reaches the entity-lookup layer on **six** resolvers, not the four already d
+   fp=331ec6aa94f3 class=IDOR asset=graphql-api.app.cineplex.de — Class A: `userById`, `order`, `ticket`, `invoice`; Class B: `contentSectionList`, `movieList`; chaining `Order.user` and `Ticket.user`; mirrored byte-for-byte on graphql-api.app.staging.cineplex.de
+      title: Pre-auth id-decode reaches the entity-lookup layer on six resolvers split across **two differen
+   fp=272540c980bb class=IDOR asset=graphql-api.app.staging.cineplex.de
+      title: Staging carries the identical 14-resolver pre-auth omission with no environment partitioning, a
+   fp=f86bb4538483 class=IDOR asset=booking.cineplex.de
+      title: IDOR/BOLA on Booking API — Cross-User Booking Access
+
+ALL unique fingerprints that would be created:
+   ?      MISCONFIG      graphql-api.app.cineplex.de
+   ?      AUTH           api.cineplex.de
+   ?      MISCONFIG      graphql-api.app.staging.cineplex.de
+   ?      MISCONFIG      data-9fc27eb430.cineplex.de
+   ?      IDOR           graphql-api.app.cineplex.de
+   ?      BUSLOGIC       graphql-api.app.cineplex.de
+   ?      AUTH           graphql-api.app.cineplex.de
+   ?      MISCONFIG      graphql-api.app.couat.cineplex.de
+   ?      MISCONFIG      api.cineplex.de
+   ?      AUTH           graphql-api.app.staging.cineplex.de
+   ?      OTHER          data-9fc27eb430.cineplex.de
+   ?      AUTH           auth.cineplex.de
+   ?      IDOR           data-9fc27eb430.cineplex.de
+   ?      IDOR           api.cineplex.de
+   ?      MISCONFIG      graphql-api.app.
+   ?      NONE           
+   ?      MISCONFIG      cloud.systems.cineplex.de
+   ?      BUSLOGIC       profil.cineplex.de
+   ?      MISCONFIG      booking-dev.cineplex.de
+   ?      MISCONFIG      web-dev.cineplex.de
+   ?      OTHER          graphql-api.app.
+   ?      OTHER          graphql-api.app.staging.cineplex.de
+   ?      OTHER          github.com/cineplex-deutschland
+   ?      OTHER          web-dev.cineplex.de
+   ?      MISCONFIG      buchung-dev.cineplex.de / bms-dev.cineplex.de
+   ?      MISCONFIG      buchung-dev/bms-dev.cineplex.de
+   ?      MISCONFIG      buchung-dev.cineplex.de origin
+   ?      MISCONFIG      buchung-dev.cineplex.de
+   ?      MISCONFIG      buchung-dev.cineplex.de origin 194.77.169.121
+   ?      AUTH           buchung-dev.cineplex.de
+   ?      MISCONFIG      194.77.169.121
+   ?      OTHER          staging.cineplex.de
+   ?      MISCONFIG      wildcard.systems.cineplex.de + cname'd systems hosts
+   ?      MISCONFIG      buchung-dev.cineplex.de + bms-dev.cineplex.de
+   ?      MISCONFIG      wildcard.systems.cineplex.de + vpn-openvpn-cpz/hz-apphost/es
+   ?      MISCONFIG      web-dev.cineplex.de → web.gentleglacier-dfef6458.switzerland
+   ?      IDOR           graphql-api.app.
+   ?      MISCONFIG      wildcard.systems / systems-zone hosts
+   ?      BUSLOGIC       graphql-api.app.cineplex.de — mutationtype `startwebbooking`
+   ?      BUSLOGIC       graphql-api.app.cineplex.de - mutationtype startwebbooking /
+   ?      MISCONFIG      web-dev.cineplex.de -> web.gentleglacier-dfef6458.switzerlan
+   ?      BUSLOGIC       graphql-api.app.cineplex.de — mutationtype createcinemaopera
+   ?      AUTH           graphql-api.app.cineplex.de — mutationtype updatepassword / 
+   ?      BUSLOGIC       graphql-api.app.cineplex.de — mutationtype updateuser and in
+   ?      AUTH           graphql-api.app.staging.cineplex.de — mutationtype login / r
+[0m
+[0m← [0mWrite /tmp/opencode/dryrun_collide.py
+Wrote file successfully.
+[0m
+Blast radius quantified: 1221 blocks → 70 unique fingerprints, **10** of them the falsified IDOR family. Critically, `fingerprint()` ignores the title when an asset exists, so the legitimate Low decoder-oracle lead and the falsified "51-field user object with bearer tokens" claim share one fingerprint (`ed36cb0858b4`) — the falsified title appears first and wins. Let me confirm that collision.
+[0m$ [0mcd /tmp/opencode && PYTHONPATH=/tmp/opencode/stub timeout 180 python3 dryrun_collide.py 2>&1 | head -40
+fp for (graphql-api.app.cineplex.de|IDOR) = ed36cb0858b4
+
+--- ALL blocks colliding on that fingerprint (any class w/ same asset) ---
+  [IDOR] Unauthenticated IDOR/BOLA on user/order/ticket/voucher GraphQL queries
+  [IDOR] GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
+  [IDOR] Production GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+  [IDOR] Production GraphQL IDOR via userById/searchUsers/adminUsers with valid JWT
+  [IDOR] Production GraphQL IDOR via userById/searchUsers/adminUsers — resolver auth gate absent
+  [IDOR] Production systemic unauthenticated IDOR via single-entity resolvers (userById, invoice,
+  [IDOR] Production systemic unauthenticated IDOR via single-entity resolvers
+  [IDOR] Production GraphQL Systemic IDOR via Single-Entity Resolvers
+  [IDOR] Production systemic unauth'd IDOR via single-entity resolvers
+  [IDOR] Production systemic unauth'd IDOR via single-entity resolvers — GET-verified this cycle
+  [IDOR] Production systemic unauth'd IDOR via all 4 single-entity resolvers — full GET-verified 
+  [IDOR] Production systemic unauth'd IDOR via single-entity resolvers — decoder-before-gate patt
+  [IDOR] Production systemic unauth'd IDOR on single-entity resolvers — decoder-before-gate vs fi
+  [IDOR] Production systemic IDOR via single-entity id-resolvers (control-complete)
+  [IDOR] adminUsers/searchUsers ROOT/ROLE hook firmness
+  [IDOR] Production systemic IDOR via decodePublicId-before-auth on 4 single-entity resolvers (co
+  [IDOR] Production systemic IDOR via decodePublicId-before-auth (control-complete)
+  [IDOR] Production systemic IDOR via decodePublicId-before-auth (control-complete, live this cyc
+  [IDOR] Production systemic IDOR via decodePublicId-before-auth on 4 resolvers (control-complete
+  [IDOR] Cross-tenant proof of the 4-resolver decode-before-gate IDOR with authorized accounts
+  [IDOR] Cross-tenant proof of 4-resolver decode-before-gate IDOR with authorized accounts
+  [IDOR] Cross-tenant decode-before-gate IDOR with authorized program accounts
+  [IDOR] Cross-tenant decode-before-gate IDOR persists; only remaining unproven link is authorize
+  [IDOR] Cross-tenant decode-before-gate IDOR on single-entity resolvers
+  [IDOR] Cross-tenant decode-before-gate IDOR on single-entity resolvers (unchanged, reportable b
+  [IDOR] Cross-tenant decode-before-gate IDOR (unchanged bundle companion)
+  [IDOR] Cross-tenant decode-before-gate IDOR (unchanged, re-scored top)
+  [IDOR] Systemic unauth'd IDOR via decodePublicId-before-gate (unchanged)
+  [IDOR] Authorization omission before ID decoding in four GraphQL resolvers
+  [IDOR] Authorization is omitted ahead of ID decoding in four single-entity resolvers
+  [IDOR] The unauthenticated pre-auth id-decode family is 14 resolvers across four distinct decod
+  [IDOR] The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missin
+  [IDOR] Authorization is enforced per-resolver by hand, not by a shared guard, so id-lookup reso
+  [IDOR] 15 resolvers across 4 decoder contracts and 2 argument shapes decode entity ids before a
+  [IDOR] 15 resolvers decode caller-supplied ids before any authz gate
+  total colliding blocks: 115
+[0m
+[0m← [0mWrite retracted-findings.txt
+Wrote file successfully.
+[0m
+Confirmed: 115 blocks collide on `ed36cb0858b4`, falsified title wins the slot. Per canonical status the whole IDOR family (including the sub-floor Low decoder oracle) must not publish, so a class-level retraction gate is the correct fix. Implementing it as an auditable data file.
+[0m→ [0mRead scripts/sync-issues.py[90m [limit=14, offset=234][0m
+[0m
+[0m← [0mEdit scripts/sync-issues.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+@@ -80,8 +80,27 @@
+         i = j
+     return blocks
+ 
+ 
++RETRACTED_FILE = os.environ.get("RETRACTED_FILE", "retracted-findings.txt")
++
++
++def load_retracted(path=RETRACTED_FILE):
++    """Classes that must never reach the tracker. Retracted blocks are dropped
++    before fingerprinting so they cannot occupy a slot, and cannot suppress a
++    distinct surviving hypothesis that shares an asset+class fingerprint."""
++    try:
++        raw = Path(path).read_text(errors="ignore")
++    except OSError:
++        return set()
++    out = set()
++    for line in raw.splitlines():
++        line = line.split("#", 1)[0].strip()
++        if line:
++            out.add(line.upper())
++    return out
++
++
+ def norm_asset(a):
+     a = (a or "").strip().lower().strip("`")
+     a = re.sub(r'^((get|post|put|patch|delete|head|options)s?)[/,\s]+', '', a, flags=re.I)
+     a = re.sub(r'\s*\(.*?\)', ' ', a)
+
+[0m
+Now adding the loader and the pre-dedup gate.
+[0m→ [0mRead scripts/sync-issues.py[90m [limit=16, offset=262][0m
+[0m
+[0m← [0mEdit scripts/sync-issues.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+@@ -263,8 +263,20 @@
+     + [f"model-{m}" for m in models] + [f"confidence-{c}" for c in confs]
+ for l in all_labels:
+     ensure_label(repo, l)
+ 
++retracted = load_retracted()
++if retracted:
++    keep = [b for b in blocks
++            if (b.get("class") or "").strip().upper() not in retracted]
++    if len(keep) != len(blocks):
++        from collections import Counter as _C
++        dropped = _C((b.get("class") or "NONE").strip().upper()
++                     for b in blocks if b not in keep)
++        print(f"retracted gate: {len(blocks)} -> {len(keep)} "
++              f"(dropped {dict(dropped)}, list={sorted(retracted)})")
++    blocks = keep
++
+ try:
+     existing = list(repo.get_issues(state="all", labels=["bug-bounty"]))
+ except Exception:
+     existing = list(repo.get_issues(state="all"))
+
+[0m
+[0m← [0mEdit scripts/sync-issues.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/sync-issues.py
+@@ -265,14 +265,17 @@
+     ensure_label(repo, l)
+ 
+ retracted = load_retracted()
+ if retracted:
+-    keep = [b for b in blocks
+-            if (b.get("class") or "").strip().upper() not in retracted]
+-    if len(keep) != len(blocks):
+-        from collections import Counter as _C
+-        dropped = _C((b.get("class") or "NONE").strip().upper()
+-                     for b in blocks if b not in keep)
++    from collections import Counter as _C
++    keep, dropped = [], _C()
++    for b in blocks:
++        cls = (b.get("class") or "NONE").strip().upper()
++        if cls in retracted:
++            dropped[cls] += 1
++        else:
++            keep.append(b)
++    if dropped:
+         print(f"retracted gate: {len(blocks)} -> {len(keep)} "
+               f"(dropped {dict(dropped)}, list={sorted(retracted)})")
+     blocks = keep
+ 
+
+[0m
+The `b not in keep` check is O(n²) with dict comparison. Let me fix that.
+[0m← [0mWrite /tmp/opencode/verify_gate.py
+Wrote file successfully.
+[0m
+Now verifying the gate end-to-end against the real lead files.
+[0m$ [0mcd /tmp/opencode && PYTHONPATH=/tmp/opencode/stub timeout 180 python3 verify_gate.py 2>&1 | head -40
+load_retracted() -> ['IDOR']
+
+parsed:             1221
+after gate:         920
+dropped by class:   {'IDOR': 301}
+
+unique fps to publish: 60
+any IDOR left?         False
+
+the three canonical survivors should be present:
+  cors      4
+       CORS preflight grants credentialed mutating verbs from a dev loopback origin on 
+       Credentialed cross-origin write primitive on shared GraphQL CORS policy
+  mass      5
+       Relay broker saturation indicates write-path DoS / message-tampering surface
+       Authorization flags and tenant membership are settable from the request body on 
+  cname     11
+       Dangling-CNAME takeover precondition on dev host
+       Dangling CNAME Takeover on web-dev.cineplex.de
+  takover   0
+  dangl     10
+       Dangling-CNAME takeover precondition on dev host
+       Dangling CNAME Takeover on web-dev.cineplex.de
+[0m
+Gate verified: 301 IDOR blocks dropped, 70→60 publishable fingerprints, zero IDOR survives, all three canonical survivors intact. Final syntax check and diff review.
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && git diff --stat; echo "=== DIFF ==="; git diff
+.github/workflows/hunt.yml |  8 ++++----
+ scripts/sync-issues.py     | 34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
+=== DIFF ===
+diff --git a/.github/workflows/hunt.yml b/.github/workflows/hunt.yml
+index 7786000..ea03503 100644
+--- a/.github/workflows/hunt.yml
++++ b/.github/workflows/hunt.yml
+@@ -207,22 +207,22 @@ jobs:
+           python3 << 'ROBOT_PY'
+           import re, glob, ssl, urllib.request, os, time
+           allow=os.environ.get('PROBE_ALLOW','').lower()
+-          pat=re.compile(r'https?://[^\s"\)\]\}]+')
++          pat=re.compile(r'https?://[^\s"\)\]\}`]+')
+           urls,seen=[],set()
+           for f in glob.glob('art/lead_*.txt')+glob.glob('lead_*.txt')+glob.glob('analyst-*.out'):
+               try: txt=open(f,errors='ignore').read()
+               except OSError: continue
+               for m in pat.findall(txt):
+-                  u=m.strip('.,;)]}>')
++                  u=m.strip('.,;)]}>`')
+                   if u in seen or not u.startswith('https://'): continue
+                   seen.add(u)
+                   if allow and not any(a in u.lower() for a in allow.split('|')): continue
+                   urls.append(u[:300])
+           ctx=ssl.create_default_context(); rows=[]
+-          for u in urls[:12]:
++          for u in urls[:60]:
+               time.sleep(1)
+               try:
+-                  req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (passive verifier)'})
++                  req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'})
+                   with urllib.request.urlopen(req,timeout=12,context=ctx) as r:
+                       rows.append('%s -> %s len=%s'%(u,r.status,r.headers.get('Content-Length','?')))
+               except urllib.error.HTTPError as e:
+diff --git a/scripts/sync-issues.py b/scripts/sync-issues.py
+index eef0e3b..797449d 100644
+--- a/scripts/sync-issues.py
++++ b/scripts/sync-issues.py
+@@ -81,6 +81,25 @@ def parse_blocks(text, model):
+     return blocks
+ 
+ 
++RETRACTED_FILE = os.environ.get("RETRACTED_FILE", "retracted-findings.txt")
++
++
++def load_retracted(path=RETRACTED_FILE):
++    """Classes that must never reach the tracker. Retracted blocks are dropped
++    before fingerprinting so they cannot occupy a slot, and cannot suppress a
++    distinct surviving hypothesis that shares an asset+class fingerprint."""
++    try:
++        raw = Path(path).read_text(errors="ignore")
++    except OSError:
++        return set()
++    out = set()
++    for line in raw.splitlines():
++        line = line.split("#", 1)[0].strip()
++        if line:
++            out.add(line.upper())
++    return out
++
++
+ def norm_asset(a):
+     a = (a or "").strip().lower().strip("`")
+     a = re.sub(r'^((get|post|put|patch|delete|head|options)s?)[/,\s]+', '', a, flags=re.I)
+@@ -245,6 +264,21 @@ def main():
+     for l in all_labels:
+         ensure_label(repo, l)
+ 
++    retracted = load_retracted()
++    if retracted:
++        from collections import Counter as _C
++        keep, dropped = [], _C()
++        for b in blocks:
++            cls = (b.get("class") or "NONE").strip().upper()
++            if cls in retracted:
++                dropped[cls] += 1
++            else:
++                keep.append(b)
++        if dropped:
++            print(f"retracted gate: {len(blocks)} -> {len(keep)} "
++                  f"(dropped {dict(dropped)}, list={sorted(retracted)})")
++        blocks = keep
++
+     try:
+         existing = list(repo.get_issues(state="all", labels=["bug-bounty"]))
+     except Exception:
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 -m py_compile scripts/sync-issues.py && echo "sync-issues.py COMPILES OK"; python3 -c "import yaml;yaml.safe_load(open('.github/workflows/hunt.yml'));print('hunt.yml YAML OK')"
+sync-issues.py COMPILES OK
+hunt.yml YAML OK
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && rm -rf scripts/__pycache__ && git status --short
+M .github/workflows/hunt.yml
+ M scripts/sync-issues.py
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+?? retracted-findings.txt
+[0m
+Both planned actions are done, and step 2 surfaced a bug that invalidated a prior claim.
+
+## 1. Verifier defects fixed (`.github/workflows/hunt.yml`)
+
+| Line | Defect | Fix |
+|---|---|---|
+| 210 | regex char class lacked `` ` `` | added `` ` `` |
+| 216 | `strip()` set lacked `` ` `` | added `` ` `` |
+| 222 | `urls[:12]` cap | `urls[:60]` |
+| 225 | `Mozilla/5.0 (passive verifier)` bot UA | full Chrome 120 UA |
+
+Validated on the exact strings that produced the old failures: **3 backtick-contaminated URLs eliminated, all legitimate URLs preserved.**
+
+## 2. Live re-verification (read-only, 1 rps)
+
+- **DoH CNAME** — `Status0`, `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, TTL 300. No backtick 400, no bot 403.
+- **GraphQL arbitrary unshadowed path** — balanced `query=%7B__typename%7D` → `200 {"data":{"__typename":"Query"}}`.
+- **CORS preflight re-confirmed same-cycle** on `graphql-api.app.cineplex.de/`, `Origin: https://app.staging.cineplex.de`:
+  - `access-control-allow-origin: https://app.staging.cineplex.de` (staging origin trusted by **production**)
+  - `access-control-allow-credentials: true`
+  - `access-control-allow-headers: content-type,authorization`
+  - `access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE` (no `OPTIONS`)
+  - `vary: Origin, Access-Control-Request-Headers`
+  - `OPTIONS` on unshadowed paths → `403`; root `/` is the only POST-capable preflight surface.
+
+Two of my own probes were initially wrong and I corrected them: I double-encoded the query param (GraphQL `400 GRAPHQL_PARSE_FAILED` was mine, not the target's), and my CORS header lookup was case-sensitive while the server sends lowercase headers.
+
+## 3. Correction: `publish_path_clear` is falsified
+
+Running the parser against the real lead files:
+
+- **1221** `[HYP]` blocks parse; **301 carry `class: IDOR`** — the prior claim that IDOR text lives only in `[LEARN]` lines was false.
+- Blast radius is bounded by `fingerprint()` = `md5(asset|class)` plus in-run dedup: **70** unique fingerprints, **10** of them the falsified IDOR family.
+- Worse, `fingerprint()` ignores the title when an asset exists, so **115 blocks collide on `ed36cb0858b4`** — the falsified "IDOR/BOLA on user/order/ticket/voucher" title appears first and wins the slot.
+- `rejected` is built *after* creation and only closes existing issues; it never guards `create`. So a workflow run would republish retracted findings.
+
+## 4. Fix applied (`scripts/sync-issues.py` + new `retracted-findings.txt`)
+
+Added a pre-dedup retraction gate: `load_retracted()` reads an auditable, append-only class list, and retracted blocks are dropped *before* fingerprinting — so they can neither publish nor occupy a slot that would suppress a distinct surviving hypothesis.
+
+Verified: **1221 → 920 blocks, 301 IDOR dropped, 70 → 60 publishable fingerprints, zero IDOR remaining**, and all three canonical survivors (CORS, mass assignment, dangling CNAME) intact.
+
+`py_compile` and YAML parse both pass. Changes are uncommitted; `analyst-*.txt`/`ctx.txt` remain untracked and untouched.
+
+## Open decision for you
+
+I deliberately did **not** change `fingerprint()` to include a title component. It would fix the general collapse of distinct claims sharing one `(asset, class)` slot — visible in many non-IDOR families too — but it changes dedup granularity and issue volume across the whole tracker. Existing issues are safe (their fp is pinned in the `<!-- fingerprint:... -->` comment), but new runs would fan out substantially. Want me to make the fingerprint title-aware, or leave dedup as-is and rely on the retraction gate?
