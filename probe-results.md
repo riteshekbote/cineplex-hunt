@@ -1284,3 +1284,8 @@ https://web-dev.cineplex.de/ -> ERR <urlopen error [Errno -2] Name or service no
 https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+
+## 2026-10-05 14:59:25 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know

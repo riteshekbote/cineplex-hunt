@@ -2322,3 +2322,10 @@ wwww.cineplex.de
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics
 
 ## 2026-10-05 06:15:48 UTC
+
+## 2026-10-05 14:59:21 UTC
+- NEW cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in the string "cineplex.de", not a fixed list. Verified 204+ACAO+ACAC:true for attacker.cineplex.de,
+- NEW cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real data ({"data":{"__typename":"Query"}}). Null origin is reachable from s
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
+- CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
+- CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
