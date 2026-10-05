@@ -1058,3 +1058,81 @@
 - 2026-10-04 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
 - 2026-10-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
 - 2026-10-04 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: reverified same-cycle by direct read, 204 on both with reflected `ACAO`, `ACAC: true`, POST in `ACAM`, and `authorization` in `ACAH`. Now same-cycle evidence rather than log inference. Confirmed the exact `ACAM` string is `GET,HEAD,PUT,PATCH,POST,DELETE` with no `OPTIONS` entry.
+- 2026-10-05 REJECTED wordpress_pingback_ssrf @ cloud.systems.cineplex.de: body is an Angular SPA shell, not WordPress, so there is no pingback SSRF endpoint to report.
+- 2026-10-05 REJECTED metrics_info_leak @ data-9fc27eb430.cineplex.de: unauthenticated counters only, which is descriptive-info and not reportable.
+- 2026-10-05 REJECTED spa_get_state_change @ profil.cineplex.de: catch-all Angular fallback returns index.html and no state change occurs on GET.
+- 2026-10-05 ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection.
+- 2026-10-05 REJECTED graphql_false_negative_400 @ graphql-api.app.cineplex.de: an HTTP 400 recorded from a truncated ?query={__typename URL was a harness artifact, so negative results must be re-checked against the request line before being trusted.
+- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+- 2026-10-05 REJECTED my prior claim "4 equivalent unauthenticated full-schema GraphQL surfaces": measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+- 2026-10-05 REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system.
+- 2026-10-05 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: unauthenticated full schema, 83 active queries and 140 active mutations, identical names across environments, 44 `INPUT_OBJECT` types.
+- 2026-10-05 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-05 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-05 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-05 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-05 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-05 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+- 2026-10-05 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: OPTIONS / returns 204 reflecting Origin with ACAC:true, ACAH:content-type,authorization, ACAM includes POST; verified same-cycle 2/2.
+- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+- 2026-10-05 REJECTED my prior claim "4 equivalent unauthenticated full-schema GraphQL surfaces": measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+- 2026-10-05 REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system.
+- 2026-10-05 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: unauthenticated full schema, 83 active queries and 140 active mutations, identical names across environments, 44 `INPUT_OBJECT` types.
+- 2026-10-05 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-05 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-05 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-05 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-05 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-05 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+- 2026-10-05 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: OPTIONS / returns 204 reflecting Origin with ACAC:true, ACAH:content-type,authorization, ACAM includes POST; verified same-cycle 2/2.
+- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+- 2026-10-05 REJECTED my prior claim "4 equivalent unauthenticated full-schema GraphQL surfaces": measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+- 2026-10-05 REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system.
+- 2026-10-05 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: unauthenticated full schema, 83 active queries and 140 active mutations, identical names across environments, 44 `INPUT_OBJECT` types.
+- 2026-10-05 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-05 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-05 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-05 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-05 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-05 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+- 2026-10-05 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: OPTIONS / returns 204 reflecting Origin with ACAC:true, ACAH:content-type,authorization, ACAM includes POST; verified same-cycle 2/2.
+- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+- 2026-10-05 REJECTED my prior claim "4 equivalent unauthenticated full-schema GraphQL surfaces": measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+- 2026-10-05 REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system.
+- 2026-10-05 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: unauthenticated full schema, 83 active queries and 140 active mutations, identical names across environments, 44 `INPUT_OBJECT` types.
+- 2026-10-05 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-05 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-05 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-05 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-05 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-05 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+- 2026-10-05 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: OPTIONS / returns 204 reflecting Origin with ACAC:true, ACAH:content-type,authorization, ACAM includes POST; verified same-cycle 2/2.
+- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+- 2026-10-05 REJECTED my prior claim "4 equivalent unauthenticated full-schema GraphQL surfaces": measured only GET body equivalence, generalized to transport; POST behavior differs.
+- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+- 2026-10-05 REJECTED my own prior claim "remediation scope = 2 paths × 2 envs" for the GraphQL schema exposure: derived from testing only `/graphql`, `/api/graphql`, `/gql`, then generalized to the system.
+- 2026-10-05 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: unauthenticated full schema, 83 active queries and 140 active mutations, identical names across environments, 44 `INPUT_OBJECT` types.
+- 2026-10-05 ACCEPTED idor_booking @ graphql-api.app.cineplex.de: 4/4 resolvers GET-verified both envs (id:"0" → INVALID_ID, decodePublicId-before-gate); structural POC complete; HUMAN_ONLY cross-tenant proof.
+- 2026-10-05 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- 2026-10-05 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 all methods/encodings 20+ cycles; separate stricter edge config; hypothesis dead.
+- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+- 2026-10-05 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-05 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
+- 2026-10-05 CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read missed 8 URL/credential-shaped args; CVSS 5.3→7.5 re-score needed.
+- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.

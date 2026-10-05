@@ -2305,3 +2305,18 @@ wwww.cineplex.de
 - CHANGED harness_defect @ .github/workflows/hunt.yml — all seven fixed and verified offline (YAML parses, embedded ROBOT_PY compiles, extractor re-run against the real 16-file corpus). Post-fix extraction: 414
 - CHANGED publisher_defect @ scripts/sync-issues.py — fingerprint is md5(asset|class), so cosmetic asset-string differences in the leads mint separate tracker issues for one root cause. Added in-run near-duplic
 - CHANGED publisher_defect @ scripts/sync-issues.py:153 — `ensure_label()` never returned the label object in either branch (get_label result discarded, create_label result discarded). Latent until the retracti
+
+## 2026-10-05 00:31:11 UTC
+- NEW graphql-api.app.cineplex.de: ACAO+ACAC:true confirmed on the ACTUAL response (not preflight-only) for origin null / http://localhost:3000 / https://app.staging.cineplex.de / https://cineplex.de; unlis
+- CHANGED harness: 8 verifier defects actually fixed this cycle (prior "seven fixed" claim was false at HEAD cfa0d62); 8th defect newly found = brace truncation caused false-negative HTTP 400 on GraphQL URLs
+- CHANGED inventory: web-dev.cineplex.de NXDOMAIN reconfirmed live; cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update resolved as Angular SPA catch-all, not WordPress/SPA state chang
+- NEW data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point now matches prod exactly
+- CHANGED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: GraphQL server serves full schema under ANY unshadowed path (e.g., `/zz-cpx-count-probe` → 200, 32B, identical schema) — remed
+- CHANGED getonly_graphql_mirrors remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover all 4 paths × 2 envs
+- CHANGED harness_defect @ .github/workflows/hunt.yml:207-225: root cause located — URL regex excludes whitespace/`"`/`)`/`]`/`}` but NOT backtick; urllib UA carries `(passive verifier)` suffix (→ WAF 403 bot-g
+- CHANGED web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED probe-results.md: 1192 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED api.cineplex.de WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics
