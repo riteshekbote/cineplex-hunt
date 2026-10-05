@@ -2329,3 +2329,59 @@ wwww.cineplex.de
 - NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
 - CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
 - CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
+
+## 2026-10-05 21:51:15 UTC
+- NEW graphql-api.app.cineplex.de: ACAO+ACAC:true confirmed on the ACTUAL response (not preflight-only) for origin null / http://localhost:3000 / https://app.staging.cineplex.de / https://cineplex.de; unlis
+- CHANGED harness: 8 verifier defects actually fixed this cycle (prior "seven fixed" claim was false at HEAD cfa0d62); 8th defect newly found = brace truncation caused false-negative HTTP 400 on GraphQL URLs
+- CHANGED inventory: web-dev.cineplex.de NXDOMAIN reconfirmed live; cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update resolved as Angular SPA catch-all, not WordPress/SPA state chang
+- NEW data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON
+- NEW cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in the string "cineplex.de", not a fixed list. Verified 204+ACAO+ACAC:true for attacker.cineplex.de,
+- NEW cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real data ({"data":{"__typename":"Query"}}). Null origin is reachable from s
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
+- CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
+- CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
+- CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
+- CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORRECTION to the 14:59 claim. The allowlist is NOT a raw string suffix test. Live preflight this cycle: `https://sub.attacker.cineplex.de` -
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: actual GET response (not preflight-only) also reflects a credentialed ACAO for a non-existent subdomain: `curl -H "Origin: https://sub.attack
+- CHANGED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: reconfirmed on the ACTUAL response, prod: 200 with `access-control-allow-origin: null` + `access-control-allow-credentials: true` and real 
+- CHANGED cors_preflight_shape @ graphql-api.app.cineplex.de: reconfirmed exact headers, `curl -X OPTIONS / -H "Origin: https://attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-
+- CHANGED dangling_cname_webdev @ web-dev.cineplex.de: reconfirmed live this cycle. `dig +short CNAME web-dev.cineplex.de @8.8.8.8` -> `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`; `dig 
+- CHANGED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: schema reconfirmed live and the 14:59 correction is confirmed correct. `__type(name:"UserPrivileges")` -> `kind: OBJECT`, `inputFields: 
+- CHANGED cors_credentialed_crossenv_graphql: impact narrowed. The exploit path is no longer "attacker registers a lookalike domain"; it requires the attacker to control some real `*.cineplex.de` hostname, whic
+- NEW graphql-api.app.cineplex.de: ACAO+ACAC:true confirmed on the ACTUAL response (not preflight-only) for origin null / http://localhost:3000 / https://app.staging.cineplex.de / https://cineplex.de; unlis
+- CHANGED harness: 8 verifier defects actually fixed this cycle (prior "seven fixed" claim was false at HEAD cfa0d62); 8th defect newly found = brace truncation caused false-negative HTTP 400 on GraphQL URLs
+- CHANGED inventory: web-dev.cineplex.de NXDOMAIN reconfirmed live; cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update resolved as Angular SPA catch-all, not WordPress/SPA state chang
+- NEW data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON
+- NEW cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in the string "cineplex.de", not a fixed list. Verified 204+ACAO+ACAC:true for attacker.cineplex.de,
+- NEW cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real data ({"data":{"__typename":"Query"}}). Null origin is reachable from s
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
+- CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
+- CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose. web-dev CNAMEs to a non-existent Azure Container Apps envir
+- CHANGED harness_defect @ .github/workflows/hunt.yml:210-220: the verifier's file globs match NOTHING; the real corpus is leads/lead-*.md. Offline replay of the exact regex and strip set yields 0 URLs from the
+- CHANGED mass_assignment @ graphql-api.app.cineplex.de: UserPrivileges is an OBJECT type with inputFields:null, so the prior claim that it is one of the 44 mass-assignable input objects is wrong. The genuine s
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORRECTION to the 14:59 claim. The allowlist is NOT a raw string suffix test. Live preflight this cycle: `https://sub.attacker.cineplex.de` -
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: actual GET response (not preflight-only) also reflects a credentialed ACAO for a non-existent subdomain: `curl -H "Origin: https://sub.attack
+- CHANGED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: reconfirmed on the ACTUAL response, prod: 200 with `access-control-allow-origin: null` + `access-control-allow-credentials: true` and real 
+- CHANGED cors_preflight_shape @ graphql-api.app.cineplex.de: reconfirmed exact headers, `curl -X OPTIONS / -H "Origin: https://attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-
+- CHANGED dangling_cname_webdev @ web-dev.cineplex.de: reconfirmed live this cycle. `dig +short CNAME web-dev.cineplex.de @8.8.8.8` -> `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`; `dig 
+- CHANGED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: schema reconfirmed live and the 14:59 correction is confirmed correct. `__type(name:"UserPrivileges")` -> `kind: OBJECT`, `inputFields: 
+- CHANGED cors_credentialed_crossenv_graphql: impact narrowed. The exploit path is no longer "attacker registers a lookalike domain"; it requires the attacker to control some real `*.cineplex.de` hostname, whic
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORRECTION to the 14:59 claim. The allowlist enforces a DNS label boundary, not a raw string suffix. Live: `sub.attacker.cineplex.de` → 204 r
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: the credentialed ACAO is confirmed on the actual GET response, not just preflight — `-H "Origin: https://sub.attacker.cineplex.de"` → 200, AC
+- CHANGED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: reconfirmed on prod (200, `ACAO: null`, `ACAC: true`, real data) and now also on staging `graphql-api.app.staging.cineplex.de/graphql` (200
+- CHANGED cors_preflight_shape @ graphql-api.app.cineplex.de: reconfirmed exact header set — 204, ACAO reflected, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`. OPTION
+- CHANGED dangling_cname_webdev @ web-dev.cineplex.de: reconfirmed live. CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, target dig returns empty (NXDOMAIN). Azure claimability sti
+- CHANGED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: the 14:59 correction is confirmed correct by live introspection — `UserPrivileges` is `kind: OBJECT` with `inputFields: null`; `CinemaOp
+- CHANGED cors_credentialed_crossenv_graphql: impact narrowed. Exploitation now requires control of a real `*.cineplex.de` hostname, which is exactly what the web-dev dangling-CNAME claim would supply. The two 
+- NEW cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" (verified attacker.cineplex.de, evil.cineplex.de, etc. all reflected with ACAC:true
+- NEW cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: web-dev dangling CNAME (Azure Container Apps) + production CORS reflecting *.cineplex.de origins = takeove
+- CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (prior claim of 7 was false); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update resolved as Angular SPA catch-all (not WordPress/SPA state change)
+- NEW data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON exposed
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500)
+- CHANGED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
+- CHANGED getonly_graphql_mirrors remediation scope corrected: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)

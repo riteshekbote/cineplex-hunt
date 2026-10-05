@@ -5058,3 +5058,44 @@
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface.
 - LEARN: CORRECTION @ knowledge/index.md: 2026-09-12..09-19 claim "full mutation arg enumeration confirms no injection vectors" factually incorrect — name-only read miss
 - LEARN: CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA
+
+## RANKED HYPOTHESES 2026-10-05 21:51:15 UTC
+- [95] graphql-api.app.cineplex.de: CORS Suffix Match Allows Arbitrary *.cineplex.de Origin Reflection with Credentials (from art/lead_nemotron3.txt)
+- [88] graphql-api.app.cineplex.de,: CORS: production GraphQL reflects credentialed ACAO to an allowlist that trusts the staging origin (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): Survivors unchanged and unchanged in rank: (1) credentialed cross-origin write primitive (88, MISCONFIG, AUTH_HELPED); (2) mass assignment on privilege fields (
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: https://attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Hea
+- LEARN: Measured publisher behaviour end-to-end against a mock GitHub (offline, no network): 1224 blocks -> 70 fingerprints -> 59 after retraction suppression -> 57 aft
+- LEARN: Remaining tracker debt, NOT auto-mergeable and deliberately left alone: the single web-dev dangling-CNAME root cause is still authored as ~5 separate [HYP] bloc
+- LEARN: REJECTED wordpress_pingback_ssrf @ cloud.systems.cineplex.de: body is an Angular SPA shell, not WordPress, so there is no pingback SSRF endpoint to report.
+- LEARN: REJECTED metrics_info_leak @ data-9fc27eb430.cineplex.de: unauthenticated counters only, which is descriptive-info and not reportable.
+- LEARN: REJECTED spa_get_state_change @ profil.cineplex.de: catch-all Angular fallback returns index.html and no state change occurs on GET.
+- LEARN: ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would hav
+- LEARN: REJECTED graphql_false_negative_400 @ graphql-api.app.cineplex.de: an HTTP 400 recorded from a truncated ?query={__typename URL was a harness artifact, so negat
+- LEARN: ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern is checked for a
+- LEARN: ACCEPTED cors_resolvability_irrelevant @ graphql-api.app.cineplex.de: the credentialed ACAO is issued for origins that do not resolve, since the allowlist is ev
+- LEARN: Measured publisher behaviour end-to-end against a mock GitHub (offline, no network): 1224 blocks -> 70 fingerprints -> 59 after retraction suppression -> 57 aft
+- LEARN: Remaining tracker debt, NOT auto-mergeable and deliberately left alone: the single web-dev dangling-CNAME root cause is still authored as ~5 separate [HYP] bloc
+- LEARN: REJECTED wordpress_pingback_ssrf @ cloud.systems.cineplex.de: body is an Angular SPA shell, not WordPress, so there is no pingback SSRF endpoint to report.
+- LEARN: REJECTED metrics_info_leak @ data-9fc27eb430.cineplex.de: unauthenticated counters only, which is descriptive-info and not reportable.
+- LEARN: REJECTED spa_get_state_change @ profil.cineplex.de: catch-all Angular fallback returns index.html and no state change occurs on GET.
+- LEARN: ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would hav
+- LEARN: REJECTED graphql_false_negative_400 @ graphql-api.app.cineplex.de: an HTTP 400 recorded from a truncated ?query={__typename URL was a harness artifact, so negat
+- LEARN: ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern is checked for a
+- LEARN: ACCEPTED cors_resolvability_irrelevant @ graphql-api.app.cineplex.de: the credentialed ACAO is issued for origins that do not resolve, since the allowlist is ev
+- LEARN: ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern skips the label 
+- LEARN: ACCEPTED cors_resolvability_irrelevant @ graphql-api.app.cineplex.de: the credentialed ACAO is issued for origins that do not resolve, because the allowlist is 
+- LEARN: ACCEPTED schema_correction_confirmed @ graphql-api.app.cineplex.de: live introspection returns `UserPrivileges` as `kind: OBJECT` with `inputFields: null`, conf
+- LEARN: REJECTED cors_lookalike_registrable_domain @ graphql-api.app.cineplex.de: the earlier "any origin ending in the string cineplex.de" reading predicted `evilcinep
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAO:null + ACAC:true on actual GET response with data
+- LEARN: ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two verified primitives compose (dangle + CORS suffix)
+- LEARN: CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400
+- LEARN: CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+- LEARN: ACCEPTED data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON (descriptive only)
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now 200 (was 500)
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+- LEARN: CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- LEARN: REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf u
+- LEARN: CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprin
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
