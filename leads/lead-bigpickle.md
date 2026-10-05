@@ -9057,3 +9057,4 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection.
 [LEARN] REJECTED graphql_false_negative_400 @ graphql-api.app.cineplex.de: an HTTP 400 recorded from a truncated ?query={__typename URL was a harness artifact, so negative results must be re-checked against the request line before being trusted.
 [RISK] bugs.olivermaicher.eu: 35 reason: all live work this cycle was read-only GET/OPTIONS at <=1 rps against in-scope cineplex.de hosts, no PII or authentication data was retrieved, no mutation was attempted, and the two highest-value confirmations require a consented human account.
+## 2026-10-05 06:15:36 UTC [target] (model bigpickle)
