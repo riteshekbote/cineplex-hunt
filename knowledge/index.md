@@ -1186,3 +1186,4 @@
 - 2026-10-06 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
 - 2026-10-06 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS suffix match)
 - 2026-10-06 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- 2026-10-06 REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: the retired verifier's User-Agent, not the application, generated its 403s. Manual curl with browser UA received 200 with reflected ACAO, ACAC true, and the full introspection payload on the same hosts and paths, so verifier status codes carry no information and must never support positive or negative conclusions.

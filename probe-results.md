@@ -1311,3 +1311,7 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 ## 2026-10-06 09:23:44 UTC
 https://attacker.cineplex.de -> HTTP 403
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-06 16:19:44 UTC
+https://attacker.cineplex.de -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
