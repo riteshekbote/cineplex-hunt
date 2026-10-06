@@ -1303,3 +1303,7 @@ https://cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://notcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
 https://a.evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+
+## 2026-10-06 02:11:15 UTC
+https://attacker.cineplex.de -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403

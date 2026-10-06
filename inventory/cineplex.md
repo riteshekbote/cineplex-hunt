@@ -2385,3 +2385,21 @@ wwww.cineplex.de
 - CHANGED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500)
 - CHANGED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
 - CHANGED getonly_graphql_mirrors remediation scope corrected: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+
+## 2026-10-06 02:11:12 UTC
+- CHANGED probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS an
+- CHANGED verifier_replaced @ scripts/passive_verify.py: extraction is now a testable module with 14 offline tests (scripts/test_passive_verify.py, all passing). Offline replay over the real corpus extracts fil
+- CHANGED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: this file repeatedly recorded "403 at root proves introspection visually disabled", "
+- CHANGED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: this file repeatedly recorded "403 at root proves introspection visually disabled", "
+- CHANGED probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS an
+- CHANGED malformed_graphql_probe_bodies @ graphql-api.app.cineplex.de: 19 probe bodies in this file carry one surplus closing brace, `{"query":"{__schema{types{name fields{name}}}"}}`, against 20 correctly bal
+- CHANGED retracted_botgate_conclusions @ api.cineplex.de, graphql-api.app.staging.cineplex.de: conclusions in this file that rest on an automated 403 are void, because the verifier's own User-Agent `Mozilla/5.
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point now matches prod exactly
+- NEW cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+- NEW cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- NEW cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS suffix match)
+- CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all (not WordPress/SPA state change)
+- CHANGED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
+- CHANGED getonly_graphql_mirrors remediation scope corrected: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
