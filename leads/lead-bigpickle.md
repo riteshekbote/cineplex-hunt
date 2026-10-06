@@ -9378,3 +9378,4 @@ impact: <what attacker gets + severity>
 testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
 [NEW] api.cineplex.de - Host in inventory, no prior probes
 [CHANGED] Target is now "api" per current state
+## 2026-10-06 21:11:07 UTC [target] (model bigpickle)

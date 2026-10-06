@@ -2448,3 +2448,16 @@ wwww.cineplex.de
 - CHANGED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS and GraphQL endpoints
 - CHANGED verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
 - CHANGED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 
+
+## 2026-10-06 21:11:20 UTC
+- CHANGED `probe_results_void` @ `.github/workflows/hunt.yml` — retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS/GraphQL endpoints, 19 probe bodies carry
+- CHANGED `verifier_replaced` @ `scripts/passive_verify.py` — extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+- CHANGED `retracted_botgate_conclusions` @ `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `api.cineplex.de` — all conclusions resting on automated 403 are void; verifier's own UA produce
+- CHANGED `graphql-api.app.staging.cineplex.de/graphql` parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- CHANGED `cors_allowlist_suffix_match` @ `graphql-api.app.cineplex.de` — CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+- CHANGED `cors_null_origin_credentialed` @ `graphql-api.app.cineplex.de` — actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- CHANGED `cors_chain_takeover_to_credentialed_read` @ `web-dev.cineplex.de` + `graphql-api.app.cineplex.de` — two independently verified primitives compose (dangling CNAME + CORS suffix match)
+- CHANGED `harness_defect` @ `.github/workflows/hunt.yml` — 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- CHANGED `graphql_arbitrary_path_catchall` @ `graphql-api.app.{,staging.}cineplex.de` — full schema under ANY unshadowed path
+- CHANGED `getonly_graphql_mirrors` remediation scope corrected: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- CHANGED `idor_booking` residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
