@@ -5123,3 +5123,26 @@
 - LEARN: CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprin
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+
+## RANKED HYPOTHESES 2026-10-06 09:23:41 UTC
+- [95] graphql-api.app.cineplex.de: CORS Suffix Match Allows Arbitrary *.cineplex.de Origin Reflection with Credentials (from art/lead_nemotron3.txt)
+- [0] <host/endpoint>: <title> (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: https://attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Hea
+- LEARN: REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: the retired verifier's User-Agent, not the application, generated its 403s. Manu
+- LEARN: ACCEPTED malformed_request_false_negative @ graphql-api.app.cineplex.de: a surplus brace in an introspect query body yields a 400 that is indistinguishable from
+- LEARN: ACCEPTED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to 
+- LEARN: ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtere
+- LEARN: ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches 
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- LEARN: ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling C
+- LEARN: CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- LEARN: CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+- LEARN: ACCEPTED data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON (descriptive only)
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+- LEARN: CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- LEARN: REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf u
+- LEARN: CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprin
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface

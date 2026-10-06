@@ -9269,3 +9269,38 @@ testability: HUMAN_ONLY
 [CHANGED] retracted_botgate_conclusions @ api.cineplex.de, graphql-api.app.staging.cineplex.de: conclusions in this file that rest on an automated 403 are void, because the verifier's own User-Agent `Mozilla/5.0 (passive verifier)` produced those 403s while manual curl received 200 with reflected ACAO and ACAC. Treat every automated 403 as an absence of information rather than as evidence of a gate.
 [LEARN] REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: the retired verifier's User-Agent, not the application, generated its 403s. Manual curl with a browser User-Agent received 200 with reflected ACAO, ACAC true, and the full introspection payload on the same hosts and paths, so verifier status codes carry no information and must never support positive or negative conclusions.
 [LEARN] ACCEPTED malformed_request_false_negative @ graphql-api.app.cineplex.de: a surplus brace in an introspect query body yields a 400 that is indistinguishable from a disabled endpoint unless the body is brace-balanced before sending. Any GraphQL evidence must carry the exact balanced body used, and balanced bodies here return 200 with the full schema.
+## 2026-10-06 09:23:32 UTC [target] (model bigpickle)
+[CHANGED] probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS and 2 sent a trailing quote, so their ERR Name-or-service-not-known is a harness artifact and not a DNS observation; 557 lines recorded HTTP 403 against hosts that answer 200 with a browser User-Agent; no cycle exceeded 12 probes because of urls[:12]; long URLs were truncated at 300 chars; PROBE_ALLOW was substring-matched so evilcineplex.de passed the cineplex.de filter. Replaced by scripts/passive_verify.py with 14 offline tests.
+[CHANGED] malformed_graphql_probe_bodies @ graphql-api.app.cineplex.de: 19 probe bodies in this file carry one surplus closing brace, `{"query":"{__schema{types{name fields{name}}}"}}`, against 20 correctly balanced bodies. The unbalanced form is a client-side parse error that returns HTTP 400 from the GraphQL layer, so any 400 recorded against it is a malformed-request artifact and must not be read as introspection being disabled. This file's own later confirmation ("Full introspection confirmed via POST (200 OK)") supersedes every 400 recorded from the 19 malformed bodies.
+[CHANGED] retracted_botgate_conclusions @ api.cineplex.de, graphql-api.app.staging.cineplex.de: conclusions in this file that rest on an automated 403 are void, because the verifier's own User-Agent `Mozilla/5.0 (passive verifier)` produced those 403s while manual curl received 200 with reflected ACAO and ACAC. Treat every automated 403 as an absence of information rather than as evidence of a gate.
+[LEARN] REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: the retired verifier's User-Agent, not the application, generated its 403s. Manual curl with a browser User-Agent received 200 with reflected ACAO, ACAC true, and the full introspection payload on the same hosts and paths, so verifier status codes carry no information and must never support positive or negative conclusions.
+[LEARN] ACCEPTED malformed_request_false_negative @ graphql-api.app.cineplex.de: a surplus brace in an introspect query body yields a 400 that is indistinguishable from a disabled endpoint unless the body is brace-balanced before sending. Any GraphQL evidence must carry the exact balanced body used, and balanced bodies here return 200 with the full schema.
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[NEW] api.cineplex.de - Host in inventory, no prior probes
+[CHANGED] Target is now "api" per current state
