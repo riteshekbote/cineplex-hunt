@@ -9379,3 +9379,43 @@ testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
 [NEW] api.cineplex.de - Host in inventory, no prior probes
 [CHANGED] Target is now "api" per current state
 ## 2026-10-06 21:11:07 UTC [target] (model bigpickle)
+## 2026-10-07 00:25:39 UTC [target] (model bigpickle)
+[PRIO] asset=graphql-api.app.cineplex.de,score=9.25,axis=attack_surface:10,business_value:10,tech_exposure:10,gate_ease:8,cloud_surface:7,freshness:9
+[PRIO] asset=graphql-api.app.staging.cineplex.de,score=9.00,axis=attack_surface:9,business_value:9,tech_exposure:10,gate_ease:8,cloud_surface:7,freshness:9
+[PRIO] asset=api.cineplex.de,score=7.75,axis=attack_surface:8,business_value:8,tech_exposure:8,gate_ease:6,cloud_surface:7,freshness:8
+[PRIO] asset=web-dev.cineplex.de,score=7.25,axis=attack_surface:7,business_value:6,tech_exposure:7,gate_ease:9,cloud_surface:8,freshness:9
+[PRIO] asset=bms-dev.cineplex.de,score=6.75,axis=attack_surface:7,business_value:6,tech_exposure:7,gate_ease:7,cloud_surface:7,freshness:8
+[HYP] CORS allows credentialed requests from hostile origins on GraphQL API
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 90
+reasoning: Production API reflects localhost:3000 and app.staging.cineplex.de with Access-Control-Allow-Credentials true; OPTIONS / returns 204 with ACAO reflected, ACAC true, ACAM includes POST, ACAH includes content-type,authorization for those origins
+evidence_needed: Confirm ACAO/ACAC on actual GraphQL response (not just preflight) for disallowed origin and verify no ambient credential required for primitive
+verify_steps: curl -sS -m 20 -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"; curl -sS -m 20 -H "Origin: https://app.staging.cineplex.de" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"; curl -sS -X OPTIONS -m 20 -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" "https://graphql-api.app.cineplex.de/"
+impact: Credentialed browser requests from trusted-looking origins (localhost in prod allowlist, staging on prod) could be sent cross-origin if ambient cookies exist; severity MEDIUM
+testability: PASSIVE
+[HYP] GraphQL schema exposed under arbitrary unshadowed paths
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: Any unshadowed path serves the GraphQL schema (e.g. arbitrary path with ?query={__typename} returns 200 with data); remediation scope is path-pattern, not named mirrors
+evidence_needed: Confirm schema introspection via arbitrary path on prod and staging
+verify_steps: curl -sS -m 20 -A "Mozilla/5.0" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D"; curl -sS -m 20 -A "Mozilla/5.0" -H "Accept: application/json" "https://graphql-api.app.staging.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D"
+impact: Schema discovery possible from any unshadowed route; severity LOW-MEDIUM
+testability: PASSIVE
+[HYP] Dangling CNAME takeover precondition on dev host
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 80
+reasoning: CNAME to Azure Container Apps (switzerlandnorth.azurecontainerapps.io) resolves to NXDOMAIN (A-follow Status 3) with Azure SOA; sole CNAME in swept sets across multiple cycles; claimability requires provider attestation
+evidence_needed: Confirm persistent NXDOMAIN of target and CNAME chain state via DNS over HTTPS with correct headers
+verify_steps: curl -sS -m 20 -H "Accept: application/dns-json" "https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A"; curl -sS -m 20 -H "Accept: application/dns-json" "https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME"
+impact: Subdomain takeover precondition if target namespace becomes available; severity MEDIUM
+testability: PASSIVE
+[PARKED] IDOR chaining structural issue @ graphql-api.app.cineplex.de: Needs HUMAN_ONLY cross-tenant PII proof (consented accounts); confidence sufficient for structural note but testability limited by program PII rules
+[FINAL] Top survivors: HYP1 (CORS credentialed reflection) confidence 90 testable PASSIVE; HYP2 (arbitrary path schema) confidence 85 PASSIVE; HYP3 (dangle precondition) confidence 80 PASSIVE
+[NEXT] PROBE: curl -sS -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"
+[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed POST; primitive confirmed via read-only observations
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope broader than named mirrors
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+[RISK] bugs.olivermaicher.eu: 15 reason: All work read-only GET/OPTIONS/DNS at ≤1 rps against scoped hosts; no PII/customer data accessed, no mutations attempted; findings rely on structural/config observations with clear PASSIVE testability; corrections made to harness artifacts and no automated-log-only inferences.

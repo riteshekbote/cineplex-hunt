@@ -5200,3 +5200,31 @@
 - LEARN: CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
 - LEARN: REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf u
 - LEARN: CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprin
+
+## RANKED HYPOTHESES 2026-10-07 00:25:49 UTC
+- [95] graphql-api.app.cineplex.de: CORS Suffix Match Allows Arbitrary *.cineplex.de Origin Reflection with Credentials (from art/lead_nemotron3.txt)
+- [90] graphql-api.app.cineplex.de: CORS allows credentialed requests from hostile origins on GraphQL API (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: curl -sS -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typenam
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: https://attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Hea
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed P
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope br
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition 
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- LEARN: ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling C
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / returns 204 with ACAO:reflected, ACAC:true, ACAM:GET,HEAD,PUT,PATC
+- LEARN: ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would hav
+- LEARN: REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: a 403 recorded by the automated verifier carries no information about applicatio
+- LEARN: ACCEPTED falsified_parkings_are_asymmetric_cost @ api.cineplex.de: this cycle's harness defect was not neutral noise. It produced false negatives that parked Gr
+- LEARN: ACCEPTED malformed_request_false_negative @ graphql-api.app.cineplex.de: a surplus brace in an introspect query body yields a 400 that is indistinguishable from
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation p
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dea
+- LEARN: CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- LEARN: CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now 200 (was 500)
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+- LEARN: CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- LEARN: REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf u
+- LEARN: CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprin

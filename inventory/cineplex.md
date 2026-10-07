@@ -2461,3 +2461,5 @@ wwww.cineplex.de
 - CHANGED `graphql_arbitrary_path_catchall` @ `graphql-api.app.{,staging.}cineplex.de` — full schema under ANY unshadowed path
 - CHANGED `getonly_graphql_mirrors` remediation scope corrected: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
 - CHANGED `idor_booking` residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+
+## 2026-10-07 00:25:49 UTC
