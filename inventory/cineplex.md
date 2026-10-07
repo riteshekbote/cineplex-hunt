@@ -2528,3 +2528,16 @@ wwww.cineplex.de
 - CHANGED `api.cineplex.de` WAF strictly blocks all GraphQL paths (6+ probes all 403) — separate stricter config; GET-bypass hypothesis dead
 - CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
 - CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, relay_metrics
+
+## 2026-10-07 23:55:22 UTC
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- CHANGED TLS-dead hosts reaffirmed: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de` — unreachable
+- CHANGED All out-of-scope classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, relay_metrics
+- NEW `graphql-api.app.staging.cineplex.de/graphql` parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- NEW `web-dev.cineplex.de` automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED `probe-results.md`: 1330 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED `idor_booking` residual contamination cleared from publish path: `class:IDOR` blocks went 297→0; decoder oracle retained as `class:ACCESS_CONTROL` (fingerprint 4ad65631f720)
+- CHANGED All structural findings (introspection, CORS, IDOR, mass-assignment, chaining) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
+- CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated

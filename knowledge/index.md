@@ -1229,3 +1229,4 @@
 - 2026-10-07 ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 403s
 - 2026-10-07 ACCEPTED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
 - 2026-10-07 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-10-07 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
