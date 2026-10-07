@@ -1214,3 +1214,5 @@
 - 2026-10-07 CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
 - 2026-10-07 REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf up to 98) remain publishable
 - 2026-10-07 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" at DNS label boundary with ACAC:true (verified sub.attacker.cineplex.de 204, evilcineplex.de 500)
+- 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)

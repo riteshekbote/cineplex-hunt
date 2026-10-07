@@ -2463,3 +2463,19 @@ wwww.cineplex.de
 - CHANGED `idor_booking` residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
 
 ## 2026-10-07 00:25:49 UTC
+
+## 2026-10-07 06:22:52 UTC
+- NEW `graphql-api.app.staging.cineplex.de/graphql` parity restored — now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- NEW `web-dev.cineplex.de` automated DoH CNAME probe now returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable CNAME NXDOMAIN path open
+- NEW `cors_allowlist_suffix_match` @ `graphql-api.app.cineplex.de`: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+- NEW `cors_null_origin_credentialed` @ `graphql-api.app.cineplex.de`: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+- NEW `cors_chain_takeover_to_credentialed_read` @ `web-dev.cineplex.de` + `graphql-api.app.cineplex.de`: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+- NEW `graphql_arbitrary_path_catchall` @ `graphql-api.app.{,staging.}cineplex.de`: full schema served under ANY unshadowed path (e.g., `/zz-cpx-count-probe?query={__typename}` → 200)
+- NEW `getonly_graphql_mirrors` remediation scope corrected: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover 4 paths × 2 envs
+- NEW `harness_defect` @ `.github/workflows/hunt.yml:207-225`: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs; URL regex excludes whitespace/`"`/`)`/`]`/
+- NEW `probe_results_void` @ `.github/workflows/hunt.yml`: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS/GraphQL endpoints; 19 probe bodies carry 
+- NEW `verifier_replaced` @ `scripts/passive_verify.py`: extraction now testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+- NEW `retracted_botgate_conclusions` @ `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `api.cineplex.de`: all conclusions resting on automated 403 are void — verifier's own UA produce
+- CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED `probe-results.md`: 1330 lines, ZERO POST GraphQL probes ever recorded; probe URLs carry literal trailing backtick → 400; urllib UA → Cloudflare 403 bot-gate
+- CHANGED `idor_booking` residual contamination cleared from publish path: `class:IDOR` blocks went 297→0; decoder oracle retained as `class:ACCESS_CONTROL` (fingerprint 4ad65631f720)

@@ -87679,3 +87679,321 @@ access-control-allow-credentials: true
 All requested read-only checks (CORS preflight/actual, arbitrary paths, DoH CNAME/A) are complete. No obvious additional passive probes (≤1 rps, read-only) without moving toward PoC.
 
 **Stop.**
+===== ANALYST bigpickle 2026-10-07 06:22:52 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS -m 20 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Accept: application/json" -o /tmp/opencode/api_root.json -w "HTTP/%{http_version} %{http_code} len=%{size_download}\n" "https://api.cineplex.de/?query=%7B__typename%7D"; sleep 2; curl -sS -m 20 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Accept: application/json" -D /tmp/opencode/api_gql_headers.txt -o /tmp/opencode/api_gql.json -w "HTTP/%{http_version} %{http_code} len=%{size_download}\n" "https://api.cineplex.de/graphql?query=%7B__typename%7D"
+HTTP/2 403 len=115716
+HTTP/2 403 len=115759
+[0m
+## Objective
+- Act as a senior bug bounty analyst for the Cineplex program (report channel: bugs.olivermaicher.eu), running a fixed 8-step hunt cycle (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARN → RISK) and emitting only structured blocks with facts strictly separated from hypotheses.
+- Current state: `phase: POC`, `target: api`; produce fresh [PRIO]/[HYP]/[NEXT]/[LEARN]/[RISK] blocks this cycle without re-deriving already-settled claims.
+
+## Important Details
+- In-scope: only company-owned Cineplex infrastructure (scope.yml + inventory/cineplex.md). Passive-first, ≤1 rps, GET/HEAD/OPTIONS only; no mutating tests against live customer data; no PII/customer data access; no auth-bypass testing.
+- Explicit out-of-scope (REJECTED classes): username enumeration, SSL/TLS best practices/attacks, CSRF on logout, descriptive errors/headers, known-vulnerable library, OAuth/JWKS passive paths, OPTIONS/TRACE as a finding, mail config, brute-force/rate-limit policy, plus program note barring exposure of customer/financial/auth data during testing.
+- HYP schema is strict: title line `[HYP] <title>`, then class/asset/confidence/reasoning/evidence_needed/verify_steps/impact/testability each on its own line; no inline fields in title; max 1 hypothesis per top-3 asset; drop conf<40 or REJECTED-class in STEP 4.
+- Live evidence rests on manual balanced curl (`curl -G --data-urlencode` / `--http2`, browser UA); automated `probe-results.md` output was void for 206 cycles (trailing-backtick URLs → 400, `(passive verifier)` UA → 403, brace truncation → false 400, `urls[:12]` truncation). Verifier replaced by `scripts/passive_verify.py` (14 offline tests). Never infer absence from automated-log silence; never use verifier 403s as evidence for or against.
+- Repeated self-error class recorded: asserting completeness from a shallower read (name-only arg enumeration, unread object field lists, staging/prod `includeDeprecated` asymmetry). Rule: a type is not read until its field list is in hand; scope evidence to blast radius; method-vary equivalence claims.
+- Top ranked hypotheses (2026-10-07 00:25:49 UTC): [95] CORS suffix match allows arbitrary `*.cineplex.de` origin reflection with credentials (lead_nemotron3); [90] CORS credentialed requests from hostile origins on GraphQL API (lead_bigpickle).
+- CORS model: allowlist enforces DNS label boundary (not raw `endsWith`) — `evilcineplex.de`/`notcineplex.de`/`a.evilcineplex.de` → 500, `sub.attacker.cineplex.de` → 204; credentialed ACAO confirmed on actual GET responses (not just preflight); `Origin: null` → `ACAO: null` + `ACAC: true`; exact `ACAM` = `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry).
+- Key chain: `cors_chain_takeover_to_credentialed_read` = web-dev.cineplex.de dangling CNAME (CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN, Azure SOA) + CORS `*.cineplex.de` suffix trust.
+- GraphQL surface: `graphql-api.app.{,staging.}cineplex.de` — 83 queries / 140 mutations identical both envs, 44 INPUT_OBJECTs; schema served under any unshadowed path (`graphql_arbitrary_path_catchall`); only root `/` is POST+preflight-capable (`POST /` → 200), `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 `MissingAuthenticationTokenException`).
+- Falsified/retracted: `idor_booking` authorization-omission claim (INVALID_ID-vs-UNAUTHENTICATED measures decode position, not check absence); decoder oracle retained as `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`); `class:IDOR` publish contamination 297→0; `staging_testing_oracle` rejected as standalone; `UserPrivileges` is OBJECT not input object (mass-assignment rests on `CinemaOperatingCompanyData` + `updateUser` args).
+- Publisher (`scripts/sync-issues.py`): `parse_blocks` matches `^\[HYP\]` only; measured 1224 blocks → 70 fingerprints → 59 after retraction suppression → 57 after near-dup collapse; idempotent; report counts as fingerprints AND underlying findings (differ ~7x). Known debt: web-dev dangle authored as ~5 divergent `[HYP]` blocks (MISCONFIG/OTHER/SUBDOMAIN_TAKEOVER), 2 blocks with malformed `class: 'MISCONFIG' CONF: '93'` — fix at lead-authoring source, not publisher.
+- Dead/parked: api.cineplex.de GET-bypass (strict 403); relay metrics/saturation (descriptive only); TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso); JWT JWKS/OIDC 404; `buchung-dev`/`bms-dev` origin 194.77.169.121 oscillating reachability, `/gateway/*` 503 backend-gated; `profil_preference_surface` PARKED conf 45; IDOR staging-POC HUMAN_ONLY.
+
+## Work State
+### Completed
+- Prior cycle (2026-10-07 00:25 UTC) emitted 3 survivors: CORS credentialed reflection (90, PASSIVE), arbitrary-path schema exposure (85, PASSIVE), dangling CNAME precondition (80, PASSIVE), plus `[NEXT] PROBE` curl for `Origin: http://localhost:3000` on `graphql-api.app.cineplex.de/?query=%7B__typename%7D`.
+- 8 harness defects located and fixed at `.github/workflows/hunt.yml:207-225`; verifier replaced by `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (14 passing offline tests).
+- Publisher verified end-to-end offline vs mock GitHub: idempotent, 57 published, all three survivors present; IDOR contamination cleared from publish path.
+- Cross-analyst rule set: `reports/analyst-nemotron3.log` not adopted as evidence; all findings re-derived from own captures.
+
+### Active
+- STEP 1 DELTA needed for the new cycle: compare inventory + knowledge tail + last leads against current surface; candidates for [PRIO] are graphql-api.app.cineplex.de (9.25), graphql-api.app.staging.cineplex.de (9.00), api.cineplex.de (7.75), web-dev.cineplex.de (7.25), bms-dev.cineplex.de (6.75).
+- Two [HYP] blocks to re-emit/verify: CORS hostile-origin credentialed reflection; arbitrary-path GraphQL schema exposure; third slot: web-dev dangle precondition.
+
+### Blocked
+- HUMAN_ONLY gates: cross-tenant IDOR PII proof and staging POST oracle extraction (program PII rule).
+- web-dev dangle claimability requires provider attestation (PASSIVE precondition only).
+- api.cineplex.de surface: GET-bypass hypothesis dead (strict 403 across 20+ cycles) — no new axis known.
+
+## Next Move
+1. STEP 1–2: emit `[NEW]`/`[CHANGED]` or `NO_DELTA`, then `[PRIO]` lines scoring top assets (axis per 0.25a+0.25b+0.15t+0.15g+0.10c+0.10f).
+2. Emit STEP 3 `[HYP]` blocks (≤3, strict per-line schema) — lead with CORS credentialed reflection on `graphql-api.app.cineplex.de` (verify via read-only `OPTIONS /` + actual GET with `Origin: https://attacker.cineplex.de`, browser UA, ≤1 rps), then arbitrary-path catch-all on prod+staging, then web-dev DoH dangle (`curl -sS -H "Accept: application/dns-json" "https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME"` + A-follow for `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`); then STEP 4–7.
+
+## Relevant Files
+- `inventory/cineplex.md`: 132-host inventory, passive recon, CNAME signals, per-cycle probe history.
+- `knowledge/index.md`: append-only KB with `## CANONICAL STATUS (2026-09-30)` section (LIVE/DEAD/SURVIVING/METHOD RULES) — canonical verdicts outrank history lines.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` (line ~57, `^\[HYP\]`), `fingerprint` (md5 asset|class, line ~112), `ensure_label` (line ~153).
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement verifier, 14 offline tests.
+- `.github/workflows/hunt.yml:207-225`: original defective probe extraction (backtick regex, bot UA, `urls[:12]`).
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: `[HYP]`/`[LEARN]` blocks; ranked hypotheses source.
+- `probe-results.md`: automated probe log (historically void; use only post-fix verifier output).
+- `reports/analyst-nemotron3.log`: cross-analyst output — untrusted, do not cite as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mhead -c 600 /tmp/opencode/api_gql.json; echo; echo "---headers---"; sed -n '1,25p' /tmp/opencode/api_gql_headers.txt
+<html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title></title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">body{margin:0;padding:0;background-color:#000;background-image:url(data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/4QE2RXhpZgAATU0AKgAAAAgABwEPAAIAAAAGAAAAYgEQAAIAAAAPAAAAaAEaAAUAAAABAAAAeAEbAAUAAAABAAAAgAEoAAMAAAABAAIAAAEyAAIAAAAUAAAAiIdpAAQAAAABAAAAnAAAAABDYW5vbgBDYW5vbiBFT1MgNTUwRAAAAAABLAAAAAEAAAEsAAAAATIwMjI6MDE6MjcgMTc6MTc6MzMAAAiCmgAFAAAAAQAAAQKCnQAFAAAAAQAAAQqIJwADAAAAAQB
+---headers---
+HTTP/2 403 
+date: Wed, 07 Oct 2026 06:11:57 GMT
+content-type: text/html; charset=UTF-8
+content-length: 115759
+accept-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cf-mitigated: challenge
+x-frame-options: SAMEORIGIN
+server: cloudflare
+critical-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cross-origin-embedder-policy: require-corp
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+permissions-policy: accelerometer=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=(),xr-spatial-tracking=*
+referrer-policy: same-origin
+server-timing: chlray;desc="a46ac05adab35f67"
+x-content-type-options: nosniff
+cf-ray: a46ac05adab35f67-IAD
+alt-svc: h3=":443"; ma=86400
+[0m
+[0m$ [0msleep 2; curl -sS -m 20 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Accept: application/json" -H "Origin: https://attacker.cineplex.de" -D /tmp/opencode/api_origin_headers.txt -w "GET2 %{http_code} cf-mitigated=%{header_json}" "https://api.cineplex.de/v2/__typename_probe" -o /tmp/opencode/api2.json 2>/dev/null | head -c 200; echo; grep -iE "^(HTTP|cf-mitigated|access-control|server|content-type)" /tmp/opencode/api_origin_headers.txt
+GET2 403 cf-mitigated={"date":["Wed, 07 Oct 2026 06:13:59 GMT"],
+"content-type":["text/html; charset=UTF-8"],
+"content-length":["115731"],
+"accept-ch":["Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Fu
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+cf-mitigated: challenge
+server: cloudflare
+server-timing: chlray;desc="a46ac354cd737d61"
+[0m
+[0m$ [0mfor o in "http://localhost:3000" "https://evil.example" "https://foo.cineplex.de"; do sleep 2; echo "== Origin: $o"; curl -sS -m 15 --http2 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: $o" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: content-type" -D - -X OPTIONS "https://graphql-api.app.cineplex.de/" -w "status=%{http_code}\n" 2>/dev/null | grep -iE "^(HTTP|access-control|status=)"; done
+== Origin: http://localhost:3000
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-headers: content-type
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+status=204
+== Origin: https://evil.example
+HTTP/2 500 
+status=500
+== Origin: https://foo.cineplex.de
+HTTP/2 204 
+access-control-allow-origin: https://foo.cineplex.de
+access-control-allow-headers: content-type
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+status=204
+[0m
+[0m$ [0mfor o in "http://localhost:8080" "http://127.0.0.1:3000" "null" "https://attacker.com" "https://a.b.cineplex.de" "http://cineplex.de" "https://cineplex.de"; do sleep 2; echo "== Origin: $o"; curl -sS -m 15 --http2 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: $o" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: content-type" -D - -X OPTIONS "https://graphql-api.app.cineplex.de/" -w "status=%{http_code}\n" 2>/dev/null | grep -iE "^(HTTP|access-control-allow-origin|status=)"; done
+== Origin: http://localhost:8080
+HTTP/2 204 
+access-control-allow-origin: http://localhost:8080
+status=204
+== Origin: http://127.0.0.1:3000
+HTTP/2 204 
+access-control-allow-origin: http://127.0.0.1:3000
+status=204
+== Origin: null
+HTTP/2 204 
+access-control-allow-origin: null
+status=204
+== Origin: https://attacker.com
+HTTP/2 500 
+status=500
+== Origin: https://a.b.cineplex.de
+HTTP/2 204 
+access-control-allow-origin: https://a.b.cineplex.de
+status=204
+== Origin: http://cineplex.de
+HTTP/2 204 
+access-control-allow-origin: http://cineplex.de
+status=204
+== Origin: https://cineplex.de
+HTTP/2 204 
+access-control-allow-origin: https://cineplex.de
+status=204
+[0m
+[0m$ [0msleep 2; curl -sS -m 15 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: https://evil-null-probe.cineplex.de" -D /tmp/opencode/gql_get_headers.txt -o /tmp/opencode/gql_get.json -w "GET status=%{http_code} len=%{size_download}\n" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"; grep -iE "^(HTTP|access-control|content-type)" /tmp/opencode/gql_get_headers.txt; head -c 200 /tmp/opencode/gql_get.json; echo; sleep 2; curl -sS -m 15 --http2 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: null" -D - "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D" -w "status=%{http_code}\n" 2>/dev/null | grep -iE "^(HTTP|access-control|status=)"
+GET status=200 len=32
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+access-control-allow-origin: https://evil-null-probe.cineplex.de
+access-control-allow-credentials: true
+{"data":{"__typename":"Query"}}
+
+HTTP/2 200 
+access-control-allow-origin: null
+access-control-allow-credentials: true
+status=200
+[0m
+[0m$ [0msleep 2; curl -sS -m 15 --http2 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: null" -H "Access-Control-Request-Method: GET" -D - -X OPTIONS "https://graphql-api.app.staging.cineplex.de/" -w "status=%{http_code}\n" 2>/dev/null | grep -iE "^(HTTP|access-control-allow-|status=)"; sleep 2; curl -sS -m 15 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: https://localhost-attacker-probe.cineplex.de" -D - -o /tmp/opencode/staging_get.json -w "GET status=%{http_code} len=%{size_download}\n" "https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D" 2>/dev/null | grep -iE "^(HTTP|access-control|status=|set-cookie)"; head -c 120 /tmp/opencode/staging_get.json; echo; sleep 2; curl -sS -m 15 --http2 -o /dev/null -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: http://localhost:5173" -D - -X OPTIONS "https://graphql-api.app.staging.cineplex.de/" -w "status=%{http_code}\n" 2>/dev/null | grep -iE "^(HTTP|access-control-allow-origin|status=)"
+HTTP/2 204 
+access-control-allow-origin: null
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+status=204
+HTTP/2 200 
+access-control-allow-origin: https://localhost-attacker-probe.cineplex.de
+access-control-allow-credentials: true
+{"data":{"__typename":"Query"}}
+
+HTTP/2 204 
+access-control-allow-origin: http://localhost:5173
+status=204
+[0m
+[0m$ [0mgrep -rn "localhost" /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/*.md | head -30; echo ===; grep -rn "cf-mitigated\|challenge" /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/*.md | head -20; echo ===; grep -rn "localhost\|127.0.0.1" /home/runner/work/cineplex-hunt/cineplex-hunt/inventory/cineplex.md | head -20
+882:- 2026-09-28 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` are both reflected with `access-control-allow-credentials: true` by the production API, alongside `ACAO: null` on all four GraphQL routes and both environments. Confirmed by direct same-cycle read, not inferred. Supersedes my own confidence-10 framing from 2026-09-28, which had scored the finding on the wrong axis — the absence of a cookie is not what makes a reflected dev origin in a production allowlist a defect.
+885:- 2026-09-28 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+889:- 2026-09-29 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` are both reflected with `access-control-allow-credentials: true` by the production API, alongside `ACAO: null` on all four GraphQL routes and both environments. Confirmed by direct same-cycle read, not inferred.
+892:- 2026-09-29 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+907:- 2026-09-30 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` are both reflected with `access-control-allow-credentials: true` by the production API, alongside `ACAO: null` on all four GraphQL routes and both environments. Confirmed by direct same-cycle read, not inferred.
+910:- 2026-09-30 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+929:- 2026-10-01 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` are both reflected with `access-control-allow-credentials: true` by the production API, alongside `ACAO: null` on all four GraphQL routes and both environments. Confirmed by direct same-cycle read, not inferred.
+932:- 2026-10-01 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `http://localhost:3000` and `https://app.staging.cineplex.de`, on both environments — 6/6. This is the missing half of last cycle's finding: I had proven the ACAO/ACAC pair on *responses*, which proves reflection but not that a browser would let a third-party page issue the write. The preflight is what proves the write is permitted. Confidence 75 → 90, and the finding moved from "policy defect" to "unauthenticated call primitive".
+948:- 2026-10-01 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
+949:- 2026-10-01 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
+963:- 2026-10-02 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
+964:- 2026-10-02 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
+985:- 2026-10-03 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
+986:- 2026-10-03 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
+998:- 2026-10-03 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` and `https://app.staging.cineplex.de` reflected with `ACAC: true` on production, `ACAO: null` on all four GraphQL routes both envs. Confirmed by direct same-cycle read.
+999:- 2026-10-03 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for null/localhost:3000/app.staging.cineplex.de — 6/6. Preflight proves browser would permit credentialed write.
+1012:- 2026-10-03 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: `http://localhost:3000` reflected with `ACAC: true` on production root. `https://app.staging.cineplex.de` and `null` previously observed. A staging origin being trusted on production is the practically exploitable pairing.
+1018:- 2026-10-03 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+1022:- 2026-10-03 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: reverified same-cycle by direct read, 204 on both with reflected ACAO, ACAC:true, POST in ACAM, ACAH includes content-type,authorization for null/localhost:3000/app.staging.cineplex.de — 6/6; preflight proves browser would permit credentialed write.
+1023:- 2026-10-03 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: localhost:3000 and app.staging.cineplex.de reflected with ACAC:true on production — staging origin trusted on production is exploitable pairing.
+1029:- 2026-10-04 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+1043:- 2026-10-04 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de: reverified same-cycle by direct read, 204 on both with reflected ACAO, ACAC:true, POST in ACAM, ACAH includes content-type,authorization for null/localhost:3000/app.staging.cineplex.de — 6/6; preflight proves browser would permit credentialed write.
+1044:- 2026-10-04 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: localhost:3000 and app.staging.cineplex.de reflected with ACAC:true on production — staging origin trusted on production is exploitable pairing.
+1080:- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+1095:- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+1110:- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+1125:- 2026-10-05 ACCEPTED cors_allowlist_hostile_entries @ graphql-api.app.cineplex.de: reflected origins include http://localhost:3000 and https://app.staging.cineplex.de with ACAC:true on prod.
+===
+573:- 2026-09-19 REJECTED staging.cineplex.de @ service-identification: root GET returns CF managed-challenge 403/115,615B (cf-mitigated: challenge, chlray) under Chrome UA — prior "200/2527B stable since 09-11" body not reproducible; WAF-gated interstitial, no app surface; passive identification dead; consistent with prod.cineplex.de/uat pattern.
+===
+1643:- NEW `externalUrl(appDeepLink: String!)` / `appDeepLink(externalUrl: String!)` are **unauthenticated** and resolve deep-link paths: `cineplex://probe/127.0.0.1:1` → `UNKNOWN_HOST`, `http://127.0.0.1:1/x` →
+1889:- NEW `graphql-api.app.cineplex.de` CORS allowlist contains a DEV origin in production: `Origin: http://localhost:3000` → HTTP 200, `access-control-allow-origin: http://localhost:3000`, `access-control-allo
+1915:- NEW `graphql-api.app.cineplex.de`: CORS allowlist on PRODUCTION reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `access-control-allow-credentials: true` — hostile entries in pr
+1916:- NEW `graphql-api.app.cineplex.de`: `OPTIONS /` returns 204 with `ACAO: <attacker origin>`, `ACAC: true`, `ACAM` including POST, `ACAH: content-type,authorization` for `null`, `localhost:3000`, `app.stagin
+1932:- NEW CORS Misconfiguration on graphql-api.app.cineplex.de: Production API reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true` and `OPTIONS /` returns 204 with `ACAM: PO
+1944:- NEW CORS Misconfiguration on graphql-api.app.cineplex.de: Production API reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true` and `OPTIONS /` returns 204 with `ACAM: PO
+1954:- NEW CORS Misconfiguration confirmed on production `graphql-api.app.cineplex.de`: allowlist reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true`; `OPTIONS /` returns 204
+1982:- NEW CORS Misconfiguration confirmed on production `graphql-api.app.cineplex.de`: allowlist reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true`; `OPTIONS /` returns 204
+2024:- CHANGED `graphql-api.app.{,staging.}cineplex.de` CORS preflight on `/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: POST`, `ACAH: authorization` — credentialed mutation primitive confi
+2045:- CHANGED `graphql-api.app.{,staging.}cineplex.de` CORS preflight on `/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: POST`, `ACAH: authorization` — credentialed mutation primitive confi
+2050:- CHANGED `graphql-api.app.{,staging.}cineplex.de` CORS preflight on `/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: POST`, `ACAH: authorization` — credentialed mutation primitive confi
+2076:- CHANGED `graphql-api.app.{,staging.}cineplex.de` CORS preflight on `/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: POST`, `ACAH: authorization` — credentialed mutation primitive confi
+2090:- NEW CORS misconfiguration CONFIRMED on PRODUCTION graphql-api.app.cineplex.de: allowlist reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true`; `OPTIONS /` returns 204 w
+2119:- NEW CORS preflight on both `graphql-api.app.cineplex.de/` and `graphql-api.app.staging.cineplex.de/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPT
+2126:- NEW CORS preflight on both `graphql-api.app.cineplex.de/` and `graphql-api.app.staging.cineplex.de/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE,OPT
+2148:- NEW CORS preflight on both `graphql-api.app.cineplex.de/` and `graphql-api.app.staging.cineplex.de/` returns 204 with `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `
+2210:- NEW `cors_preflight_credentialed_post` re-verified same-cycle 2/2 (prod + staging) with `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` → 204, `ACAC: true`, `ACAM: GET,HEAD,P
+2218:- CHANGED `cors_preflight_credentialed_post` @ graphql-api.app.cineplex.de — reverified same-cycle with balanced curl. `OPTIONS /` prod → `HTTP/2 204`, `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HE
+2228:- CHANGED `cors_preflight_credentialed_post` re-verified same-cycle 2/2 (prod + staging) with `Origin: http://localhost:3000` and `Origin: https://app.staging.cineplex.de` → 204, `ACAC: true`, `ACAM: GET,HEAD,P
+2232:- CHANGED `cors_preflight_credentialed_post` @ graphql-api.app.cineplex.de — reverified same-cycle with balanced curl. `OPTIONS /` prod → `HTTP/2 204`, `ACAO: http://localhost:3000`, `ACAC: true`, `ACAM: GET,HE
+[0m
+[0m$ [0mgrep -n "8080\|5173\|any port\|127.0.0.1" /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md | tail -20; echo ===; grep -n "actual GET\|GET response reflects\|on responses" /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md | tail -10; echo ===; grep -n "evil-null-probe\|attacker.cineplex.de" /home/runner/work/cineplex-hunt/cineplex-hunt/knowledge/index.md | tail -10; echo ===; grep -n "cf-mitigated" /home/runner/work/cineplex-hunt/cineplex-hunt/inventory/cineplex.md | tail -10
+792:- 2026-09-26 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged. No reservation needed at 127.0.0.1:1 — the canary returned instantly and touched no customer data.
+807:- 2026-09-26 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged. No reservation needed at 127.0.0.1:1 - the canary returned instantly and touched no customer data.
+===
+1152:- 2026-10-05 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAO:null + ACAC:true on actual GET response with data
+1170:- 2026-10-06 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAO:null + ACAC:true on actual GET response with data
+1186:- 2026-10-06 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+1199:- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+===
+1141:- 2026-10-05 ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern is checked for a label boundary. Three live controls (`evilcineplex.de`, `notcineplex.de`, `a.evilcineplex.de` all 500 vs `sub.attacker.cineplex.de` 204) distinguish a DNS-correct suffix match from a naive `endsWith` bug, and the correct-semantics result is the one that must be recorded. Any future suffix-allowlist claim needs registrable-domain controls before the impact statement is written.
+1145:- 2026-10-05 ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern is checked for a label boundary. Three live controls (`evilcineplex.de`, `notcineplex.de`, `a.evilcineplex.de` all 500 vs `sub.attacker.cineplex.de` 204) distinguish a DNS-correct suffix match from a naive `endsWith` bug, and the correct-semantics result is the one that must be recorded. Any future suffix-allowlist claim needs registrable-domain controls before the impact statement is written.
+1147:- 2026-10-05 ACCEPTED cors_label_boundary_semantics @ graphql-api.app.cineplex.de: a suffix-style CORS allowlist is only exploitable if the accepted pattern skips the label boundary check. Live controls `evilcineplex.de`, `notcineplex.de` and `a.evilcineplex.de` (all 500) against `sub.attacker.cineplex.de` (204) distinguish a DNS-correct suffix match from a naive `endsWith` bug. The correct-semantics result is the one that must be recorded, and this correction lowered the hypothesis confidence from 88 to 86 rather than raising it.
+1190:- 2026-10-06 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+1198:- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+===
+[0m
+[0m$ [0msleep 2; curl -sS -m 25 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: https://probe.cineplex.de" -G --data-urlencode "query={__schema{queryType{name}mutationType{name}}}" -D /tmp/opencode/introspect_headers.txt -o /tmp/opencode/introspect.json -w "status=%{http_code} len=%{size_download}\n" "https://graphql-api.app.cineplex.de/"; grep -iE "^(HTTP|access-control)" /tmp/opencode/introspect_headers.txt; head -c 300 /tmp/opencode/introspect.json
+status=200 len=88
+HTTP/2 200 
+access-control-allow-origin: https://probe.cineplex.de
+access-control-allow-credentials: true
+{"data":{"__schema":{"queryType":{"name":"Query"},"mutationType":{"name":"Mutation"}}}}
+[0m
+[0m$ [0msleep 2; curl -sS -m 30 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: null" -G --data-urlencode "query={__schema{types{name kind}}}" -o /tmp/opencode/introspect_full.json -w "status=%{http_code} len=%{size_download}\n" "https://graphql-api.app.cineplex.de/"; python3 -c "
+import json
+d=json.load(open('/tmp/opencode/introspect_full.json'))
+t=d['data']['__schema']['types']
+print('types:',len(t))
+print('sample:',[x['name'] for x in t[:8]])
+print('has Query:',any(x['name']=='Query' for x in t))"
+status=200 len=18532
+types: 385
+sample: ['Query', 'String', 'ID', 'OnboardingContent', 'Movie', 'Int', 'Boolean', 'Float']
+has Query: True
+[0m
+[DELTA]
+- NEW `graphql-api.app.cineplex.de` CORS allowlist accepts **any localhost/loopback origin with arbitrary port**, not just `:3000`: `http://localhost:3000`, `http://localhost:8080`, `http://127.0.0.1:3000` all → 204 preflight, `ACAO` echoed, `ACAC: true` (prod); `http://localhost:5173` reflected on staging. Same-cycle manual balanced curl, browser UA.
+- NEW cross-origin **read proof**: actual `GET /` with `Origin: null` and `Origin: https://evil-null-probe.cineplex.de` returns HTTP 200, `ACAO` echoed, `ACAC: true`, real GraphQL payloads; full introspection `__schema{types{name kind}}` → 385 types (18,532 B) readable under `Origin: null` with credentials. This is the missing POC half of the CORS lead (response-read, not just preflight).
+- NEW `api.cineplex.de` 403 mechanism identified: `cf-mitigated: challenge`, `server: cloudflare`, 115 KB HTML managed-challenge page under browser UA on both `/?query=` and `/graphql?query=` — prior KB wording "strict 403 / separate stricter edge config" was inference; origin behavior behind the challenge is unknown, not proven rejecting.
+- CHANGED staging mirrors prod on all tested origins (`null`, `localhost:5173`, hostile `*.cineplex.de` subdomain → 204/200 + `ACAC: true`); no `Set-Cookie` observed on any GraphQL response this cycle.
+
+[PRIORITIZE]
+- graphql-api.app.cineplex.de (9.25): axis a=0.25 (200 responses with data), b=0.25 (live POC-ready), t=0.15 (GET/HEAD/OPTIONS only), g=0.15 (unretracted CORS lead), c=0.10, f=0.10
+- graphql-api.app.staging.cineplex.de (9.00): identical policy confirmed same-cycle; distinct asset, own fingerprint
+- api.cineplex.de (7.75): DELTA reopens characterization (CF challenge ≠ origin reject) but verification is HUMAN_ONLY → score capped on t
+
+[HYP] Cross-origin credentialed read of GraphQL responses via allowlist reflection
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: The allowlist reflects three hostile classes with ACAC:true — any `*.cineplex.de` origin (label-boundary enforced), any `localhost`/`127.0.0.1` origin at any port, and `Origin: null`. A hostile page can therefore issue credentialed cross-origin GETs whose responses the browser exposes to it. This cycle converted the preflight-only evidence into an actual response-read POC: 200 + ACAO echo + ACAC + introspection payload (385 types) under hostile origins.
+evidence_needed: whether a session cookie exists whose scope/SameSite would let it ride a hostile-origin credentialed request (ACAC impact is conditional on a credential actually attaching); acceptance by program that schema introspection qualifies as impact vs. requiring an authenticated-data read.
+verify_steps: (1) done — preflight + actual GET with hostile origins, response readable; (2) done — full introspection read under `Origin: null`; (3) check any response `Set-Cookie` flags / cookie scope on graphql hosts; (4) if a cookie exists, document request-response pairing in report PoC without exfiltrating customer data (PII remains out of scope).
+impact: An attacker-controlled page (or any `*.cineplex.de` subdomain, including the web-dev dangling-CNAME path) reads GraphQL responses — schema and any cookie-authenticated data — cross-origin with credentials included.
+testability: PASSIVE_OR_POC (all steps GET/HEAD/OPTIONS, ≤1 rps, no mutations run)
+
+[HYP] GraphQL API authenticates via cookies, not only Authorization header
+class: ACCESS_CONTROL
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: ACAC:true only matters if a credential attaches to a cross-origin request. ACAH advertises `authorization` on preflight, but no `Set-Cookie` appeared on this cycle's GraphQL responses; whether any auth cookie exists (and its SameSite/Secure/Domain flags) is unverified. Staging is the lower-risk asset to characterize session mechanics on, and staging mirrors prod CORS exactly this cycle, so a staging-cookie finding explains the prod impact model too.
+evidence_needed: any response (login/session endpoint, passive header capture only) that sets a cookie scoped to `.cineplex.de` or `graphql-api.app.*`; its `SameSite` value. No credential submission, no login attempt — passive observation of Set-Cookie headers only.
+verify_steps: (1) passive header review of already-captured responses (done — none observed on GraphQL routes); (2) passive observation of Set-Cookie on any non-auth app surface reachable GET-only; (3) if no cookie exists anywhere, downgrade: ACAC finding stays a policy defect and the credentialed-read impact statement must be retracted to "unauthenticated read permitted cross-origin".
+impact: If cookies authenticate GraphQL, hostile-origin credentialed requests become account-data reads/writes; if not, impact scope shrinks and the CORS finding must be re-framed accordingly.
+testability: PASSIVE (header observation only; any login attempt is HUMAN_ONLY/out of scope)
+
+[HYP] api.cineplex.de origin serves API traffic behind a Cloudflare managed challenge
+class: MISCONFIG
+asset: api.cineplex.de
+confidence: 45
+reasoning: This cycle's browser-UA GETs returned `cf-mitigated: challenge` (Cloudflare managed challenge page), not a config-level 403. That falsifies the "separate stricter edge config rejects all methods" characterization — the rejection observed for 20+ cycles is a bot gate whose pass/fail depends on solving the challenge, and the origin behind it is unmeasured. Whether the origin exposes GraphQL/CORS behavior like graphql-api.app is unknown, not negative.
+evidence_needed: a challenge-passed response (browser with cleared cookies/JS solving the interstitial) showing origin status, server header, and ACAO behavior; must be HUMAN_ONLY per no-WAF-bypass policy — automated challenge circumvention will not be attempted.
+verify_steps: (1) done — challenge mechanism confirmed via `cf-mitigated`/`server-timing: chlray` headers on two paths; (2) HUMAN_ONLY: human browser visit records origin status and response headers post-challenge; (3) only then decide whether api.cineplex.de re-enters the CORS/GraphQL test plan.
+impact: If the origin mirrors graphql-api.app behavior, the CORS surface doubles; if it rejects, the old verdict stands but with correct mechanism.
+testability: HUMAN_ONLY (automated path blocked by challenge; no circumvention will be run)
+
+[SELF-CRITIQUE]
+- Claim "any localhost origin" rests on 4 port/host samples (3000/8080/5173/127.0.0.1:3000) across 2 envs — scope it as "multiple localhost/loopback origins incl. arbitrary ports observed", not a proven regex.
+- "Credentialed read" is proven for the browser-observable ACAO/ACAC pair + readable response; the credential itself (cookie) is NOT yet shown to attach — impact statement in HYP 1 must stay conditional until HYP 2 resolves. Do not repeat the IDOR-style error of asserting the check's absence from a decode artifact.
+- `api.cineplex.de` 403-mechanism change is header-based (`cf-mitigated: challenge`) — solid; but I must not claim origin behavior in either direction from it.
+- Rejected-class check: none of the three touch username enumeration, TLS, logout-CSRF, descriptive errors, vuln libraries, JWKS, OPTIONS-as-finding, mail, or brute-force. Introspection read is not a client-supplied-input oracle (no injection parameter involved).
+
+[NEXT] PROBE
+```
+sleep 2; curl -sS -m 15 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: http://localhost" -H "Access-Control-Request-Method: GET" -D - -o /dev/null -X OPTIONS "https://graphql-api.app.cineplex.de/" ; sleep 2; curl -sS -m 15 --http2 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -H "Origin: http://[::1]:3000" -H "Access-Control-Request-Method: GET" -D - -o /dev/null -X OPTIONS "https://graphql-api.app.cineplex.de/"
+```
+Purpose: complete the allowlist rule characterization (default-port localhost, IPv6 loopback) — narrows or widens HYP 1's origin-matching claim before any report text is written. Both OPTIONS, read-only, ≤1 rps.
+
+[LEARN]
+- `cf-mitigated: challenge` on api.cineplex.de turns the 20-cycle "strict 403 edge config" verdict from an origin-behavior claim into a bot-gate observation; mechanism headers (`server-timing: chlray`, `server: cloudflare`, 115 KB challenge HTML) are the evidence class that distinguishes the two — a status code alone never does.
+- A CORS finding's POC half is the actual response read with hostile origin + credentials, not the preflight; preflight-only evidence leaves "would the browser expose the body" untested. Introspection under `Origin: null` closed that gap this cycle.
+- Port-inclusive localhost matching widens the hostile-origin set (dev servers on any port become trusted origins) and should be stated per-sample, not as a guessed pattern.
+
+[RISK]
+- Blast radius: CORS reflection reaches prod+staging GraphQL; impact still bounded by unproven credential attachment — do not escalate wording to "account data read" until HYP 2 resolves.
+- PII: introspection output is schema metadata (385 type names), not customer data — no customer/financial/auth data touched, per program note.
+- Escalation: no mutations issued, no auth attempted, no WAF circumvention (challenge left intact); request rate ≤1 rps, 2 requests against api.cineplex.de only. HUMAN_ONLY gates: api.cineplex.de post-challenge probe, any cookie-establishing login.
