@@ -1342,3 +1342,7 @@ https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAK
 https://graphql-api.app.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D -> HTTP 403
 https://graphql-api.app.staging.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D -> HTTP 403
 https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME -> 200 len=?
+
+## 2026-10-07 19:50:23 UTC
+https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403

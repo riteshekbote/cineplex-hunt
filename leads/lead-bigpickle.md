@@ -9518,3 +9518,44 @@ class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 55
 class: MISCONFIG | asset: api.cineplex.de | conf: 45
 class: MISCONFIG | asset: graphql-api.app.cineplex.de | conf: 90
 class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 45
+## 2026-10-07 19:50:09 UTC [target] (model bigpickle)
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+[RISK] bugs.olivermaicher.eu: 15 reason: All work read-only GET/OPTIONS/DNS at ≤1 rps against scoped hosts; no PII/customer data accessed, no mutations attempted; findings rely on structural/config observations with clear PASSIVE testability; corrections made to harness artifacts and no automated-log-only inferences.
+[HYP] Cross-origin credentialed read of GraphQL responses via allowlist reflection
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: The allowlist reflects three hostile classes with ACAC:true — any `*.cineplex.de` origin (label-boundary enforced), any `localhost`/`127.0.0.1` origin at any port, and `Origin: null`. A hostile page can therefore issue credentialed cross-origin GETs whose responses the browser exposes to it. This cycle converted the preflight-only evidence into an actual response-read POC: 200 + ACAO echo + ACAC + introspection payload (385 types) under hostile origins.
+evidence_needed: whether a session cookie exists whose scope/SameSite would let it ride a hostile-origin credentialed request (ACAC impact is conditional on a credential actually attaching); acceptance by program that schema introspection qualifies as impact vs. requiring an authenticated-data read.
+verify_steps: (1) done — preflight + actual GET with hostile origins, response readable; (2) done — full introspection read under `Origin: null`; (3) check any response `Set-Cookie` flags / cookie scope on graphql hosts; (4) if a cookie exists, document request-response pairing in report PoC without exfiltrating customer data (PII remains out of scope).
+impact: An attacker-controlled page (or any `*.cineplex.de` subdomain, including the web-dev dangling-CNAME path) reads GraphQL responses — schema and any cookie-authenticated data — cross-origin with credentials included.
+testability: PASSIVE_OR_POC (all steps GET/HEAD/OPTIONS, ≤1 rps, no mutations run)
+[HYP] GraphQL API authenticates via cookies, not only Authorization header
+class: ACCESS_CONTROL
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: ACAC:true only matters if a credential attaches to a cross-origin request. ACAH advertises `authorization` on preflight, but no `Set-Cookie` appeared on this cycle's GraphQL responses; whether any auth cookie exists (and its SameSite/Secure/Domain flags) is unverified. Staging is the lower-risk asset to characterize session mechanics on, and staging mirrors prod CORS exactly this cycle, so a staging-cookie finding explains the prod impact model too.
+evidence_needed: any response (login/session endpoint, passive header capture only) that sets a cookie scoped to `.cineplex.de` or `graphql-api.app.*`; its `SameSite` value. No credential submission, no login attempt — passive observation of Set-Cookie headers only.
+verify_steps: (1) passive header review of already-captured responses (done — none observed on GraphQL routes); (2) passive observation of Set-Cookie on any non-auth app surface reachable GET-only; (3) if no cookie exists anywhere, downgrade: ACAC finding stays a policy defect and the credentialed-read impact statement must be retracted to "unauthenticated read permitted cross-origin".
+impact: If cookies authenticate GraphQL, hostile-origin credentialed requests become account-data reads/writes; if not, impact scope shrinks and the CORS finding must be re-framed accordingly.
+testability: PASSIVE (header observation only; any login attempt is HUMAN_ONLY/out of scope)
+[HYP] api.cineplex.de origin serves API traffic behind a Cloudflare managed challenge
+class: MISCONFIG
+asset: api.cineplex.de
+confidence: 45
+reasoning: This cycle's browser-UA GETs returned `cf-mitigated: challenge` (Cloudflare managed challenge page), not a config-level 403. That falsifies the "separate stricter edge config rejects all methods" characterization — the rejection observed for 20+ cycles is a bot gate whose pass/fail depends on solving the challenge, and the origin behind it is unmeasured. Whether the origin exposes GraphQL/CORS behavior like graphql-api.app is unknown, not negative.
+evidence_needed: a challenge-passed response (browser with cleared cookies/JS solving the interstitial) showing origin status, server header, and ACAO behavior; must be HUMAN_ONLY per no-WAF-bypass policy — automated challenge circumvention will not be attempted.
+verify_steps: (1) done — challenge mechanism confirmed via `cf-mitigated`/`server-timing: chlray` headers on two paths; (2) HUMAN_ONLY: human browser visit records origin status and response headers post-challenge; (3) only then decide whether api.cineplex.de re-enters the CORS/GraphQL test plan.
+impact: If the origin mirrors graphql-api.app behavior, the CORS surface doubles; if it rejects, the old verdict stands but with correct mechanism.
+testability: HUMAN_ONLY (automated path blocked by challenge; no circumvention will be run)
+[NEXT] PROBE
+[LEARN]
+[RISK]
+testability: HUMAN_ONLY (automated path blocked by challenge; no circumvention will be run)
+[NEXT] PROBE
+[LEARN]
+[RISK]
+class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 55
+class: MISCONFIG | asset: api.cineplex.de | conf: 45
+class: MISCONFIG | asset: graphql-api.app.cineplex.de | conf: 90
+class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 45

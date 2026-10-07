@@ -89306,3 +89306,1672 @@ probed DNS: 89 live: 86
   ww.cineplex.de 104.16.22.67
   wwww.cineplex.de 104.16.23.67
 [0m
+===== ANALYST bigpickle 2026-10-07 19:50:19 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la && git log --oneline -5 2>/dev/null | head -20
+total 1404
+drwxr-xr-x 12 runner runner   4096 Oct  7 19:30 .
+drwxr-xr-x  3 runner runner   4096 Oct  7 19:29 ..
+drwxr-xr-x  7 runner runner   4096 Oct  7 19:30 .git
+drwxr-xr-x  3 runner runner   4096 Oct  7 19:30 .github
+-rw-r--r--  1 runner runner   1923 Oct  7 19:30 README.md
+-rw-r--r--  1 runner runner     32 Oct  7 19:30 analyst-out.txt
+-rw-r--r--  1 runner runner 630314 Oct  7 19:30 analyst-prompt.txt
+-rw-r--r--  1 runner runner 626357 Oct  7 19:30 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 leads
+-rw-r--r--  1 runner runner  83902 Oct  7 19:30 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 reports
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  7 19:30 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  7 19:30 scripts
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  7 19:30 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  7 19:30 triage
+94ddbb5 triage 2026-10-07-16-36
+[0m
+[0m$ [0mls leads/ reports/ 2>/dev/null; echo "---"; ls knowledge/ 2>/dev/null; echo "---"; ls scripts/ 2>/dev/null
+leads/:
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-cineplex.md
+
+reports/:
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+---
+index.md
+---
+sync-issues.py
+[0m
+## Objective
+- Act as a senior bug bounty analyst for the Cineplex Deutschland program (report channel: bugs.olivermaicher.eu), running a 7-step structured hunt cycle (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARN → RISK) on scoped assets only.
+- Maintain and correct a large append-only knowledge base while avoiding repeated self-inflicted errors (evidence-depth errors, harness-derived conclusions, resurrected falsified claims).
+
+## Important Details
+- Scope: only Cineplex-owned infra/domains per scope.yml + inventory/cineplex.md; read-only probes only, ≤1 rps, GET/HEAD/OPTIONS; no PII/customer-data access, no mutating tests.
+- REJECTED classes (never report): username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS-passive, relay_metrics/relay_broker_saturation, api_cineplex_get_bypass, TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso — SSLv3/525), relay IOMB stats, staging_testing_oracle (rejected as standalone — descriptive method-mismatch error).
+- Key live findings (ACCEPTED): CORS label-boundary suffix allowlist with ACAC:true on graphql-api.app.{,staging.}cineplex.de (`*.cineplex.de` origins + localhost + `Origin:null` reflected; evilcineplex.de → 500); OPTIONS / → 204 with ACAAM `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry), ACAH `content-type,authorization`; arbitrary-path GraphQL catch-all (any unshadowed path serves schema); dangling CNAME takeover precondition on web-dev.cineplex.de (CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN, 17+ cycles, PASSIVE, claimability provider-side); CORS chain dangle→credentialed read.
+- Key retractions: idor_ownership_omission falsified (INVALID_ID-vs-UNAUTHENTICATED measures decode position, not check presence — decoder oracle only, class:ACCESS_CONTROL fingerprint 4ad65631f720); "4 equivalent surfaces" claim wrong; "remediation scope 2 paths × 2 envs" wrong (catch-all means path-pattern × 2 envs); cors_lookalike_registrable_domain rejected; UserPrivileges is OBJECT not input object.
+- Harness defects (8 fixed in .github/workflows/hunt.yml:207-225): backtick in URL regex → 400; UA "(passive verifier)" → 403 bot-gate; urls[:12] truncation; brace truncation → false 400. Probe-results.md results are void; all conclusions rest on manual balanced curl (`curl -G --data-urlencode`, browser UA, `--http2`).
+- Publisher (scripts/sync-issues.py): parse_blocks matches `^\[HYP]` only; falsified IDOR blocks cleaned (class:IDOR 297→0); web-dev dangle still fragmented into ~5 blocks with divergent class labels (MISCONFIG/OTHER/SUBDOMAIN_TAKEOVER) — lead-authoring debt, not to auto-merge; 2 malformed `class: 'MISCONFIG' CONF: '93'` lines.
+- Method rules: a type is not read until its field list is in hand; method-vary every equivalence claim; never infer absence from automated-log silence; scope evidence to blast radius before asserting system properties; corrections need a position that outranking the claim.
+- My state: `{"phase": "POC", "target": "api"}`.
+
+## Work State
+### Completed
+- 2026-10-07 cycle: live re-verification of cors_allowlist_suffix_match (label boundary), cors_null_origin_credentialed (prod+staging), cors_chain_takeover_to_credentialed_read, graphql_arbitrary_path_catchall, getonly_graphql_mirrors scope (4 paths × 2 envs), staging /graphql parity restored (200), web-dev DoH 200.
+- Knowledge base canonical status section added (2026-09-30): LIVE/DEAD/SURVIVING/METHOD RULES partitioning.
+- Publish path decontaminated: class:IDOR blocks 297→0; decoder oracle retained as class:ACCESS_CONTROL.
+- scripts/passive_verify.py replaces inline verifier (14 offline tests pass); probe-results.md declared void (206 cycles corrupted).
+
+### Active
+- Three live hypotheses in leads: (1) CORS credentialed cross-origin read @ graphql-api.app.cineplex.de, conf 92, PASSIVE_OR_POC; (2) cookie-auth question @ staging, conf 55, PASSIVE (no Set-Cookie observed; if none, impact statement must be re-framed to "unauthenticated read permitted cross-origin"); (3) api.cineplex.de managed-challenge origin characterization, conf 45, HUMAN_ONLY (cf-mitigated: challenge, not config 403).
+- [FINAL] survivors: CORS credentialed reflection (conf 90/92), arbitrary-path schema (conf 85), dangle precondition (conf 80) — all PASSIVE.
+
+### Blocked
+- HUMAN_ONLY: cross-tenant IDOR PII proof, staging POST extraction, api.cineplex.de challenge pass, dangle provider claimability attestation.
+- No session cookie scope/SameSite evidence yet (blocks full ACAC impact proof).
+
+## Next Move
+1. Run the queued probe: `curl -sS -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"` — confirm ACAO/ACAC on the actual response under hostile origin.
+2. Passive-search for any Set-Cookie on non-auth GraphQL/app surfaces to resolve the cookie-authentication hypothesis (conf 55); if absent, downgrade the CORS impact statement accordingly.
+
+## Relevant Files
+- knowledge/index.md: append-only KB with CANONICAL STATUS section; carries CORRECTION lines superseding the false "no injection vectors / CVSS 5.3" claim.
+- scripts/sync-issues.py: publisher; parse_blocks `^\[HYP]` at :57, fingerprint md5(asset|class) at :112, ensure_label bug at :153.
+- .github/workflows/hunt.yml:207-225: probe harness with 8 defects (fixed offline, verify durability).
+- scripts/passive_verify.py + scripts/test_passive_verify.py: replacement verifier (14 tests).
+- leads/lead-bigpickle.md, leads/lead-nemotron3.md: lead corpus; retagged [HYP]→[LEARN]; malformed attribute at lead-bigpickle.md:7846.
+- inventory/cineplex.md: 132-host baseline (exhausted) + CNAME signals.
+- probe-results.md: void automated log (~1330 lines, zero POST) — never use as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat state_bigpickle.json; echo; tail -40 leads/lead-bigpickle.md
+{"phase": "POC", "target": "api"}
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+[RISK] bugs.olivermaicher.eu: 15 reason: All work read-only GET/OPTIONS/DNS at ≤1 rps against scoped hosts; no PII/customer data accessed, no mutations attempted; findings rely on structural/config observations with clear PASSIVE testability; corrections made to harness artifacts and no automated-log-only inferences.
+[HYP] Cross-origin credentialed read of GraphQL responses via allowlist reflection
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: The allowlist reflects three hostile classes with ACAC:true — any `*.cineplex.de` origin (label-boundary enforced), any `localhost`/`127.0.0.1` origin at any port, and `Origin: null`. A hostile page can therefore issue credentialed cross-origin GETs whose responses the browser exposes to it. This cycle converted the preflight-only evidence into an actual response-read POC: 200 + ACAO echo + ACAC + introspection payload (385 types) under hostile origins.
+evidence_needed: whether a session cookie exists whose scope/SameSite would let it ride a hostile-origin credentialed request (ACAC impact is conditional on a credential actually attaching); acceptance by program that schema introspection qualifies as impact vs. requiring an authenticated-data read.
+verify_steps: (1) done — preflight + actual GET with hostile origins, response readable; (2) done — full introspection read under `Origin: null`; (3) check any response `Set-Cookie` flags / cookie scope on graphql hosts; (4) if a cookie exists, document request-response pairing in report PoC without exfiltrating customer data (PII remains out of scope).
+impact: An attacker-controlled page (or any `*.cineplex.de` subdomain, including the web-dev dangling-CNAME path) reads GraphQL responses — schema and any cookie-authenticated data — cross-origin with credentials included.
+testability: PASSIVE_OR_POC (all steps GET/HEAD/OPTIONS, ≤1 rps, no mutations run)
+[HYP] GraphQL API authenticates via cookies, not only Authorization header
+class: ACCESS_CONTROL
+asset: graphql-api.app.staging.cineplex.de
+confidence: 55
+reasoning: ACAC:true only matters if a credential attaches to a cross-origin request. ACAH advertises `authorization` on preflight, but no `Set-Cookie` appeared on this cycle's GraphQL responses; whether any auth cookie exists (and its SameSite/Secure/Domain flags) is unverified. Staging is the lower-risk asset to characterize session mechanics on, and staging mirrors prod CORS exactly this cycle, so a staging-cookie finding explains the prod impact model too.
+evidence_needed: any response (login/session endpoint, passive header capture only) that sets a cookie scoped to `.cineplex.de` or `graphql-api.app.*`; its `SameSite` value. No credential submission, no login attempt — passive observation of Set-Cookie headers only.
+verify_steps: (1) passive header review of already-captured responses (done — none observed on GraphQL routes); (2) passive observation of Set-Cookie on any non-auth app surface reachable GET-only; (3) if no cookie exists anywhere, downgrade: ACAC finding stays a policy defect and the credentialed-read impact statement must be retracted to "unauthenticated read permitted cross-origin".
+impact: If cookies authenticate GraphQL, hostile-origin credentialed requests become account-data reads/writes; if not, impact scope shrinks and the CORS finding must be re-framed accordingly.
+testability: PASSIVE (header observation only; any login attempt is HUMAN_ONLY/out of scope)
+[HYP] api.cineplex.de origin serves API traffic behind a Cloudflare managed challenge
+class: MISCONFIG
+asset: api.cineplex.de
+confidence: 45
+reasoning: This cycle's browser-UA GETs returned `cf-mitigated: challenge` (Cloudflare managed challenge page), not a config-level 403. That falsifies the "separate stricter edge config rejects all methods" characterization — the rejection observed for 20+ cycles is a bot gate whose pass/fail depends on solving the challenge, and the origin behind it is unmeasured. Whether the origin exposes GraphQL/CORS behavior like graphql-api.app is unknown, not negative.
+evidence_needed: a challenge-passed response (browser with cleared cookies/JS solving the interstitial) showing origin status, server header, and ACAO behavior; must be HUMAN_ONLY per no-WAF-bypass policy — automated challenge circumvention will not be attempted.
+verify_steps: (1) done — challenge mechanism confirmed via `cf-mitigated`/`server-timing: chlray` headers on two paths; (2) HUMAN_ONLY: human browser visit records origin status and response headers post-challenge; (3) only then decide whether api.cineplex.de re-enters the CORS/GraphQL test plan.
+impact: If the origin mirrors graphql-api.app behavior, the CORS surface doubles; if it rejects, the old verdict stands but with correct mechanism.
+testability: HUMAN_ONLY (automated path blocked by challenge; no circumvention will be run)
+[NEXT] PROBE
+[LEARN]
+[RISK]
+testability: HUMAN_ONLY (automated path blocked by challenge; no circumvention will be run)
+[NEXT] PROBE
+[LEARN]
+[RISK]
+class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 55
+class: MISCONFIG | asset: api.cineplex.de | conf: 45
+class: MISCONFIG | asset: graphql-api.app.cineplex.de | conf: 90
+class: ACCESS_CONTROL | asset: graphql-api.app.staging.cineplex.de | conf: 45
+[0m
+[0m$ [0mcurl -sS -m 20 -o /tmp/opencode/body1.txt -D /tmp/opencode/hdr1.txt -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D" ; echo "=== HTTP/EXIT $? ==="; cat /tmp/opencode/hdr1.txt; echo "--- BODY ---"; head -c 600 /tmp/opencode/body1.txt
+=== HTTP/EXIT 0 ===
+HTTP/2 200 
+date: Wed, 07 Oct 2026 19:31:07 GMT
+content-type: application/json; charset=utf-8
+content-length: 32
+x-amzn-requestid: 6de45b31-a54c-4713-aeb0-326fa4267d72
+access-control-allow-origin: http://localhost:3000
+x-amzn-remapped-content-length: 32
+x-amz-apigw-id: E42fVHt4FiAEANw=
+vary: Origin
+etag: W/"20-/8NdYwgmGsmmlrq5Nh8mH1T+tAs"
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6ac69dfb-549733fc64106dfb58f994bf;Parent=61493eecd2f04934;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a46f52ffb8d3f7b7-LAX
+alt-svc: h3=":443"; ma=86400
+
+--- BODY ---
+{"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mgrep -ric "set-cookie" probe-results.md; echo "--- knowledge status ---"; grep -n "CANONICAL STATUS" -A 60 knowledge/index.md | head -80
+0
+--- knowledge status ---
+[0m
+[0m$ [0mcd /tmp/opencode
+check() { echo "=== $1 ==="; curl -sS -m 20 -o /dev/null -D - -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" "$1" 2>&1 | grep -iE '^(HTTP/|set-cookie|access-control|location|content-type)' ; sleep 1.1; }
+check "https://graphql-api.app.cineplex.de/"
+check "https://graphql-api.app.cineplex.de/health"
+check "https://graphql-api.app.cineplex.de/graphiql"
+check "https://app.cineplex.de/"
+check "https://www.cineplex.de/"
+=== https://graphql-api.app.cineplex.de/ ===
+HTTP/2 400 
+content-type: text/html; charset=utf-8
+access-control-allow-credentials: true
+=== https://graphql-api.app.cineplex.de/health ===
+HTTP/2 400 
+content-type: text/html; charset=utf-8
+access-control-allow-credentials: true
+=== https://graphql-api.app.cineplex.de/graphiql ===
+HTTP/2 400 
+content-type: text/html; charset=utf-8
+access-control-allow-credentials: true
+=== https://app.cineplex.de/ ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+=== https://www.cineplex.de/ ===
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+[0m
+[0m$ [0mwc -l knowledge/index.md; grep -n "^#\|^## " knowledge/index.md | head -60
+1221 knowledge/index.md
+1:# Knowledge Base (seed)
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== GET / no origin ==="; curl -sS -m 20 -o b2.txt -D h2.txt -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"; grep -iE '^(HTTP/|set-cookie|access-control)' h2.txt; cat b2.txt; sleep 1.1
+echo "=== evil origin ==="; curl -sS -m 20 -o b3.txt -D h3.txt -A "Mozilla/5.0" -H "Origin: https://evilcineplex.de" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"; grep -iE '^(HTTP/|set-cookie|access-control)' h3.txt; head -c 200 b3.txt; sleep 1.1
+echo "=== staging ==="; curl -sS -m 20 -o b4.txt -D h4.txt -A "Mozilla/5.0" -H "Origin: http://localhost:3000" "https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D"; grep -iE '^(HTTP/|set-cookie|access-control)' h4.txt; cat b4.txt
+=== GET / no origin ===
+HTTP/2 200 
+access-control-allow-credentials: true
+{"data":{"__typename":"Query"}}
+=== evil origin ===
+HTTP/2 500 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Error: Not allowed by CORS<br> &nbsp; &nbsp;at origin (/var/task/graphql.js:47508:17)<br> &nbsp;=== staging ===
+HTTP/2 200 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-credentials: true
+{"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+echo "=== arbitrary path ==="
+for p in "/totally/made/up/path" "/.well-known/anything" "/a" ; do
+  printf '%-32s ' "$p"
+  curl -sS -m 20 -o bp.txt -D hp.txt -A "$UA" -H "Origin: https://x.cineplex.de" "https://graphql-api.app.cineplex.de${p}?query=%7B__typename%7D"
+  grep -iE '^(HTTP/|access-control-allow-origin)' hp.txt | tr '\n' ' '; echo -n "| "; head -c 80 bp.txt; echo; sleep 1.1
+done
+=== arbitrary path ===
+/totally/made/up/path            HTTP/2 200 
+ access-control-allow-origin: https://x.cineplex.de
+ | {"data":{"__typename":"Query"}}
+
+/.well-known/anything            HTTP/2 200 
+ access-control-allow-origin: https://x.cineplex.de
+ | {"data":{"__typename":"Query"}}
+
+/a                               HTTP/2 200 
+ access-control-allow-origin: https://x.cineplex.de
+ | {"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for u in "https://www.cineplex.de/robots.txt" "https://app.cineplex.de/robots.txt" "https://shop.cineplex.de/" "https://tickets.cineplex.de/" "https://web-dev.cineplex.de/"; do
+  echo "=== $u"
+  curl -sS -m 20 -o /dev/null -D - -A "$UA" "$u" 2>&1 | grep -iE '^(HTTP/|set-cookie|cf-mitigated|server|location|access-control)'; sleep 1.1
+done
+=== https://www.cineplex.de/robots.txt
+HTTP/2 200 
+server: cloudflare
+=== https://app.cineplex.de/robots.txt
+HTTP/2 525 
+server: cloudflare
+=== https://shop.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+server: cloudflare
+server-timing: chlray;desc="a46f54738c1b83ef"
+=== https://tickets.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+server: cloudflare
+server-timing: chlray;desc="a46f547baba3d7af"
+=== https://web-dev.cineplex.de/
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+echo "--- robots ---"; curl -sS -m 20 -A "$UA" "https://www.cineplex.de/robots.txt" | head -30
+echo; echo "--- web-dev DNS ---"; getent hosts web-dev.cineplex.de || echo "NXDOMAIN/no-resolve"; dig +short web-dev.cineplex.de CNAME; dig +short web-dev.cineplex.de A
+--- robots ---
+User-agent: *
+Allow: /
+
+Sitemap: https://www.cineplex.de/sitemap.xml
+
+--- web-dev DNS ---
+NXDOMAIN/no-resolve
+web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for u in "https://www.cineplex.de/kino/berlin" "https://www.cineplex.de/sitemap.xml" "https://account.cineplex.de/" "https://login.cineplex.de/" "https://www.cineplex.de/"; do
+  echo "=== $u"
+  curl -sS -m 20 -o /dev/null -D - -A "$UA" "$u" 2>&1 | grep -iE '^(HTTP/|set-cookie|cf-mitigated|location)'; sleep 1.1
+done
+=== https://www.cineplex.de/kino/berlin
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://www.cineplex.de/sitemap.xml
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://account.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://login.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://www.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+[0m
+[0m$ [0mgrep -inE "auth|sso|id\.|account|my\.|profil|session|cookie" inventory/cineplex.md | head -40; echo "=== scope ==="; cat scope.yml
+3:account.cineplex.de
+10:auth.cineplex.de
+65:my.cineplex.de
+77:profil.cineplex.de
+87:sso.cineplex.de
+138:> Recon observations only. These are NOT confirmed vulnerabilities; ownership/in-scope of each host must be confirmed against the program scope before any active testing. Hosts resolve + serve HTTP — investigation requires scoped authorization.
+146:| `profil.cineplex.de` | 302 | - -> /preference |
+155:- `profil.cineplex.de` -> `cineplex-preference.showtimeanalytics.com`
+174:**Host:** `profil.cineplex.de` | **Ports:** [80, 443]
+197:- NEW 6 live HTTP hosts confirmed: `cloud.systems.cineplex.de`, `data-9fc27eb430.cineplex.de`, `profil.cineplex.de`, `support.systems.cineplex.de`, `mailing.cineplex.de`, `vpn-portal.systems.cineplex.de`
+200:- NEW Auth/identity surface: `auth.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`, `account.cineplex.de`, `my.cineplex.de`, `profil.cineplex.de`
+216:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+220:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+222:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+227:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+236:- NEW `booking.cineplex.de/api/booking/{id` confirmed 403 in probe-results — session-gated, AUTH_HELPED required
+241:- CHANGED `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de` all return HTTP 403 at root → edge WAF blocks "api" surface; pivot to authless 200 surface (relay host) + GraphQ
+245:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+247:- CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
+253:- NEW `data-9fc27eb430.cineplex.de/metrics` confirmed 200 with 114 bytes — second authless 200 surface on relay beyond `/health` and `/`; content unexamined
+255:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+257:- CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
+267:- NEW `data-9fc27eb430.cineplex.de/metrics` confirmed 200 with 114 bytes — second authless 200 surface on relay beyond `/health`
+269:- CHANGED JWKS endpoint `auth.cineplex.de/.well-known/jwks.json` returns 404 — passive JWKS fetch not possible for JWT alg confusion
+270:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+283:- NEW `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 114→115 bytes (fluctuating) — second authless surface beyond `/health`; content unexamined
+286:- CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
+287:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+291:- NEW `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 114→115 bytes (fluctuating) — second authless surface beyond `/health`; content unexamined
+294:- CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
+295:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+299:- NEW `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 114→115 bytes (fluctuating) — second authless surface beyond `/health`; content unexamined
+302:- CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
+303:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+307:- NEW `/metrics` on `data-9fc27eb430.cineplex.de` confirmed 200 with 115 bytes (stable since 2026-09-04 16:31) — second authless surface beyond `/health`; content unexamined
+310:- CHANGED `auth.cineplex.de/.well-known/jwks.json` remains 404 — passive JWKS fetch blocked for JWT alg confusion
+311:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+318:- CHANGED `data-9fc27eb430.cineplex.de/metrics` — stable 200 with 115 bytes since 2026-09-04 16:31 — second authless 200 surface confirmed stable
+321:- CHANGED `auth.cineplex.de/.well-known/jwks.json` — persistent 404 — passive JWKS fetch blocked for JWT alg confusion
+322:- CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403 — session-gated, AUTH_HELPED required
+=== scope ===
+programs:
+  cineplex:
+    name: Cineplex Deutschland GmbH & Co. KG / Cineplex Group Bug Bounty
+    disclosure_policy: via bugs.olivermaicher.eu (Oliver Maicher private program) - report + PoC + contact + payment
+    assets:
+      - name: "All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control"
+        priority: In
+    out_of_scope:
+- "Network level Denial of Service attacks"
+      - "Application Denial of Service by locking user accounts"
+      - "Descriptive error messages or headers (e.g. Stack Traces, banner grabbing)"
+      - "Disclosure of known public files or directories (e.g. robots.txt)"
+      - "Outdated software / library versions"
+      - "OPTIONS / TRACE HTTP method enabled"
+      - "CSRF on logout"
+      - "CSRF on forms that are available to anonymous users"
+      - "Cookies that lack HTTP Only or Secure settings for non-sensitive data"
+      - "Self-XSS and issues exploitable only through Self-XSS"
+      - "Reports resulting from automated scanning utilities without additional details or a POC demonstrating a specific exploit"
+      - "Attacks requiring physical access to a user's device"
+      - "Attacks dependent upon social engineering of employees or vendors"
+      - "Username enumeration based on login or forgot password pages"
+      - "Enforcement policies for brute force, rate limiting, or account lockout"
+      - "SSL/TLS best practices"
+      - "SSL attacks such as BEAST, BREACH, Renegotiation attack"
+      - "Clickjacking, without additional details demonstrating a specific exploit"
+      - "Mail configuration issues including SPF, DKIM, DMARC settings"
+      - "Use of a known-vulnerable library without a description of an exploit specific to our implementation"
+      - "Password and account recovery policies"
+      - "Presence of autocomplete functionality in form fields"
+      - "Publicly accessible login panels"
+      - "Lack of email address verification during account registration or account invitation"
+      - "Lack of email address verification password restore"
+      - "Session control during email/password changes"
+      - "Social engineering, physical attacks, and DoS/DDoS testing (per program notes)"
+      - "Exposure of customer/employee/financial/authentication data during testing (per program notes)"
+    github_orgs:
+      - none-configured
+
+rules:
+  passive_first: false          # deep-hunt agent: active probes allowed when scoped
+  max_requests_per_second: 1    # never hammer live infra
+  no_doom: true                 # no DoS/DDoS, no account-lockout attacks
+  account_creation: restricted  # only on test/sandbox assets, never live customer data
+  no_data_modification: true    # no writes/deletes on live customer data
+  no_pre_disclosure: true       # never disclose before program response
+  poc_required: true            # scanner output alone is REJECTED
+  redact_secrets_in_commits: true
+
+models:
+  - { id: opencode/big-pickle, name: bigpickle }
+  - { id: opencode/nemotron-3-ultra-free, name: nemotron3 }
+  - { id: opencode/longcat-2.0-free, name: longcat }
+  - { id: opencode/ling-3.0-flash-free, name: ling3 }
+  - { id: opencode/laguna-s-2.1-free, name: laguna }
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== OPTIONS arbitrary path ==="
+curl -sS -m 20 -o /dev/null -D - -X OPTIONS -A "Mozilla/5.0" \
+ -H "Origin: https://evil.example" \
+ -H "Access-Control-Request-Method: GET" \
+ -H "Access-Control-Request-Headers: content-type,authorization" \
+ "https://graphql-api.app.cineplex.de/totally/made/up" | grep -iE '^(HTTP/|access-control|vary)'; sleep 1.1
+echo "=== OPTIONS root (method vary: PUT) ==="
+curl -sS -m 20 -o /dev/null -D - -X OPTIONS -A "Mozilla/5.0" \
+ -H "Origin: https://evil.example" \
+ -H "Access-Control-Request-Method: PUT" \
+ "https://graphql-api.app.cineplex.de/" | grep -iE '^(HTTP/|access-control|vary)'
+=== OPTIONS arbitrary path ===
+HTTP/2 403 
+=== OPTIONS root (method vary: PUT) ===
+HTTP/2 500
+[0m
+[0m$ [0mgrep -in "showtimeanalytics\|profil\|preference\|my\.cineplex" knowledge/index.md | head -20; echo "=== scope-rejected list in knowledge ==="; grep -n "REJECTED\|rejected\|out of scope\|OUT OF SCOPE" knowledge/index.md | head -30
+265:- 2026-09-11 NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
+303:- 2026-09-12 NEW profil.cineplex.de = Java webapp; JSESSIONID; /preference "Einstellungen" page with reCAPTCHA
+308:- 2026-09-12 ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference + /preference/update (GET 200 renders form, no 405) POST-action form, reCAPTCHA sitekey literal 'false', anonymous JSESSIONID, no CSP — candidate BUSLOGIC/IDOR surface on customer preference app; AUTH_HELPED.
+314:- 2026-09-12 ACCEPTED profil_preference_surface @ profil.cineplex.de: /preference/update GET 200 form, reCAPTCHA false, no CSP — AUTH_HELPED candidate.
+329:- 2026-09-12 PARKED profil_preference_surface @ profil.cineplex.de: no passive reflector (static no-user alert); email-presence oracle is OOS-adjacent (enumeration class); client-side `?captcha=` + dead reCAPTCHA is a low-value control finding on a newsletter form; HUMAN_ONLY write proof, business value low — confidence 50→45.
+337:- 2026-09-12 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+354:- 2026-09-13 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+386:- 2026-09-14 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; no passive reflector; email-presence oracle OOS-adjacent; low business value
+407:- 2026-09-14 PARKED profil_preference_surface @ profil.cineplex.de: confidence 45; low business value.
+413:- 2026-09-14 PARKED idor_booking, staging_testing_oracle, waf_method_gate_attenuation, profil_preference_surface: HUMAN_ONLY or low value
+688:- 2026-09-23 REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change.
+696:- 2026-09-24 REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change
+725:- 2026-09-25 REJECTED ct-renewal_signal @ booking-dev/bms-dev (09-21), profil.cineplex.de (09-22): cert rotation within expected lifecycle, no new SANs, no surface change
+819:- 2026-09-26 ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: `updateUser(userId:ID!, …, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` is active and lets the caller name an arbitrary target user and the set of cinema operating companies that user administers. `updateUserProfile` in the same root type has neither field and `updateUserAdminStatus` is the evidently intended grant path, so the omission is visible as a contrast rather than inferred. `increaseUserTestingStatus(testingStatus: TestingStatus!)` with enum TESTING|PRODUCTION|STAGING|DEVELOPMENT|CINEMA_EMPLOYEE is a second instance on the same class. Gates unverified, not executed.
+829:- 2026-09-26 ACCEPTED physical_to_profile @ graphql-api.app.cineplex.de: `userByQr(qrCode)` → `User` makes a physical ticket stub a digital-identity oracle. Physical artifact to full profile with no credential.
+1063:- 2026-10-05 REJECTED spa_get_state_change @ profil.cineplex.de: catch-all Angular fallback returns index.html and no state change occurs on GET.
+1155:- 2026-10-05 CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+1173:- 2026-10-06 CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+1211:- 2026-10-07 CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+=== scope-rejected list in knowledge ===
+2:- 2026-09-03 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+3:- 2026-09-03 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+4:- 2026-09-03 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+5:- 2026-09-03 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+6:- 2026-09-03 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+7:- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+11:- 2026-09-03 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+12:- 2026-09-03 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+20:- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+21:- 2026-09-04 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+23:- 2026-09-04 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+24:- 2026-09-04 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+25:- 2026-09-04 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+26:- 2026-09-04 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+27:- 2026-09-04 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+31:- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+32:- 2026-09-04 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+34:- 2026-09-04 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+35:- 2026-09-04 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+36:- 2026-09-04 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+37:- 2026-09-04 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+38:- 2026-09-04 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+40:- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+41:- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+42:- 2026-09-04 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114-115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+46:- 2026-09-05 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+47:- 2026-09-05 ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 114-115 bytes — second authless 200 surface; content unexamined; not in REJECTED class
+48:- 2026-09-05 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+50:- 2026-09-05 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+51:- 2026-09-05 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for u in "https://auth.cineplex.de/" "https://my.cineplex.de/" "https://profil.cineplex.de/" "https://auth.cineplex.de/.well-known/openid-configuration"; do
+  echo "=== $u"
+  curl -sS -m 20 -o /dev/null -D - -A "$UA" "$u" 2>&1 | grep -iE '^(HTTP/|set-cookie|cf-mitigated|location|access-control)'; sleep 1.1
+done
+echo "=== DNS ==="; for h in auth.cineplex.de my.cineplex.de profil.cineplex.de account.cineplex.de; do printf '%-28s ' $h; dig +short $h CNAME | tr '\n' ' '; dig +short $h A | head -3 | tr '\n' ' '; echo; sleep 0.3; done
+=== https://auth.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://my.cineplex.de/
+HTTP/2 403 
+cf-mitigated: challenge
+=== https://profil.cineplex.de/
+HTTP/2 302 
+location: /preference
+=== https://auth.cineplex.de/.well-known/openid-configuration
+HTTP/2 404 
+=== DNS ===
+auth.cineplex.de             104.16.22.67 104.16.23.67 
+my.cineplex.de               104.16.23.67 104.16.22.67 
+profil.cineplex.de           cineplex-preference.showtimeanalytics.com. cineplex-preference.showtimeanalytics.com. dublin-pro-public.showtimeanalytics.com. 35.71.139.149 
+account.cineplex.de          104.16.22.67 104.16.23.67
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+echo "=== profil /preference ==="
+curl -sS -m 20 -o prof.html -D prof.hdr -A "$UA" "https://profil.cineplex.de/preference"
+grep -iE '^(HTTP/|set-cookie|location|content-type|access-control|strict-transport|content-security)' prof.hdr
+echo "--- body size: $(wc -c < prof.html)"
+grep -oiE 'name="[^"]*"' prof.html | sort -u | head -25
+echo "--- recaptcha/sitekey/ids ---"
+grep -oiE "(recaptcha|sitekey|captcha|JSESSIONID|userId|customerNumber)[^\"',< ]{0,40}" prof.html | sort -u | head -20
+=== profil /preference ===
+HTTP/2 200 
+content-type: text/html;charset=UTF-8
+set-cookie: JSESSIONID=5FC8EA0B193E1878047C50488742F4C0; Path=/; HttpOnly
+--- body size: 103164
+name="birth"
+name="email"
+name="firstName"
+name="lastName"
+name="sites[0].id"
+name="sites[100].id"
+name="sites[101].id"
+name="sites[102].id"
+name="sites[103].id"
+name="sites[104].id"
+name="sites[105].id"
+name="sites[106].id"
+name="sites[107].id"
+name="sites[108].id"
+name="sites[109].id"
+name="sites[10].id"
+name="sites[110].id"
+name="sites[111].id"
+name="sites[112].id"
+name="sites[113].id"
+name="sites[11].id"
+name="sites[12].id"
+name="sites[13].id"
+name="sites[14].id"
+name="sites[15].id"
+--- recaptcha/sitekey/ids ---
+captcha
+captcha=
+captchaDiv
+captchaDiv){
+recaptcha
+recaptcha.render(
+recaptcha/api.js?onload=onloadCallback&render=exp
+recaptchaCallback();
+recaptchaCallback(captcha){
+sitekey
+[0m
+[0m$ [0mgrep -rn "graphql-api.app.cineplex.de" inventory/cineplex.md | head; echo "=== CORS baseline in knowledge ==="; grep -n "cors_" knowledge/index.md | tail -25
+38:graphql-api.app.cineplex.de
+199:- NEW High-value API targets identified: `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `booking.cineplex.de`, `buchung.cineple
+208:- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+213:- NEW No new inventory hosts or passive recon data since 2026-09-02; last probe (GraphQL introspection on graphql-api.app.cineplex.de) was queued but results not yet in context
+216:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+220:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+222:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+225:- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+227:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+228:- NEW GraphQL introspection CONFIRMED ENABLED on production `graphql-api.app.cineplex.de` — full schema returned (200 OK) with 200+ types, 100+ Query fields, 100+ Mutation fields including `login`, `startBo
+=== CORS baseline in knowledge ===
+1150:- 2026-10-05 REJECTED cors_lookalike_registrable_domain @ graphql-api.app.cineplex.de: the earlier "any origin ending in the string cineplex.de" reading predicted `evilcineplex.de` would be trusted. It returns 500 with no CORS headers, as do `notcineplex.de` and `a.evilcineplex.de`. No attacker-registerable lookalike domain reaches the allowlist, so that exploit path does not exist and the takeover precondition is now the only route.
+1151:- 2026-10-05 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true
+1152:- 2026-10-05 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAO:null + ACAC:true on actual GET response with data
+1153:- 2026-10-05 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two verified primitives compose (dangle + CORS suffix)
+1162:- 2026-10-06 ACCEPTED cors_resolvability_irrelevant @ graphql-api.app.cineplex.de: the credentialed ACAO is issued for origins that do not resolve, because the allowlist is evaluated on the Origin string before any DNS lookup. This makes any unclaimed or dangling subdomain automatically trusted, which is why the web-dev chain matters; it is a primitive-strength fact, not an exploit on its own.
+1164:- 2026-10-06 REJECTED cors_lookalike_registrable_domain @ graphql-api.app.cineplex.de: the earlier "any origin ending in the string cineplex.de" reading predicted `evilcineplex.de` would be trusted. It returns 500 with no CORS headers, as do `notcineplex.de` and `a.evilcineplex.de`. No attacker-registerable lookalike domain reaches the allowlist, so that exploit path does not exist and the takeover precondition is now the only route.
+1169:- 2026-10-06 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true
+1170:- 2026-10-06 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAO:null + ACAC:true on actual GET response with data
+1171:- 2026-10-06 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two verified primitives compose (dangle + CORS suffix)
+1186:- 2026-10-06 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+1187:- 2026-10-06 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS suffix match)
+1190:- 2026-10-06 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+1191:- 2026-10-06 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / returns 204 with ACAO:reflected, ACAC:true, ACAM:GET,HEAD,PUT,PATCH,POST,DELETE, ACAH:content-type,authorization — credentialed mutation primitive confirmed
+1192:- 2026-10-06 ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection
+1195:- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed POST; primitive confirmed via read-only observations
+1198:- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+1199:- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+1200:- 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS suffix match)
+1201:- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / returns 204 with ACAO:reflected, ACAC:true, ACAM:GET,HEAD,PUT,PATCH,POST,DELETE, ACAH:content-type,authorization — credentialed mutation primitive confirmed
+1202:- 2026-10-07 ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection
+1217:- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" at DNS label boundary with ACAC:true (verified sub.attacker.cineplex.de 204, evilcineplex.de 500)
+1218:- 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+1219:- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+1220:- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+1221:- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization` — credentialed mutation primitive confirmed
+[0m
+[0m$ [0msed -n '195,240p' .github/workflows/hunt.yml
+json.dump(st,open(sp,'w'))
+          for f in glob.glob('art/analyst-*.out'):
+              model=re.search(r'art/analyst-([a-z0-9]+)\.out$',f)
+              if model:
+                  with open(f'reports/analyst-{model.group(1)}.log','a') as lg:
+                      lg.write(f"===== ANALYST {model.group(1)} {stamp} =====\n"+open(f,errors='ignore').read())
+          print('merged',len(all_h),'hypotheses')
+          PY_EOF
+
+      - name: Passive verifier on leads (rate-limited read-only)
+        shell: bash
+        run: |
+          python3 << 'ROBOT_PY'
+          import re, glob, ssl, urllib.request, os, time
+          allow=os.environ.get('PROBE_ALLOW','').lower()
+          pat=re.compile(r'https?://[^\s"\)\]\}]+')
+          urls,seen=[],set()
+          for f in glob.glob('art/lead_*.txt')+glob.glob('lead_*.txt')+glob.glob('analyst-*.out'):
+              try: txt=open(f,errors='ignore').read()
+              except OSError: continue
+              for m in pat.findall(txt):
+                  u=m.strip('.,;)]}>')
+                  if u in seen or not u.startswith('https://'): continue
+                  seen.add(u)
+                  if allow and not any(a in u.lower() for a in allow.split('|')): continue
+                  urls.append(u[:300])
+          ctx=ssl.create_default_context(); rows=[]
+          for u in urls[:12]:
+              time.sleep(1)
+              try:
+                  req=urllib.request.Request(u,method='HEAD',headers={'User-Agent':'Mozilla/5.0 (passive verifier)'})
+                  with urllib.request.urlopen(req,timeout=12,context=ctx) as r:
+                      rows.append('%s -> %s len=%s'%(u,r.status,r.headers.get('Content-Length','?')))
+              except urllib.error.HTTPError as e:
+                  rows.append('%s -> HTTP %s'%(u,e.code))
+              except Exception as e:
+                  rows.append('%s -> ERR %s'%(u,str(e)[:50]))
+          print('\n'.join(rows) if rows else 'no probes (allow=%s)'%allow)
+          with open('probe-results.md','a') as fo:
+              fo.write('\n## %s\n%s\n'%(time.strftime('%Y-%m-%d %H:%M:%S UTC',time.gmtime()),'\n'.join(rows)))
+          ROBOT_PY
+
+      - name: Commit (single push, no race)
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+echo "=== DNS graphql envs ==="
+for h in graphql-api.app.couat.cineplex.de graphql-api.app.staging.cineplex.de graphql-api.app.cineplex.de api.cineplex.de; do printf '%-42s ' $h; dig +short $h A | tr '\n' ' '; echo; sleep 0.3; done
+echo "=== couat HTTP ==="
+curl -sS -m 20 -o couat.txt -D couat.hdr -A "$UA" -H "Origin: http://localhost:3000" "https://graphql-api.app.couat.cineplex.de/?query=%7B__typename%7D" ; echo "exit=$?"
+grep -iE '^(HTTP/|set-cookie|access-control|server|location)' couat.hdr; echo "body: $(head -c 200 couat.txt)"
+=== DNS graphql envs ===
+graphql-api.app.couat.cineplex.de          104.16.22.67 104.16.23.67 
+graphql-api.app.staging.cineplex.de        104.16.23.67 104.16.22.67 
+graphql-api.app.cineplex.de                104.16.23.67 104.16.22.67 
+api.cineplex.de                            104.16.23.67 104.16.22.67 
+=== couat HTTP ===
+curl: (35) OpenSSL/3.0.13: error:0A000410:SSL routines::sslv3 alert handshake failure
+exit=35
+body: 
+head: cannot open 'couat.txt' for reading: No such file or directory
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt
+echo "=== git status ==="; git status --porcelain | head -20
+echo "=== log ==="; git log --oneline -15
+echo "=== passive_verify present? ==="; ls -la scripts/
+echo "=== grep fix markers in hunt.yml ==="; grep -n "passive_verify\|cineplex\.de\|Mozilla/5.0 (X11\|urls\[:40\]\|urls\[:12\]" .github/workflows/hunt.yml
+=== git status ===
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+=== log ===
+94ddbb5 triage 2026-10-07-16-36
+=== passive_verify present? ===
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct  7 19:30 .
+drwxr-xr-x 12 runner runner  4096 Oct  7 19:30 ..
+-rw-r--r--  1 runner runner 16987 Oct  7 19:30 sync-issues.py
+=== grep fix markers in hunt.yml ===
+13:  PROBE_ALLOW: "cineplex.de"
+222:          for u in urls[:12]:
+[0m
+[0m$ [0mgrep -n "idor_ownership_omission\|ACCESS_CONTROL fingerprint\|decoder oracle\|4ad65631" knowledge/index.md | head -20; echo "=== index tail ==="; tail -30 knowledge/index.md
+856:- 2026-09-27 REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: my own central inference is falsified. `contentSectionListByNameAndCinemas` with a valid public cinema id returns `UNAUTHENTICATED` at `selectedCinemaIdsDb`, not data. The `INVALID_ID`-vs-`UNAUTHENTICATED` split I used as the discriminator for 27 cycles measures *decode position*, not *check presence* — the same signature appears on a resolver that does enforce authorization. Severity must be re-scored down to the decoder oracle until a customer-namespace member is tested.
+862:- 2026-09-27 REJECTED idor_ownership_omission @ graphql-api.app.cineplex.de: falsified by my own test. A syntactically invalid id cannot distinguish "check absent" from "check after decode" — both yield `INVALID_ID` plus a `decodePublicId` frame. Cost: one cycle and a wrong top finding held for 27 cycles.
+962:- 2026-10-01 The pre-auth id-decode family is a decoder oracle, not a demonstrated IDOR — the "missing ownership check" inf
+1161:- 2026-10-05 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+1179:- 2026-10-06 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+1216:- 2026-10-07 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+=== index tail ===
+- 2026-10-06 ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection
+- 2026-10-06 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+- 2026-10-06 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dead
+- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed POST; primitive confirmed via read-only observations
+- 2026-10-07 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope broader than named mirrors
+- 2026-10-07 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" with ACAC:true (verified attacker.cineplex.de, evil.cineplex.de, etc.)
+- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data
+- 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS suffix match)
+- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / returns 204 with ACAO:reflected, ACAC:true, ACAM:GET,HEAD,PUT,PATCH,POST,DELETE, ACAH:content-type,authorization — credentialed mutation primitive confirmed
+- 2026-10-07 ACCEPTED cors_actual_response_verification @ graphql-api.app.cineplex.de: ACAO and ACAC must be observed on the real response, because preflight alone would have overstated this finding, and a negative-control origin is required to separate an allowlist from blind reflection
+- 2026-10-07 REJECTED harness_botgate_as_application_evidence @ graphql-api.app.cineplex.de: a 403 recorded by the automated verifier carries no information about application behaviour, because the verifier's own User-Agent produced those 403s while manual curl with a browser User-Agent received 200 with reflected ACAO and ACAC. Status codes from the retired verifier must never be used as evidence, for positive or negative conclusions.
+- 2026-10-07 ACCEPTED falsified_parkings_are_asymmetric_cost @ api.cineplex.de: this cycle's harness defect was not neutral noise. It produced false negatives that parked GraphQL introspection and killed a live GET-based GraphQL hypothesis on api.cineplex.de, both of which are still open. When a probe tool and a manual observation disagree, the tool's defect is the more likely explanation, and a parking decision must never rest on a single automated source.
+- 2026-10-07 ACCEPTED malformed_request_false_negative @ graphql-api.app.cineplex.de: a surplus brace in an introspect query body yields a 400 that is indistinguishable from a disabled endpoint unless the body is brace-balanced before sending. Any GraphQL evidence must carry the exact balanced body used, and balanced bodies here return 200 with the full schema.
+- 2026-10-07 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-07 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-07 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+- 2026-10-07 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dead
+- 2026-10-07 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- 2026-10-07 CHANGED inventory: cloud.systems.cineplex.de/public.php and profil.cineplex.de/preference/update = Angular SPA catch-all
+- 2026-10-07 ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now 200 (was 500)
+- 2026-10-07 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+- 2026-10-07 CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+- 2026-10-07 REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf up to 98) remain publishable
+- 2026-10-07 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" at DNS label boundary with ACAC:true (verified sub.attacker.cineplex.de 204, evilcineplex.de 500)
+- 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization` — credentialed mutation primitive confirmed
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+pre() { # method path acrm acrh
+  echo "--- path=$2 ACRM=$3 ACRH='${4:-none}' origin=$1"
+  curl -sS -m 20 -o /dev/null -D - -X OPTIONS -A "$UA" \
+    -H "Origin: $1" -H "Access-Control-Request-Method: $3" \
+    ${4:+-H "Access-Control-Request-Headers: $4"} \
+    "https://graphql-api.app.cineplex.de$2" | grep -iE '^(HTTP/|access-control-allow|vary)'
+  sleep 1.1
+}
+pre "https://evil.example" "/" "GET"
+pre "https://evil.example" "/" "POST"
+pre "https://evil.example" "/" "POST" "content-type,authorization"
+pre "https://evil.example" "/" "PUT" "content-type,authorization"
+--- path=/ ACRM=GET ACRH='none' origin=https://evil.example
+HTTP/2 500 
+--- path=/ ACRM=POST ACRH='none' origin=https://evil.example
+HTTP/2 500 
+--- path=/ ACRM=POST ACRH='content-type,authorization' origin=https://evil.example
+HTTP/2 500 
+--- path=/ ACRM=PUT ACRH='content-type,authorization' origin=https://evil.example
+HTTP/2 500
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+pre() {
+  echo "--- origin=$1 path=$2 ACRM=$3 ACRH='${4:-none}'"
+  curl -sS -m 20 -o /dev/null -D - -X OPTIONS -A "$UA" \
+    -H "Origin: $1" -H "Access-Control-Request-Method: $3" \
+    ${4:+-H "Access-Control-Request-Headers: $4"} \
+    "https://graphql-api.app.cineplex.de$2" | grep -iE '^(HTTP/|access-control-allow|vary)'
+  sleep 1.1
+}
+pre "http://localhost:3000" "/" "GET"
+pre "http://localhost:3000" "/" "POST" "content-type,authorization"
+pre "http://localhost:3000" "/" "PUT" "content-type,authorization"
+pre "http://localhost:3000" "/" "DELETE" "content-type,authorization"
+--- origin=http://localhost:3000 path=/ ACRM=GET ACRH='none'
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+--- origin=http://localhost:3000 path=/ ACRM=POST ACRH='content-type,authorization'
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-headers: content-type,authorization
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+--- origin=http://localhost:3000 path=/ ACRM=PUT ACRH='content-type,authorization'
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-headers: content-type,authorization
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+--- origin=http://localhost:3000 path=/ ACRM=DELETE ACRH='content-type,authorization'
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-headers: content-type,authorization
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+echo "=== OPTIONS arbitrary path / allowed origin ==="
+curl -sS -m 20 -o /dev/null -D - -X OPTIONS -A "$UA" \
+ -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST" \
+ -H "Access-Control-Request-Headers: content-type,authorization" \
+ "https://graphql-api.app.cineplex.de/totally/made/up" | grep -iE '^(HTTP/|access-control)'
+sleep 1.1
+echo "=== POST actual / allowed hostile origin (read-only query, no mutation) ==="
+curl -sS -m 20 -o post.txt -D post.hdr -A "$UA" \
+ -H "Origin: http://localhost:3000" -H "Content-Type: application/json" \
+ -X POST --data '{"query":"{__typename}"}' \
+ "https://graphql-api.app.cineplex.de/totally/made/up"
+grep -iE '^(HTTP/|access-control|set-cookie)' post.hdr; echo "body: $(head -c 200 post.txt)"
+sleep 1.1
+echo "=== POST / allowed hostile origin ==="
+curl -sS -m 20 -o post2.txt -D post2.hdr -A "$UA" \
+ -H "Origin: http://localhost:3000" -H "Content-Type: application/json" \
+ -X POST --data '{"query":"{__typename}"}' \
+ "https://graphql-api.app.cineplex.de/"
+grep -iE '^(HTTP/|access-control|set-cookie)' post2.hdr; echo "body: $(head -c 200 post2.txt)"
+=== OPTIONS arbitrary path / allowed origin ===
+HTTP/2 403 
+=== POST actual / allowed hostile origin (read-only query, no mutation) ===
+HTTP/2 403 
+body: {"message":"Missing Authentication Token"}
+=== POST / allowed hostile origin ===
+HTTP/2 200 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-credentials: true
+body: {"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+m() { # host path method
+  printf '%-34s %-24s %-7s ' "$1" "$2" "$3"
+  curl -sS -m 20 -o mm.txt -D mh.txt -A "$UA" -H "Origin: http://localhost:3000" -H "Content-Type: application/json" -X "$3" ${4:+--data "$4"} "https://$1$2" 2>/dev/null
+  grep -iE '^HTTP/' mh.txt | tr -d '\r'; echo -n " | $(head -c 70 mm.txt)"; echo
+  sleep 1.1
+}
+H=graphql-api.app.cineplex.de
+m $H "/randompath" GET
+m $H "/randompath" POST '{"query":"{__typename}"}'
+m $H "/graphql" POST '{"query":"{__typename}"}'
+m $H "/" PUT '{"query":"{__typename}"}'
+m $H "/randompath" PUT '{"query":"{__typename}"}'
+graphql-api.app.cineplex.de        /randompath              GET     HTTP/2 400 
+ | GET query missing.
+graphql-api.app.cineplex.de        /randompath              POST    HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /graphql                 POST    HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /                        PUT     HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /randompath              PUT     HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+m() {
+  printf '%-42s %-24s %-7s ' "$1" "$2" "$3"
+  curl -sS -m 20 -o mm2.txt -D mh2.txt -A "$UA" -H "Origin: http://localhost:3000" -H "Content-Type: application/json" -X "$3" ${4:+--data "$4"} "https://$1$2" 2>/dev/null
+  grep -iE '^HTTP/' mh2.txt | tr -d '\r'; echo -n " | $(head -c 70 mm2.txt)"; echo
+  sleep 1.1
+}
+S=graphql-api.app.staging.cineplex.de
+m $S "/randompath" GET
+m $S "/randompath" POST '{"query":"{__typename}"}'
+m $S "/graphql" GET
+m $S "/graphql" POST '{"query":"{__typename}"}'
+graphql-api.app.staging.cineplex.de        /randompath              GET     HTTP/2 400 
+ | GET query missing.
+graphql-api.app.staging.cineplex.de        /randompath              POST    HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+graphql-api.app.staging.cineplex.de        /graphql                 GET     HTTP/2 400 
+ | GET query missing.
+graphql-api.app.staging.cineplex.de        /graphql                 POST    HTTP/2 403 
+ | {"message":"Missing Authentication Token"}
+[0m
+[0m$ [0mgrep -n "getonly_graphql_mirrors\|graphql_arbitrary_path_catchall\|Missing Authentication Token" knowledge/index.md | tail -20
+965:- 2026-10-02 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 2 paths × 2 envs.
+987:- 2026-10-03 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 2 paths × 2 envs.
+1000:- 2026-10-03 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de{/,/graphql,/api/graphql,/gql}: POST/OPTIONS to `/graphql`, `/api/graphql`, `/gql` return API-GW 403 `MissingAuthenticationTokenException` (no `x-powered-by: Express`), while `POST /` returns 200. Three routes are GET-only mirrors. Remediation scope = 4 paths × 2 envs.
+1013:- 2026-10-03 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: `GET /totally/unknown/path/xyz?query={__typename}` → `200 {"data":{"__typename":"Query"}}`. This supersedes the `getonly_graphql_mirrors` remediation scope of "2 paths × 2 envs" — path enumeration is not a fix, since any unshadowed path serves the schema.
+1019:- 2026-10-03 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200). Remediation scope is path-pattern × 2 envs, not named mirrors.
+1024:- 2026-10-03 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200); remediation scope is path-pattern × 2 envs, not named mirrors.
+1030:- 2026-10-04 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1045:- 2026-10-04 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200); remediation scope is path-pattern × 2 envs, not named mirrors.
+1066:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1081:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1096:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1111:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1126:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: any unshadowed path serves schema (e.g. /totally/unknown/path/xyz?query={__typename} → 200).
+1158:- 2026-10-05 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+1159:- 2026-10-05 CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+1176:- 2026-10-06 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+1177:- 2026-10-06 CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+1196:- 2026-10-07 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope broader than named mirrors
+1213:- 2026-10-07 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path
+1214:- 2026-10-07 CHANGED getonly_graphql_mirrors remediation scope: 4 paths × 2 envs (/, /graphql, /api/graphql, /gql)
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+row() { printf '%-34s %-16s %-5s ' "$1" "$2" "$3"
+  if [ "$3" = GET ]; then
+    curl -sS -m 20 -o r.txt -D rh.txt -A "$UA" -H "Origin: http://localhost:3000" "https://$1$2?query=%7B__typename%7D"
+  else
+    curl -sS -m 20 -o r.txt -D rh.txt -A "$UA" -H "Origin: http://localhost:3000" -H "Content-Type: application/json" -X POST --data '{"query":"{__typename}"}' "https://$1$2"
+  fi
+  grep -iE '^HTTP/' rh.txt | tr -d '\r' | tr -s ' '; echo -n " acao=$(grep -i '^access-control-allow-origin' rh.txt | tr -d '\r' | cut -d' ' -f2) body=$(head -c 55 r.txt)"; echo; sleep 1.1; }
+for p in / /graphql /api/graphql /gql /randompath; do row graphql-api.app.cineplex.de "$p" GET; row graphql-api.app.cineplex.de "$p" POST; done
+graphql-api.app.cineplex.de        /                GET   HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /                POST  HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /graphql         GET   HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /graphql         POST  HTTP/2 403 
+ acao= body={"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /api/graphql     GET   HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /api/graphql     POST  HTTP/2 403 
+ acao= body={"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /gql             GET   HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /gql             POST  HTTP/2 403 
+ acao= body={"message":"Missing Authentication Token"}
+graphql-api.app.cineplex.de        /randompath      GET   HTTP/2 200 
+ acao=http://localhost:3000 body={"data":{"__typename":"Query"}}
+graphql-api.app.cineplex.de        /randompath      POST  HTTP/2 403 
+ acao= body={"message":"Missing Authentication Token"}
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt
+grep -oE '^[a-z0-9.-]+\.cineplex\.de' inventory/cineplex.md | sort -u > /tmp/opencode/hosts.txt
+grep -oE '`[a-z0-9.-]+\.cineplex\.de`' inventory/cineplex.md | tr -d '`' | sort -u >> /tmp/opencode/hosts.txt
+sort -u /tmp/opencode/hosts.txt -o /tmp/opencode/hosts.txt
+wc -l /tmp/opencode/hosts.txt; head -50 /tmp/opencode/hosts.txt
+132 /tmp/opencode/hosts.txt
+account.cineplex.de
+admin.cineplex.de
+aichach.cineplex.de
+analytics.systems.cineplex.de
+api.cineplex.de
+app.cineplex.de
+app.staging.cineplex.de
+auth.cineplex.de
+autodiscover.cineplex.de
+bayreuth.cineplex.de
+billing.cineplex.de
+blog.cineplex.de
+bms-dev.cineplex.de
+booking-dev.cineplex.de
+booking-ol-prod.cineplex.de
+booking.cineplex.de
+buchung-dev.cineplex.de
+buchung.cineplex.de
+cdn.cineplex.de
+ci.cineplex.de
+cineplex-muenster.cineplex.de
+cloud.systems.cineplex.de
+cms.cineplex.de
+couchkino.cineplex.de
+cpdly-hz-apphost.systems.cineplex.de
+dashboard.cineplex.de
+data-9fc27eb430.cineplex.de
+dev.cineplex.de
+dewww.cineplex.de
+eisenach.cineplex.de
+es-hz-apphost.systems.cineplex.de
+frankfurt.cineplex.de
+friedrichshafen.cineplex.de
+ftbnieuwdorp.cineplex.de
+graphql-api.app.cineplex.de
+graphql-api.app.couat.cineplex.de
+graphql-api.app.staging.cineplex.de
+hz-apphost.systems.cineplex.de
+info.cineplex.de
+info.desireinfotech.bo.cineplex.de
+jenkins.cineplex.de
+jira.systems.cineplex.de
+koenigsbrunn.cineplex.de
+kulmbach.cineplex.de
+leipzig.cineplex.de
+live.cineplex.de
+login.cineplex.de
+m.cineplex.de
+mail.cineplex.de
+mail.tothemovies.cineplex.de
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+: > cookie-sweep.txt
+n=0
+while read -r h; do
+  n=$((n+1))
+  out=$(timeout 15 curl -sS -m 12 -o /dev/null -D - -A "$UA" "https://$h/" 2>&1 | grep -iE '^(HTTP/|set-cookie|cf-mitigated|location)' | tr -d '\r' | tr '\n' '~')
+  printf '%s\t%s\n' "$h" "$out" >> cookie-sweep.txt
+  sleep 1.05
+done < hosts.txt
+echo "probed=$n"
+grep -c $'\t' cookie-sweep.txt
+probed=132
+132
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== hosts with Set-Cookie ==="
+grep -i "set-cookie" cookie-sweep.txt | sed 's/\t/  |  /' | sed 's/~/\n    /g' | head -80
+echo
+echo "=== count with cookie ==="; grep -ci "set-cookie" cookie-sweep.txt
+echo "=== count 200 ==="; grep -c "HTTP/2 200" cookie-sweep.txt
+echo "=== count challenge ==="; grep -ci "cf-mitigated" cookie-sweep.txt
+=== hosts with Set-Cookie ===
+cloud.systems.cineplex.de  |  HTTP/2 302 
+    location: https://cloud.systems.cineplex.de/login
+    set-cookie: oc_sessionPassphrase=IA5nyqAKNA90y39eDuQ2LRMWDEwHRg49KiBHO7x1sQNnNUVNmd8Cnxa7tK12hSlfUZUwdQHkiUHED1uhP1ggmCFVIiUXVl9tWxy6EL%2B6lcEg15DeEdTEV%2BMqdVGEP5TM; path=/; secure; HttpOnly; SameSite=Lax
+    set-cookie: __Host-nc_sameSiteCookielax=true; path=/; httponly;secure; expires=Fri, 31-Dec-2100 23:59:59 GMT; SameSite=lax
+    set-cookie: __Host-nc_sameSiteCookiestrict=true; path=/; httponly;secure; expires=Fri, 31-Dec-2100 23:59:59 GMT; SameSite=strict
+    set-cookie: ocrezqjkhueb=786e44fe4f2eb444bd7ad89cf36df39f; path=/; secure; HttpOnly; SameSite=Lax
+    
+ost.systems.cineplex.de  |  HTTP/2 200 
+    set-cookie: MATOMO_SESSID=f52ad95b7ef44e2697c792ad7e34c8a2; path=/; secure; HttpOnly; SameSite=Lax
+    
+support.systems.cineplex.de  |  HTTP/2 200 
+    set-cookie: _zammad_session_560efecda1c=c1b342deeb2bb96a86ce2e3cafcb6472; path=/; secure; httponly; samesite=lax
+    
+
+=== count with cookie ===
+3
+=== count 200 ===
+7
+=== count challenge ===
+82
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== status distribution ==="; grep -oE 'HTTP/2 [0-9]+' cookie-sweep.txt | sort | uniq -c | sort -rn
+echo; echo "=== non-challenge, non-302/403 hosts ==="; grep -v "cf-mitigated" cookie-sweep.txt | grep -vE "HTTP/2 403" | sed 's/\t/  |  /' | cut -c1-160
+=== status distribution ===
+     84 HTTP/2 403
+      7 HTTP/2 200
+      2 HTTP/2 400
+      2 HTTP/2 302
+      1 HTTP/2 525
+
+=== non-challenge, non-302/403 hosts ===
+analytics.systems.cineplex.de  |  HTTP/2 200 ~
+app.staging.cineplex.de  |  
+autodiscover.cineplex.de  |  
+bms-dev.cineplex.de  |  HTTP/2 200 ~
+booking-dev.cineplex.de  |  
+cloud.systems.cineplex.de  |  HTTP/2 302 ~location: https://cloud.systems.cineplex.de/login~set-cookie: oc_sessionPassphrase=IA5nyqAKNA90y39eDuQ2LRMWDEwHRg49KiB
+cms.cineplex.de  |  
+data-9fc27eb430.cineplex.de  |  HTTP/2 200 ~
+dev.cineplex.de  |  
+ftbnieuwdorp.cineplex.de  |  
+graphql-api.app.cineplex.de  |  HTTP/2 400 ~
+graphql-api.app.couat.cineplex.de  |  
+graphql-api.app.staging.cineplex.de  |  HTTP/2 400 ~
+info.desireinfotech.bo.cineplex.de  |  
+mail.tothemovies.cineplex.de  |  
+mailing.cineplex.de  |  HTTP/2 200 ~
+mx.shop.cineplex.de  |  
+ost.cineplex.de  |  HTTP/2 525 ~
+ost.systems.cineplex.de  |  HTTP/2 200 ~set-cookie: MATOMO_SESSID=f52ad95b7ef44e2697c792ad7e34c8a2; path=/; secure; HttpOnly; SameSite=Lax~
+profil.cineplex.de  |  HTTP/2 302 ~location: /preference~
+rds.systems.cineplex.de  |  
+soest.ftbnieuwdorp.cineplex.de  |  
+sub.attacker.cineplex.de  |  
+support.systems.cineplex.de  |  HTTP/2 200 ~set-cookie: _zammad_session_560efecda1c=c1b342deeb2bb96a86ce2e3cafcb6472; path=/; secure; httponly; samesite=lax~
+talk.tho.cineplex.de  |  
+tothemovies.cineplex.de  |  
+vpn-portal.systems.cineplex.de  |  HTTP/2 200 ~
+wanfried.dewww.cineplex.de  |  
+web-dev.cineplex.de  |  
+www.aichach.cineplex.de  |  
+www.autodiscover.cineplex.de  |  
+www.bayreuth.cineplex.de  |  
+www.booking.cineplex.de  |  
+www.cms.cineplex.de  |  
+www.graphql-api.app.staging.cineplex.de  |  
+www.info.cineplex.de  |  
+www.koenigsbrunn.cineplex.de  |  
+www.kulmbach.cineplex.de  |  
+www.leipzig.cineplex.de  |  
+www.meitingen.cineplex.de  |  
+www.memmingen.cineplex.de  |  
+www.muenster.cineplex.de  |  
+www.passau.cineplex.de  |  
+www.reutlingen.cineplex.de  |  
+www.service.cineplex.de  |  
+www.support.systems.cineplex.de  |  
+www.webmail.cineplex.de  |  
+www.wiesbaden.cineplex.de  |
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for u in "https://www.cineplex.de/robots.txt" "https://www.cineplex.de/favicon.ico" "https://account.cineplex.de/robots.txt" "https://my.cineplex.de/robots.txt" "https://auth.cineplex.de/robots.txt"; do
+  printf '%-52s ' "$u"
+  curl -sS -m 15 -o /dev/null -D - -A "$UA" "$u" 2>&1 | grep -iE '^(HTTP/|set-cookie|cf-mitigated)' | tr -d '\r' | tr '\n' ' '; echo; sleep 1.1
+done
+https://www.cineplex.de/robots.txt                   HTTP/2 200  
+https://www.cineplex.de/favicon.ico                  HTTP/2 200  
+https://account.cineplex.de/robots.txt               HTTP/2 525  
+https://my.cineplex.de/robots.txt                    HTTP/2 525  
+https://auth.cineplex.de/robots.txt                  HTTP/2 404
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for h in vpn-portal.systems.cineplex.de analytics.systems.cineplex.de mailing.cineplex.de bms-dev.cineplex.de data-9fc27eb430.cineplex.de; do
+  printf '%-42s ' "$h"
+  curl -sS -m 15 -o /dev/null -D - -A "$UA" "https://$h/" 2>&1 | grep -iE '^(HTTP/|set-cookie|location|access-control)' | tr -d '\r' | tr '\n' ' '; echo; sleep 1.1
+done
+vpn-portal.systems.cineplex.de             HTTP/2 200  
+analytics.systems.cineplex.de              HTTP/2 200  
+mailing.cineplex.de                        HTTP/2 200  
+bms-dev.cineplex.de                        HTTP/2 200  
+data-9fc27eb430.cineplex.de                HTTP/2 200
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for p in /robots.txt /login /authorize /oauth2/authorize /.well-known/openid-configuration /saml /logout /favicon.ico /health /realms; do
+  printf '%-34s ' "$p"
+  curl -sS -m 15 -o a.txt -D ah.txt -A "$UA" "https://auth.cineplex.de$p" 2>&1 | grep -iE '^(HTTP/|set-cookie|location|cf-mitigated|content-type)' | tr -d '\r' | tr '\n' ' '
+  echo "| $(head -c 60 a.txt 2>/dev/null)"; sleep 1.1
+done
+/robots.txt                        | <html>
+<head><title>404 Not Found</title></head>
+<body>
+<
+/login                             | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/authorize                         | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/oauth2/authorize                  | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/.well-known/openid-configuration  | <html>
+<head><title>404 Not Found</title></head>
+<body>
+<
+/saml                              | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/logout                            | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/favicon.ico                       /bin/bash: line 6: warning: command substitution: ignored null byte in input
+| h( 
+/health                            | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+/realms                            | <html>
+<head>
+	<meta charset="utf-8"><meta name="viewport" c
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for p in /robots.txt /login /authorize /oauth2/authorize /.well-known/openid-configuration /saml /logout /health; do
+  printf '%-34s ' "$p"
+  curl -sS -m 15 -o a.txt -D ah.txt -A "$UA" "https://auth.cineplex.de$p" >/dev/null 2>&1
+  grep -iE '^(HTTP/|set-cookie|location|cf-mitigated|content-type)' ah.txt | tr -d '\r' | tr '\n' ' '
+  echo "| $(head -c 50 a.txt 2>/dev/null | tr -d '\n')"; sleep 1.1
+done
+/robots.txt                        HTTP/2 404  content-type: text/html | <html>
+<head><title>404 Not Found</title></head>
+/login                             HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+/authorize                         HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+/oauth2/authorize                  HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+/.well-known/openid-configuration  HTTP/2 404  content-type: text/html | <html>
+<head><title>404 Not Found</title></head>
+/saml                              HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+/logout                            HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+/health                            HTTP/2 403  content-type: text/html; charset=UTF-8 cf-mitigated: challenge | <html><head>	<meta charset="utf-8"><meta name="v
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for h in vpn-portal.systems.cineplex.de analytics.systems.cineplex.de mailing.cineplex.de bms-dev.cineplex.de; do
+  printf '%-42s ' "$h"
+  curl -sS -m 15 -o /dev/null -D hh.txt -A "$UA" "https://$h/" >/dev/null 2>&1
+  grep -iE '^(HTTP/|set-cookie|location|access-control|server)' hh.txt | tr -d '\r' | tr '\n' ' '; echo; sleep 1.1
+done
+vpn-portal.systems.cineplex.de             HTTP/2 200  
+analytics.systems.cineplex.de              HTTP/2 200  server: Elestio 
+mailing.cineplex.de                        HTTP/2 200  
+bms-dev.cineplex.de                        HTTP/2 200
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+cors() { printf '%-46s ' "$1"
+  curl -sS -m 15 -o /dev/null -D ch.txt -A "$UA" -H "Origin: http://localhost:3000" "https://$1/" >/dev/null 2>&1
+  st=$(grep -iE '^HTTP/' ch.txt | tr -d '\r' | tr -s ' ')
+  acao=$(grep -i '^access-control-allow-origin' ch.txt | tr -d '\r' | cut -d' ' -f2-)
+  acac=$(grep -i '^access-control-allow-credentials' ch.txt | tr -d '\r' | cut -d' ' -f2-)
+  printf '%s | acao=%s acac=%s\n' "$st" "${acao:-none}" "${acac:-none}"; sleep 1.1; }
+for h in booking.cineplex.de buchung.cineplex.de my.cineplex.de api.cineplex.de m.cineplex.de live.cineplex.de info.cineplex.de blog.cineplex.de dashboard.cineplex.de cloud.systems.cineplex.de data-9fc27eb430.cineplex.de vpn-portal.systems.cineplex.de mailing.cineplex.de analytics.systems.cineplex.de support.systems.cineplex.de bms-dev.cineplex.de booking-dev.cineplex.de profil.cineplex.de graphql-api.app.cineplex.de; do cors "$h"; done
+booking.cineplex.de                            HTTP/2 403  | acao=none acac=none
+buchung.cineplex.de                            HTTP/2 403  | acao=none acac=none
+my.cineplex.de                                 HTTP/2 403  | acao=none acac=none
+api.cineplex.de                                HTTP/2 403  | acao=none acac=none
+m.cineplex.de                                  HTTP/2 403  | acao=none acac=none
+live.cineplex.de                               HTTP/2 403  | acao=none acac=none
+info.cineplex.de                               HTTP/2 403  | acao=none acac=none
+blog.cineplex.de                               HTTP/2 403  | acao=none acac=none
+dashboard.cineplex.de                          HTTP/2 403  | acao=none acac=none
+cloud.systems.cineplex.de                      HTTP/2 302  | acao=none acac=none
+data-9fc27eb430.cineplex.de                    HTTP/2 200  | acao=none acac=none
+vpn-portal.systems.cineplex.de                 HTTP/2 200  | acao=none acac=none
+mailing.cineplex.de                            HTTP/2 200  | acao=none acac=none
+analytics.systems.cineplex.de                  HTTP/2 200  | acao=none acac=none
+support.systems.cineplex.de                    HTTP/2 200  | acao=none acac=none
+bms-dev.cineplex.de                            HTTP/2 200  | acao=none acac=none
+booking-dev.cineplex.de                         | acao=none acac=none
+profil.cineplex.de                             HTTP/2 302  | acao=none acac=none
+graphql-api.app.cineplex.de                    HTTP/2 400  | acao=http://localhost:3000 acac=true
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+echo "=== vpn-portal body ==="; head -c 1200 c_vpn-portal.systems.cineplex.de.html 2>/dev/null
+echo; echo "=== analytics body ==="; head -c 900 c_analytics.systems.cineplex.de.html 2>/dev/null
+echo; echo "=== mailing body ==="; head -c 600 c_mailing.cineplex.de.html 2>/dev/null
+=== vpn-portal body ===
+
+=== analytics body ===
+<!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/02usadrux6us3.css" data-precedence="next"/><link rel="stylesheet" href="/_next/static/chunks/05whimpw9j96u.css" data-precedence="next"/><link rel="stylesheet" href="/_next/static/chunks/0vwfhvspeag7..css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/0n2xag0cc~qqz.js"/><script src="/_next/static/chunks/04j1q0ikqq4co.js" async=""></script><script src="/_next/static/chunks/02s0qzw7ix1i_.js" async=""></script><script src="/_next/static/chunks/15_y3f0xqg-zz.js" async=""></script><script src="/_next/static/chunks/turbopack-0013_lih22xr2.js" async=""></script><script src="/_
+=== mailing body ===
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+for h in analytics.systems.cineplex.de vpn-portal.systems.cineplex.de mailing.cineplex.de bms-dev.cineplex.de support.systems.cineplex.de ost.systems.cineplex.de data-9fc27eb430.cineplex.de; do
+  echo "=== $h"
+  curl -sS -m 15 -o "c_$h.html" -D "d_$h.txt" -A "$UA" "https://$h/" >/dev/null 2>&1
+  grep -iE '^(HTTP/|server|x-|content-type|location)' "d_$h.txt" | tr -d '\r' | sed 's/^/    /'
+  echo "    size=$(wc -c < "c_$h.html") title=$(grep -oiE '<title[^>]*>[^<]*' "c_$h.html" | head -1 | cut -c1-90)"
+  sleep 1.1
+done
+=== analytics.systems.cineplex.de
+    HTTP/2 200 
+    content-type: text/html; charset=utf-8
+    server: Elestio
+    x-dns-prefetch-control: on
+    size=10130 title=<title>Umami
+=== vpn-portal.systems.cineplex.de
+    HTTP/2 200 
+    content-type: text/html
+    size=24885 title=<title>Nuvotex VPN Portal
+=== mailing.cineplex.de
+    HTTP/2 200 
+    content-type: text/html
+    x-content-type-options: nosniff
+    size=2527 title=<title>Technical subdomain
+=== bms-dev.cineplex.de
+    HTTP/2 200 
+    content-type: text/html
+    size=2147 title=<title>T360 - CMS
+=== support.systems.cineplex.de
+    HTTP/2 200 
+    server: nginx
+    content-type: text/html; charset=utf-8
+    x-frame-options: SAMEORIGIN
+    x-xss-protection: 0
+    x-content-type-options: nosniff
+    x-permitted-cross-domain-policies: none
+    x-request-id: d40df91c-1fe5-4fa3-b7ab-2e7b2f2d22c1
+    x-runtime: 0.011465
+    size=3160 title=<title>Cineplex Helpdesk
+=== ost.systems.cineplex.de
+    HTTP/2 200 
+    content-type: text/html; charset=utf-8
+    server: Elestio
+    x-matomo-request-id: 43f2f
+    x-frame-options: sameorigin
+    x-cache-status: MISS
+    size=207095 title=<title>Sign in - Matomo
+=== data-9fc27eb430.cineplex.de
+    HTTP/2 200 
+    x-powered-by: cST-5037e53-2610071435-prd
+    size=0 title=
+[0m
+[0m$ [0mcd /tmp/opencode
+ls -la c_vpn-portal* c_analytics* 2>/dev/null | cat
+echo "=== vpn body ==="; cat "c_vpn-portal.systems.cineplex.de.html" 2>/dev/null | head -c 1500; echo
+echo "=== vpn headers ==="; cat "d_vpn-portal.systems.cineplex.de.txt" 2>/dev/null | tr -d '\r'
+-rw-r--r-- 1 runner runner 10130 Oct  7 19:44 c_analytics.systems.cineplex.de.html
+-rw-r--r-- 1 runner runner 24885 Oct  7 19:44 c_vpn-portal.systems.cineplex.de.html
+=== vpn body ===
+<!doctype html>
+<html lang="en" data-beasties-container>
+<head><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta charset="utf-8">
+  <title>Nuvotex VPN Portal</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="assets/icon-nuvo.png">
+  <style>@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3iUBGEe.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3CUBGEe.woff2) format('woff2');unicode-range:U+1F00-1FFF;}@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3-UBGEe.woff2) format('woff2');unicode-range:U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;}@font-face{font-fam
+=== vpn headers ===
+HTTP/2 200 
+date: Wed, 07 Oct 2026 19:44:49 GMT
+content-type: text/html
+content-length: 24885
+last-modified: Tue, 09 Jun 2026 12:49:40 GMT
+etag: "6a280be4-6135"
+accept-ranges: bytes
+strict-transport-security: max-age=31536000
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+u() { printf '%-46s ' "$1"; curl -sS -m 15 -o ua.txt -D uh.txt -A "$UA" -H "Accept: application/json" "https://analytics.systems.cineplex.de$1" >/dev/null 2>&1
+  grep -iE '^HTTP/' uh.txt | tr -d '\r' | tr -s ' ' | tr -d '\n'; echo -n " | $(head -c 160 ua.txt | tr -d '\n')"; echo; sleep 1.1; }
+u /api/websites
+u /api/auth/login
+u /api/share
+u /share
+u /login
+u /api/stats
+/api/websites                                  HTTP/2 401  | {"error":{"message":"Unauthorized","code":"unauthorized","status":401}}
+/api/auth/login                                HTTP/2 405  | 
+/api/share                                     HTTP/2 405  | 
+/share                                         HTTP/2 404  | <!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name=
+/login                                         HTTP/2 200  | <!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name=
+/api/stats                                     HTTP/2 404  | <!DOCTYPE html><html lang="en" class="inter_2fe1ab3d-module__-T-KAq__className inter_2fe1ab3d-module__-T-KAq__variable"><head><meta charSet="utf-8"/><meta name=
+[0m
+[0m$ [0mgrep -n "data-9fc27eb430\|relay_internal" knowledge/index.md | tail -12; echo "=== vpn/umami/helmed mentions ==="; grep -in "umami\|vpn-portal\|nuvotex\|zammad\|matomo\|helpdesk" knowledge/index.md | tail -15
+1056:- 2026-10-04 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+1057:- 2026-10-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+1062:- 2026-10-05 REJECTED metrics_info_leak @ data-9fc27eb430.cineplex.de: unauthenticated counters only, which is descriptive-info and not reportable.
+1074:- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+1089:- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+1104:- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+1119:- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+1134:- 2026-10-05 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry only.
+1156:- 2026-10-05 ACCEPTED data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON (descriptive only)
+1174:- 2026-10-06 ACCEPTED data-9fc27eb430.cineplex.de/metrics: unauthenticated IOMB writer counter JSON (descriptive only)
+1193:- 2026-10-06 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+1208:- 2026-10-07 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+=== vpn/umami/helmed mentions ===
+263:- 2026-09-11 NEW support.systems.cineplex.de = Zammad helpdesk; API auth-gated; no unauthenticated surface
+264:- 2026-09-11 NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; API 401
+301:- 2026-09-12 NEW support.systems.cineplex.de = Zammad helpdesk; API auth-gated; no unauthenticated surface
+302:- 2026-09-12 NEW vpn-portal.systems.cineplex.de = Nuvotex VPN Portal; Angular SPA; API 401
+341:- 2026-09-13 REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: `getMatomoVersion`/`getSitesWithViewAccess` → "requires view access"; anonymous token has zero site access; Installation module closed ("already installed"); tracker is benign collector; no passive exploit surface.
+342:- 2026-09-13 REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: `/api/websites` 401, `/api/version` 404, `/api/auth/verify` 405-on-GET; wildcard ACAO alone is descriptive/CORS-without-credentials class, not reportable.
+344:- 2026-09-13 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms confirmed live on Elestio (Matomo + Umami) — inventory note; both auth-gated default-secure; only AUTH_HELPED/HUMAN_ONLY value if creds obtained.
+369:- 2026-09-13 REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+370:- 2026-09-13 REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
+371:- 2026-09-13 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
+374:- 2026-09-14 REJECTED matomo_anonymous_api @ ost.systems.cineplex.de: anonymous token zero site access; Installation module closed; no passive exploit surface
+375:- 2026-09-14 REJECTED umami_anonymous_api @ analytics.systems.cineplex.de: /api/websites 401, /api/version 404; wildcard ACAO alone descriptive/CORS-without-credentials class
+377:- 2026-09-14 ACCEPTED analytics_double_surface @ {ost,analytics}.systems.cineplex.de: two self-hosted analytics platforms (Matomo + Umami) on Elestio — inventory; both auth-gated default-secure
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+p() { printf '%-30s ' "$1"; curl -sS -m 15 -o pr.txt -D ph.txt -A "$UA" -H "Origin: http://localhost:3000" "https://data-9fc27eb430.cineplex.de$1" >/dev/null 2>&1
+  grep -iE '^HTTP/' ph.txt | tr -d '\r' | tr -s ' ' | tr -d '\n'
+  echo -n " acao=$(grep -i '^access-control-allow-origin' ph.txt | tr -d '\r' | cut -d' ' -f2) size=$(wc -c < pr.txt) body=$(head -c 110 pr.txt | tr -d '\n')"; echo; sleep 1.1; }
+for path in / /health /metrics /graphql /api /status /ready /info /version; do p "$path"; done
+/                              HTTP/2 200  acao= size=0 body=
+/health                        HTTP/2 200  acao= size=15 body={"status":"ok"}
+/metrics                       HTTP/2 200  acao= size=114 body={"mode":"IOMB","writer":{"queue_length":0,"queue_capacity":30000,"messages_queued":19318959,"messages_dropped"
+/graphql                       HTTP/2 404  acao= size=19 body=404 page not found
+/api                           HTTP/2 404  acao= size=19 body=404 page not found
+/status                        HTTP/2 404  acao= size=19 body=404 page not found
+/ready                         HTTP/2 404  acao= size=19 body=404 page not found
+/info                          HTTP/2 404  acao= size=19 body=404 page not found
+/version                       HTTP/2 404  acao= size=19 body=404 page not found
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== cert SANs graphql-api.app.cineplex.de ==="
+echo | timeout 20 openssl s_client -connect graphql-api.app.cineplex.de:443 -servername graphql-api.app.cineplex.de 2>/dev/null | openssl x509 -noout -ext subjectAltName -dates 2>/dev/null
+echo "=== cert SANs www.cineplex.de ==="
+echo | timeout 20 openssl s_client -connect www.cineplex.de:443 -servername www.cineplex.de 2>/dev/null | openssl x509 -noout -ext subjectAltName -dates 2>/dev/null
+=== cert SANs graphql-api.app.cineplex.de ===
+X509v3 Subject Alternative Name: 
+    DNS:cineplex.de, DNS:*.cineplex.de, DNS:graphql-api.app.cineplex.de, DNS:*.graphql-api.app.cineplex.de, DNS:graphql-api.app.staging.cineplex.de, DNS:*.graphql-api.app.staging.cineplex.de
+notBefore=Sep 14 03:30:15 2026 GMT
+notAfter=Dec 13 04:29:51 2026 GMT
+=== cert SANs www.cineplex.de ===
+X509v3 Subject Alternative Name: 
+    DNS:cineplex.de, DNS:*.cineplex.de, DNS:graphql-api.app.cineplex.de, DNS:*.graphql-api.app.cineplex.de, DNS:graphql-api.app.staging.cineplex.de, DNS:*.graphql-api.app.staging.cineplex.de
+notBefore=Sep 14 03:30:15 2026 GMT
+notAfter=Dec 13 04:29:51 2026 GMT
+[0m
+[0m$ [0mcd /tmp/opencode
+echo "=== empty-status hosts from sweep (possible new/changed) ==="
+awk -F'\t' '$2=="" || $2 !~ /HTTP/' cookie-sweep.txt | cut -f1
+echo "=== hosts with 400 ==="; grep -E "HTTP/2 400" cookie-sweep.txt | cut -f1
+=== empty-status hosts from sweep (possible new/changed) ===
+app.staging.cineplex.de
+autodiscover.cineplex.de
+booking-dev.cineplex.de
+cms.cineplex.de
+dev.cineplex.de
+ftbnieuwdorp.cineplex.de
+graphql-api.app.couat.cineplex.de
+info.desireinfotech.bo.cineplex.de
+mail.tothemovies.cineplex.de
+mx.shop.cineplex.de
+rds.systems.cineplex.de
+soest.ftbnieuwdorp.cineplex.de
+sub.attacker.cineplex.de
+talk.tho.cineplex.de
+tothemovies.cineplex.de
+wanfried.dewww.cineplex.de
+web-dev.cineplex.de
+www.aichach.cineplex.de
+www.autodiscover.cineplex.de
+www.bayreuth.cineplex.de
+www.booking.cineplex.de
+www.cms.cineplex.de
+www.graphql-api.app.staging.cineplex.de
+www.info.cineplex.de
+www.koenigsbrunn.cineplex.de
+www.kulmbach.cineplex.de
+www.leipzig.cineplex.de
+www.meitingen.cineplex.de
+www.memmingen.cineplex.de
+www.muenster.cineplex.de
+www.passau.cineplex.de
+www.reutlingen.cineplex.de
+www.service.cineplex.de
+www.support.systems.cineplex.de
+www.webmail.cineplex.de
+www.wiesbaden.cineplex.de
+=== hosts with 400 ===
+graphql-api.app.cineplex.de
+graphql-api.app.staging.cineplex.de
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+echo "=== prod: non-cineplex label-boundary negative controls ==="
+for o in "https://evilcineplex.de" "https://a.cineplex.de.evil.com" "http://cineplex.de" "https://CINEPLEX.DE"; do
+  printf '%-34s ' "$o"
+  curl -sS -m 20 -o nc.txt -D nch.txt -A "$UA" -H "Origin: $o" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D" >/dev/null 2>&1
+  grep -iE '^HTTP/' nch.txt | tr -d '\r' | tr -s ' ' | tr -d '\n'
+  echo -n " acao=$(grep -i '^access-control-allow-origin' nch.txt | tr -d '\r' | cut -d' ' -f2) acac=$(grep -ic 'access-control-allow-credentials: true' nch.txt)"; echo; sleep 1.1
+done
+=== prod: non-cineplex label-boundary negative controls ===
+https://evilcineplex.de            HTTP/2 500  acao= acac=0
+https://a.cineplex.de.evil.com     HTTP/2 500  acao= acac=0
+http://cineplex.de                 HTTP/2 200  acao=http://cineplex.de acac=1
+https://CINEPLEX.DE                HTTP/2 200  acao=https://CINEPLEX.DE acac=1
+[0m
+[0m$ [0mcd /tmp/opencode
+UA="Mozilla/5.0"
+echo "=== staging POST / ==="
+curl -sS -m 20 -o s1.txt -D s1h.txt -A "$UA" -H "Origin: http://localhost:3000" -H "Content-Type: application/json" -X POST --data '{"query":"{__typename}"}' "https://graphql-api.app.staging.cineplex.de/"
+grep -iE '^(HTTP/|access-control)' s1h.txt | tr -d '\r'; echo "body=$(cat s1.txt)"; sleep 1.1
+echo "=== prod Origin:null GET ==="
+curl -sS -m 20 -o s2.txt -D s2h.txt -A "$UA" -H "Origin: null" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"
+grep -iE '^(HTTP/|access-control)' s2h.txt | tr -d '\r'; echo "body=$(cat s2.txt)"; sleep 1.1
+echo "=== staging Origin:null GET ==="
+curl -sS -m 20 -o s3.txt -D s3h.txt -A "$UA" -H "Origin: null" "https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D"
+grep -iE '^(HTTP/|access-control)' s3h.txt | tr -d '\r'; echo "body=$(cat s3.txt)"
+=== staging POST / ===
+HTTP/2 200 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-credentials: true
+body={"data":{"__typename":"Query"}}
+=== prod Origin:null GET ===
+HTTP/2 200 
+access-control-allow-origin: null
+access-control-allow-credentials: true
+body={"data":{"__typename":"Query"}}
+=== staging Origin:null GET ===
+HTTP/2 200 
+access-control-allow-origin: null
+access-control-allow-credentials: true
+body={"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt
+grep -rn "passive_verify\|test_passive" knowledge/ leads/ reports/ .github/ 2>/dev/null | head
+echo "--- harness_defect lines in knowledge ---"
+grep -n "harness_defect\|verifier defects\|probe-results" knowledge/index.md | tail -12
+knowledge/index.md:1183:- 2026-10-06 ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+leads/lead-bigpickle.md:9262:[CHANGED] verifier_replaced @ scripts/passive_verify.py: extraction is now a testable module with 14 offline tests (scripts/test_passive_verify.py, all passing). Offline replay over the real corpus extracts files=12 urls=127 in_scope=92 across 19 distinct hosts, with 0 trailing-delimiter pollution and 0 lookalike scope leaks. Every post-fix cycle now writes a `HARNESS files=... urls=... in_scope=... cap=...` metadata line; absence of that line means void data.
+leads/lead-bigpickle.md:9267:[CHANGED] probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS and 2 sent a trailing quote, so their ERR Name-or-service-not-known is a harness artifact and not a DNS observation; 557 lines recorded HTTP 403 against hosts that answer 200 with a browser User-Agent; no cycle exceeded 12 probes because of urls[:12]; long URLs were truncated at 300 chars; PROBE_ALLOW was substring-matched so evilcineplex.de passed the cineplex.de filter. Replaced by scripts/passive_verify.py with 14 offline tests.
+leads/lead-bigpickle.md:9273:[CHANGED] probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS and 2 sent a trailing quote, so their ERR Name-or-service-not-known is a harness artifact and not a DNS observation; 557 lines recorded HTTP 403 against hosts that answer 200 with a browser User-Agent; no cycle exceeded 12 probes because of urls[:12]; long URLs were truncated at 300 chars; PROBE_ALLOW was substring-matched so evilcineplex.de passed the cineplex.de filter. Replaced by scripts/passive_verify.py with 14 offline tests.
+leads/lead-bigpickle.md:9337:[CHANGED] verifier_replaced @ scripts/passive_verify.py: extraction is now a testable module with 14 offline tests (scripts/test_passive_verify.py, all passing). Offline replay over the real corpus extracts files=12 urls=127 in_scope=92 across 19 distinct hosts, with 0 trailing-delimiter pollution and 0 lookalike scope leaks. Every post-fix cycle now writes a `HARNESS files=... urls=... in_scope=... cap=...` metadata line; absence of that line means void data.
+leads/lead-bigpickle.md:9342:[CHANGED] probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS and 2 sent a trailing quote, so their ERR Name-or-service-not-known is a harness artifact and not a DNS observation; 557 lines recorded HTTP 403 against hosts that answer 200 with a browser User-Agent; no cycle exceeded 12 probes because of urls[:12]; long URLs were truncated at 300 chars; PROBE_ALLOW was substring-matched so evilcineplex.de passed the cineplex.de filter. Replaced by scripts/passive_verify.py with 14 offline tests.
+leads/lead-bigpickle.md:9347:[CHANGED] probe_results_void @ .github/workflows/hunt.yml: the retired inline passive verifier corrupted all 206 recorded cycles. Measured in probe-results.md itself: 46 lines sent a trailing backtick to DNS and 2 sent a trailing quote, so their ERR Name-or-service-not-known is a harness artifact and not a DNS observation; 557 lines recorded HTTP 403 against hosts that answer 200 with a browser User-Agent; no cycle exceeded 12 probes because of urls[:12]; long URLs were truncated at 300 chars; PROBE_ALLOW was substring-matched so evilcineplex.de passed the cineplex.de filter. Replaced by scripts/passive_verify.py with 14 offline tests.
+leads/lead-nemotron3.md:12983:[NEW] verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+leads/lead-nemotron3.md:13036:[LEARN] ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+leads/lead-nemotron3.md:13063:[CHANGED] verifier_replaced @ scripts/passive_verify.py: extraction now a testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+--- harness_defect lines in knowledge ---
+1083:- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+1093:- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+1098:- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+1108:- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+1113:- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+1123:- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+1128:- 2026-10-05 CORRECTION harness_defect @ .github/workflows/hunt.yml:207-225: the `probe-results.md` 400/403 wall is fully explained by three source-level defects, now located.
+1138:- 2026-10-05 CORRECTION harness_defect @ probe tooling: 403/400 wall in probe-results.md is harness, not server — probe URLs carry literal trailing backtick → 400; urllib UA → 403 bot-gate.
+1154:- 2026-10-05 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400
+1172:- 2026-10-06 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400
+1188:- 2026-10-06 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+1210:- 2026-10-07 CHANGED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+[0m
+[0m→ [0mRead leads/lead-bigpickle.md[90m [offset=9330, limit=40][0m
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt; grep -n "^\[DELTA\]\|^\[HYP\]\|^\[NEXT\]\|^\[LEARN\]\|^\[RISK\]\|^\[POC\]" leads/lead-bigpickle.md | tail -30; echo "total lines: $(wc -l < leads/lead-bigpickle.md)"
+9388:[HYP] CORS allows credentialed requests from hostile origins on GraphQL API
+9397:[HYP] GraphQL schema exposed under arbitrary unshadowed paths
+9406:[HYP] Dangling CNAME takeover precondition on dev host
+9417:[NEXT] PROBE: curl -sS -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"
+9418:[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed POST; primitive confirmed via read-only observations
+9419:[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope broader than named mirrors
+9420:[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+9421:[RISK] bugs.olivermaicher.eu: 15 reason: All work read-only GET/OPTIONS/DNS at ≤1 rps against scoped hosts; no PII/customer data accessed, no mutations attempted; findings rely on structural/config observations with clear PASSIVE testability; corrections made to harness artifacts and no automated-log-only inferences.
+9423:[HYP] Cross-origin credentialed read of GraphQL responses via allowlist reflection
+9432:[HYP] GraphQL API authenticates via cookies, not only Authorization header
+9441:[HYP] api.cineplex.de origin serves API traffic behind a Cloudflare managed challenge
+9450:[NEXT] PROBE
+9451:[LEARN]
+9452:[RISK]
+9458:[HYP] GraphQL schema exposed under arbitrary unshadowed paths
+9467:[HYP] Dangling CNAME takeover precondition on dev host
+9478:[NEXT] PROBE: curl -sS -m 20 -A "Mozilla/5.0" -H "Origin: http://localhost:3000" -H "Accept: application/json" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D"
+9479:[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.cineplex.de: Production reflects hostile origins with ACAC true and preflight permits credentialed POST; primitive confirmed via read-only observations
+9480:[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.cineplex.de: Schema served under any unshadowed path confirmed via balanced GET; remediation scope broader than named mirrors
+9481:[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: NXDOMAIN of Azure Container Apps target persistent across cycles with correct DoH headers; precondition passive
+9482:[RISK] bugs.olivermaicher.eu: 15 reason: All work read-only GET/OPTIONS/DNS at ≤1 rps against scoped hosts; no PII/customer data accessed, no mutations attempted; findings rely on structural/config observations with clear PASSIVE testability; corrections made to harness artifacts and no automated-log-only inferences.
+9483:[HYP] Cross-origin credentialed read of GraphQL responses via allowlist reflection
+9492:[HYP] GraphQL API authenticates via cookies, not only Authorization header
+9501:[HYP] api.cineplex.de origin serves API traffic behind a Cloudflare managed challenge
+9510:[NEXT] PROBE
+9511:[LEARN]
+9512:[RISK]
+9514:[NEXT] PROBE
+9515:[LEARN]
+9516:[RISK]
+total lines: 9520
+[0m
+[0m← [0mWrite scripts/passive_verify.py
+Wrote file successfully.
+[0m
+[0m← [0mWrite scripts/test_passive_verify.py
+Wrote file successfully.
+[0m
+Now I'll record this cycle's evidence and repair the harness the knowledge base claims exists but doesn't.
+[0m← [0mEdit scripts/passive_verify.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+@@ -32,9 +32,13 @@
+ 
+ # Backtick and double quote are never legal inside a URL here and only ever
+ # arrive from markdown/code-fence wrapping, so they terminate the match.
+ RAW_URL = re.compile(r"""https?://[^\s"'<>`\\]+""")
+-TRAILING_DELIMS = ".,;:!?)]}'"
++# Always safe to drop: these never terminate a real URL in this corpus.
++TRAILING_SOFT = ".,;:!?'\""
++# Droppable only when they leave the remainder balanced, so a closed
++# GraphQL query such as ``?query={__typename}`` keeps its closing brace.
++TRAILING_BRACKET = ")]}"
+ MAX_URL = 600
+ DEFAULT_CAP = 12
+ 
+ _OPEN = {"(": ")", "[": "]", "{": "}"}
+
+[0m
+[0m← [0mEdit scripts/passive_verify.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+@@ -59,13 +59,12 @@
+ 
+ def clean(url: str) -> str:
+     """Strip wrapping punctuation without destroying balanced query braces."""
+     url = url.rstrip("`")
+-    while url and url[-1] in TRAILING_DELIMS:
+-        tail = url[-1]
+-        if tail in ")]}" and balanced(url):
+-            break
++    while url and url[-1] in TRAILING_SOFT:
+         url = url[:-1]
++    if url and url[-1] in TRAILING_BRACKET and not balanced(url):
++        url = url[:-1]
+     return url
+ 
+ 
+ def extract(text: str) -> list[str]:
+
+[0m
+[0m← [0mEdit scripts/test_passive_verify.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/test_passive_verify.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/test_passive_verify.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/test_passive_verify.py
+@@ -59,12 +59,12 @@
+ # 9. Nested braces stay balanced only when they really are.
+ check("balanced detect", balanced("{a{b}c}"), True)
+ check("unbalanced detect", balanced("{a{b}c"), False)
+ 
+-# 10. A trailing unmatched brace from a malformed body is removable.
++# 10. A surplus closing brace (the false-negative 400 case) is removable.
+ check("surplus brace stripped",
+-      clean("https://x.cineplex.de/?query={__schema{types{name}}}"),
+-      "https://x.cineplex.de/?query={__schema{types{name}}}")
++      clean("https://x.cineplex.de/?query={__typename}}"),
++      "https://x.cineplex.de/?query={__typename}")
+ 
+ # 11. Long URLs are not silently truncated at 300 characters.
+ long_url = "https://x.cineplex.de/" + "a" * 400
+ check("long url preserved", extract(long_url)[0] == long_url, True)
+
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 scripts/test_passive_verify.py
+FAIL backtick stripped: got='`https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+FAIL balanced braces kept: got='https://graphql-api.app.cineplex.de/?query={__typename' want='https://graphql-api.app.cineplex.de/?query={__typename}'
+ok   trailing period stripped: got='https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+ok   unbalanced paren stripped: got='https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+FAIL balanced parens kept: got='https://a.cineplex.de/x(a' want='https://a.cineplex.de/x(a)'
+ok   apex allowed: got=True want=True
+ok   sub allowed: got=True want=True
+ok   lookalike rejected: got=False want=False
+ok   suffix attack rejected: got=False want=False
+ok   unrelated rejected: got=False want=False
+ok   dedupe + https only: got=['https://x.cineplex.de/1'] want=['https://x.cineplex.de/1']
+ok   quote terminates: got=['https://x.cineplex.de/a'] want=['https://x.cineplex.de/a']
+FAIL balanced detect: got=False want=True
+ok   unbalanced detect: got=False want=False
+ok   surplus brace stripped: got='https://x.cineplex.de/?query={__typename}' want='https://x.cineplex.de/?query={__typename}'
+ok   long url preserved: got=True want=True
+ok   case-insensitive scope: got=True want=True
+ok   empty corpus: got=[] want=[]
+FAIL fenced graphql: got=['https://x.cineplex.de/?query={__typename'] want=['https://x.cineplex.de/?query={__typename}']
+ok   multi allow: got=True want=True
+
+15/20 passed
+[0m
+[0m← [0mEdit scripts/passive_verify.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+@@ -51,9 +51,9 @@
+ for ch in text:
+     if ch in _OPEN:
+         stack.append(_OPEN[ch])
+     elif ch in _CLOSE:
+-        if not stack or stack.pop() != _CLOSE[ch]:
++        if not stack or stack.pop() != ch:
+             return False
+ return not stack
+ 
+ 
+
+[0m
+[0m← [0mEdit scripts/passive_verify.py
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/scripts/passive_verify.py
+@@ -58,9 +58,9 @@
+ 
+ 
+ def clean(url: str) -> str:
+     """Strip wrapping punctuation without destroying balanced query braces."""
+-    url = url.rstrip("`")
++    url = url.strip("`")
+     while url and url[-1] in TRAILING_SOFT:
+         url = url[:-1]
+     if url and url[-1] in TRAILING_BRACKET and not balanced(url):
+         url = url[:-1]
+
+[0m
+[0m$ [0mcd /home/runner/work/cineplex-hunt/cineplex-hunt && python3 scripts/test_passive_verify.py
+ok   backtick stripped: got='https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+ok   balanced braces kept: got='https://graphql-api.app.cineplex.de/?query={__typename}' want='https://graphql-api.app.cineplex.de/?query={__typename}'
+ok   trailing period stripped: got='https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+ok   unbalanced paren stripped: got='https://a.cineplex.de/x' want='https://a.cineplex.de/x'
+ok   balanced parens kept: got='https://a.cineplex.de/x(a)' want='https://a.cineplex.de/x(a)'
+ok   apex allowed: got=True want=True
+ok   sub allowed: got=True want=True
+ok   lookalike rejected: got=False want=False
+ok   suffix attack rejected: got=False want=False
+ok   unrelated rejected: got=False want=False
+ok   dedupe + https only: got=['https://x.cineplex.de/1'] want=['https://x.cineplex.de/1']
+ok   quote terminates: got=['https://x.cineplex.de/a'] want=['https://x.cineplex.de/a']
+ok   balanced detect: got=True want=True
+ok   unbalanced detect: got=False want=False
+ok   surplus brace stripped: got='https://x.cineplex.de/?query={__typename}' want='https://x.cineplex.de/?query={__typename}'
+ok   long url preserved: got=True want=True
+ok   case-insensitive scope: got=True want=True
+ok   empty corpus: got=[] want=[]
+ok   fenced graphql: got=['https://x.cineplex.de/?query={__typename}'] want=['https://x.cineplex.de/?query={__typename}']
+ok   multi allow: got=True want=True
+
+20/20 passed
+[0m
