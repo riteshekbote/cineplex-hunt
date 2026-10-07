@@ -1332,3 +1332,13 @@ https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME -> 200 len=?
 ## 2026-10-07 06:22:55 UTC
 https://sub.attacker.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
 https://graphql-api.app.cineplex.de/ -> HTTP 403
+
+## 2026-10-07 13:51:53 UTC
+https://attacker.cineplex.de -> HTTP 403
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://sub.attacker.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://graphql-api.app.cineplex.de/?query=%7B__typename%7D -> HTTP 403
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://graphql-api.app.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/totally/unknown/path/xyz?query=%7B__typename%7D -> HTTP 403
+https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME -> 200 len=?

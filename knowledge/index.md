@@ -1216,3 +1216,6 @@
 - 2026-10-07 CHANGED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
 - 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist matches any origin ending in "cineplex.de" at DNS label boundary with ACAC:true (verified sub.attacker.cineplex.de 204, evilcineplex.de 500)
 - 2026-10-07 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+- 2026-10-07 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+- 2026-10-07 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+- 2026-10-07 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization` — credentialed mutation primitive confirmed
