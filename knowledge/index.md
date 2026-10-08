@@ -1230,3 +1230,39 @@
 - 2026-10-07 ACCEPTED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
 - 2026-10-07 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - 2026-10-07 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-10-08 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+- 2026-10-08 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+- 2026-10-08 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+- 2026-10-08 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization` — credentialed mutation primitive confirmed
+- 2026-10-08 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
+- 2026-10-08 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover 4 paths × 2 envs
+- 2026-10-08 ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- 2026-10-08 ACCEPTED web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- 2026-10-08 ACCEPTED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- 2026-10-08 ACCEPTED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS/GraphQL endpoints
+- 2026-10-08 ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+- 2026-10-08 ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 403s
+- 2026-10-08 ACCEPTED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+- 2026-10-08 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dead
+- 2026-10-08 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+- 2026-10-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-08 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-08 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-10-08 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 204/ACAC:true, `evilcineplex.de` → 500
+- 2026-10-08 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on prod and staging
+- 2026-10-08 ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+- 2026-10-08 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization` — credentialed mutation primitive confirmed
+- 2026-10-08 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
+- 2026-10-08 ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST/OPTIONS — fix must cover 4 paths × 2 envs
+- 2026-10-08 ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- 2026-10-08 ACCEPTED web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- 2026-10-08 ACCEPTED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- 2026-10-08 ACCEPTED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS/GraphQL endpoints
+- 2026-10-08 ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
+- 2026-10-08 ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 403s
+- 2026-10-08 ACCEPTED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerprint 4ad65631f720)
+- 2026-10-08 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dead
+- 2026-10-08 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation path
+- 2026-10-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-08 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-08 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface

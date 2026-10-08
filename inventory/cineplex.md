@@ -2541,3 +2541,7 @@ wwww.cineplex.de
 - CHANGED `idor_booking` residual contamination cleared from publish path: `class:IDOR` blocks went 297→0; decoder oracle retained as `class:ACCESS_CONTROL` (fingerprint 4ad65631f720)
 - CHANGED All structural findings (introspection, CORS, IDOR, mass-assignment, chaining) now confirmed via manual curl only — automated log cannot see `/graphql` or balanced GET
 - CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+
+## 2026-10-08 04:13:10 UTC
+- NEW No new assets or surface changes since 2026-10-07 knowledge cutoff; automated probe harness remains void (1330 lines, ZERO POST GraphQL probes); all structural findings confirmed via manual curl only
+- CHANGED Current date advanced to 2026-10-08; last live verification cycle was 2026-10-07

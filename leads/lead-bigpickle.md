@@ -9704,3 +9704,4 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to DNS/GraphQL endpoints
 [LEARN] ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay over real corpus extracts filtered, balanced URLs only
 [LEARN] ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 403s
+## 2026-10-08 04:12:59 UTC [target] (model bigpickle)
