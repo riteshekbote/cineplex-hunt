@@ -1266,3 +1266,12 @@
 - 2026-10-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - 2026-10-08 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - 2026-10-08 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-10-08 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path — remediation scope is path-pattern × 2 envs, not named mirrors.
+- 2026-10-08 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization — credentialed mutation primitive; ACAM exact value is `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry).
+- 2026-10-08 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — lookalike-registrable-domain path rejected; only real *.cineplex.de hostnames reach the allowlist.
+- 2026-10-08 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side).
+- 2026-10-08 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+- 2026-10-08 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+- 2026-10-08 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- 2026-10-08 ACCEPTED graphql_catchall_get_only @ graphql-api.app.{,staging.}cineplex.de: catch-all serves schema on GET only; POST to arbitrary paths returns API-GW 403 (`Missing Authentication Token`); POST capability is single-route (`/`). Remediation = path-pattern GET rules ×2 envs, POST already scoped.
+- 2026-10-08 Restated prior-cycle ACCEPTED entries unchanged (arbitrary-path GET schema exposure, CORS preflight credentialed primitive, suffix boundary enforcement, web-dev dangle). Rejections unchanged (api GET-bypass, relay metrics, excluded classes).

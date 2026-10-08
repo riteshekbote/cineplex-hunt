@@ -5402,3 +5402,36 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+
+## RANKED HYPOTHESES 2026-10-08 11:37:54 UTC
+- [92] graphql-api.app.cineplex.de: CORS credentialed reflection with suffix-allowed origin on production GraphQL (from art/lead_bigpickle.txt)
+- [92] graphql-api.app.cineplex.de: CORS Allowlist Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date +%s)" --data-urlencode 'query={__schema{queryTy
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/arbitrary/path/here" --data-urlencode 'query={__typename}'
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path — remediation scope is path-pattern × 2
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization 
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — look
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition pass
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged.
+- LEARN: ACCEPTED graphql_catchall_get_only @ graphql-api.app.{,staging.}cineplex.de: catch-all serves schema on GET only; POST to arbitrary paths returns API-GW 403 (`M
+- LEARN: Restated prior-cycle ACCEPTED entries unchanged (arbitrary-path GET schema exposure, CORS preflight credentialed primitive, suffix boundary enforcement, web-dev
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORS allowlist enforces DNS label boundary (not raw suffix) — `sub.attacker.cineplex.de` → 2
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin:null` returns `ACAO:null` + `ACAC:true` with real GraphQL data on 
+- LEARN: ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling C
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS `/` returns 204 with `ACAO:reflected`, `ACAC:true`, `ACAM:GET,HEAD,P
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under ANY unshadowed path
+- LEARN: ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de: `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403); only root `/` accepts POST
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches 
+- LEARN: ACCEPTED web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path no
+- LEARN: ACCEPTED harness_defect @ .github/workflows/hunt.yml: 8 verifier defects fixed (not 7); 8th = brace truncation causing false-negative 400 on GraphQL URLs
+- LEARN: ACCEPTED probe_results_void @ .github/workflows/hunt.yml: retired inline passive verifier corrupted all 206 recorded cycles; 46 lines sent trailing backtick to 
+- LEARN: ACCEPTED verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay over real corpus extracts filtered,
+- LEARN: ACCEPTED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated
+- LEARN: ACCEPTED idor_booking residual contamination cleared from publish path: class:IDOR blocks went 297→0; decoder oracle retained as class:ACCESS_CONTROL (fingerpri
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across every method and encoding across 20+ cycles; separate stricter edge config; hypothesis dea
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry with no unauthenticated manipulation p
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
