@@ -2553,3 +2553,10 @@ wwww.cineplex.de
 - CHANGED web-dev.cineplex.de — dangling CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA present) persists 17th+ consecutive cycle; machine-
 - CHANGED graphql-api.app.cineplex.de — Mass-assignment read/write mirror: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning` (caller-supplied) are identical names to `Use
 - CHANGED Current date advanced to 2026-10-08; last live verification cycle was 2026-10-07
+
+## 2026-10-08 18:14:39 UTC
+- CHANGED graphql-api.app.cineplex.de — CORS preflight returns 204 with ACAC:true and reflected ACAO for Origin: http://localhost:3000 and https://app.staging.cineplex.de on production root `/` (credentialed mu
+- CHANGED graphql-api.app.{prod,staging}.cineplex.de — GraphQL arbitrary path catch-all serves schema under any unshadowed path (e.g., `/zz-cpx-count-probe?query={__typename}` → 200); dual entry points `/` and 
+- CHANGED graphql-api.app.cineplex.de — CORS allowlist enforces DNS label boundary on suffix (not raw endsWith): `sub.attacker.cineplex.de` → 204 with reflected ACAO+ACAC:true; `evilcineplex.de`, `notcineplex.d
+- CHANGED web-dev.cineplex.de — dangling CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA present) persists 17th+ consecutive cycle; machine-
+- CHANGED graphql-api.app.cineplex.de — Mass-assignment read/write mirror: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning` (caller-supplied) are identical names to `Use
