@@ -9877,3 +9877,9 @@ testability: PASSIVE
 [LEARN] ACCEPTED graphql_catchall_get_only @ graphql-api.app.{,staging.}cineplex.de: catch-all serves schema on GET only; POST to arbitrary paths returns API-GW 403 (`Missing Authentication Token`); POST capability is single-route (`/`). Remediation = path-pattern GET rules ×2 envs, POST already scoped.
 [LEARN] Restated prior-cycle ACCEPTED entries unchanged (arbitrary-path GET schema exposure, CORS preflight credentialed primitive, suffix boundary enforcement, web-dev dangle). Rejections unchanged (api GET-bypass, relay metrics, excluded classes).
 [RISK] cineplex: 72 — unchanged: report-ready CORS + GET-catch-all findings, takeover chain awaiting provider-side attestation, PII proof HUMAN_ONLY.
+## 2026-10-08 23:09:02 UTC [target] (model bigpickle)
+[PRIO]
+[HYP]
+[NEXT]
+[LEARN]
+[RISK]

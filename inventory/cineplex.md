@@ -2560,3 +2560,5 @@ wwww.cineplex.de
 - CHANGED graphql-api.app.cineplex.de — CORS allowlist enforces DNS label boundary on suffix (not raw endsWith): `sub.attacker.cineplex.de` → 204 with reflected ACAO+ACAC:true; `evilcineplex.de`, `notcineplex.d
 - CHANGED web-dev.cineplex.de — dangling CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA present) persists 17th+ consecutive cycle; machine-
 - CHANGED graphql-api.app.cineplex.de — Mass-assignment read/write mirror: `CinemaOperatingCompanyData.accessRightDashboard/FilmStatistics/BonusProgram/Campaigning` (caller-supplied) are identical names to `Use
+
+## 2026-10-08 23:09:15 UTC
