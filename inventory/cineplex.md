@@ -2564,3 +2564,22 @@ wwww.cineplex.de
 ## 2026-10-08 23:09:15 UTC
 
 ## 2026-10-09 02:59:38 UTC
+
+## 2026-10-09 10:14:57 UTC
+- NEW No new assets or reachable surface this cycle; 132-host inventory unchanged.
+- CHANGED graphql-api.app.{,staging}.cineplex.de — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on BOTH envs (manual
+- CHANGED graphql-api.app.cineplex.de — CORS preflight re-verified: OPTIONS `/` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attack
+- CHANGED graphql-api.app.cineplex.de — actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data.
+- CHANGED web-dev.cineplex.de — dangling CNAME now 18th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA.
+- CHANGED leads/reposcan-cineplex.md — reposcan 2026-10-09 09:37 no-op (TARGET_ORG unconfigured); no public-org surface.
+- CHANGED Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+- NEW probe-results.md: 1399 lines (was 1330), still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- NEW harness defects: 8 confirmed (not 7) — URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400 on GraphQL URLs
+- NEW verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay extracts filtered, balanced URLs only
+- NEW retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- NEW web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED publisher_defect @ scripts/sync-issues.py: fingerprint = md5(asset|class) so cosmetic asset-string differences mint separate tracker issues; ensure_label() never returns label object in either branch
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get

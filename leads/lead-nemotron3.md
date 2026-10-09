@@ -13973,3 +13973,75 @@ testability: PASSIVE
 [LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 [LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 [RISK] cineplex: 88 — Production GraphQL API exposes full introspection (83 queries, 140 mutations), CORS label-boundary suffix match with credentialed reflection on hostile origins (localhost:3000, app.staging.cineplex.de, null origin), dual entry points (/, /graphql) plus 3 GET-only mirrors, arbitrary path catch-all, mass-assignment read/write mirror on 4 privilege flags, IDOR chaining across 3 pre-auth resolvers to 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history), physical-to-profile via userByQr, auth-layer privilege escalation primitives. Dangling CNAME on web-dev.cineplex.de (17+ cycles NXDOMAIN) chains to CORS for takeover-to-credentialed-read. Staging parity identical. All probes read-only ≤1 rps, no PII touched. Dev-origin booking/payment tier reachable but /gateway/* gated at CF edge. Automated probe harness voided (206 cycles corrupted).
+## 2026-10-09 10:14:29 UTC [target] (model nemotron3)
+[NEW] probe-results.md: 1399 lines (was 1330), still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+[NEW] harness defects: 8 confirmed (not 7) — URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400 on GraphQL URLs
+[NEW] verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay extracts filtered, balanced URLs only
+[NEW] retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 403s
+[NEW] graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+[NEW] web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+[NEW] buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+[CHANGED] publisher_defect @ scripts/sync-issues.py: fingerprint = md5(asset|class) so cosmetic asset-string differences mint separate tracker issues; ensure_label() never returns label object in either branch
+[CHANGED] All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automated log cannot see /graphql or balanced GET
+[CHANGED] All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get_bypass, booking-dev_origin_bypass
+[PRIO] graphql-api.app.cineplex.de,9.7,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,9.4,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=8,freshness=9
+[PRIO] web-dev.cineplex.de,9.0,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=10,cloud_surface=10,freshness=9
+[PRIO] buchung-dev.cineplex.de,7.1,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=7,cloud_surface=6,freshness=6
+[PRIO] auth.cineplex.de,7.0,attack_surface=7,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=5,freshness=5
+[HYP] CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 92
+reasoning: Production API reflects `http://localhost:3000` and `https://app.staging.cineplex.de` with `ACAC: true` on actual GET responses. CORS allowlist enforces DNS label boundary (`sub.attacker.cineplex.de` → 204/ACAC:true, `notcineplex.de` → 500). `web-dev.cineplex.de` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` returns NXDOMAIN (17+ cycles). If attacker claims the Azure Container Apps namespace `gentleglacier-dfef6458`, they control `web-dev.cineplex.de` which matches the suffix allowlist, enabling credentialed GraphQL reads/mutations via victim's browser.
+evidence_needed: Claim Azure Container Apps namespace `gentleglacier-dfef6458` in switzerlandnorth region and deploy page that issues credentialed GraphQL request to `graphql-api.app.cineplex.de` from `web-dev.cineplex.de` origin
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: https://web-dev.cineplex.de" -H "Cookie: <victim_session>" "https://graphql-api.app.cineplex.de/?query={__typename}"
+impact: Full account takeover via credentialed GraphQL reads (User PII, onlineTicketingToken, financial history) and mutations (booking, payments) — CVSS 8.5-9.0
+testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azure subscription)
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 80
+reasoning: `CinemaOperatingCompanyData` input (createCinemaOperatingCompany/updateCinemaOperatingCompany) carries 4 caller-supplied `accessRight*` Booleans (Dashboard, FilmStatistics, BonusProgram, Campaigning) + `cinemasIds` list; these exact 4 names appear on `UserPrivileges` as NON_NULL Booleans derived by server. `updateUser(adminCinemaOperatingCompanyIds:[ID!])` mirrors `belongsToCinemaOperatingCompanies`/`adminForCinemas`. Staging field sets identical — flags not environment-partitioned. Gates unverified (AUTH_HELPED required).
+evidence_needed: Execute createCinemaOperatingCompany/updateCinemaOperatingCompany with crafted `accessRight*` + `cinemasIds` against consented test account and verify `UserPrivileges` reflects caller-supplied values
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+impact: If gates missing/permissive, caller grants themselves dashboard/film-statistics/bonus-program/campaigning access across arbitrary cinemas — privilege escalation to cinema-operating-company admin; CVSS ~8.0 if exploitable
+testability: AUTH_HELPED
+[HYP] Arbitrary Path GraphQL Catch-all Bypasses Path-Based WAF Rules
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 85
+reasoning: GraphQL server serves full schema under ANY unshadowed path (e.g., `/zz-cpx-count-probe?query={__typename}` → 200). Only root `/` accepts POST/OPTIONS; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403). Remediation requires fixing path-pattern × 2 envs, not just named mirrors. WAF client-differentiated bot-gate (automated urllib 403, manual curl 200) means path-based rules are bypassable.
+evidence_needed: Confirm arbitrary path serves schema and mutations on both prod and staging via balanced GET
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/arbitrary/path/here" --data-urlencode 'query={__typename}'
+impact: Any WAF rule scoped to specific GraphQL paths (`/graphql`, `/api/graphql`) is bypassed; attacker can reach full mutation surface via arbitrary paths — expands attack surface for all other findings
+testability: PASSIVE
+[PARKED] jwt_alg_confusion @ auth.cineplex.de: JWKS endpoint 404, no passive key acquisition; auth.cineplex.de login/sso endpoints TLS-dead (525) — no reachable auth surface for active testing
+[PARKED] Physical-to-profile @ graphql-api.app.cineplex.de: userByQr(qrCode) returns User — physical ticket stub to digital identity if ownership unchecked; requires QR code from valid ticket, HUMAN_ONLY for proof
+[PARKED] Auth-layer privilege escalation primitives @ graphql-api.app.cineplex.de: login(privileged:Boolean), refreshLogin(privileged:Boolean), loginPOS(authToken:String!) — client-supplied privilege flag at session establishment/extension; requires AUTH_HELPED execution to verify gate behavior
+[PARKED] dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: origin SPAs reachable (200), but `/gateway/*` routes return 403 at CF edge — exploitability backend-gated, not dead but not actionable without backend state change
+[PARKED] IDOR Chaining via Three Independent Pre-Auth Decode Entry Points to Full User PII: cross-tenant proof HUMAN_ONLY per program PII rule; structural POC complete (userById/order/ticket → User with onlineTicketingToken, inviteCode, linkedAccounts, financial history)
+[FINAL] Ranked survivors (by testability × impact):
+[NEXT] PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date +%s)" --data-urlencode 'query={__typename}'
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path — remediation scope is path-pattern × 2 envs
+[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+[LEARN] ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `notcineplex.de` 500) — lookalike-registrable-domain path rejected
+[LEARN] ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data on prod and staging
+[LEARN] ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling CNAME + CORS label-boundary match)
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side)
+[LEARN] ACCEPTED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: CinemaOperatingCompanyData.accessRight* (4 flags) IDENTICAL to UserPrivileges derived fields; updateUser(adminCinemaOperatingCompanyIds) mirrors belongsToCinemaOperatingCompanies/adminForCinemas
+[LEARN] ACCEPTED idor_blast_radius @ graphql-api.app.cineplex.de: userById returns User = 51 fields including full identity, onlineTicketingToken, inviteCode, linkedAccounts, financial history
+[LEARN] ACCEPTED idor_chaining @ graphql-api.app.cineplex.de: ticket(id)→order→user and order(id)→user reach same 51-field User without userById — three independent pre-auth-decode entry points
+[LEARN] ACCEPTED physical_to_profile @ graphql-api.app.cineplex.de: userByQr(qrCode) returns User — physical ticket stub to digital identity if ownership unchecked
+[LEARN] ACCEPTED dual_entry_point @ graphql-api.app.{,staging.}cineplex.de: /graphql is second independent unauthenticated GraphQL entry point (200/32B __typename both envs, x-powered-by: Express)
+[LEARN] ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de: /graphql, /api/graphql, /gql are GET-only mirrors (API-GW 403); only root / accepts POST/OPTIONS — fix must cover 4 paths × 2 envs
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full introspection enabled (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) — CVSS 7.5
+[LEARN] ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport/auth/id constant, vary only resolver → two ungated, one gated, same id
+[LEARN] ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: cinemas{id name} unauthenticated returns 92 public cinema records (base64 Cinema:<n>)
+[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+[LEARN] REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+[LEARN] REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+[LEARN] REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
+[RISK] cineplex: 88 — Production GraphQL API exposes full introspection (83 queries, 140 mutations), CORS label-boundary suffix match with credentialed reflection on hostile origins (localhost:3000, app.staging.cineplex.de, null origin), dual entry points (/, /graphql) plus 3 GET-only mirrors, arbitrary path catch-all, mass-assignment read/write mirror on 4 privilege flags, IDOR chaining across 3 pre-auth resolvers to 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history), physical-to-profile via userByQr, auth-layer privilege escalation primitives. Dangling CNAME on web-dev.cineplex.de (17+ cycles NXDOMAIN) chains to CORS for takeover-to-credentialed-read. Staging parity identical. All probes read-only ≤1 rps, no PII touched. Dev-origin booking/payment tier reachable but /gateway/* gated at CF edge. Automated probe harness voided (206 cycles corrupted).

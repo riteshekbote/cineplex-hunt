@@ -5496,3 +5496,39 @@
 - LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+
+## RANKED HYPOTHESES 2026-10-09 10:14:57 UTC
+- [92] graphql-api.app.cineplex.de: CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads (from art/lead_nemotron3.txt)
+- [92] <host/endpoint>: <title> (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{field
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date +%s)" --data-urlencode 'query={__typename}'
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization;
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — look
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: real GET with `Origin: null` → `ACAO:null` + `ACAC:true` with data.
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match (precondition passive, claimabi
+- LEARN: ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit 
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path — remediation scope is path-pattern × 2
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `notcineplex.de` 500) — looka
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin:null returns ACAO:null + ACAC:true with real GraphQL data on prod a
+- LEARN: ACCEPTED cors_chain_takeover_to_credentialed_read @ web-dev.cineplex.de + graphql-api.app.cineplex.de: two independently verified primitives compose (dangling C
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition pass
+- LEARN: ACCEPTED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: CinemaOperatingCompanyData.accessRight* (4 flags) IDENTICAL to UserPrivileges derived f
+- LEARN: ACCEPTED idor_blast_radius @ graphql-api.app.cineplex.de: userById returns User = 51 fields including full identity, onlineTicketingToken, inviteCode, linkedAcc
+- LEARN: ACCEPTED idor_chaining @ graphql-api.app.cineplex.de: ticket(id)→order→user and order(id)→user reach same 51-field User without userById — three independent pre
+- LEARN: ACCEPTED physical_to_profile @ graphql-api.app.cineplex.de: userByQr(qrCode) returns User — physical ticket stub to digital identity if ownership unchecked
+- LEARN: ACCEPTED dual_entry_point @ graphql-api.app.{,staging.}cineplex.de: /graphql is second independent unauthenticated GraphQL entry point (200/32B __typename both 
+- LEARN: ACCEPTED getonly_graphql_mirrors @ graphql-api.app.cineplex.de: /graphql, /api/graphql, /gql are GET-only mirrors (API-GW 403); only root / accepts POST/OPTIONS
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full introspection enabled (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) — C
+- LEARN: ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport/auth/id constant, vary only resolver → two ungated, one gated, same id
+- LEARN: ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: cinemas{id name} unauthenticated returns 92 public cinema records (base64 Cinema:<n>)
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
