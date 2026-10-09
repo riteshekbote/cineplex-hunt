@@ -2603,3 +2603,17 @@ wwww.cineplex.de
 - CHANGED probe-results.md: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
 - CHANGED harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
 - CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+
+## 2026-10-09 21:47:02 UTC
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: SCHEMA_EXPOSURE CONF: 90 — no material change. Fresh arbitrary-path GET (`/zz-analyst-<epoch>`) re-served full `queryType.fields` (HTTP 200) on BOTH prod an
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: CORS_CREDENTIALED_POST CONF: 72 — no material change. Actual data GET (not only preflight) reflects hostile suffix origin `https://sub.attacker.cineplex.de`
+- CHANGED `web-dev.cineplex.de` :: SUBDOMAIN_TAKEOVER CONF: 85 — no material change; dangle holds. CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` still `Status 3` NXDOMAIN (TTL 300)
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW `web-dev.cineplex.de` automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- NEW Probe harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+- NEW `probe-results.md`: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED `graphql-api.app.{,staging}.cineplex.de` — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 on BOTH envs (manual curl)
+- CHANGED `graphql-api.app.cineplex.de` — CORS preflight re-verified: `OPTIONS /` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.atta
+- CHANGED `web-dev.cineplex.de` — dangling CNAME now 19th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow and AAAA-follow both Status 3 NXDOMAIN
