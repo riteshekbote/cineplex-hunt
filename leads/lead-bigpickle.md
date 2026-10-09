@@ -9946,3 +9946,121 @@ testability: PASSIVE
 [LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit program exclusions / no live surface, unchanged.
 [RISK] cineplex: 72 — report-ready unauthenticated GQL schema exposure (150 mutation sigs) plus a credentialed CORS primitive with hostile allowlist on production; capped by HUMAN_ONLY PII proof on the IDOR family and provider-side claimability for the takeover chain.
+## 2026-10-09 17:04:39 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[NEW] No new assets or reachable surface this cycle; 132-host inventory unchanged.
+[CHANGED] graphql-api.app.{,staging}.cineplex.de — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on BOTH envs (manual curl, browser UA) — confirms path-pattern rule, not a cached named path.
+[CHANGED] graphql-api.app.cineplex.de — CORS preflight re-verified: OPTIONS `/` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attacker.cineplex.de` → 204 reflected+ACAC true; Origin `https://evilcineplex.de` → 500 no CORS (DNS label boundary intact).
+[CHANGED] graphql-api.app.cineplex.de — actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data.
+[CHANGED] web-dev.cineplex.de — dangling CNAME now 18th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA.
+[CHANGED] leads/reposcan-cineplex.md — reposcan 2026-10-09 09:37 no-op (TARGET_ORG unconfigured); no public-org surface.
+[CHANGED] Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+[PRIO] graphql-api.app.cineplex.de,9.0,attack_surface=9 business_value=9 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.2,attack_surface=8 business_value=7 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=8
+[PRIO] web-dev.cineplex.de,6.4,attack_surface=5 business_value=6 tech_exposure=4 gate_ease=10 cloud_surface=8 freshness=7
+[HYP] Credentialed CORS reflection with hostile allowlist on production GraphQL
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de/
+confidence: 92
+reasoning: OPTIONS / returns 204 with reflected ACAO, ACAC:true, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE` (POST included), ACAH authorization; allowlist accepts any *.cineplex.de at DNS label boundary incl. sub.attacker.cineplex.de; null origin gets ACAO:null on real responses. All re-verified this cycle via manual curl.
+evidence_needed: Captured preflight + actual-response headers for an attacker-influenced allowed origin and for null origin against production root.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -X OPTIONS https://graphql-api.app.cineplex.de/ -H "Origin: https://sub.attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -D -` then `curl -sS --http2 -A "Mozilla/5.0" -G https://graphql-api.app.cineplex.de/ --data-urlencode 'query={__typename}' -H "Origin: null" -D -`
+impact: Any page on an allowed/lookalike origin (or a null-origin sandboxed frame) can read credentialed GraphQL responses; chained with a claimable *.cineplex.de dangle → trusted-origin session-data theft. High.
+testability: PASSIVE
+[HYP] Full GraphQL schema exposed under arbitrary unshadowed paths on prod and staging
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de/
+confidence: 90
+reasoning: Brand-new path `/zz-catchall-verify-1791540801` returned 200 with real schema data on both prod and staging this cycle; prior introspection enumerated 150 mutation signatures. POST to arbitrary paths is API-GW 403 (`Missing Authentication Token`), so exposure is GET/read-only; root `/` stays the single POST route.
+evidence_needed: Fresh-path GET responses showing schema execution; path-vs-POST differential.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -G "https://graphql-api.app.staging.cineplex.de/zz-$RANDOM" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code}\n'`
+impact: Unauthenticated schema and mutation discovery on both environments; bypasses path-scoped WAF rules. Medium-High (read-only).
+testability: PASSIVE
+[HYP] Dangling CNAME takeover precondition on web-dev.cineplex.de composing with credentialed CORS
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: 18th consecutive cycle of CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io with target A-follow NXDOMAIN (Status 3, azure-dns.com SOA). Claiming the container-apps environment yields a *.cineplex.de origin the production CORS allowlist trusts, chaining to credentialed GraphQL read. Claimability is provider-side and unverified.
+evidence_needed: Azure Container Apps environment name-availability attestation (provider-side); proof that a claimed host passes the prod CORS allowlist.
+verify_steps: Re-query DoH CNAME + A for web-dev.cineplex.de; check container-app environment registration status via unauthenticated read-only portal response.
+impact: Trusted-origin foothold enabling the CORS chain; standalone Low-Medium, High if chained. CVSS ~7.4 chain potential.
+testability: PASSIVE
+[PARKED] Mass assignment via CinemaOperatingCompanyData accessRight* flags: schema-level read/write name mirror verified, but every decisive test is a write mutation on live data — AUTH_HELPED, no passive path.
+[PARKED] Auth-layer privilege primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken): verification requires executing authentication mutations — AUTH_HELPED/HUMAN_ONLY.
+[PARKED] IDOR pre-auth decode chain: retained only as class:ACCESS_CONTROL (fingerprint 4ad65631f720); cross-tenant PII proof is HUMAN_ONLY per program PII rule.
+[FINAL] Survivors ranked: 1) credentialed CORS reflection (prod GraphQL) conf 92; 2) arbitrary-path schema exposure (prod+staging) conf 90; 3) web-dev dangling CNAME + CORS chain conf 85. None are REJECTED-class; all have concrete GET/OPTIONS verify steps.
+[NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` then the identical request against `graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)` — confirm both still serve the full 83-field queryType on a brand-new path (parity, no named-path caching).
+[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization; ACAM exact value `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry).
+[LEARN] ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — lookalike-registrable-domain path rejected.
+[LEARN] ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: real GET with `Origin: null` → `ACAO:null` + `ACAC:true` with data.
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 403; remediation = path-pattern × 2 envs.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match (precondition passive, claimability provider-side).
+[LEARN] ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser UA returns 200.
+[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit program exclusions / no live surface, unchanged.
+[RISK] cineplex: 72 — report-ready unauthenticated GQL schema exposure (150 mutation sigs) plus a credentialed CORS primitive with hostile allowlist on production; capped by HUMAN_ONLY PII proof on the IDOR family and provider-side claimability for the takeover chain.
+[NEW] app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` (Cloudflare managed challenge) with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage are not passively readable.
+[CHANGED] graphql-api.app.{,staging}.cineplex.de — catch-all re-confirmed on a brand-new path `/zz-parity-<epoch>`: GET `query={__schema{queryType{fields{name}}}}` → 200 with the full 83-field queryType on BOTH envs (manual curl, browser UA) — path-pattern rule holds, no named-path caching.
+[CHANGED] graphql-api.app.cineplex.de — full response headers for allowed origin `https://app.cineplex.de`: `ACAO` reflected, `ACAC: true`, `Vary: Origin` present, `cf-cache-status: DYNAMIC`, no `Set-Cookie` unauthenticated → origin-aware cache key rules out cross-origin cache-poisoning escalation.
+[CHANGED] web-dev.cineplex.de — dangling CNAME now 19th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow and AAAA-follow both Status 3 NXDOMAIN with `switzerlandnorth.azurecontainerapps.io` SOA (azure-dns.com).
+[CHANGED] leads/reposcan-cineplex.md — reposcan 2026-10-09 16:32 still no-op (`TARGET_ORG` unconfigured); no public-org surface.
+[CHANGED] Cycle staleness: the same top-3 hypotheses have now been re-emitted across multiple cycles with zero movement; only the "verification" text changes. This is stasis, not progress — recorded as a critique, not a finding.
+[PRIO] graphql-api.app.cineplex.de,9.0,attack_surface=9 business_value=9 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.2,attack_surface=8 business_value=7 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=8
+[PRIO] web-dev.cineplex.de,6.4,attack_surface=5 business_value=6 tech_exposure=4 gate_ease=10 cloud_surface=8 freshness=7
+[HYP] Credentialed CORS reflection with hostile allowlist on production GraphQL, impact gated by client auth model
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de/
+confidence: 72
+reasoning: OPTIONS / → 204, reflected ACAO, ACAC:true, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAH `content-type,authorization`; allowlist accepts any *.cineplex.de at DNS label boundary and reflects `Origin: null`; re-verified this cycle with `Vary: Origin` and no `Set-Cookie` on an unauthenticated GET. Open fact: login returns jwt/refreshToken and ACAH advertises `authorization`, which is the signature of bearer-token auth — a token in localStorage is NOT auto-sent cross-origin, so reflection alone may not yield data theft; impact depends on whether the prod client also uses a cookie session.
+evidence_needed: Prod client token-transport determination (session cookie vs Authorization bearer from localStorage) and whether graphql-api accepts cookie-based auth.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -X OPTIONS https://graphql-api.app.cineplex.de/ -H "Origin: https://sub.attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -D -` ; then in an authenticated browser, load app.cineplex.de (CF-challenged) and check `document.cookie` vs localStorage for the GraphQL token.
+impact: If client auth is cookie-based → any allowed/lookalike origin reads credentialed GraphQL responses (PII/session) = High; if bearer-in-localStorage → reflects a real misconfig but lower direct impact (Medium). Chained with a claimable *.cineplex.de dangle raises either case.
+testability: HUMAN_ONLY
+[HYP] Full GraphQL schema exposed under arbitrary unshadowed paths on prod and staging
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de/
+confidence: 90
+reasoning: Fresh path `/zz-parity-<epoch>` returned 200 with real schema data on both prod and staging this cycle; introspection previously enumerated 150 mutation signatures. POST to arbitrary paths is API-GW 403 (`Missing Authentication Token`), so exposure is GET/read-only; root `/` remains the sole POST route.
+evidence_needed: Fresh-path GET responses showing schema execution; path-vs-POST differential.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -G "https://graphql-api.app.staging.cineplex.de/zz-$RANDOM" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code}\n'`
+impact: Unauthenticated schema and mutation discovery on both environments; bypasses path-scoped WAF rules. Medium-High (read-only).
+testability: PASSIVE
+[HYP] Dangling CNAME takeover precondition on web-dev.cineplex.de composing with credentialed CORS
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: 19th consecutive cycle of CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` with target A/AAAA NXDOMAIN (Status 3, azure-dns SOA). Claiming the container-apps environment yields a *.cineplex.de origin the production CORS allowlist trusts, chaining to credentialed GraphQL read. Claimability is provider-side and unverified.
+evidence_needed: Azure Container Apps environment name-availability attestation; proof that a claimed host passes the prod CORS allowlist.
+verify_steps: Re-query DoH CNAME + A/AAAA for web-dev.cineplex.de; check container-app environment registration status via unauthenticated read-only portal response.
+impact: Trusted-origin foothold enabling the CORS chain; standalone Low-Medium, High if chained.
+testability: PASSIVE
+[PARKED] Mass assignment via CinemaOperatingCompanyData accessRight* flags: schema-level read/write name mirror verified, but every decisive test is a write mutation on live data — AUTH_HELPED, no passive path.
+[PARKED] Auth-layer privilege primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken): verification requires executing authentication mutations — AUTH_HELPED/HUMAN_ONLY.
+[PARKED] IDOR pre-auth decode chain: retained only as class:ACCESS_CONTROL (fingerprint 4ad65631f720); cross-tenant PII proof is HUMAN_ONLY per program PII rule.
+[FINAL] Survivors ranked: 1) arbitrary-path schema exposure (prod+staging) conf 90 — fully passive, unaffected by the auth-model gate; 2) credentialed CORS reflection (prod GraphQL) conf 72 — real misconfig, impact now explicitly gated on cookie-vs-bearer; 3) web-dev dangling CNAME + CORS chain conf 85 — strong precondition, provider-side claimability unverified. None are REJECTED-class; all have concrete GET/OPTIONS verify steps.
+[NEXT] HUMAN: In an authenticated browser session on production, load app.cineplex.de (Cloudflare-challenged) and determine how the GraphQL auth token is transported — `Set-Cookie`/session cookie vs `Authorization: Bearer` read from localStorage — and whether graphql-api.app.cineplex.de accepts cookie auth; this resolves the CORS hypothesis' exploitability gate that no passive probe can reach.
+[LEARN] ACCEPTED cors_origin_cache_safety @ graphql-api.app.cineplex.de: `Vary: Origin` present on reflected-ACAO responses → origin-aware cache key; reflected CORS does not enable cross-origin cache poisoning.
+[LEARN] ACCEPTED app_cineplex_cf_challenge @ app.cineplex.de: 403 `cf-mitigated: challenge` + COOP/COEP/CORP isolation; SPA bundle and token storage are not passively readable → CORS-chain exploitability is HUMAN_ONLY.
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: re-confirmed on a brand-new path this cycle, both envs 200 + 83 fields; POST to non-root paths API-GW 403.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th consecutive NXDOMAIN on A + AAAA against the Azure container-apps target; sole dangle.
+[LEARN] REJECTED OOS_unchanged @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, api_cineplex_get_bypass, relay_metrics — explicit program exclusions / no live surface.
+[RISK] cineplex: 68 — unauthenticated GQL schema exposure on prod+staging remains report-ready, but the credentialed-CORS primitive's direct impact is now gated on the prod client auth model (bearer-in-localStorage would substantially reduce it), and the takeover chain remains provider-side unverified; no new assets or surface this cycle.

@@ -2583,3 +2583,23 @@ wwww.cineplex.de
 - CHANGED publisher_defect @ scripts/sync-issues.py: fingerprint = md5(asset|class) so cosmetic asset-string differences mint separate tracker issues; ensure_label() never returns label object in either branch
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+
+## 2026-10-09 17:04:48 UTC
+- NEW No new assets or reachable surface this cycle; 132-host inventory unchanged.
+- CHANGED graphql-api.app.{,staging}.cineplex.de — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on BOTH envs (manual
+- CHANGED graphql-api.app.cineplex.de — CORS preflight re-verified: OPTIONS `/` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attack
+- CHANGED graphql-api.app.cineplex.de — actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data.
+- CHANGED web-dev.cineplex.de — dangling CNAME now 18th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA.
+- CHANGED leads/reposcan-cineplex.md — reposcan 2026-10-09 09:37 no-op (TARGET_ORG unconfigured); no public-org surface.
+- CHANGED Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+- NEW app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` (Cloudflare managed challenge) with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage
+- CHANGED graphql-api.app.{,staging}.cineplex.de — catch-all re-confirmed on a brand-new path `/zz-parity-<epoch>`: GET `query={__schema{queryType{fields{name}}}}` → 200 with the full 83-field queryType on BOTH
+- CHANGED graphql-api.app.cineplex.de — full response headers for allowed origin `https://app.cineplex.de`: `ACAO` reflected, `ACAC: true`, `Vary: Origin` present, `cf-cache-status: DYNAMIC`, no `Set-Cookie` un
+- CHANGED web-dev.cineplex.de — dangling CNAME now 19th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow and AAAA-follow both Status 3 NXDOMAIN w
+- CHANGED leads/reposcan-cineplex.md — reposcan 2026-10-09 16:32 still no-op (`TARGET_ORG` unconfigured); no public-org surface.
+- CHANGED Cycle staleness: the same top-3 hypotheses have now been re-emitted across multiple cycles with zero movement; only the "verification" text changes. This is stasis, not progress — recorded as a critiq
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- CHANGED web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- CHANGED probe-results.md: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated

@@ -1309,3 +1309,9 @@
 - 2026-10-09 ACCEPTED inconsistent_authz_gate @ graphql-api.app.cineplex.de: hold transport/auth/id constant, vary only resolver → two ungated, one gated, same id
 - 2026-10-09 ACCEPTED public_content_namespaces @ graphql-api.app.cineplex.de: cinemas{id name} unauthenticated returns 92 public cinema records (base64 Cinema:<n>)
 - 2026-10-09 REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
+- 2026-10-09 ACCEPTED cors_origin_cache_safety @ graphql-api.app.cineplex.de: `Vary: Origin` present on reflected-ACAO responses → origin-aware cache key; reflected CORS does not enable cross-origin cache poisoning.
+- 2026-10-09 ACCEPTED app_cineplex_cf_challenge @ app.cineplex.de: 403 `cf-mitigated: challenge` + COOP/COEP/CORP isolation; SPA bundle and token storage are not passively readable → CORS-chain exploitability is HUMAN_ONLY.
+- 2026-10-09 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: re-confirmed on a brand-new path this cycle, both envs 200 + 83 fields; POST to non-root paths API-GW 403.
+- 2026-10-09 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th consecutive NXDOMAIN on A + AAAA against the Azure container-apps target; sole dangle.
+- 2026-10-09 REJECTED OOS_unchanged @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, api_cineplex_get_bypass, relay_metrics — explicit program exclusions / no live surface.
+- 2026-10-09 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side)

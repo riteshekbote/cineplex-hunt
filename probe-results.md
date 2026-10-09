@@ -1410,3 +1410,17 @@ https://evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not kn
 https://sub.attacker.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
 https://graphql-api.app.staging.cineplex.de/zz-$RANDOM -> HTTP 403
 https://graphql-api.app.cineplex.de/zz-parity-$(date -> HTTP 403
+
+## 2026-10-09 17:05:02 UTC
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
+https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
+https://sub.attacker.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://sub.attacker.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://graphql-api.app.staging.cineplex.de/zz-$RANDOM -> HTTP 403
+https://graphql-api.app.cineplex.de/zz-parity-$(date -> HTTP 403
+https://app.cineplex.de`: -> ERR <urlopen error [Errno -2] Name or service not know

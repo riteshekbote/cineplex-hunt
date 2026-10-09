@@ -94618,3 +94618,729 @@ testability: PASSIVE
 [LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
 [LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit program exclusions / no live surface, unchanged.
 [RISK] cineplex: 72 — report-ready unauthenticated GQL schema exposure (150 mutation sigs) plus a credentialed CORS primitive with hostile allowlist on production; capped by HUMAN_ONLY PII proof on the IDOR family and provider-side claimability for the takeover chain.
+===== ANALYST bigpickle 2026-10-09 17:04:48 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la leads/ 2>/dev/null | head; echo "---"; git log --oneline -5 2>/dev/null
+total 1464
+drwxr-xr-x 12 runner runner   4096 Oct  9 17:01 .
+drwxr-xr-x  3 runner runner   4096 Oct  9 17:00 ..
+drwxr-xr-x  7 runner runner   4096 Oct  9 17:01 .git
+drwxr-xr-x  3 runner runner   4096 Oct  9 17:00 .github
+-rw-r--r--  1 runner runner   1923 Oct  9 17:00 README.md
+-rw-r--r--  1 runner runner     32 Oct  9 17:01 analyst-out.txt
+-rw-r--r--  1 runner runner 658696 Oct  9 17:01 analyst-prompt.txt
+-rw-r--r--  1 runner runner 654739 Oct  9 17:01 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 leads
+-rw-r--r--  1 runner runner  87861 Oct  9 17:00 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 reports
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  9 17:01 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 scripts
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  9 17:01 triage
+---
+total 4092
+drwxr-xr-x  2 runner runner    4096 Oct  9 17:00 .
+drwxr-xr-x 12 runner runner    4096 Oct  9 17:01 ..
+-rw-r--r--  1 runner runner 1518329 Oct  9 17:00 lead-bigpickle.md
+-rw-r--r--  1 runner runner   11016 Oct  9 17:00 lead-laguna.md
+-rw-r--r--  1 runner runner   10800 Oct  9 17:00 lead-ling3.md
+-rw-r--r--  1 runner runner   11232 Oct  9 17:00 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  9 17:00 lead-mimo.md
+-rw-r--r--  1 runner runner 2590469 Oct  9 17:00 lead-nemotron3.md
+-rw-r--r--  1 runner runner   26560 Oct  9 17:00 reposcan-cineplex.md
+---
+d169351 reposcan 2026-10-09-16-32
+[0m
+## Objective
+- Continue authorized bug-bounty recon/hypothesis work for the Cineplex Deutschland program (report channel: bugs.olivermaicher.eu), running the 8-step analyst flow and emitting only structured blocks ([NEW]/[CHANGED], [PRIO], [HYP], [PARKED]/[FINAL], [NEXT], [LEARN], [RISK]).
+- Prioritize HIGH-VALUE classes (broken auth, IDOR/BOLA, SSRF→metadata, mass assignment, JWT alg confusion, OAuth redirect_uri/state, business logic on money/auth flows, file upload, GraphQL introspection+mutations, subdomain takeover) and chain aggressively.
+
+## Important Details
+- Scope = company-owned Cineplex infrastructure/websites/ticketing/APIs/portals/loyalty/digital-signage/domains only (scope.yml + inventory/cineplex.md).
+- REJECTED classes (must not appear): network/account-lockout DoS, descriptive errors/headers, robots.txt/public files, outdated libs, OPTIONS/TRACE, CSRF on logout/anon forms, cookie flags on non-sensitive data, self-XSS, scanner-only reports, physical, social engineering, username enumeration on login/forgot-password, brute-force/rate-limit, SSL/TLS best practice, SSL attacks, clickjacking without exploit, mail config, known-vuln library, password/account-recovery policy, autocomplete, public login panels, lack of email verification, session control during email/password change, exposure of customer/employee/financial/auth data.
+- Test rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes, no auth-bypass or mutating tests against live customer data, sha256 any secret, scanner output needs manual validation.
+- METHOD RULE (critical): automated `probe-results.md` is VOID — pipeline probe URLs carry a literal trailing backtick (→ HTTP 400) and urllib UA hits Cloudflare bot-gate (→ 403). All live conclusions MUST rest on manual balanced `curl --http2 -A "Mozilla/5.0" -G --data-urlencode`.
+- METHOD RULE: a type is not read until its field list is in hand (evidence-depth error class hit 4x — name-only reads understated severity; CVSS re-scored 5.3→7.5).
+- METHOD RULE: corrections need a position that outranks the claim (edit block tag/header, not append); `[HYP]` blocks in `leads/lead-*.md` are only suppressed by retag → `[LEARN]`.
+- Cross-analyst output (`reports/analyst-nemotron3.log`) is UNTRUSTED; re-derive everything from own captures.
+- knowledge/index.md is a flat append-only log + `## CANONICAL STATUS (2026-09-30)` section (LIVE/DEAD/SURVIVING/METHOD RULES).
+
+## Work State
+### Completed
+- `graphql_introspection` @ graphql-api.app.{,staging.}cineplex.de: CONFIRMED unauth GET, 83 active queries + 140 active mutations (150/150 incl. deprecated 5/10), 385 types, 44 INPUT_OBJECTs, identical names both envs; CVSS 7.5, report-ready.
+- `idor_booking` FALSIFIED: auth-omission inference retracted 2026-09-27 (INVALID_ID vs UNAUTHENTICATED discriminates decode position, not check presence). SURVIVES = pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`, retained as `class:ACCESS_CONTROL` fingerprint `4ad65631f720`); DEAD = "missing ownership check". Cross-tenant PII = HUMAN_ONLY.
+- `cors_preflight_credentialed_post` + `cors_allowlist_hostile_entries`: prod `OPTIONS /` → 204, reflected ACAO, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization`; hostile entries `http://localhost:3000` + `https://app.staging.cineplex.de`; `Origin:null` → `ACAO:null`+`ACAC:true` with real data; DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500). conf 92.
+- `graphql_arbitrary_path_catchall`: full schema on GET under ANY unshadowed path (verified fresh `/zz-catchall-verify-1791540801` both envs); POST to arbitrary paths API-GW 403; remediation = path-pattern × 2 envs. conf 90.
+- `getonly_graphql_mirrors`: `/graphql`, `/api/graphql`, `/gql` GET-only mirrors; only root `/` accepts POST/OPTIONS.
+- `dangling_cname_takeover` @ web-dev.cineplex.de: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN + azure-dns SOA, 18th+ cycle; sole dangle in 14-host sweep; PASSIVE.
+- `mass_assignment_privilege_fields`: `CinemaOperatingCompanyData.accessRight*` (4 flags) identical names to `UserPrivileges` derived fields; `updateUser(adminCinemaOperatingCompanyIds)` mirrors `belongsToCinemaOperatingCompanies`. Writes = AUTH_HELPED (parked).
+- `idor_blast_radius`/`idor_chaining`/`physical_to_profile`: `User` = 51 fields (identity, `onlineTicketingToken`, `inviteCode`, `linkedAccounts`, financial history); `ticket(id)→order→user` and `order(id)→user` reach same object; `userByQr(qrCode)→User`.
+- REJECTIONS: `api_cineplex_get_bypass` (strict 403 all methods/encodings, dead), `relay_metrics`/`relay_broker_saturation` @ data-9fc27eb430.cineplex.de (descriptive IOMB telemetry), `staging_testing_oracle` (method-mismatch = descriptive), `ssrf_getOnlineTicketingBooking` (root-gated), all OOS classes, TLS-dead hosts (app.staging 525, graphql-api.app.couat, login, sso).
+- `dev_origin_waf_bypass`/`bms-dev_t360_cms` @ buchung-dev/bms-dev.cineplex.de: origin 194.77.169.121 (no CF), Ticket360 CMS + booking SPA 200; `/gateway/*` 503 "Wartungsarbeiten" — exploitability backend-gated.
+
+### Active
+- 3 report-ready survivors ranked: (1) credentialed CORS reflection on prod GraphQL conf 92; (2) arbitrary-path schema exposure prod+staging conf 90; (3) web-dev dangling CNAME + CORS chain conf 85.
+- PRIO scores: graphql-api.app.cineplex.de 9.0; graphql-api.app.staging.cineplex.de 8.2; web-dev.cineplex.de 6.4.
+
+### Blocked
+- HUMAN_ONLY proofs: cross-tenant PII for IDOR family (consent + 2 accounts); staging POST oracle; mass-assignment/auth-layer privilege writes (`login.privileged`, `loginPOS.authToken`, `updatePassword`).
+- Provider-side attestation outstanding for web-dev Azure Container Apps claimability.
+- Automated harness void → cannot use probe-results.md as evidence (1399 lines, ZERO POST).
+- `scripts/sync-issues.py` publisher debt: fingerprint = md5(asset|class) causes duplicate issues; `ensure_label()` never returns label object; ~5 web-dev [HYP] blocks with divergent class labels not auto-mergeable.
+
+## Next Move
+1. [NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` then identical request against `graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)` — confirm both still serve full 83-field queryType on a brand-new path (parity, no named-path caching).
+2. Re-verify web-dev.cineplex.de DoH CNAME pair (CNAME + A-follow) with `Accept: application/dns-json` header for same-cycle dangle evidence.
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB + `## CANONICAL STATUS (2026-09-30)` section (LIVE/DEAD/SURVIVING/METHOD RULES).
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: `[HYP]`/`[LEARN]` blocks; retag to `[LEARN]` = suppression.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP\]` only (line 57); fingerprint at :112; `ensure_label()` bug at :153.
+- `scripts/passive_verify.py`: verifier module (14 offline tests in `scripts/test_passive_verify.py`).
+- `.github/workflows/hunt.yml` (lines 207-225): 8 verifier defects (backtick not excluded, UA `(passive verifier)`, `urls[:12]` truncation, brace truncation).
+- `probe-results.md`: void automated log (1399 lines, zero POST) — do not cite.
+- `inventory/cineplex.md`: 132-host baseline; `scope.yml`: in-scope assets.
+- `reports/analyst-nemotron3.log`: cross-analyst, untrusted.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat state_bigpickle.json analyst-out.txt; echo "---README---"; cat README.md; echo "---analyst-prompt head---"; head -c 3000 analyst-prompt.txt
+{"phase": "POC", "target": "api"}[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls -la leads/ 2>/dev/null | head; echo "---"; git log --oneline -5 2>/dev/null
+total 1464
+drwxr-xr-x 12 runner runner   4096 Oct  9 17:01 .
+drwxr-xr-x  3 runner runner   4096 Oct  9 17:00 ..
+drwxr-xr-x  7 runner runner   4096 Oct  9 17:01 .git
+drwxr-xr-x  3 runner runner   4096 Oct  9 17:00 .github
+-rw-r--r--  1 runner runner   1923 Oct  9 17:00 README.md
+-rw-r--r--  1 runner runner     32 Oct  9 17:01 analyst-out.txt
+-rw-r--r--  1 runner runner 658696 Oct  9 17:01 analyst-prompt.txt
+-rw-r--r--  1 runner runner 654739 Oct  9 17:01 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 inventory
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 leads
+-rw-r--r--  1 runner runner  87861 Oct  9 17:00 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:00 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 reports
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct  9 17:01 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct  9 17:01 scripts
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct  9 17:01 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct  9 17:01 triage
+---
+total 4092
+drwxr-xr-x  2 runner runner    4096 Oct  9 17:00 .
+drwxr-xr-x 12 runner runner    4096 Oct  9 17:01 ..
+-rw-r--r--  1 runner runner 1518329 Oct  9 17:00 lead-bigpickle.md
+-rw-r--r--  1 runner runner   11016 Oct  9 17:00 lead-laguna.md
+-rw-r--r--  1 runner runner   10800 Oct  9 17:00 lead-ling3.md
+-rw-r--r--  1 runner runner   11232 Oct  9 17:00 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct  9 17:00 lead-mimo.md
+-rw-r--r--  1 runner runner 2590469 Oct  9 17:00 lead-nemotron3.md
+-rw-r--r--  1 runner runner   26560 Oct  9 17:00 reposcan-cineplex.md
+---
+d169351 reposcan 2026-10-09-16-32
+[0m
+## Objective
+- Continue authorized bug-bounty recon/hypothesis work for the Cineplex Deutschland program (report channel: bugs.olivermaicher.eu), running the 8-step analyst flow and emitting only structured blocks ([NEW]/[CHANGED], [PRIO], [HYP], [PARKED]/[FINAL], [NEXT], [LEARN], [RISK]).
+- Prioritize HIGH-VALUE classes (broken auth, IDOR/BOLA, SSRF→metadata, mass assignment, JWT alg confusion, OAuth redirect_uri/state, business logic on money/auth flows, file upload, GraphQL introspection+mutations, subdomain takeover) and chain aggressively.
+
+## Important Details
+- Scope = company-owned Cineplex infrastructure/websites/ticketing/APIs/portals/loyalty/digital-signage/domains only (scope.yml + inventory/cineplex.md).
+- REJECTED classes (must not appear): network/account-lockout DoS, descriptive errors/headers, robots.txt/public files, outdated libs, OPTIONS/TRACE, CSRF on logout/anon forms, cookie flags on non-sensitive data, self-XSS, scanner-only reports, physical, social engineering, username enumeration on login/forgot-password, brute-force/rate-limit, SSL/TLS best practice, SSL attacks, clickjacking without exploit, mail config, known-vuln library, password/account-recovery policy, autocomplete, public login panels, lack of email verification, session control during email/password change, exposure of customer/employee/financial/auth data.
+- Test rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes, no auth-bypass or mutating tests against live customer data, sha256 any secret, scanner output needs manual validation.
+- METHOD RULE (critical): automated `probe-results.md` is VOID — pipeline probe URLs carry a literal trailing backtick (→ HTTP 400) and urllib UA hits Cloudflare bot-gate (→ 403). All live conclusions MUST rest on manual balanced `curl --http2 -A "Mozilla/5.0" -G --data-urlencode`.
+- METHOD RULE: a type is not read until its field list is in hand (evidence-depth error class hit 4x — name-only reads understated severity; CVSS re-scored 5.3→7.5).
+- METHOD RULE: corrections need a position that outranks the claim (edit block tag/header, not append); `[HYP]` blocks in `leads/lead-*.md` are only suppressed by retag → `[LEARN]`.
+- Cross-analyst output (`reports/analyst-nemotron3.log`) is UNTRUSTED; re-derive everything from own captures.
+- knowledge/index.md is a flat append-only log + `## CANONICAL STATUS (2026-09-30)` section (LIVE/DEAD/SURVIVING/METHOD RULES).
+
+## Work State
+### Completed
+- `graphql_introspection` @ graphql-api.app.{,staging.}cineplex.de: CONFIRMED unauth GET, 83 active queries + 140 active mutations (150/150 incl. deprecated 5/10), 385 types, 44 INPUT_OBJECTs, identical names both envs; CVSS 7.5, report-ready.
+- `idor_booking` FALSIFIED: auth-omission inference retracted 2026-09-27 (INVALID_ID vs UNAUTHENTICATED discriminates decode position, not check presence). SURVIVES = pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`, retained as `class:ACCESS_CONTROL` fingerprint `4ad65631f720`); DEAD = "missing ownership check". Cross-tenant PII = HUMAN_ONLY.
+- `cors_preflight_credentialed_post` + `cors_allowlist_hostile_entries`: prod `OPTIONS /` → 204, reflected ACAO, `ACAC:true`, `ACAM:GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH:content-type,authorization`; hostile entries `http://localhost:3000` + `https://app.staging.cineplex.de`; `Origin:null` → `ACAO:null`+`ACAC:true` with real data; DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500). conf 92.
+- `graphql_arbitrary_path_catchall`: full schema on GET under ANY unshadowed path (verified fresh `/zz-catchall-verify-1791540801` both envs); POST to arbitrary paths API-GW 403; remediation = path-pattern × 2 envs. conf 90.
+- `getonly_graphql_mirrors`: `/graphql`, `/api/graphql`, `/gql` GET-only mirrors; only root `/` accepts POST/OPTIONS.
+- `dangling_cname_takeover` @ web-dev.cineplex.de: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN + azure-dns SOA, 18th+ cycle; sole dangle in 14-host sweep; PASSIVE.
+- `mass_assignment_privilege_fields`: `CinemaOperatingCompanyData.accessRight*` (4 flags) identical names to `UserPrivileges` derived fields; `updateUser(adminCinemaOperatingCompanyIds)` mirrors `belongsToCinemaOperatingCompanies`. Writes = AUTH_HELPED (parked).
+- `idor_blast_radius`/`idor_chaining`/`physical_to_profile`: `User` = 51 fields (identity, `onlineTicketingToken`, `inviteCode`, `linkedAccounts`, financial history); `ticket(id)→order→user` and `order(id)→user` reach same object; `userByQr(qrCode)→User`.
+- REJECTIONS: `api_cineplex_get_bypass` (strict 403 all methods/encodings, dead), `relay_metrics`/`relay_broker_saturation` @ data-9fc27eb430.cineplex.de (descriptive IOMB telemetry), `staging_testing_oracle` (method-mismatch = descriptive), `ssrf_getOnlineTicketingBooking` (root-gated), all OOS classes, TLS-dead hosts (app.staging 525, graphql-api.app.couat, login, sso).
+- `dev_origin_waf_bypass`/`bms-dev_t360_cms` @ buchung-dev/bms-dev.cineplex.de: origin 194.77.169.121 (no CF), Ticket360 CMS + booking SPA 200; `/gateway/*` 503 "Wartungsarbeiten" — exploitability backend-gated.
+
+### Active
+- 3 report-ready survivors ranked: (1) credentialed CORS reflection on prod GraphQL conf 92; (2) arbitrary-path schema exposure prod+staging conf 90; (3) web-dev dangling CNAME + CORS chain conf 85.
+- PRIO scores: graphql-api.app.cineplex.de 9.0; graphql-api.app.staging.cineplex.de 8.2; web-dev.cineplex.de 6.4.
+
+### Blocked
+- HUMAN_ONLY proofs: cross-tenant PII for IDOR family (consent + 2 accounts); staging POST oracle; mass-assignment/auth-layer privilege writes (`login.privileged`, `loginPOS.authToken`, `updatePassword`).
+- Provider-side attestation outstanding for web-dev Azure Container Apps claimability.
+- Automated harness void → cannot use probe-results.md as evidence (1399 lines, ZERO POST).
+- `scripts/sync-issues.py` publisher debt: fingerprint = md5(asset|class) causes duplicate issues; `ensure_label()` never returns label object; ~5 web-dev [HYP] blocks with divergent class labels not auto-mergeable.
+
+## Next Move
+1. [NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` then identical request against `graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)` — confirm both still serve full 83-field queryType on a brand-new path (parity, no named-path caching).
+2. Re-verify web-dev.cineplex.de DoH CNAME pair (CNAME + A-follow) with `Accept: application/dns-json` header for same-cycle dangle evidence.
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB + `## CANONICAL STATUS (2026-09-30)` section (LIVE/DEAD/SURVIVING/METHOD RULES).
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: `[HYP]`/`[LEARN]` blocks; retag to `[LEARN]` = suppression.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP\]` only (line 57); fingerprint at :112; `ensure_label()` bug at :153.
+- `scripts/passive_verify.py`: verifier module (14 offline tests in `scripts/test_passive_verify.py`).
+- `.github/workflows/hunt.yml` (lines 207-225): 8 verifier defects (backtick not excluded, UA `(passive verifier)`, `urls[:12]` truncation, brace truncation).
+- `probe-results.md`: void automated log (1399 lines, zero POST) — do not cite.
+- `inventory/cineplex.md`: 132-host baseline; `scope.yml`: in-scope assets.
+- `reports/analyst-nemotron3.log`: cross-analyst, untrusted.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+---README---
+# cineplex-hunt
+
+24/7 deep multi-model bug-hunting automation for **Cineplex Deutschland GmbH & Co. KG / Cineplex Group** (Oliver Maicher bug-bounty hub).
+
+Scope: All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control
+(full exclusion + rules list in `scope.yml`)
+
+Pipeline (all workflows run every 20 minutes):
+
+- **Deep Hunt** (`hunt.yml`): analyst hunts the discovered inventory + hypotheses, emits structured
+  leads, chains primitives, self-critiques. Models: mimo.
+- **Triager** (`triage.yml`): second-model 7-Question Gate validation + live passive probe; keeps
+  running count in `reports/valid-bugs.md`.
+- **Reposcan** (`reposcan.yml`): deep source scan of any public GitHub org (if configured).
+- **Sync Issues** (`sync-issues.yml`): mirrors leads to GitHub issues.
+
+Testing discipline: rate-limited (1 rps), no DoS/account-lockout, writes only on non-prod/test
+assets, no exposure of customer/employee/financial/auth data, secrets committed only as hashes.
+
+> IMPORTANT: the pipeline produces CANDIDATE leads. A reportable, validated finding requires
+> human triage + proof against the program's gate. No finding is fabricated; scanner output alone
+> is never accepted. Active testing is gated behind the in-scope hosts in `inventory/cineplex.md` and
+> must stay within the program's published scope.
+
+Artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| `leads/` | Candidate findings (UNVALIDATED) |
+| `triage/` | Validation verdicts |
+| `reports/valid-bugs.md` | Validated findings + running count |
+| `scope.yml` | Program scope and exclusions (edit to adjust) |
+
+Program description: German cinema group and cinema network operator providing ticketing, loyalty, mobile, and digital entertainment services
+---analyst-prompt head---
+=== KNOWLEDGE BASE ===
+# Knowledge Base (seed)
+- 2026-09-03 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-03 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-03 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-03 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-03 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-03 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-03 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-03 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+- 2026-09-04 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but auth.cineplex.de/.well-known/jwks.json returns 404, no passive JWKS fetch possible
+- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surfac
+[0m
+[0m$ [0mgrep -n -i -E "STEP 1|STEP 2|STEP 3|STEP 4|STEP 5|STEP 6|STEP 7|STEP 8|output format|\[NEW\]|\[HYP\]|\[NEXT\]|\[LEARN\]|\[RISK\]|\[PRIO\]|You are" analyst-prompt.txt | head -80
+928:- 2026-09-30 `publish_path_clear` @ `scripts/sync-issues.py` — verified the falsified IDOR text cannot leak to the tracker. `parse_blocks` matches `^\[HYP\]` only (scripts/sync-issues.py:57) and globs `leads/lead-*.md`; the falsified `idor_booking` lines in my lead file are tagged `[LEARN]`, so they are invisible to the publisher. The only live `[HYP]` blocks are the three real ones (CORS, mass-assignment, dangle). Also confirmed `sync-issues.py` never reads `knowledge/index.md`, so the new section cannot break the parser.
+948:- 2026-10-01 Two failure modes reproduced the same way this cycle. First, a claim about a *system* ("only three live hypotheses exist") was established by inspecting a *part* (one lead file) and reported as a system property — scope the evidence to the blast radius before asserting it, and say which files were read. Second, suppression by tag is not suppression by default: `[HYP]` blocks are never retracted by later `[LEARN]` lines about the same finding, so a falsification written anywhere in the corpus leaves the original claim fully publishable until the block header itself is changed. Corrections need a position that outranks the claim — for an append-only log, that means editing the block tag, not appending a correction. Third, structural dedupe (`fingerprint`) is a trust boundary: it decides what a human reviewer sees, so prose inconsistency in an `asset` field silently becomes issue duplication, and any "N findings" count should be reported as distinct fingerprints plus distinct underlying findings, because here they differed by ~7x.
+978:- 2026-10-02 Suppression-by-tag does not decay safely: every cycle appends new `[HYP]` blocks, so a cleaned corpus silently re-contaminates. "Cleared" is only ever true for the cycle in which it was measured, and must never be recorded as a durable fact.
+1051:- 2026-10-04 Remaining tracker debt, NOT auto-mergeable and deliberately left alone: the single web-dev dangling-CNAME root cause is still authored as ~5 separate [HYP] blocks carrying divergent class labels (MISCONFIG / OTHER / SUBDOMAIN_TAKEOVER) and materially different titles, so title-similarity collapse correctly refuses to merge them (titles differ well past 0.82 and classes disagree). Merging across differing class labels would destroy taxonomy signal, so this is lead-authoring discipline to fix at the source, not a publisher change. Also 2 blocks carry a malformed class value `'MISCONFIG' CONF: '93'` from inline-attribute splitting — cosmetic, class-normalization debt.
+1141:- 2026-10-05 Remaining tracker debt, NOT auto-mergeable and deliberately left alone: the single web-dev dangling-CNAME root cause is still authored as ~5 separate [HYP] blocks carrying divergent class labels (MISCONFIG / OTHER / SUBDOMAIN_TAKEOVER) and materially different titles, so title-similarity collapse correctly refuses to merge them (titles differ well past 0.82 and classes disagree). Merging across differing class labels would destroy taxonomy signal, so this is lead-authoring discipline to fix at the source, not a publisher change. Also 2 blocks carry a malformed class value `'MISCONFIG' CONF: '93'` from inline-attribute splitting — cosmetic, class-normalization debt.
+1145:- 2026-10-05 Remaining tracker debt, NOT auto-mergeable and deliberately left alone: the single web-dev dangling-CNAME root cause is still authored as ~5 separate [HYP] blocks carrying divergent class labels (MISCONFIG / OTHER / SUBDOMAIN_TAKEOVER) and materially different titles, so title-similarity collapse correctly refuses to merge them (titles differ well past 0.82 and classes disagree). Merging across differing class labels would destroy taxonomy signal, so this is lead-authoring discipline to fix at the source, not a publisher change. Also 2 blocks carry a malformed class value `'MISCONFIG' CONF: '93'` from inline-attribute splitting — cosmetic, class-normalization debt.
+1161:- 2026-10-05 REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf up to 98) remain publishable
+1179:- 2026-10-06 REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf up to 98) remain publishable
+1216:- 2026-10-07 REJECTED publish_path_clear @ scripts/sync-issues.py: publisher parse_blocks yields 1109 [HYP] → 59 fingerprints; falsified IDOR blocks (146, class:IDOR, conf up to 98) remain publishable
+1323:[NEW] No new assets or reachable surface this cycle; 132-host inventory unchanged.
+1329:[CHANGED] Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+1330:[PRIO] graphql-api.app.cineplex.de,9.0,attack_surface=9 business_value=9 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=9
+1331:[PRIO] graphql-api.app.staging.cineplex.de,8.2,attack_surface=8 business_value=7 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=8
+1332:[PRIO] web-dev.cineplex.de,6.4,attack_surface=5 business_value=6 tech_exposure=4 gate_ease=10 cloud_surface=8 freshness=7
+1333:[HYP] Credentialed CORS reflection with hostile allowlist on production GraphQL
+1342:[HYP] Full GraphQL schema exposed under arbitrary unshadowed paths on prod and staging
+1351:[HYP] Dangling CNAME takeover precondition on web-dev.cineplex.de composing with credentialed CORS
+1364:[NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` then the identical request against `graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)` — confirm both still serve the full 83-field queryType on a brand-new path (parity, no named-path caching).
+1365:[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization; ACAM exact value `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry).
+1366:[LEARN] ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — lookalike-registrable-domain path rejected.
+1367:[LEARN] ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: real GET with `Origin: null` → `ACAO:null` + `ACAC:true` with data.
+1368:[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 403; remediation = path-pattern × 2 envs.
+1369:[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match (precondition passive, claimability provider-side).
+1370:[LEARN] ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser UA returns 200.
+1371:[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+1372:[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+1373:[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit program exclusions / no live surface, unchanged.
+1374:[RISK] cineplex: 72 — report-ready unauthenticated GQL schema exposure (150 mutation sigs) plus a credentialed CORS primitive with hostile allowlist on production; capped by HUMAN_ONLY PII proof on the IDOR family and provider-side claimability for the takeover chain.
+3450:- CHANGED `cycle_artifact` @ self — no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with zero 16:2x entries, so the harness did not run. Recording an h
+3488:- CHANGED `cycle_artifact` @ self — no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with zero 16:2x entries, so the harness did not run. Recording an h
+3516:- NEW `publish_set_contaminated` @ scripts/sync-issues.py + leads/lead-*.md — executing the publisher's own `parse_blocks` offline over the globbed lead files yields 1109 `[HYP]` blocks → 59 asset+class fin
+3517:- NEW `publish_set_remediated` @ leads/lead-bigpickle.md, leads/lead-nemotron3.md — 703 `[HYP]` → `[LEARN]` retags (366 + 337), using the repo's own suppression convention (`parse_blocks` opens only on `^\[
+3554:- CHANGED `publish_path_clear` **REJECTED** @ `scripts/sync-issues.py` + `leads/lead-*.md` — the 2026-09-30 claim "the only live `[HYP]` blocks are the three real ones" is false. Measured with the publisher's o
+3562:- CHANGED `cycle_artifact` @ self M-bM-^@M-^T no new `[HYP]` this cycle and no new live probe: `probe-results.md` still ends at `## 2026-09-30 10:06:19` with ze
+3585:- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+3595:- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+3606:- CHANGED publish_path_clear REJECTED: publisher's own parse_blocks over lead files yields 1109 [HYP] blocks → 59 asset+class fingerprints; falsified IDOR blocks (146, class: IDOR, confidence up to 98) remain p
+3612:- NEW publish_path_clear REJECTED — publisher's parse_blocks yields 1109 [HYP] blocks → 59 fingerprints; falsified IDOR blocks (146, class: IDOR, conf up to 98) remain publishable
+3628:- CHANGED `publish_path_clear` REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
+3660:- CHANGED `publish_path_clear` REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
+3669:- CHANGED `publish_path_clear` REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
+3680:- CHANGED `publish_path_clear` REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
+3689:- CHANGED publish_path_clear REJECTED — publisher's `parse_blocks` over lead files yields 1109 `[HYP]` blocks → 59 fingerprints; falsified IDOR blocks (146, `class: IDOR`, conf up to 98) remain publishable
+3991:- CHANGED Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+4002:You are a senior bug bounty hunter ANALYST for the Cineplex Deutschland GmbH & Co. KG / Cineplex Group program (report channel: bugs.olivermaicher.eu).
+4009:- If a hypothesis needs live confirmation you cannot do passively, emit [NEXT] PROBE with the EXACT read-only request.
+4013:STEP 1 — DELTA: compare inventory+knowledge+last leads against current surface. [NEW]/[CHANGED] one line each, or NO_DELTA.
+4014:STEP 2 — PRIORITIZE: score top new (or existing) assets 0-10 on attack_surface, business_value, tech_exposure (GraphQL/OAuth/JWT/upload/admin/uncommon), gate_ease (10=no auth), cloud_surface, freshness. priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f. Emit [PRIO] asset,score,axis.
+4015:STEP 3 — HYPOTHESES: top 3 assets, max 1 hypothesis each. Strict schema, one field per line under [HYP] title line:
+4016:[HYP] <title>
+4025:Never put fields inline in the [HYP] title.
+4026:STEP 4 — SELF-CRITIQUE: drop confidence<40 or REJECTED-class or no-verify-steps. [PARKED] <title>: <why>. [FINAL] survivors ranked.
+4027:STEP 5 — NEXT ACTION: exactly one [NEXT] <PROBE|SCAN|RAG|HUMAN>: <one concrete action, exact endpoint if PROBE>.
+4028:STEP 6 — LEARNING: [LEARN] REJECTED/ACCEPTED <class> @ <asset>: <reason>.
+4029:STEP 7 — RISK: [RISK] <program>: <0-100> reason.
+[0m
+[0m$ [0msed -n '3995,4035p' analyst-prompt.txt
+- NEW retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- NEW web-dev.cineplex.de automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED publisher_defect @ scripts/sync-issues.py: fingerprint = md5(asset|class) so cosmetic asset-string differences mint separate tracker issues; ensure_label() never returns label object in either branch
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+You are a senior bug bounty hunter ANALYST for the Cineplex Deutschland GmbH & Co. KG / Cineplex Group program (report channel: bugs.olivermaicher.eu).
+Eligible in-scope assets (ONLY these, from scope.yml + inventory/cineplex.md): All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control
+Deep-hunt directives:
+- Prioritize HIGH-VALUE classes: broken auth/session, IDOR/BOLA, SSRF-to-cloud-metadata (169.254.169.254), mass assignment, JWT alg/key confusion, OAuth redirect_uri/state flaws, business logic on money/auth flows, file upload, GraphQL introspection+mutations, subdomain takeover.
+- CHAIN aggressively: open redirect -> OAuth code theft -> ATO; IDOR -> cross-tenant PII dump; SSRF -> metadata -> keys; XSS -> session theft -> ATO.
+- Request-level reasoning: exact METHOD path params headers body, expected vs actual status. No filler.
+- Breadth over the full inventory for anomalies (odd status codes, id/uid/email/user_id params, versioned /api/v1|v2|beta|internal, debug/test flags, swagger/openapi/json), then depth on top-3 anomalies.
+- If a hypothesis needs live confirmation you cannot do passively, emit [NEXT] PROBE with the EXACT read-only request.
+OUT OF SCOPE (REJECTED classes): network DoS, account-lockout DoS, descriptive errors/headers only, robots.txt / known public files, outdated library versions, OPTIONS/TRACE, CSRF on logout or anonymous forms, cookie flags on non-sensitive data, self-XSS, scanner reports without POC, physical access, social engineering of employees/vendors, username enumeration on login/forgot-password, brute-force/rate-limit/lockout policy, SSL/TLS best practice, SSL attacks, clickjacking without demonstrated exploit, mail config (SPF/DKIM/DMARC), known-vulnerable library without program-specific exploit, password/account-recovery policy, autocomplete in fields, public login panels, lack of email verification, session control during email/password change, and any exposure of customer/employee/financial/authentication data during testing (program note). Focus on real logic flaws in scoped assets.
+Your job is NOT to invent vulnerabilities. Run the 8 steps and output ONLY structured blocks.
+
+STEP 1 — DELTA: compare inventory+knowledge+last leads against current surface. [NEW]/[CHANGED] one line each, or NO_DELTA.
+STEP 2 — PRIORITIZE: score top new (or existing) assets 0-10 on attack_surface, business_value, tech_exposure (GraphQL/OAuth/JWT/upload/admin/uncommon), gate_ease (10=no auth), cloud_surface, freshness. priority=0.25a+0.25b+0.15t+0.15g+0.10c+0.10f. Emit [PRIO] asset,score,axis.
+STEP 3 — HYPOTHESES: top 3 assets, max 1 hypothesis each. Strict schema, one field per line under [HYP] title line:
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+Never put fields inline in the [HYP] title.
+STEP 4 — SELF-CRITIQUE: drop confidence<40 or REJECTED-class or no-verify-steps. [PARKED] <title>: <why>. [FINAL] survivors ranked.
+STEP 5 — NEXT ACTION: exactly one [NEXT] <PROBE|SCAN|RAG|HUMAN>: <one concrete action, exact endpoint if PROBE>.
+STEP 6 — LEARNING: [LEARN] REJECTED/ACCEPTED <class> @ <asset>: <reason>.
+STEP 7 — RISK: [RISK] <program>: <0-100> reason.
+RULES: facts vs hypotheses strictly separated; no endpoint-map-only; no REJECTED class; sha256 any secret; all claims trace to context or your own read-only probes; passive-first, <=1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests against live customer data; any scanner output requires manual validation.
+[0m
+[0m$ [0mcurl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' 2>&1 | head -c 800
+{"data":{"__schema":{"queryType":{"fields":[{"name":"test"},{"name":"onboardingContent"},{"name":"appReleases"},{"name":"audioFingerprintingConfig"},{"name":"bonusPrograms"},{"name":"bonusProgram"},{"name":"checkVoucherCodes"},{"name":"getTeenBonusCardPdf"},{"name":"campaign"},{"name":"campaignsByCinemas"},{"name":"estimateCampaignSize"},{"name":"searchCastOrCrewMember"},{"name":"currentCinema"},{"name":"cinema"},{"name":"cinemas"},{"name":"companies"},{"name":"company"},{"name":"errorStatistics"},{"name":"locationForZipCode"},{"name":"movie"},{"name":"movies"},{"name":"allMovies"},{"name":"similarMovies"},{"name":"searchMovie"},{"name":"screenedMovies"},{"name":"incomingForeignMovieIdentifiers"},{"name":"newsItem"},{"name":"notification"},{"name":"screeningAuditorium"},{"name":"externalUr
+[0m
+[0m$ [0msleep 1; curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\nHTTP:%{http_code} SIZE:%{size_download}\n' -o /tmp/staging-parity.json 2>&1; python3 -c "import json;d=json.load(open('/tmp/staging-parity.json'));print('fields:',len(d['data']['__schema']['queryType']['fields']))" 2>&1
+HTTP:200 SIZE:2337
+fields: 83
+[0m
+[0m$ [0msleep 1; curl -sS -m 20 -H 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME' -w '\nHTTP:%{http_code}\n' 2>&1 | head -c 1000
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+HTTP:200
+[0m
+[0m$ [0msleep 1; for t in A AAAA; do echo "== web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io $t =="; curl -sS -m 20 -H 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=$t" 2>&1; echo; done
+== web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io A ==
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+== web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io AAAA ==
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io","type":28}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}]}
+[0m
+[0m$ [0mls -la reports/ reposcan-raw/ | head -40; echo "===valid-bugs==="; cat reports/valid-bugs.md 2>/dev/null | head -60
+reports/:
+total 12424
+drwxr-xr-x  2 runner runner    4096 Oct  9 17:01 .
+drwxr-xr-x 12 runner runner    4096 Oct  9 17:01 ..
+-rw-r--r--  1 runner runner 8231167 Oct  9 17:01 analyst-bigpickle.log
+-rw-r--r--  1 runner runner   46872 Oct  9 17:01 analyst-laguna.log
+-rw-r--r--  1 runner runner   46656 Oct  9 17:01 analyst-ling3.log
+-rw-r--r--  1 runner runner   47088 Oct  9 17:01 analyst-longcat.log
+-rw-r--r--  1 runner runner 3464101 Oct  9 17:01 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    8410 Oct  9 17:01 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner      51 Oct  9 17:01 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner      50 Oct  9 17:01 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner      52 Oct  9 17:01 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner   13022 Oct  9 17:01 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner  815735 Oct  9 17:01 hypotheses.md
+-rw-r--r--  1 runner runner    7807 Oct  9 17:01 valid-bugs.md
+
+reposcan-raw/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct  9 17:01 .
+drwxr-xr-x 12 runner runner 4096 Oct  9 17:01 ..
+-rw-r--r--  1 runner runner   71 Oct  9 17:01 summary.txt
+===valid-bugs===
+# Validated findings (running count 0)
+
+- 2 lead(s) marked VALID at 2026-09-03 19:07:25 UTC
+  - | Q4 Provable | **NO** | Probe `booking.cineplex.de/api/booking/{id}` returned HTTP 403 — endpoint blocked without valid session; AUTH_HELPED required |
+  - **Verdict: HOLD** — Endpoint exists but 403 blocks unauthenticated testing. Needs valid test-account session to verify ownership validation. Reopen only with AUTH_HELPED and two-account proof showing 
+
+- 3 lead(s) marked VALID at 2026-09-04 19:08:54 UTC
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | Borderline — staging sometimes deprioritized, but env confusion is a valid finding class |
+  - | 1 | GraphQL Introspection (prod POST) | **VALID** | 5.3 |
+
+- 2 lead(s) marked VALID at 2026-09-05 01:09:18 UTC
+  - | Q4 Provable | No — requires valid session (AUTH_HELPED); probe confirms 403 |
+  - | Q4 Provable | No — requires valid JWT; program forbids exposing customer PII during testing |
+
+- 1 lead(s) marked VALID at 2026-09-05 05:51:22 UTC
+  - | Q4 Provable | No — requires valid session (AUTH_HELPED) |
+
+- 7 lead(s) marked VALID at 2026-09-06 18:14:31 UTC
+  - | Q7 Reasonable triager accept? | **YES** — GraphQL introspection on production with WAF bypass (GET 403/POST 200) is a valid misconfiguration |
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q4 Provable non-invasively? | **NO** — requires valid JWT from login mutation (AUTH_HELPED) |
+  - | Q4 Provable non-invasively? | **NO** — requires valid session (AUTH_HELPED) |
+  - | GraphQL Introspection (Production) | **VALID** | 7.5 (High) |
+  - | Staging GraphQL WAF Bypass | **VALID** | 6.5 (Medium) |
+
+- 6 lead(s) marked VALID at 2026-09-07 22:16:31 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q2 Reachable? | AUTH_HELPED — requires valid JWT from login mutation |
+  - | Q4 Provable? | NO — requires valid session + querying other users' bookings = PII exposure |
+  - | 1 | Prod GraphQL Introspection | **VALID** | 5.3→8.1 | Report to bugs.olivermaicher.eu |
+  - | 2 | Staging GraphQL Introspection + Env Confusion | **VALID** | 5.3→7.5 | Report to bugs.olivermaicher.eu |
+
+- 2 lead(s) marked VALID at 2026-09-10 11:49:47 UTC
+  - **Verdict: HOLD** — JWKS 404 blocks passive verification. Requires valid credentials for login flow. Reopen when AUTH_HELPED session available.
+  - | Q4 Provable non-invasively? | **NO** — requires valid JWT + querying other users' data = PII exposure, which program explicitly forbids |
+
+- 5 lead(s) marked VALID at 2026-09-11 11:50:08 UTC
+  - **Verdict: VALID**
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager | MAYBE — the proof is structural (typed error confirms resolver processed ID without auth) but no real user record was fetched. A strict triager may demand at least one valid-
+  - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 |
+  - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 |
+
+- 2 lead(s) marked VALID at 2026-09-11 15:53:55 UTC
+  - | 1 | GraphQL introspection (prod) | **VALID** | 5.3 | Ready to report |
+  - | 2 | Staging GraphQL env confusion | **VALID** | 6.5 | Ready to report |
+
+- 4 lead(s) marked VALID at 2026-09-12 01:34:53 UTC
+  - | Q7 Reasonable triager? | **YES** — production GraphQL introspection with WAF bypass exposing booking/payment/admin mutations is a valid misconfiguration |
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | **HOLD** — structural proof is strong (control-complete: 4 omissions vs 4 firing gates), but strict triager will demand at least one valid cross-user PII fetch before accept
+  - | 1 | Production GraphQL Introspection (schema exposure + WAF bypass) | **VALID** | 5.3 | bugs.olivermaicher.eu |
+
+- 11 lead(s) marked VALID at 2026-09-13 12:03:51 UTC
+  - | Q5 Novel/unreported? | YES — prior triages at 2026-09-06/07/10/11/12 all marked VALID; not on any rejected list |
+  - **Verdict: VALID**
+  - | Q7 Reasonable triager? | YES — staging env exposed to public internet with identical prod schema is a valid finding |
+[0m
+[0m$ [0mecho "=== hypotheses-bigpickle.txt ==="; cat reports/hypotheses-bigpickle.txt; echo "=== reposcan summary ==="; cat reposcan-raw/summary.txt
+=== hypotheses-bigpickle.txt ===
+## 2026-10-09 10:14:48 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[NEW] No new assets or reachable surface this cycle; 132-host inventory unchanged.
+[CHANGED] graphql-api.app.{,staging}.cineplex.de — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on BOTH envs (manual curl, browser UA) — confirms path-pattern rule, not a cached named path.
+[CHANGED] graphql-api.app.cineplex.de — CORS preflight re-verified: OPTIONS `/` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attacker.cineplex.de` → 204 reflected+ACAC true; Origin `https://evilcineplex.de` → 500 no CORS (DNS label boundary intact).
+[CHANGED] graphql-api.app.cineplex.de — actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data.
+[CHANGED] web-dev.cineplex.de — dangling CNAME now 18th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN + `azure-dns.com` SOA.
+[CHANGED] leads/reposcan-cineplex.md — reposcan 2026-10-09 09:37 no-op (TARGET_ORG unconfigured); no public-org surface.
+[CHANGED] Prior cycles 2026-10-08 23:09 and 2026-10-09 02:59 emitted empty `[HYP]`/`[PRIO]`/`[NEXT]` blocks — no-op, no new claims to carry.
+[PRIO] graphql-api.app.cineplex.de,9.0,attack_surface=9 business_value=9 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.2,attack_surface=8 business_value=7 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=8
+[PRIO] web-dev.cineplex.de,6.4,attack_surface=5 business_value=6 tech_exposure=4 gate_ease=10 cloud_surface=8 freshness=7
+[HYP] Credentialed CORS reflection with hostile allowlist on production GraphQL
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de/
+confidence: 92
+reasoning: OPTIONS / returns 204 with reflected ACAO, ACAC:true, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE` (POST included), ACAH authorization; allowlist accepts any *.cineplex.de at DNS label boundary incl. sub.attacker.cineplex.de; null origin gets ACAO:null on real responses. All re-verified this cycle via manual curl.
+evidence_needed: Captured preflight + actual-response headers for an attacker-influenced allowed origin and for null origin against production root.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -X OPTIONS https://graphql-api.app.cineplex.de/ -H "Origin: https://sub.attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -D -` then `curl -sS --http2 -A "Mozilla/5.0" -G https://graphql-api.app.cineplex.de/ --data-urlencode 'query={__typename}' -H "Origin: null" -D -`
+impact: Any page on an allowed/lookalike origin (or a null-origin sandboxed frame) can read credentialed GraphQL responses; chained with a claimable *.cineplex.de dangle → trusted-origin session-data theft. High.
+testability: PASSIVE
+[HYP] Full GraphQL schema exposed under arbitrary unshadowed paths on prod and staging
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de/
+confidence: 90
+reasoning: Brand-new path `/zz-catchall-verify-1791540801` returned 200 with real schema data on both prod and staging this cycle; prior introspection enumerated 150 mutation signatures. POST to arbitrary paths is API-GW 403 (`Missing Authentication Token`), so exposure is GET/read-only; root `/` stays the single POST route.
+evidence_needed: Fresh-path GET responses showing schema execution; path-vs-POST differential.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -G "https://graphql-api.app.staging.cineplex.de/zz-$RANDOM" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code}\n'`
+impact: Unauthenticated schema and mutation discovery on both environments; bypasses path-scoped WAF rules. Medium-High (read-only).
+testability: PASSIVE
+[HYP] Dangling CNAME takeover precondition on web-dev.cineplex.de composing with credentialed CORS
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: 18th consecutive cycle of CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io with target A-follow NXDOMAIN (Status 3, azure-dns.com SOA). Claiming the container-apps environment yields a *.cineplex.de origin the production CORS allowlist trusts, chaining to credentialed GraphQL read. Claimability is provider-side and unverified.
+evidence_needed: Azure Container Apps environment name-availability attestation (provider-side); proof that a claimed host passes the prod CORS allowlist.
+verify_steps: Re-query DoH CNAME + A for web-dev.cineplex.de; check container-app environment registration status via unauthenticated read-only portal response.
+impact: Trusted-origin foothold enabling the CORS chain; standalone Low-Medium, High if chained. CVSS ~7.4 chain potential.
+testability: PASSIVE
+[PARKED] Mass assignment via CinemaOperatingCompanyData accessRight* flags: schema-level read/write name mirror verified, but every decisive test is a write mutation on live data — AUTH_HELPED, no passive path.
+[PARKED] Auth-layer privilege primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken): verification requires executing authentication mutations — AUTH_HELPED/HUMAN_ONLY.
+[PARKED] IDOR pre-auth decode chain: retained only as class:ACCESS_CONTROL (fingerprint 4ad65631f720); cross-tenant PII proof is HUMAN_ONLY per program PII rule.
+[FINAL] Survivors ranked: 1) credentialed CORS reflection (prod GraphQL) conf 92; 2) arbitrary-path schema exposure (prod+staging) conf 90; 3) web-dev dangling CNAME + CORS chain conf 85. None are REJECTED-class; all have concrete GET/OPTIONS verify steps.
+[NEXT] PROBE: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-parity-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` then the identical request against `graphql-api.app.staging.cineplex.de/zz-parity-$(date +%s)` — confirm both still serve the full 83-field queryType on a brand-new path (parity, no named-path caching).
+[LEARN] ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization; ACAM exact value `GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS entry).
+[LEARN] ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500) — lookalike-registrable-domain path rejected.
+[LEARN] ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: real GET with `Origin: null` → `ACAO:null` + `ACAC:true` with data.
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 403; remediation = path-pattern × 2 envs.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 18th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match (precondition passive, claimability provider-side).
+[LEARN] ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser UA returns 200.
+[LEARN] REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead.
+[LEARN] REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path.
+[LEARN] REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, booking-dev_origin_bypass: explicit program exclusions / no live surface, unchanged.
+[RISK] cineplex: 72 — report-ready unauthenticated GQL schema exposure (150 mutation sigs) plus a credentialed CORS primitive with hostile allowlist on production; capped by HUMAN_ONLY PII proof on the IDOR family and provider-side claimability for the takeover chain.
+=== reposcan summary ===
+TARGET_ORG not configured for cineplex; skipping public-org deep scan.
+[0m
+[0m$ [0mgrep -n -i -E "app\.cineplex|localhost:3000|localStorage|cookie|session" inventory/cineplex.md | head -40; echo "=== recon-notes ==="; ls -la recon-notes/
+8:app.cineplex.de
+38:graphql-api.app.cineplex.de
+199:- NEW High-value API targets identified: `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `booking.cineplex.de`, `buchung.cineple
+202:- NEW Customer-facing portals: `shop.cineplex.de`, `webshop.cineplex.de`, `tickets.cineplex.de`, `booking.cineplex.de`, `portal.cineplex.de`, `mobile.cineplex.de`, `app.cineplex.de`
+208:- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+213:- NEW No new inventory hosts or passive recon data since 2026-09-02; last probe (GraphQL introspection on graphql-api.app.cineplex.de) was queued but results not yet in context
+216:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+220:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+222:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+225:- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+227:- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+228:- NEW GraphQL introspection CONFIRMED ENABLED on production `graphql-api.app.cineplex.de` — full schema returned (200 OK) with 200+ types, 100+ Query fields, 100+ Mutation fields including `login`, `startBo
+229:- CHANGED `graphql-api.app.cineplex.de` root returns 403 but GraphQL POST with introspection query returns 200 with full schema — WAF bypass via GraphQL endpoint
+234:- CHANGED probe-results.md 2026-09-03 23:48:07 UTC — `graphql-api.app.cineplex.de/` GET confirmed 403 (WAF-gated at root); prior introspection CONFIRMED entry in KB remains valid (POST 200, not GET)
+236:- NEW `booking.cineplex.de/api/booking/{id` confirmed 403 in probe-results — session-gated, AUTH_HELPED required
+237:- NEW GraphQL introspection CONFIRMED on production `graphql-api.app.cineplex.de` — full schema returned (200 OK) with 200+ types, 100+ Query fields (including `userById`, `searchUsers`, `adminUsers`, `curr
+239:- NEW `graphql-api.app.cineplex.de` root returns 403 but GraphQL POST with introspection query returns 200 — WAF bypass via GraphQL endpoint
+241:- CHANGED `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de` all return HTTP 403 at root → edge WAF blocks "api" surface; pivot to authless 200 surface (relay host) + GraphQ
+245:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+246:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
+255:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+256:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
+265:- CHANGED probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.cineplex.de/` GET still returns 403 (WAF-gated)
+268:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200 OK, full schema) while root GET returns 403 — WAF bypass confirmed
+270:- NEW `booking.cineplex.de/api/booking/{id}` returns 403 — session-gated, requires AUTH_HELPED for IDOR testing
+279:- CHANGED probe-results.md 2026-09-04 12:20:49 UTC — `graphql-api.app.cineplex.de/` GET still returns 403 (WAF-gated)
+285:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
+287:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+293:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
+295:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+301:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
+303:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+309:- CHANGED `graphql-api.app.cineplex.de` GraphQL introspection CONFIRMED via POST (200, full schema) while root GET stays 403 — WAF bypass stable
+311:- CHANGED `booking.cineplex.de/api/booking/{id}` stays 403 — session-gated, AUTH_HELPED required
+316:- NEW `api.cineplex.de/graphql` — HTTP 403 — GraphQL endpoint exists on api.cineplex.de but WAF-gated (same pattern as graphql-api.app.cineplex.de)
+319:- CHANGED `graphql-api.app.cineplex.de/` — persistent 403 at root, GraphQL POST introspection CONFIRMED 200 with full schema (WAF bypass stable)
+322:- CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403 — session-gated, AUTH_HELPED required
+326:- NEW `api.cineplex.de/graphql` — HTTP 403 — GraphQL endpoint exists on api.cineplex.de but WAF-gated (same pattern as graphql-api.app.cineplex.de)
+329:- CHANGED `graphql-api.app.cineplex.de/` — persistent 403 at root, GraphQL POST introspection CONFIRMED 200 with full schema (WAF bypass stable)
+332:- CHANGED `booking.cineplex.de/api/booking/{id}` — persistent 403 — session-gated, AUTH_HELPED required
+=== recon-notes ===
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct  9 17:00 .
+drwxr-xr-x 12 runner runner 4096 Oct  9 17:01 ..
+-rw-r--r--  1 runner runner  820 Oct  9 17:00 DEDICATED-DEEP.md
+[0m
+[0m$ [0mcurl -sS --http2 -m 20 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://app.cineplex.de/" -D /tmp/apphdr.txt -o /tmp/app.html -w 'HTTP:%{http_code} SIZE:%{size_download} CT:%{content_type}\n' 2>&1; echo "--- headers ---"; head -30 /tmp/apphdr.txt
+HTTP:403 SIZE:115418 CT:text/html; charset=UTF-8
+--- headers ---
+HTTP/2 403 
+date: Fri, 09 Oct 2026 17:03:45 GMT
+content-type: text/html; charset=UTF-8
+content-length: 115418
+accept-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cf-mitigated: challenge
+x-frame-options: SAMEORIGIN
+server: cloudflare
+critical-ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+cross-origin-embedder-policy: require-corp
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+permissions-policy: accelerometer=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=(),xr-spatial-tracking=*
+referrer-policy: same-origin
+server-timing: chlray;desc="a47ef5e3a98a9b94"
+x-content-type-options: nosniff
+cf-ray: a47ef5e3a98a9b94-BNA
+alt-svc: h3=":443"; ma=86400
+[0m
+[0m$ [0mcat recon-notes/DEDICATED-DEEP.md; echo "=== inventory head ==="; sed -n '1,60p' inventory/cineplex.md
+# Dedicated deep surface (wildcard-filtered) 2026-09-03
+
+**Target:** `cineplex`
+**Root zones:** `cineplex.de`
+
+## Wildcard analysis
+
+- Total resolving hostnames in zone: 158
+- After shared/wildcard IP filtering: **0 genuinely dedicated hosts**
+- Reason: all resolving hostnames use shared/CDN/wildcard IP signatures
+
+## Honest conclusion
+
+This target's subdomain space is wildcard-dominated. No genuinely dedicated
+subdomain surface was recovered from passive brute + subfinder enumeration.
+The surface either (a) uses wildcard DNS records, (b) all CNAME records
+point to shared CDN/Cloudflare/CloudFront/AWS IPs, or (c) has no
+subdomain program at all. This is the honest exhaustive result.
+
+---
+_Honest framing: passive DNS enumeration + shared-IP wildcard filtering. No finding claimed. No active testing performed._
+=== inventory head ===
+# Cineplex Deutschland GmbH & Co. KG / Cineplex Group inventory (discovery seed 2026-09-02)
+# NOTE: hosts below are discovery candidates from passive DNS/CT; confirm in-scope vs program scope before active testing.
+account.cineplex.de
+admin.cineplex.de
+aichach.cineplex.de
+analytics.systems.cineplex.de
+api.cineplex.de
+app.cineplex.de
+app.staging.cineplex.de
+auth.cineplex.de
+autodiscover.cineplex.de
+bayreuth.cineplex.de
+billing.cineplex.de
+blog.cineplex.de
+bms-dev.cineplex.de
+booking-dev.cineplex.de
+booking-ol-prod.cineplex.de
+booking.cineplex.de
+buchung-dev.cineplex.de
+buchung.cineplex.de
+cdn.cineplex.de
+ci.cineplex.de
+cineplex-muenster.cineplex.de
+cineplex.de
+cloud.systems.cineplex.de
+cms.cineplex.de
+couchkino.cineplex.de
+cpdly-hz-apphost.systems.cineplex.de
+dashboard.cineplex.de
+data-9fc27eb430.cineplex.de
+dev.cineplex.de
+dewww.cineplex.de
+eisenach.cineplex.de
+es-hz-apphost.systems.cineplex.de
+frankfurt.cineplex.de
+friedrichshafen.cineplex.de
+ftbnieuwdorp.cineplex.de
+graphql-api.app.cineplex.de
+graphql-api.app.couat.cineplex.de
+graphql-api.app.staging.cineplex.de
+hz-apphost.systems.cineplex.de
+info.cineplex.de
+info.desireinfotech.bo.cineplex.de
+jenkins.cineplex.de
+jira.systems.cineplex.de
+koenigsbrunn.cineplex.de
+kulmbach.cineplex.de
+leipzig.cineplex.de
+live.cineplex.de
+login.cineplex.de
+m.cineplex.de
+mail.cineplex.de
+mail.tothemovies.cineplex.de
+mail1.cineplex.de
+mail2.cineplex.de
+mailing.cineplex.de
+mailout.cineplex.de
+mannheim.cineplex.de
+marburg.cineplex.de
+meitingen.cineplex.de
+[0m
+[0m$ [0msleep 1; curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/" --data-urlencode 'query={__typename}' -H "Origin: https://app.cineplex.de" -D - -o /dev/null 2>&1 | grep -i -E "^HTTP|access-control|vary|set-cookie|content-type|cache|cf-"
+HTTP/2 200 
+content-type: application/json; charset=utf-8
+access-control-allow-origin: https://app.cineplex.de
+vary: Origin
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+cf-ray: a47ef6489abef444-MEM
+[0m
+[0m$ [0mdate -u '+%Y-%m-%d %H:%M:%S UTC'
+2026-10-09 17:04:23 UTC
+[0m
+## 2026-10-09 17:04:23 UTC [target] (model bigpickle)
+[NEW] app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` (Cloudflare managed challenge) with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage are not passively readable.
+[CHANGED] graphql-api.app.{,staging}.cineplex.de — catch-all re-confirmed on a brand-new path `/zz-parity-<epoch>`: GET `query={__schema{queryType{fields{name}}}}` → 200 with the full 83-field queryType on BOTH envs (manual curl, browser UA) — path-pattern rule holds, no named-path caching.
+[CHANGED] graphql-api.app.cineplex.de — full response headers for allowed origin `https://app.cineplex.de`: `ACAO` reflected, `ACAC: true`, `Vary: Origin` present, `cf-cache-status: DYNAMIC`, no `Set-Cookie` unauthenticated → origin-aware cache key rules out cross-origin cache-poisoning escalation.
+[CHANGED] web-dev.cineplex.de — dangling CNAME now 19th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow and AAAA-follow both Status 3 NXDOMAIN with `switzerlandnorth.azurecontainerapps.io` SOA (azure-dns.com).
+[CHANGED] leads/reposcan-cineplex.md — reposcan 2026-10-09 16:32 still no-op (`TARGET_ORG` unconfigured); no public-org surface.
+[CHANGED] Cycle staleness: the same top-3 hypotheses have now been re-emitted across multiple cycles with zero movement; only the "verification" text changes. This is stasis, not progress — recorded as a critique, not a finding.
+[PRIO] graphql-api.app.cineplex.de,9.0,attack_surface=9 business_value=9 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,8.2,attack_surface=8 business_value=7 tech_exposure=10 gate_ease=10 cloud_surface=6 freshness=8
+[PRIO] web-dev.cineplex.de,6.4,attack_surface=5 business_value=6 tech_exposure=4 gate_ease=10 cloud_surface=8 freshness=7
+[HYP] Credentialed CORS reflection with hostile allowlist on production GraphQL, impact gated by client auth model
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de/
+confidence: 72
+reasoning: OPTIONS / → 204, reflected ACAO, ACAC:true, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAH `content-type,authorization`; allowlist accepts any *.cineplex.de at DNS label boundary and reflects `Origin: null`; re-verified this cycle with `Vary: Origin` and no `Set-Cookie` on an unauthenticated GET. Open fact: login returns jwt/refreshToken and ACAH advertises `authorization`, which is the signature of bearer-token auth — a token in localStorage is NOT auto-sent cross-origin, so reflection alone may not yield data theft; impact depends on whether the prod client also uses a cookie session.
+evidence_needed: Prod client token-transport determination (session cookie vs Authorization bearer from localStorage) and whether graphql-api accepts cookie-based auth.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -X OPTIONS https://graphql-api.app.cineplex.de/ -H "Origin: https://sub.attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -D -` ; then in an authenticated browser, load app.cineplex.de (CF-challenged) and check `document.cookie` vs localStorage for the GraphQL token.
+impact: If client auth is cookie-based → any allowed/lookalike origin reads credentialed GraphQL responses (PII/session) = High; if bearer-in-localStorage → reflects a real misconfig but lower direct impact (Medium). Chained with a claimable *.cineplex.de dangle raises either case.
+testability: HUMAN_ONLY
+[HYP] Full GraphQL schema exposed under arbitrary unshadowed paths on prod and staging
+class: MISCONFIG
+asset: graphql-api.app.staging.cineplex.de/
+confidence: 90
+reasoning: Fresh path `/zz-parity-<epoch>` returned 200 with real schema data on both prod and staging this cycle; introspection previously enumerated 150 mutation signatures. POST to arbitrary paths is API-GW 403 (`Missing Authentication Token`), so exposure is GET/read-only; root `/` remains the sole POST route.
+evidence_needed: Fresh-path GET responses showing schema execution; path-vs-POST differential.
+verify_steps: `curl -sS --http2 -A "Mozilla/5.0" -G "https://graphql-api.app.staging.cineplex.de/zz-$RANDOM" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code}\n'`
+impact: Unauthenticated schema and mutation discovery on both environments; bypasses path-scoped WAF rules. Medium-High (read-only).
+testability: PASSIVE
+[HYP] Dangling CNAME takeover precondition on web-dev.cineplex.de composing with credentialed CORS
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: 19th consecutive cycle of CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` with target A/AAAA NXDOMAIN (Status 3, azure-dns SOA). Claiming the container-apps environment yields a *.cineplex.de origin the production CORS allowlist trusts, chaining to credentialed GraphQL read. Claimability is provider-side and unverified.
+evidence_needed: Azure Container Apps environment name-availability attestation; proof that a claimed host passes the prod CORS allowlist.
+verify_steps: Re-query DoH CNAME + A/AAAA for web-dev.cineplex.de; check container-app environment registration status via unauthenticated read-only portal response.
+impact: Trusted-origin foothold enabling the CORS chain; standalone Low-Medium, High if chained.
+testability: PASSIVE
+[PARKED] Mass assignment via CinemaOperatingCompanyData accessRight* flags: schema-level read/write name mirror verified, but every decisive test is a write mutation on live data — AUTH_HELPED, no passive path.
+[PARKED] Auth-layer privilege primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken): verification requires executing authentication mutations — AUTH_HELPED/HUMAN_ONLY.
+[PARKED] IDOR pre-auth decode chain: retained only as class:ACCESS_CONTROL (fingerprint 4ad65631f720); cross-tenant PII proof is HUMAN_ONLY per program PII rule.
+[FINAL] Survivors ranked: 1) arbitrary-path schema exposure (prod+staging) conf 90 — fully passive, unaffected by the auth-model gate; 2) credentialed CORS reflection (prod GraphQL) conf 72 — real misconfig, impact now explicitly gated on cookie-vs-bearer; 3) web-dev dangling CNAME + CORS chain conf 85 — strong precondition, provider-side claimability unverified. None are REJECTED-class; all have concrete GET/OPTIONS verify steps.
+[NEXT] HUMAN: In an authenticated browser session on production, load app.cineplex.de (Cloudflare-challenged) and determine how the GraphQL auth token is transported — `Set-Cookie`/session cookie vs `Authorization: Bearer` read from localStorage — and whether graphql-api.app.cineplex.de accepts cookie auth; this resolves the CORS hypothesis' exploitability gate that no passive probe can reach.
+[LEARN] ACCEPTED cors_origin_cache_safety @ graphql-api.app.cineplex.de: `Vary: Origin` present on reflected-ACAO responses → origin-aware cache key; reflected CORS does not enable cross-origin cache poisoning.
+[LEARN] ACCEPTED app_cineplex_cf_challenge @ app.cineplex.de: 403 `cf-mitigated: challenge` + COOP/COEP/CORP isolation; SPA bundle and token storage are not passively readable → CORS-chain exploitability is HUMAN_ONLY.
+[LEARN] ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: re-confirmed on a brand-new path this cycle, both envs 200 + 83 fields; POST to non-root paths API-GW 403.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th consecutive NXDOMAIN on A + AAAA against the Azure container-apps target; sole dangle.
+[LEARN] REJECTED OOS_unchanged @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, api_cineplex_get_bypass, relay_metrics — explicit program exclusions / no live surface.
+[RISK] cineplex: 68 — unauthenticated GQL schema exposure on prod+staging remains report-ready, but the credentialed-CORS primitive's direct impact is now gated on the prod client auth model (bearer-in-localStorage would substantially reduce it), and the takeover chain remains provider-side unverified; no new assets or surface this cycle.
