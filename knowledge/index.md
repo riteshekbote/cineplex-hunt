@@ -1279,3 +1279,12 @@
 - 2026-10-08 ACCEPTED cors_label_boundary_enforcement @ graphql-api.app.cineplex.de — CORS allowlist enforces DNS label boundary (not raw endsWith): sub.attacker.cineplex.de 204/ACAC:true; evilcineplex.de/notcineplex.de/a.evilcineplex.de 500. ACAO:null+ACAC:true on actual responses.
 - 2026-10-08 REJECTED automated_log_as_counter_evidence @ probe-results.md — silence/403/400 are harness artifacts; zero POST probes do not imply absence. All live conclusions drawn from manual balanced-curl reads only.
 - 2026-10-08 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `notcineplex.de` 500) — lookalike-registrable-domain path rejected
+- 2026-10-09 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema under any unshadowed path — remediation scope is path-pattern × 2 envs
+- 2026-10-09 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging.}cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- 2026-10-09 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `notcineplex.de` 500) — lookalike-registrable-domain path rejected
+- 2026-10-09 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 17th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side)
+- 2026-10-09 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- 2026-10-09 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+- 2026-10-09 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-09 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-09 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface

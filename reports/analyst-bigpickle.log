@@ -93538,3 +93538,221 @@ All probes confirmed live this cycle. Blocks below.
 
 [RISK]
 72 — high-value CORS/introspection findings are live and re-verified; the block on escalating to confirmed data-theft POC remains the HUMAN_ONLY authenticated-session requirement, and no new low-effort path to end-to-end proof surfaced this cycle.
+===== ANALYST bigpickle 2026-10-09 02:59:38 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mset -x
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+TS=$(date +%s)
+echo "=== catch-all fresh path (prod) ==="
+curl -sS --http2 -m 20 -A "$UA" -o /tmp/ca.txt -w 'HTTP %{http_code} size %{size_download}\n' \
+  -G "https://graphql-api.app.cineplex.de/zz-cpx-verify-$TS" --data-urlencode 'query={__schema{queryType{fields{name}}}}'
+echo "--- body head ---"; head -c 300 /tmp/ca.txt; echo
+sleep 1
+echo "=== CORS negative control (notcineplex.de) ==="
+curl -sS --http2 -m 20 -A "$UA" -o /dev/null -D - -X OPTIONS "https://graphql-api.app.cineplex.de/" \
+  -H "Origin: https://notcineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization" 2>/dev/null | grep -i -E 'HTTP/|access-control'
+sleep 1
+echo "=== CORS positive (sub.attacker.cineplex.de) ==="
+curl -sS --http2 -m 20 -A "$UA" -o /dev/null -D - -X OPTIONS "https://graphql-api.app.cineplex.de/" \
+  -H "Origin: https://sub.attacker.cineplex.de" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization" 2>/dev/null | grep -i -E 'HTTP/|access-control'
+sleep 1
+echo "=== DoH web-dev ==="
+curl -sS -m 20 -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME'
+echo
+curl -sS -m 20 -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A'
+echo
++ UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+++ date +%s
+=== catch-all fresh path (prod) ===
++ TS=1791514678
++ echo '=== catch-all fresh path (prod) ==='
++ curl -sS --http2 -m 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' -o /tmp/ca.txt -w 'HTTP %{http_code} size %{size_download}\n' -G https://graphql-api.app.cineplex.de/zz-cpx-verify-1791514678 --data-urlencode 'query={__schema{queryType{fields{name}}}}'
+HTTP 200 size 2337
++ echo '--- body head ---'
++ head -c 300 /tmp/ca.txt
++ echo
++ sleep 1
+--- body head ---
+{"data":{"__schema":{"queryType":{"fields":[{"name":"test"},{"name":"onboardingContent"},{"name":"appReleases"},{"name":"audioFingerprintingConfig"},{"name":"bonusPrograms"},{"name":"bonusProgram"},{"name":"checkVoucherCodes"},{"name":"getTeenBonusCardPdf"},{"name":"campaign"},{"name":"campaignsByCi
++ echo '=== CORS negative control (notcineplex.de) ==='
+=== CORS negative control (notcineplex.de) ===
++ curl -sS --http2 -m 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' -o /dev/null -D - -X OPTIONS https://graphql-api.app.cineplex.de/ -H 'Origin: https://notcineplex.de' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization'
++ grep -i -E 'HTTP/|access-control'
+HTTP/2 500 
++ sleep 1
++ echo '=== CORS positive (sub.attacker.cineplex.de) ==='
+=== CORS positive (sub.attacker.cineplex.de) ===
++ curl -sS --http2 -m 20 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' -o /dev/null -D - -X OPTIONS https://graphql-api.app.cineplex.de/ -H 'Origin: https://sub.attacker.cineplex.de' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization'
++ grep -i -E 'HTTP/|access-control'
+HTTP/2 204 
+access-control-allow-origin: https://sub.attacker.cineplex.de
+access-control-allow-headers: authorization
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
++ sleep 1
++ echo '=== DoH web-dev ==='
++ curl -sS -m 20 -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME'
+=== DoH web-dev ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de.","type":5}],"Answer":[{"name":"web-dev.cineplex.de.","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Comment":"Response from 172.64.32.171."}+ echo
++ curl -sS -m 20 -H 'Accept: application/dns-json' 'https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A'
+
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io.","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}],"Comment":"Response from 150.171.16.35."}+ echo
+[0m
+## Objective
+- Continue a read-only bug-bounty hunt against Cineplex Deutschland / Cineplex Group (report channel bugs.olivermaicher.eu); produce structured `[PRIO]`/`[HYP]`/`[NEXT]`/`[LEARN]`/`[RISK]` blocks that another agent can act on.
+- Current phase: POC; current target string: `api`.
+
+## Important Details
+- **Scope**: only company-owned Cineplex Germany infrastructure/domains (132-host baseline in `inventory/cineplex.md`).
+- **Prioritized classes**: broken auth/session, IDOR/BOLA, SSRF→169.254.169.254, mass assignment, JWT alg/key confusion, OAuth redirect_uri/state, business logic on money/auth flows, file upload, GraphQL introspection+mutations, subdomain takeover.
+- **Rejected/out-of-scope (never report)**: DoS/account-lockout, descriptive errors/headers, robots.txt/known files, outdated libs, OPTIONS/TRACE, CSRF logout/anonymous forms, self-XSS, username enumeration on login/forgot-password, SSL/TLS best practice & SSL attacks, SPF/DKIM/DMARC, public login panels, clickjacking w/o exploit, exposure of customer/employee/financial/auth data during testing.
+- **Rules**: facts vs hypotheses strictly separated; passive-first; ≤1 rps; live probes GET/HEAD/OPTIONS only; no auth-bypass or mutating tests against live customer data; sha256 any secret; scanner output needs manual validation.
+- **Harness is unreliable by design**: `probe-results.md` (~1330+ lines) has ZERO POST GraphQL probes ever; automated 403s = urllib UA bot-gate; 400s = literal trailing backtick in URLs + brace truncation. Conclusion: automated log silence carries no information — all live evidence must come from manual balanced curl.
+- **DoH requires** `Accept: application/dns-json` (else 415).
+- **KB correction to preserve**: 2026-09-12→09-19 claim "full mutation arg enumeration (35KB) confirms no injection vectors, CVSS 5.3" is **factually incorrect** (name-only read; 8 URL/credential-shaped args exist) — CVSS re-score 5.3→7.5 needed.
+- **Self-error rule**: a type is not read until its field list is in hand (3 instances of same depth error recorded).
+- **HUMAN_ONLY blockers**: cross-tenant IDOR PII proof (needs consent + 2 accounts); staging `testing_getConfirmationCode` POST extraction.
+- **Publish path**: `scripts/sync-issues.py` `parse_blocks` opens only on `^\[HYP\]`, globs `leads/lead-*.md`, fingerprint = md5(asset|class); `[LEARN]` blocks are invisible to publisher; KB is `knowledge/index.md` (append-only, canonical status section added 2026-09-30).
+
+## Work State
+### Completed
+- **GraphQL introspection CONFIRMED** unauth GET on `graphql-api.app.cineplex.de` + `graphql-api.app.staging.cineplex.de`: prod 83 queries / 140 mutations, 385 types, 44 INPUT_OBJECTs; identical name sets both envs (zero env partitioning); live GET execution via `?query=%7B__typename%7D` → 200/32B.
+- **Arbitrary-path catch-all CONFIRMED**: any unshadowed path serves schema (`/totally/unknown/path/xyz?query={__typename}` → 200); `/` is POST-capable + CORS-preflight-capable; `/graphql`, `/api/graphql`, `/gql` are GET-only mirrors (API-GW 403 `MissingAuthenticationTokenException`); remediation = path-pattern × 2 envs.
+- **CORS credentialed primitive CONFIRMED** (confidence 92): `OPTIONS /` → 204, ACAO reflected, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`; hostile allowlist entries `http://localhost:3000` and `https://app.staging.cineplex.de` on production; `Origin: null` reflected as `ACAO:null`+`ACAC:true`; DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de`/`notcineplex.de` 500); rejection = 500 HTML `Error: Not allowed by CORS` at `/var/task/graphql.js:47459:17`.
+- **Dangling CNAME CONFIRMED** `web-dev.cineplex.de` → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, target NXDOMAIN (DoH Status 3 + Azure SOA `ns1-35.azure-dns.com`), 17th+ consecutive cycle, sole dangle in 14-host sweep; PASSIVE report-ready; chains with CORS suffix match.
+- **Decoder oracle retained** as `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`): 15 pre-auth id-decode resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`; `userById(id:"0")` → 200 `INVALID_ID` 744B w/ `decodePublicId` frame, no Authorization.
+- **IDOR chaining documented**: `ticket(id)→order→user`, `order(id)→user` reach same 51-field `User` without `userById`; `userByQr(qrCode)` = physical-ticket→profile path.
+- **Confirmed by live probe**: `getOnlineTicketingBooking` root-gated (`FORBIDDEN "You must be the root user"` byte-identical with/without args, both envs) — SSRF lead closed.
+- **Mass-assignment read/write mirror**: `CinemaOperatingCompanyData.accessRight{Dashboard,FilmStatistics,BonusProgram,Campaigning}` = identical names server derives onto `UserPrivileges`; `updateUser(adminCinemaOperatingCompanyIds)` mirrors admin membership; parity across envs. `UserPrivileges` is OBJECT w/ `inputFields:null` (not mass-assignable itself).
+- **Rejections closed**: `api.cineplex.de` GET-bypass (strict 403 all methods/encodings, 20+ cycles); `relay_metrics`/`relay_broker_saturation` @ `data-9fc27eb430.cineplex.de` (IOMB broker counters, descriptive-only); `staging_testing_oracle` as standalone (method-mismatch = descriptive, OOS); `booking-dev_origin_bypass` (nginx default backend, fake Acme-Co cert); `nextcloud_unauth_inventory`; `matomo`/`umami` anonymous API; `wildcard.systems` dangle replication; TLS-dead hosts.
+- **TLS-dead / unreachable**: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`, `app.staging` (SSLv3 / 525).
+- **Direct origin reachable**: `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` at 194.77.169.121 (no CF), SPAs 200; `/gateway/*` routes 503 "Wartungsarbeiten" — exploitability backend-gated, oscillation continues, not dead.
+- **Two report-ready primitives** on `graphql-api.app.cineplex.de`: CORS credentialed reflection (CVSS ~6.8) + arbitrary-path full-schema exposure (CVSS 7.5).
+
+### Active
+- State at 2026-10-08 23:09 UTC; target string `api`; POC phase.
+- Ranked survivors: graphql-api.app.cineplex.de (9.5), graphql-api.app.staging.cineplex.de (9.0), web-dev.cineplex.de (7.0).
+- [PARKED]: mass-assignment write-mutation cluster (`CinemaOperatingCompanyData.accessRight*`, `updateUser(adminCinemaOperatingCompanyIds)`, `increaseUserTestingStatus`) — no passive verify path; auth-layer privilege primitives (`login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)`, deprecated `updatePassword` with both credential args nullable) — AUTH_HELPED/HUMAN_ONLY.
+- Other parked mutation surfaces: `startWebBooking(linkedUsersIds,freeTicketSpend)`, `logUserScreeningInterests`, `sendNotifications(authToken,userIds)`, `deleteCineplexUser(id,apiKey)`, `storeSDKLogin(userId)`, `storeConsent(cookieId)`, `logItems`, `editUserGroupFilter`, `buyAndRedeemVoucher`, `capturePaypalOrderAndCreateTickets`.
+- `profil_preference_surface` @ `profil.cineplex.de` PARKED confidence 45 (no passive reflector, low business value).
+
+### Blocked
+- Automated probe log is void — cannot be used for any positive or negative conclusion.
+- PII-impact proof on IDOR family = HUMAN_ONLY (needs 2 accounts + consent).
+- Staging oracle POST extraction = HUMAN_ONLY.
+- `web-dev.cineplex.de` takeover chain requires provider-side Azure Container Apps claimability attestation (outstanding).
+- Doc/parser debt: ~5 `[HYP]` blocks for web-dev dangle carry divergent classes (MISCONFIG/OTHER/SUBDOMAIN_TAKEOVER) — title-similarity collapse refuses to merge; fix at lead-authoring source.
+
+## Next Move
+1. [NEXT] PROBE: confirm catch-all still serves full 83-field queryType on a brand-new path this cycle:
+   `curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date +%s)" --data-urlencode 'query={__schema{queryType{fields{name}}}}' -w '\n%{http_code} %{size_download}\n'` — then staging twin request immediately after. Must use balanced URL-encoded GET, browser UA, ≤1 rps.
+2. Run CORS negative-control + actual-response pair (no mutations): confirm `ACAO`/`ACAC:true` on real GET for `null`/`localhost:3000`/`app.staging.cineplex.de` vs 500 for `evilcineplex.de`, and `OPTIONS /` preflight 204 with `ACAM`/`ACAH`.
+
+## Relevant Files
+- `inventory/cineplex.md`: 132-host baseline; live-HTTP hosts; CNAME signals.
+- `knowledge/index.md`: append-only KB + `## CANONICAL STATUS (2026-09-30)` LIVE/DEAD/SURVIVING/METHOD RULES section.
+- `leads/lead-*.md` (e.g. `leads/lead-bigpickle.md`, `leads/lead_nemotron3.txt`, `leads/lead-nemotron3.md`): `[HYP]`/`[LEARN]` blocks consumed by publisher.
+- `scripts/sync-issues.py`: `parse_blocks` (matches `^\[HYP\]` only), `fingerprint()` = md5(asset|class), `ensure_label()` bug (~line 153), near-duplicate collapse.
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement extractor, 14 offline tests.
+- `.github/workflows/hunt.yml:207-225`: source of harness defects (URL regex omits backtick, urllib UA `(passive verifier)`, `urls[:12]` truncation, brace truncation).
+- `probe-results.md`: automated probe log — VOID for conclusions; zero POST GraphQL probes.
+- `reports/analyst-nemotron3.log`: other-agent output — must NOT be adopted as evidence.
+- `reports/run-2026-09-26-01-56.md` (or similar): `UnknownError` triage fault.
+- `reports/`: analyst/triage output dir referenced for run artifacts.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Fresh evidence confirms three live primitives. Let me solidify the CORS→dangle chain with a few more safe preflights.
+[0m$ [0mUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+TS=$(date +%s)
+probe() {
+  echo "=== Origin: $1 ==="
+  curl -sS --http2 -m 20 -A "$UA" -o /dev/null -D - -X OPTIONS "https://graphql-api.app.cineplex.de/" \
+    -H "Origin: $1" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization" 2>/dev/null \
+    | grep -i -E '^HTTP/|^access-control-allow-origin|^access-control-allow-credentials'
+  sleep 1
+}
+probe "https://web-dev.cineplex.de"
+probe "https://zzz-random-$TS.cineplex.de"
+probe "http://localhost:3000"
+probe "null"
+probe "https://app.staging.cineplex.de"
+=== Origin: https://web-dev.cineplex.de ===
+HTTP/2 204 
+access-control-allow-origin: https://web-dev.cineplex.de
+access-control-allow-credentials: true
+=== Origin: https://zzz-random-1791514731.cineplex.de ===
+HTTP/2 204 
+access-control-allow-origin: https://zzz-random-1791514731.cineplex.de
+access-control-allow-credentials: true
+=== Origin: http://localhost:3000 ===
+HTTP/2 204 
+access-control-allow-origin: http://localhost:3000
+access-control-allow-credentials: true
+=== Origin: null ===
+HTTP/2 204 
+access-control-allow-origin: null
+access-control-allow-credentials: true
+=== Origin: https://app.staging.cineplex.de ===
+HTTP/2 204 
+access-control-allow-origin: https://app.staging.cineplex.de
+access-control-allow-credentials: true
+[0m
+[0m$ [0mUA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+TS=$(date +%s)
+echo "=== ACTUAL GET with Origin web-dev, credentialed ==="
+curl -sS --http2 -m 20 -A "$UA" -D - -o /tmp/body.txt \
+  -H "Origin: https://web-dev.cineplex.de" \
+  -G "https://graphql-api.app.cineplex.de/zz-verify-$TS" --data-urlencode 'query={__typename}' 2>/dev/null \
+  | grep -i -E '^HTTP/|^access-control-allow-origin|^access-control-allow-credentials|^vary'
+echo "--- body ---"; head -c 200 /tmp/body.txt; echo
+=== ACTUAL GET with Origin web-dev, credentialed ===
+HTTP/2 200 
+access-control-allow-origin: https://web-dev.cineplex.de
+vary: Origin
+access-control-allow-credentials: true
+--- body ---
+{"data":{"__typename":"Query"}}
+[0m
+[0m$ [0mprintf '%s' 'graphql-api.app.cineplex.de|CORS_WILDCARD_CREDENTIALED' | md5sum
+printf '%s' 'web-dev.cineplex.de|SUBDOMAIN_TAKEOVER_CHAIN' | md5sum
+printf '%s' 'graphql-api.app.cineplex.de|GRAPHQL_CATCHALL_SCHEMA_EXPOSURE' | md5sum
+c3af1bb8bde7a9a72fd5e0fcecb33f39  -
+bc5ca90b1d3432b11c76f0ad4ccdfd12  -
+fd6160c029539f878a8622a16bb43091  -
+[0m
+Fresh same-cycle probes run (GET/OPTIONS only, ≤1 rps). Delta below.
+
+## [PRIO]
+1. `graphql-api.app.cineplex.de` — 9.5 (CORS wildcard-credentialed **+** catch-all schema, both re-confirmed live this cycle)
+2. `graphql-api.app.staging.cineplex.de` — 9.0 (twin)
+3. `web-dev.cineplex.de` — 8.0 (upgraded from 7.0: now a *trusted origin* feeding the CORS chain, not just a dangle)
+
+## [HYP]
+**asset:** graphql-api.app.cineplex.de  **class:** CORS_WILDCARD_CREDENTIALED  **fingerprint:** c3af1bb8bde7a9a72fd5e0fcecb33f39  **confidence:** 95
+- The production GraphQL CORS policy is **not a finite allowlist** — it is a suffix match on `*.cineplex.de`. A random, non-existent origin `https://zzz-random-1791514731.cineplex.de` → `OPTIONS /` 204 with `access-control-allow-origin: <reflected>` and `access-control-allow-credentials: true`. `notcineplex.de` → 500 (label boundary enforced).
+- Full pair re-confirmed on **actual GET**, not just preflight: `GET /zz-verify-<ts>` with `Origin: https://web-dev.cineplex.de` → 200 `{"data":{"__typename":"Query"}}` + `ACAO: https://web-dev.cineplex.de` + `ACAC: true` + `Vary: Origin`.
+- `null` and `http://localhost:3000` also reflected with `ACAC:true`; these are subsumed by the wildcard and should be stated as secondary.
+- Impact: any current or **future** `*.cineplex.de` origin (staging/XSS/takeover) can issue credentialed cross-origin reads against production. Fix = exact-origin allowlist, not `endsWith`.
+
+**asset:** web-dev.cineplex.de  **class:** SUBDOMAIN_TAKEOVER_CHAIN  **fingerprint:** bc5ca90b1d3432b11c76f0ad4ccdfd12  **confidence:** 70
+- `web-dev.cineplex.de` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300, DoH Status 0); target A → Status 3 NXDOMAIN (Azure SOA `ns1-35.azure-dns.com`). Dangle **live** this cycle (17th+).
+- NEW: because it ends in `.cineplex.de`, this dangling host is itself a wildcard-matching trusted origin for the production CORS policy. If the Azure Container App name is claimable, an attacker controls a credentialed trusted origin → cross-origin read of production GraphQL. Escalates standalone LOW → conditional HIGH.
+- Impact is conditional on provider-side Azure name claimability (unattested). Reuse the existing canonical dangle lead rather than authoring another duplicate `[HYP]`.
+
+## [NEXT]
+1. `[RISK] HUMAN_ONLY` — do **not** claim the Azure Container App to complete the takeover chain; provider-side claimability must be attested out-of-band.
+2. `[NEXT]` Verify whether bare `https://cineplex.de` and `https://staging.cineplex.de` also pass (finishes the boundary map): `OPTIONS /` with `Origin: https://cineplex.de` and `Origin: https://cineplex.de.evil.com` (expect pass/500 respectively).
+3. `[NEXT]` On staging twin, repeat the wildcard origin preflight to confirm identical CORS policy (no env partitioning) — one GET + one OPTIONS.
+
+## [LEARN]
+- **Reclassify** the earlier `cors_creds` `[HYP]` (hostile-allowlist-entries framing): the primitive is a **wildcard `*.cineplex.de` suffix match**, strictly stronger than two named entries. Same-cycle preflight AND actual-response pairs are now captured; prior automated-log silence stays void.
+- Catch-all arbitrary-path schema exposure re-confirmed on a brand-new path: `GET /zz-cpx-verify-1791514678?query={__schema{queryType{fields{name}}}}` → 200, 2337 B, fields begin `test`, `onboardingContent`, `appReleases`, … (fingerprint fd6160c029539f878a8622a16bb43091).
+- Do not author a 6th divergent web-dev `[HYP]`; the class-collapse defect is at lead-authoring source.
+
+## [RISK]
+- Wildcard suffix + dangling subdomain + credentials = the highest-value chain here; treat takeover execution as HUMAN_ONLY and keep engagement read-only.
+- Output label is only `[HYP]` for publisher consumption; `[LEARN]` blocks are intentionally invisible to `sync-issues.py` — the reclassification above will not propagate automatically and needs manual lead edit.
+
+Files touched: none (probes only to `/tmp`). Want me to write these `[HYP]` blocks into `leads/lead-bigpickle.md` and reconcile the duplicate web-dev blocks?
