@@ -2658,3 +2658,25 @@ wwww.cineplex.de
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
 - CHANGED Harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+
+## 2026-10-10 14:12:47 UTC
+- NEW appDeepLink(externalUrl:String!): String @ graphql-api.app.cineplex.de — undocumented read-only URL resolver exercised live for the first time. Three nested gates confirmed same-cycle: UNKNOWN_SCHEME 
+- CHANGED graphql-api.app.{,staging.}cineplex.de :: SCHEMA_EXPOSURE CONF 90 — re-confirmed same-cycle on brand-new arbitrary path (`/zz-analyst-92681010?query=%7B__typename%7D`) → 200 `{"data":{"__typename":"Qu
+- CHANGED graphql-api.app.cineplex.de :: CORS_CREDENTIALED_POST CONF 72 — re-confirmed same-cycle on a real data GET: `Origin: https://sub.attacker.cineplex.de` → `access-control-allow-origin: <echo>` + `access
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER CONF 85 — re-confirmed same-cycle: CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN wi
+- NEW `graphql-api.app.{,staging.}cineplex.de` :: CORS_ALLOWLIST_PRIVATE_IP_PREFIX_BYPASS CONF: 88 — the credentialed CORS allowlist string-prefix-matches private-IP hostname shapes (`10.`, `192.168.`), so 
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: CORS_CREDENTIALED_POST CONF: 72 → 85 — the allowlist is materially wider than previously characterized. Prior model (label-boundary `*.cineplex.de` suffix +
+- NEW none — no new assets; `inventory/cineplex.md` 132-host baseline unchanged since 2026-09-23.
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: SCHEMA_EXPOSURE — re-confirmed same-cycle on a brand-new arbitrary path `/zz-analyst-verify-1791641483?query={__typename}` → HTTP 200 `{"data":{"__typename"
+- CHANGED `graphql-api.app.cineplex.de` :: CORS private-IP prefix bypass — re-confirmed same-cycle: `OPTIONS /` `Origin: http://10.evil.com` → HTTP 204, `access-control-allow-origin: http://10.evil.com`, `acces
+- CHANGED `web-dev.cineplex.de` :: dangling CNAME — re-confirmed same-cycle: DoH `Status 0` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow `Status 3` (NXDOMAIN). Sole dang
+- CHANGED harness artifact void — `probe-results.md` advanced to `2026-10-10 07:58:21` with only 400/403/ERR (trailing backtick → 400, urllib UA → CF 403). No probe-derived conclusion drawn.
+- NEW graphql-api.app.{,staging}.cineplex.de catch-all re-verified on brand-new path `/zz-catchall-verify-1728576603`: GET `?query={__typename}` → 200 both envs (manual curl)
+- NEW graphql-api.app.cineplex.de CORS preflight re-verified: `OPTIONS /` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attacker
+- NEW graphql-api.app.cineplex.de actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
+- NEW web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `azure-dns.com` 
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+- CHANGED Harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)

@@ -1347,3 +1347,6 @@
 - 2026-10-10 ACCEPTED cors_foothold_no_takeover_needed @ graphql-api.app.cineplex.de: attacker-registrable domain `10.evil.com` achieves the same trusted-origin status as a compromised `*.cineplex.de` label — the subdomain-takeover precondition for the CORS chain is not actually required.
 - 2026-10-10 ACCEPTED cors_private_ip_prefix_rule — hostname prefixes 10. and 192.168. (dot-boundary enforced), 172.16/12 absent, localhost/127.0.0.1 exact-host any-port/scheme; evaluated pre-resolution, non-resolving origins still reflect.
 - 2026-10-10 ACCEPTED cors_foothold_no_takeover_needed — 10.evil.com reaches same trusted-origin status as a compromised *.cineplex.de label.
+- 2026-10-10 ACCEPTED cors_private_ip_prefix_rule @ graphql-api.app.{,staging.}cineplex.de: allowlist matches hostname prefixes `10.` and `192.168.` (dot-boundary enforced), `172.16/12` and exact-host localhost/127.0.0.1 only; evaluated pre-resolution — registrable `10.evil.com` is a trusted credentialed origin.
+- 2026-10-10 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema on GET under any unshadowed path, both envs; POST to arbitrary paths API-GW 403.
+- 2026-10-10 REJECTED survivor re-emission as progress @ self: same-cycle verification of the three known survivors produces no new surface; recorded as confirmation, not a finding.
