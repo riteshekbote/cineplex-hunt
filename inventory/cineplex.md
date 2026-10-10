@@ -2680,3 +2680,23 @@ wwww.cineplex.de
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
 - CHANGED Harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+
+## 2026-10-10 18:48:05 UTC
+- CHANGED `graphql-api.app.cineplex.de` :: CORS private-IP prefix bypass — re-confirmed same-cycle: `OPTIONS /` `Origin: http://10.evil.com` → HTTP 204, `access-control-allow-origin: http://10.evil.com`, `acces
+- CHANGED `web-dev.cineplex.de` :: dangling CNAME — re-confirmed same-cycle: DoH `Status 0` CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow `Status 3` (NXDOMAIN). Sole dang
+- CHANGED harness artifact void — `probe-results.md` advanced to `2026-10-10 07:58:21` with only 400/403/ERR (trailing backtick → 400, urllib UA → CF 403). No probe-derived conclusion drawn.
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de — same-cycle live verified (browser UA, ≤1 rps): trusted credentialed origins are exactly hostname-prefixes `10.` and `192.168.
+- NEW cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de — same rule confirmed on staging: `http://10.evil.com` and `http://192.168.evil.com` → 200 + ACAO echo + ACAC:true (previous
+- CHANGED cors_private_ip_prefix_foothold (conf 88→90) — the foothold precondition is now fully material and env-agnostic: attacker registers any domain spawning `10.` or `192.168.` as first labels (e.g. `192.1
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW graphql-api.app.{,staging}.cineplex.de :: CORS_ALLOWLIST_PRIVATE_IP_PREFIX_BYPASS CONF: 88 — credentialed CORS allowlist string-prefix-matches private-IP hostname shapes (`10.`, `192.168.`), so `10.ev
+- NEW web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `az
+- NEW graphql-api.app.{,staging}.cineplex.de catch-all re-verified on brand-new path `/zz-catchall-verify-1728576603`: GET `?query={__typename}` → 200 both envs (manual curl)
+- NEW appDeepLink(externalUrl:String!): String @ graphql-api.app.cineplex.de — undocumented read-only URL resolver exercised live for the first time. Three nested gates confirmed same-cycle: UNKNOWN_SCHEME 
+- CHANGED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: CORRECTION — allowlist enforces DNS label boundary, not raw string suffix. `sub.attacker.cineplex.de` → 204/ACAC:true; `evilcineplex.de`/`not
+- CHANGED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: reconfirmed on prod AND staging `graphql-api.app.staging.cineplex.de/graphql` (200, `ACAO: null`, `ACAC: true`, real data)
+- CHANGED harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED probe-results.md: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
