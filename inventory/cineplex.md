@@ -2700,3 +2700,13 @@ wwww.cineplex.de
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
 - CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
 - CHANGED probe-results.md: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+
+## 2026-10-10 22:22:22 UTC
+- NEW graphql-api.app.cineplex.de: CORS private IP prefix bypass now confirmed with exact boundary rules (10., 192.168. dot-boundary enforced; 172.16/12, 100.64/10, 169.254.169.254, 0.* provably excluded). 
+- NEW graphql-api.app.{,staging.}cineplex.de: appDeepLink(externalUrl:String!) resolver exercised live — three nested gates confirmed (UNKNOWN_SCHEME, UNKNOWN_HOST, UNKNOWN_PATH); no SSRF-to-metadata primit
+- NEW probe-results.md: 1399 lines, ZERO POST GraphQL probes across all cycles; 8 harness defects confirmed (trailing backtick, urllib UA bot-gate, urls[:12] truncation, brace truncation).
+- CHANGED cors_allowlist_suffix_match: corrected from raw suffix to DNS label boundary (sub.attacker.cineplex.de 204 vs evilcineplex.de 500).
+- CHANGED cors_null_origin_credentialed: reconfirmed on prod AND staging /graphql endpoint.
+- CHANGED All structural findings confirmed via manual curl only; automated log blind to /graphql and balanced GET.
+- CHANGED buchung-dev/bms-dev origins (194.77.169.121) TCP-reachable; /gateway/* routes return 403 at CF edge — exploitability backend-gated.
+- CHANGED All OOS classes reaffirmed; TLS-dead hosts unchanged.
