@@ -1434,3 +1434,13 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
 https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
 https://evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+
+## 2026-10-10 01:35:55 UTC
+https://sub.attacker.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://app.staging.cineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know
+https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
+https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
+https://evilcineplex.de` -> ERR <urlopen error [Errno -2] Name or service not know

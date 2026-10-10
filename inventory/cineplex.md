@@ -2617,3 +2617,22 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.{,staging}.cineplex.de` — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 on BOTH envs (manual curl)
 - CHANGED `graphql-api.app.cineplex.de` — CORS preflight re-verified: `OPTIONS /` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.atta
 - CHANGED `web-dev.cineplex.de` — dangling CNAME now 19th consecutive cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow and AAAA-follow both Status 3 NXDOMAIN
+
+## 2026-10-10 01:35:45 UTC
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: SCHEMA_EXPOSURE CONF: 90 — no material change. Fresh arbitrary-path GET (`/zz-analyst-<epoch>`) re-served full `queryType.fields` (HTTP 200) on BOTH prod an
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` :: CORS_CREDENTIALED_POST CONF: 72 — no material change. Actual data GET (not only preflight) reflects hostile suffix origin `https://sub.attacker.cineplex.de`
+- CHANGED `web-dev.cineplex.de` :: SUBDOMAIN_TAKEOVER CONF: 85 — no material change; dangle holds. CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` still `Status 3` NXDOMAIN (TTL 300)
+- NEW appDeepLink(externalUrl:String!): String @ graphql-api.app.cineplex.de — undocumented read-only URL resolver exercised live for the first time. Three nested gates confirmed same-cycle: UNKNOWN_SCHEME 
+- CHANGED graphql-api.app.{,staging.}cineplex.de :: SCHEMA_EXPOSURE CONF 90 — re-confirmed same-cycle on brand-new arbitrary path (`/zz-analyst-92681010?query=%7B__typename%7D`) → 200 `{"data":{"__typename":"Qu
+- CHANGED graphql-api.app.cineplex.de :: CORS_CREDENTIALED_POST CONF 72 — re-confirmed same-cycle on a real data GET: `Origin: https://sub.attacker.cineplex.de` → `access-control-allow-origin: <echo>` + `access
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER CONF 85 — re-confirmed same-cycle: CNAME Status 0 TTL 300 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN wi
+- NEW No new assets discovered; 132-host inventory unchanged since 2026-09-23
+- NEW Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- NEW web-dev.cineplex.de dangling CNAME now 19th consecutive cycle NXDOMAIN (DoH Status 0 CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A/AAAA-follow Status 3 NXDOMAIN + azure-
+- NEW graphql-api.app.{,staging}.cineplex.de catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `?query={__typename}` → 200 both envs (manual curl)
+- NEW graphql-api.app.cineplex.de CORS preflight re-verified: `OPTIONS /` Origin `http://localhost:3000` → 204, ACAO reflected, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAC true; Origin `https://sub.attacker
+- NEW Staging `/graphql` parity restored on `graphql-api.app.staging.cineplex.de` — now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+- CHANGED Harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)

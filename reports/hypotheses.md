@@ -5585,3 +5585,33 @@
 - LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
 - LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
 - LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
+
+## RANKED HYPOTHESES 2026-10-10 01:35:45 UTC
+- [92] graphql-api.app.cineplex.de: CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads (from art/lead_nemotron3.txt)
+- [0] ?: `cors_x_takeover_chain` CONF: 60 — attacker who controls ANY `*.cineplex.de` subdomain origin (e.g. via the web-dev dangle) is trusted by the credentialed CORS allowlist → cross-origin authenticated GraphQL read, ONLY IF prod client uses cookie/session auth. Falsifiable only with a controlled account and a resolvable token transport. Status: PARKED on HUMAN_ONLY. (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: In an authenticated browser session on production, load app.cineplex.de (Cloudflare-challenged) and determine how the GraphQL auth token is transported —
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date +%s)" --data-urlencode 'query={__typename}'
+- LEARN: ACCEPTED cors_origin_cache_safety @ graphql-api.app.cineplex.de: `Vary: Origin` present on reflected-ACAO responses → origin-aware cache key; reflected CORS doe
+- LEARN: ACCEPTED app_cineplex_cf_challenge @ app.cineplex.de: 403 `cf-mitigated: challenge` + COOP/COEP/CORP isolation; SPA bundle and token storage are not passively r
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: re-confirmed on a brand-new path this cycle, both envs 200 + 83 fields; POST 
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th consecutive NXDOMAIN on A + AAAA against the Azure container-apps target; sole dangle.
+- LEARN: REJECTED OOS_unchanged @ all: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, TLS-dead hosts, api_cineplex_ge
+- LEARN: All 7 non-web-dev CNAME targets return DoH `Status 0` with A records; only the Azure Container Apps target is NXDOMAIN. The prior "sole dangling CNAME" claim is
+- LEARN: The CORS allowlist is string/label-based, not resolution-based: it reflects the NXDOMAIN `sub.attacker.cineplex.de` origin. Therefore any future `*.cineplex.de`
+- LEARN: ACCEPTED appDeepLink_gates @ graphql-api.app.cineplex.de: scheme→host→path allowlists, in that order, all three live-confirmed; SSRF-to-metadata on the read sid
+- LEARN: ACCEPTED url_cred_args_characterized @ graphql-api.app.cineplex.de: of the URL/credential-shaped read args, `appDeepLink(externalUrl)` is host+path-gated, `getI
+- LEARN: ACCEPTED survivor set re-verified same-cycle: schema catch-all 2/2 envs, CORS credentialed echo + label-boundary control 2/2, web-dev sole dangle + healthy CNAM
+- LEARN: REJECTED file_scheme_path_traversal @ graphql-api.app.cineplex.de: `externalUrl:"file:///etc/passwd"` was a CF WAF 403 block page (116KB HTML), not an applicati
+- LEARN: ACCEPTED survivor set re-verified same-cycle: schema catch-all 2/2 envs,
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (`sub.attacker.cineplex.de` 204 vs `notcineplex.de` 500) — looka
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with `Origin: null` → `ACAO:null` + `ACAC:true` with data
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition pass
+- LEARN: ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
