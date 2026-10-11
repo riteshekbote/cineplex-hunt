@@ -2776,3 +2776,14 @@ wwww.cineplex.de
 - CHANGED `graphql-api.app.cineplex.de` CORS private IP prefix bypass exact boundary rules confirmed: `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excl
 - CHANGED `graphql-api.app.cineplex.de` actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
 - CHANGED `app.cineplex.de` — production SPA returns `403 cf-mitigated: challenge` with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage not passively readable → COR
+
+## 2026-10-11 22:44:55 UTC
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de — same-cycle live verified (browser UA, ≤1 rps): trusted credentialed origins are exactly hostname-prefixes `10.` and `192.168.
+- NEW cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de — same rule confirmed on staging: attacker-registrable `10.*`/`192.168.*` origins credentialed on both environments
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage not passively readable → CORS-
+- CHANGED graphql-api.app.{,staging.}cineplex.de catch-all re-verified on brand-new paths — GET `?query={__typename}` → 200 both envs
+- CHANGED web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `az
+- CHANGED graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed
+- CHANGED graphql-api.app.cineplex.de actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data

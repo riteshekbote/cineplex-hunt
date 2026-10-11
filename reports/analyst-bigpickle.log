@@ -103303,3 +103303,98 @@ Do you want me to:
 1. **Stop here** and await the human browser capture (a)/(b) above, or
 2. **Restore/fix** the harness (`scripts/passive_verify.py`, workflow UA/URL/truncation) as a repo change so future cycles stop emitting false 403s, or
 3. **Draft the two reports** (dangling CNAME; CORS credentialed) from the already-verified evidence for bugs.olivermaicher.eu?
+===== ANALYST bigpickle 2026-10-11 22:44:55 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run a small set of read-only probes to ground the `api` target analysis, then produce the structured output. First, checking connectivity and the least-explored in-scope host matching the current target.
+[0m$ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+for p in "/" "/swagger.json" "/openapi.json" "/v2/api-docs" "/actuator" "/api/v1" "/robots.txt"; do
+  printf "== api.cineplex.de%s ==\n" "$p"
+  curl -sS -m 15 -o /dev/null -w "http=%{http_code} size=%{size_download} server=%{remote_ip}\n" -A "$UA" "https://api.cineplex.de$p" 2>&1
+  sleep 1
+done
+== api.cineplex.de/ ==
+http=403 size=115590 server=104.16.22.67
+== api.cineplex.de/swagger.json ==
+http=403 size=115647 server=104.16.23.67
+== api.cineplex.de/openapi.json ==
+http=403 size=115647 server=104.16.22.67
+== api.cineplex.de/v2/api-docs ==
+http=403 size=115644 server=104.16.23.67
+== api.cineplex.de/actuator ==
+http=403 size=115635 server=104.16.22.67
+== api.cineplex.de/api/v1 ==
+http=403 size=115629 server=104.16.22.67
+== api.cineplex.de/robots.txt ==
+curl: (28) Operation timed out after 15002 milliseconds with 0 bytes received
+http=000 size=0 server=104.16.23.67
+[0m
+## Objective
+- Run the 8-step analyst pipeline (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT ACTION → LEARNING → RISK) against the Cineplex Deutschland bug bounty program and emit only structured blocks.
+- Advance from `phase: POC` on `target: api` toward report-submittable findings; current idle state expects DELTA or NO_DELTA plus top-3 hypotheses.
+
+## Important Details
+- Program: Cineplex Deutschland GmbH & Co. KG / Cineplex Group; report channel `bugs.olivermaicher.eu`; only company-owned infra per `scope.yml` + `inventory/cineplex.md`.
+- Agent rules: passive-first, ≤1 rps, live probes GET/HEAD/OPTIONS only; no auth-bypass or mutating tests against live customer data; sha256 any secret; scanner output requires manual validation; one field per line under `[HYP]` title.
+- REJECTED classes (never report): username_enumeration, SSL/TLS best practice & attacks, CSRF on logout, descriptive errors/headers only, known-vulnerable libraries, DoS/lockout, mail config, public login panels, etc.
+- Harness is void for conclusions: `probe-results.md` ~1399 lines, ZERO POST GraphQL probes ever; URLs carry a literal trailing backtick (→400) and the urllib UA hits the Cloudflare bot-gate (→403). Balanced URL-encoded GET via `curl --http2` with browser UA reaches origin 200. All structural findings rest on manual curl only.
+- Verification/depth trap (recorded 3×): name-only reads produced false "no injection vectors" and "10 staging-only mutations" claims. Rule: a type is not read until its field list is in hand.
+- Prior pushback in KB: re-emitting the same top-3 survivors and calling same-cycle re-verification "progress" is stasis (recorded as a critique, not a finding).
+- `probe-results.md` automated DoH CNAME probe now returns 200 (header-format defect fixed); `graphql-api.app.staging.cineplex.de/graphql` parity restored (was 500, now 200).
+- Tooling: `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (14 offline tests); `scripts/sync-issues.py` (`parse_blocks` opens only on `^\[HYP\]`; fingerprint = md5(asset|class)).
+
+## Work State
+### Completed
+- `graphql_introspection` @ `graphql-api.app.{,staging.}cineplex.de`: full unauth GET schema — 83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs; CVSS 7.5; identical on prod+staging. Report-ready.
+- `cors` misconfig @ `graphql-api.app.cineplex.de`: allowlist reflects hostile origins with `ACAC: true`; enforces DNS label boundary (`sub.attacker.cineplex.de` 204 vs `evilcineplex.de` 500); `Origin: null` → `ACAO: null`+`ACAC: true`; private-IP prefix rule trusts hostnames starting `10.`/`192.168.` (dot-boundary, pre-resolution; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` excluded); `OPTIONS /` → 204 with `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`; `Vary: Origin` present. Primitive-strength confirmed both envs.
+- `dangling_cname_takeover` @ `web-dev.cineplex.de`: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow Status 3 NXDOMAIN + Azure SOA; 19th+ consecutive cycle; sole dangle in 14-host sweep; PASSIVE, report-ready (claimability provider-side).
+- `graphql_arbitrary_path_catchall` @ both envs: full schema on GET under any unshadowed path (e.g. `/zz-catchall-verify-*?query={__typename}` → 200); POST to non-root paths API-GW 403. Remediation = path-pattern × 2 envs.
+- `getonly_graphql_mirrors` / `dual_entry_point`: `/graphql`, `/api/graphql`, `/gql` GET-only mirrors; only root `/` accepts POST/OPTIONS.
+- Schema-layer findings: `mass_assignment` (`CinemaOperatingCompanyData.accessRight*` mirrors `UserPrivileges` derived fields; `updateUser(adminCinemaOperatingCompanyIds)`), `idor_chaining` (`ticket→order→user`, `order→user`), `physical_to_profile` (`userByQr` → `User`), `internal_architecture_leak` @ staging (Spring Data JPA REST endpoints, mandatorId UUID, Lambda path, stacktraces via introspection).
+- Falsified/retracted: `idor_booking` ownership omission — `INVALID_ID` vs `UNAUTHENTICATED` only measures decode position, not check presence; surviving half is pre-auth decoder oracle (class `ACCESS_CONTROL`, fingerprint `4ad65631f720`). `staging_testing_oracle` REJECTED as standalone (descriptive method-mismatch, field also on prod). `relay_metrics`/`relay_broker_saturation` REJECTED (IOMB telemetry only). `api_cineplex_get_bypass` dead (strict 403). TLS-dead hosts: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`.
+- Publication hygiene: `class: IDOR` blocks purged 297→0; `publish_path_clear` rejected (publisher parse_blocks yields 1109 `[HYP]` → 59 fingerprints).
+
+### Active
+- CORS chain impact: primitive fully unconditional on both envs with registrable origins (`10.evil.com`/`192.168.evil.com`); credentialed-impact half gated on the auth-transport datum.
+- Three survivors ranked: CORS credentialed reflection chain (conf 92), GraphQL schema exposure (conf 90), web-dev subdomain takeover (conf 85).
+- `app.cineplex.de`: production SPA returns 403 `cf-mitigated: challenge` with COOP `same-origin`/COEP `require-corp`/CORP `same-origin`; JS bundle/token storage not passively readable → CORS-chain exploitability is HUMAN_ONLY.
+- `dev_origin_waf_bypass` @ `buchung-dev`/`bms-dev.cineplex.de` (origin 194.77.169.121): SPAs reachable (bms-dev "T360 - CMS" 2147B, buchung-dev "Cineplex Buchung" 2410B); `/gateway/*` routes 503 "Wartungsarbeiten"; oscillation 200/503↔000, network/backend-gated, not dead.
+
+### Blocked
+- Auth-transport datum (Cookie session vs `Authorization: Bearer` on `app.cineplex.de`) is HUMAN_ONLY — single operative gate for CORS-chain impact.
+- Cross-tenant IDOR/PII proof is HUMAN_ONLY (needs consent + 2 accounts); staging POST extraction unproven.
+- Automated probe log cannot corroborate anything (backtick 400 + UA bot-gate 403); zero POST probes.
+- 132-host inventory exhausted since 2026-09-23; CT diff + full CNAME sweep show no new assets.
+
+## Next Move
+1. `[NEXT] HUMAN`: in an authenticated production browser on `app.cineplex.de`, capture the real GraphQL request and record whether auth is `Cookie` session or `Authorization: Bearer`; then from `http://192.168.evil.com` replay the identical request against `https://graphql-api.app.cineplex.de/` and note whether authenticated data returns.
+2. If no delta: emit `NO_DELTA` + restate the three survivors and the single HUMAN gate rather than fabricating findings.
+
+## Relevant Files
+- `inventory/cineplex.md`: 132-host baseline (unchanged since 2026-09-23); live hosts, CNAME signals.
+- `knowledge/index.md`: flat append-only KB; has a `## CANONICAL STATUS` section (LIVE/DEAD/SURVIVING/METHOD RULES) added 2026-09-30; contains falsified/retracted lines superseded by CORRECTION entries.
+- `probe-results.md`: automated probe log (~1399 lines); void for conclusions (backtick 400 / urllib CF 403), zero POST ever.
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: lead files; `[HYP]`/`[LEARN]` blocks; prior `[HYP]`→`[LEARN]` retags.
+- `scripts/passive_verify.py`, `scripts/test_passive_verify.py`: URL extraction module + 14 offline tests.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` globs `leads/lead-*.md`, matches `^\[HYP\]`; `fingerprint()` = md5(asset|class); `ensure_label()` bug latent.
+- `.github/workflows/hunt.yml:207-225`: retired inline verifier (8 source-level defects: backtick regex, UA suffix, `urls[:12]`, brace truncation, etc.).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+`api.cineplex.de` confirms DEAD — strict CF 403 across all API-surface candidates. One decisive, original probe remains: whether the CORS credentialed echo (with the private-IP-prefix origin) holds on an arbitrary catch-all path — that would extend the blast radius beyond `/`.
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mUA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+echo "== GET catch-all path with private-IP prefix origin =="
+curl -sS -m 15 -D - -o /tmp/cors_body.txt -A "$UA" \
+  -H "Origin: http://10.evil.com" \
+  -H "Accept: application/graphql-response+json, application/json" \
+  "https://graphql-api.app.cineplex.de/zz-cors-path-check?query=%7B__typename%7D" 2>&1 | rg -i "http/|access-control|vary|content-type|cf-mitigated" 
+echo "--- body ---"; cat /tmp/cors_body.txt; echo
+sleep 1
+echo "== OPTIONS preflight on arbitrary catch-all path =="
+curl -sS -m 15 -D - -o /dev/null -A "$UA" \
+  -X OPTIONS \
+  -H "Origin: http://192.168.evil.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type,authorization" \
+  "https://graphql-api.app.cineplex.de/zz-cors-path-check2" 2>&1 | rg -i "http/|access-control|vary|allow" failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
