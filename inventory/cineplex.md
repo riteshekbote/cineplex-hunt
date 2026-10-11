@@ -2720,3 +2720,32 @@ wwww.cineplex.de
 - CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+
+## 2026-10-11 07:19:23 UTC
+- NEW api.cineplex.de - Host in inventory, no prior probes
+- CHANGED Target is now "api" per current state
+- NEW graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de - GraphQL endpoints in inventory
+- NEW data-9fc27eb430.cineplex.de — live 200 relay host returning JSON health endpoint `/health` -> {"status":"ok"}, X-Powered-By: cST-479f2fb-2609030725-prd (build header changed vs earlier scan cST-84fa11
+- CHANGED api.cineplex.de + graphql-api.app.cineplex.de + graphql-api.app.staging.cineplex.de all return HTTP 403 at root => edge WAF gate blocks target "api" surface; pivot to authless 200 surface (data-9fc27e
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de — same-cycle live verified (browser UA, ≤1 rps): trusted credentialed origins are exactly hostname-prefixes `10.` and `192.168.
+- NEW cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de — same rule confirmed on staging: `http://10.evil.com` and `http://192.168.evil.com` → 200 + ACAO echo + ACAC:true (previous
+- CHANGED cors_private_ip_prefix_foothold (conf 88→90) — the foothold precondition is now fully material and env-agnostic: attacker registers any domain spawning `10.` or `192.168.` as first labels (e.g. `192.1
+- NEW 132 hosts in inventory from passive DNS/CT (seed 2026-09-02)
+- NEW 6 live HTTP hosts confirmed: `cloud.systems.cineplex.de`, `data-9fc27eb430.cineplex.de`, `profil.cineplex.de`, `support.systems.cineplex.de`, `mailing.cineplex.de`, `vpn-portal.systems.cineplex.de`
+- NEW 8 CNAME signals to third-party: `your-storageshare.de`, `cineplex-relay.iocnt.net`, `azurecontainerapps.io`, `showtimeanalytics.com`, `zammad.com`, `mailjet.com`, `ntxzone.de` (2x)
+- NEW High-value API targets identified: `api.cineplex.de`, `graphql-api.app.cineplex.de`, `graphql-api.app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `booking.cineplex.de`, `buchung.cineple
+- NEW Auth/identity surface: `auth.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`, `account.cineplex.de`, `my.cineplex.de`, `profil.cineplex.de`
+- NEW Staging/dev surface: `app.staging.cineplex.de`, `staging.cineplex.de`, `dev.cineplex.de`, `web-dev.cineplex.de`, `booking-dev.cineplex.de`, `buchung-dev.cineplex.de`, `bms-dev.cineplex.de`, `prelive.c
+- NEW Customer-facing portals: `shop.cineplex.de`, `webshop.cineplex.de`, `tickets.cineplex.de`, `booking.cineplex.de`, `portal.cineplex.de`, `mobile.cineplex.de`, `app.cineplex.de`
+- NEW Admin/internal: `admin.cineplex.de`, `dashboard.cineplex.de`, `cms.cineplex.de`, `ci.cineplex.de`, `jenkins.cineplex.de`, `jira.systems.cineplex.de`
+- NEW VPN/remote access: `vpn-portal.systems.cineplex.de`, `vpn-openvpn-cpz.systems.cineplex.de`
+- NEW Regional cinema sites (potential multi-tenant): 20+ location subdomains (aichach, bayreuth, eisenach, frankfurt, etc.)
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW web-dev.cineplex.de dangling CNAME: 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `azure
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+- CHANGED probe-results.md: 1399 lines, still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED harness defects: 8 confirmed (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400 on GraphQL URLs)
+- CHANGED verifier_replaced @ scripts/passive_verify.py: extraction now testable module with 14 offline tests; offline replay extracts filtered, balanced URLs only
+- CHANGED retracted_botgate_conclusions @ graphql-api.app.cineplex.de, graphql-api.app.staging.cineplex.de, api.cineplex.de: all conclusions resting on automated 403 are void — verifier's own UA produced those 

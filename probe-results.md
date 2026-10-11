@@ -1490,3 +1490,17 @@ https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
 https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
 https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
+
+## 2026-10-11 07:19:39 UTC
+https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE
+https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://graphql-api.app.cineplex.de/arbitrary/path/here -> HTTP 403
+https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
+https://api.cineplex.de/ -> HTTP 403
+https://graphql-api.app.staging.cineplex.de/ -> HTTP 403
+https://data-9fc27eb430.cineplex.de/ -> 200 len=?
+https://graphql-api.app.cineplex.de/` -> HTTP 400
+https://booking.cineplex.de/api/booking/{id -> HTTP 403
+https://auth.cineplex.de/.well-known/jwks.json -> HTTP 404
