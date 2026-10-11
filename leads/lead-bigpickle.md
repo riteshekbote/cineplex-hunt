@@ -10826,3 +10826,12 @@ testability: PASSIVE
 [LEARN] ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — the CORS middleware reflects before validation, so the trusted-origin set is verified even on error bodies.
 [RISK] cineplex: 72 — unchanged. Primitive strength up (registrable origins, both envs, boundary proven), but the credentialed-impact half is still locked behind the single HUMAN_ONLY auth-transport gate; no new attack surface otherwise.
 ## 2026-10-11 14:09:04 UTC [target] (model bigpickle)
+## 2026-10-11 19:00:13 UTC [target] (model bigpickle)
+[NEW] auth.cineplex.de OIDC realm discovery — NEGATIVE
+[NEW] cors middleware is path-global @ graphql-api.app.cineplex.de
+[CHANGED] none
+[PRIO]    unchanged: graphql_arbitrary_path_catchall > cors_credentialed >
+[LEARN] Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+[LEARN] CORS middleware = path-global (does not narrow to `/`).
+[RISK] Iteration saturation: 20+ cycles of re-verifying the same three
+[NEXT] HUMAN-ONLY (blocking): in an authenticated production browser session

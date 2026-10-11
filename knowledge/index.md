@@ -1396,3 +1396,5 @@
 - 2026-10-11 ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` dot-boundary, pre-resolution, both envs; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excluded (500 no ACAO).
 - 2026-10-11 ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable `10.*`/`192.168.*` origins credentialed on both environments.
 - 2026-10-11 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — the CORS middleware reflects before validation, so the trusted-origin set is verified even on error bodies.
+- 2026-10-11 Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- 2026-10-11 CORS middleware = path-global (does not narrow to `/`).

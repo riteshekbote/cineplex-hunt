@@ -2760,3 +2760,19 @@ wwww.cineplex.de
 - NEW buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); /gateway/* routes return 403 at CF edge after redirect — exploitability remains backend-gated
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
 - CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+
+## 2026-10-11 19:02:15 UTC
+- NEW auth.cineplex.de OIDC realm discovery — NEGATIVE
+- NEW cors middleware is path-global @ graphql-api.app.cineplex.de
+- CHANGED none
+- NEW `graphql-api.app.staging.cineplex.de/graphql` parity restored: now returns HTTP 200 (was 500) for GET introspection; staging GraphQL entry point matches prod exactly
+- NEW `web-dev.cineplex.de` automated DoH CNAME probe returns HTTP 200 (was 415 for 10 cycles) — pipeline header-format defect fixed; machine-checkable path now open
+- NEW `buchung-dev.cineplex.de` + `bms-dev.cineplex.de` origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
+- CHANGED Probe harness defects confirmed: 8 defects (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, urls[:12] truncation, brace truncation causing false-negative 400)
+- CHANGED `graphql-api.app.{,staging.}cineplex.de` catch-all re-verified on brand-new paths — GET `?query={__typename}` → 200 both envs
+- CHANGED `web-dev.cineplex.de` dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `
+- CHANGED `graphql-api.app.cineplex.de` CORS private IP prefix bypass exact boundary rules confirmed: `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excl
+- CHANGED `graphql-api.app.cineplex.de` actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
+- CHANGED `app.cineplex.de` — production SPA returns `403 cf-mitigated: challenge` with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage not passively readable → COR
