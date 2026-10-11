@@ -2710,3 +2710,13 @@ wwww.cineplex.de
 - CHANGED All structural findings confirmed via manual curl only; automated log blind to /graphql and balanced GET.
 - CHANGED buchung-dev/bms-dev origins (194.77.169.121) TCP-reachable; /gateway/* routes return 403 at CF edge — exploitability backend-gated.
 - CHANGED All OOS classes reaffirmed; TLS-dead hosts unchanged.
+
+## 2026-10-11 01:03:49 UTC
+- NEW probe-results.md advanced to 1399 lines — still ZERO POST GraphQL probes across all cycles; automated GET probes carry literal trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- NEW graphql-api.app.{prod,staging}.cineplex.de — catch-all re-verified on brand-new path `/zz-catchall-verify-1791540801`: GET `query={__typename}` → 200 on BOTH envs (manual curl)
+- NEW graphql-api.app.cineplex.de — CORS private IP prefix bypass exact boundary rules confirmed: `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excl
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW web-dev.cineplex.de dangling CNAME: 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `azure
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED All OOS classes reaffirmed: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, relay_metrics, api_cineplex_get
