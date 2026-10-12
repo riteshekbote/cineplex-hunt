@@ -5931,3 +5931,67 @@
 - LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo
 - LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py
 - LEARN: CORS middleware = path-global (does not narrow to `/`).
+
+## RANKED HYPOTHESES 2026-10-12 09:25:10 UTC
+- [92] graphql-api.app.cineplex.de: JWT Algorithm Confusion (RS256→HS256) on Central Auth (from art/lead_bigpickle.txt)
+- [92] graphql-api.app.cineplex.de: CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: in an authenticated production browser on `app.cineplex.de`, capture the real GraphQL request and record whether auth is a `Cookie` session or `Authoriza
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -G "https://graphql-api.app.cineplex.de/arbitrary/path/verify-$(date +%s)" --data-urlencode 'query=mutation{__typ
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.1
+- LEARN: ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable `10.*`/
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- LEARN: CORS middleware = path-global (does not narrow to `/`).
+- LEARN: ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (sub.attacker.cineplex.de 204 vs notcineplex.de 500) — lookalike
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin: null → ACAO:null + ACAC:true with data
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition pass
+- LEARN: ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser
+- LEARN: REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+- LEARN: REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- LEARN: REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- LEARN: REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes 10./192.168.
+- LEARN: ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable 10.*/19
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- LEARN: CORS middleware = path-global (does not narrow to `/`).
+- LEARN: ACCEPTED web_archive_client_bundle @ app.cineplex.de: archived JS replay is a valid passive method to recover the client auth model without touching the CF-chal
+- LEARN: ACCEPTED oauth2_bearer_transport @ graphql-api.app.cineplex.de: auth is OAuth2 access_token (localStorage) + refresh cookie on the SSO domain; no API-origin ses
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: reflection is real but the impact chain is broken by transport; downgraded to config-hygiene (~2
+- LEARN: REJECTED app_cineplex_static_525 @ app.cineplex.de: 525 on non-challenge paths is availability/TLS-origin, not a reportable class.
+- LEARN: ACCEPTED oauth2_client_config @ app.cineplex.de: full OAuth2 client config (issuer URL, public client_id, `.cineplex.de` SSO cookie domain, public key) recovere
+- LEARN: ACCEPTED oauth2_refresh_cookie_parent_domain @ app.cineplex.de: refresh token stored in a JS-set cookie `authorization` (domain `.cineplex.de`, no HttpOnly, no 
+- LEARN: REJECTED archived_bundle_unavailable @ app.cineplex.de: falsified — CDX API online and both `static/js/all.min_t08202025052836.js` and `static/dist/app_t0820202
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: `.cineplex.de` cookie is the refresh token, not an API session credential; CORS reflection still
+- LEARN: ACCEPTED buchung_oauth2_issuer @ buchung.cineplex.de/gateway/auth: live CF challenge on all GET paths; passive OIDC discovery remains closed.
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — `10.` and `192.168.` dot-boundary enforced; 
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; Z
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — `10.` and `192.168.` dot-boundary enforced; 
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; Z
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — `10.` and `192.168.` dot-boundary enforced; 
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; Z
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)

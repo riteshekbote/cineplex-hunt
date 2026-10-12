@@ -2816,3 +2816,60 @@ wwww.cineplex.de
 - NEW graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed: `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably exclud
 - CHANGED Automated probe harness remains void: `probe-results.md` 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+
+## 2026-10-12 09:25:10 UTC
+- NEW auth.cineplex.de OIDC realm discovery — NEGATIVE
+- NEW cors middleware is path-global @ graphql-api.app.cineplex.de
+- CHANGED none
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de — same-cycle live verified (browser UA, ≤1 rps): trusted credentialed origins are exactly hostname-prefixes `10.` and `192.168.
+- NEW cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de — same rule confirmed on staging: attacker-registrable `10.*`/`192.168.*` origins credentialed on both environments
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage not passively readable → CORS-
+- CHANGED graphql-api.app.{,staging.}cineplex.de catch-all re-verified on brand-new paths — GET `?query={__typename}` → 200 both envs
+- CHANGED web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `az
+- CHANGED graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed
+- CHANGED graphql-api.app.cineplex.de actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
+- NEW Recovered `app.cineplex.de` client bundle via Internet Archive replay (`all.min.js`, 1.2 MB, snapshot 20251203): OAuth2 auth model — access_token in `localStorage` (`oauth2_access_token`, `authorizati
+- NEW `graphql-api.app.cineplex.de` emits ZERO `Set-Cookie` on every probed response (introspection 200, `currentUser` UNAUTHENTICATED); `vary: Origin` present — no API-origin session cookie exists.
+- NEW Archived `all.min.js` contains no `graphql` and no `Bearer` token → the GraphQL-calling chunk (`static/dist/app_*.js`, `static/app/CineplexJsApp.min_*.js`) was NOT archived; header-attach unconfirmed.
+- NEW `app.cineplex.de` non-challenge paths (e.g. `/static/*`) return HTTP 525 (CF→origin TLS) while `/` returns `403 cf-mitigated:challenge`; availability artifact, not reportable (DoS excluded).
+- CHANGED Hypothesis [92] (CORS credentialed chain) impact DOWNGRADED: with Bearer/localStorage transport and zero API `Set-Cookie`, a cross-origin attacker page cannot obtain or auto-attach the credential — cr
+- CHANGED CORS foothold re-verified live this cycle (browser UA, ≤1 rps): `OPTIONS` w/ `Origin: http://10.evil.com` → 204, ACAO echo + `ACAC:true` + ACAM POST + ACAH `authorization`; `GET` w/ `Origin: http://19
+- CHANGED `web-dev.cineplex.de` dangling CNAME 20th+ consecutive cycle: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow empty (NXDOMAIN/Azure SOA).
+- NEW Full OAuth2 client config recovered passively from archived `app.cineplex.de/rechtliches/impressum/` (snapshot 20251203143321): `window.oAuth2Url="https://buchung.cineplex.de/gateway/auth"`, `window.o
+- NEW Archived `app.cineplex.de/static/js/all.min_t08202025052836.js` (20251203140651) contains the OAuth2 logic: `$.cookie("authorization", JSON.stringify({refresh_token:e.refresh_token}), {path:"/",domain
+- NEW Cookie is JS-set, so it cannot be HttpOnly; the jQuery-cookie attribute builder emits only `expires/path/domain/secure` (no SameSite). ⇒ refresh token is JavaScript-readable and scoped to every `*.cin
+- NEW Token redemption path recovered: `POST ${oAuth2Url}/oauth/token`, body `client_id=<public>&grant_type=refresh_token&refresh_token=<token>` — no client_secret (public client).
+- NEW Environment→host map from `getEnvironment()`: local(`cineplex.local`), dev(`dev.cineplex.de`), uat(`uat/app-uat.cineplex.de`), couat(`couat.cineplex.de`), live(`cineplex.de`,`www`,`www2`,`app`,`live`)
+- CHANGED Prior claim "archived `all.min.js` contains no oauth2 / `static/dist/app_*.js` not archived" is FALSIFIED — the Internet Archive CDX API is online; both `static/js/all.min_t08202025052836.js` and `sta
+- CHANGED OAuth2 refresh-cookie hypothesis confidence 40→70: cookie domain now confirmed parent `.cineplex.de` and the refresh grant confirmed public-client ⇒ concrete ATO chain, not a generic cookie note.
+- CHANGED Real OAuth2 issuer `buchung.cineplex.de/gateway/auth` is CF bot-gated: GET `/`, `/oauth/token`, `/.well-known/openid-configuration`, `/.well-known/jwks.json` all → 403 `cf-mitigated: challenge`.
+- CHANGED `web-dev.cineplex.de` dangling CNAME unchanged at 20th+ consecutive cycle (NXDOMAIN, Azure SOA).
+- NEW graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live this cycle (was 500); entry point now matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de client auth model recovered via Internet Archive (all.min.js 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer` keys) + refresh cookie on SS
+- NEW CORS credentialed chain impact DOWNGRADED: with Bearer/localStorage transport and no API-origin session cookie, cross-origin attacker page cannot obtain/auto-attach credential — finding reclassified t
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive cycle NXDOMAIN re-verified via DoH (CNAME Status 0, A/AAAA-follow Status 3 + azure-dns.com SOA); sole CNAME in 14-host sweep
+- CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
+- CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+- NEW graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live this cycle (was 500); entry point now matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de client auth model recovered via Internet Archive (all.min.js 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer` keys) + refresh cookie on SS
+- NEW CORS credentialed chain impact DOWNGRADED: with Bearer/localStorage transport and no API-origin session cookie, cross-origin attacker page cannot obtain/auto-attach credential — finding reclassified t
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive cycle NXDOMAIN re-verified via DoH (CNAME Status 0, A/AAAA-follow Status 3 + azure-dns.com SOA); sole CNAME in 14-host sweep
+- CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
+- CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+- NEW graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live this cycle (was 500); entry point now matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de client auth model recovered via Internet Archive (all.min.js 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer` keys) + refresh cookie on SS
+- NEW CORS credentialed chain impact DOWNGRADED: with Bearer/localStorage transport and no API-origin session cookie, cross-origin attacker page cannot obtain/auto-attach credential — finding reclassified t
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive cycle NXDOMAIN re-verified via DoH (CNAME Status 0, A/AAAA-follow Status 3 + azure-dns.com SOA); sole CNAME in 14-host sweep
+- CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
+- CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only

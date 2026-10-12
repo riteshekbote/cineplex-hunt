@@ -1,55 +1,4 @@
-## 2026-10-12 02:06:18 UTC [target] (model bigpickle)
-reasoning: Booking systems commonly use numeric/sequential booking IDs; `booking.cineplex.de` and `buchung.cineplex.de` (German) suggest multi-language deployment with shared backend; regional subdomains (e.g., `www.booking.cineplex.de`) indicate multi-tenant architecture; auth.cineplex.de/sso.cineplex.de centralize auth but booking endpoints may not validate ownership
-evidence_needed: Booking reference/ID parameter (booking_id, order_id, reservation_id) accessible without ownership validation; changing ID returns other user's booking details (PII, seats, payment info)
-verify_steps: GET https://booking.cineplex.de/api/booking/{id} (or /booking/{id}, /reservation/{id}) with valid session; iterate numeric IDs; check for 200 vs 403/404; test cross-user access with two test accounts
-impact: Access to all customers' booking data (names, emails, phone, seats, payment partials) → PII dump + booking manipulation (High/Critical)
-testability: AUTH_HELPED
-[HYP] JWT Algorithm/Key Confusion on Central Auth (auth.cineplex.de / sso.cineplex.de)
-class: AUTH
-asset: auth.cineplex.de
-confidence: 65
-reasoning: Central auth endpoints (auth.cineplex.de, sso.cineplex.de, login.cineplex.de) likely issue JWTs for SSO across cineplex.de subdomains; multiple subdomains (app, booking, portal, my, profil) suggest shared token validation; algorithm confusion (RS256→HS256) or key confusion (public key as HMAC secret) possible if asymmetric signing used but validation accepts symmetric; `profil.cineplex.de` redirects to `/preference` (Showtime Analytics) indicating third-party integration with token sharing
-evidence_needed: JWT from login shows `alg: RS256`; validation accepts HS256-signed token with public key; or JWKS endpoint exposes keys usable for forgery
-verify_steps: GET https://auth.cineplex.de/.well-known/jwks.json (or /jwks, /keys); capture JWT from login flow; test alg:none, RS256→HS256, key confusion via crafted tokens against protected endpoint (e.g., profil.cineplex.de/preference)
-impact: Forge valid tokens for any user → full ATO across all Cineplex properties (Critical)
-testability: PASSIVE (JWKS fetch) + AUTH_HELPED (token capture)
-[PARKED] GraphQL Introspection & Unauthorized Mutations on Production API: Confidence 75 but introspection alone is often disabled in production; need to confirm endpoint exists and responds — will probe first
-[PARKED] IDOR/BOLA on Booking API — Cross-User Booking Access: Confidence 70 but requires valid session (AUTH_HELPED); booking endpoint path unknown — need discovery first
-[PARKED] JWT Algorithm/Key Confusion on Central Auth: Confidence 65 but JWKS endpoint may not exist; token capture requires auth flow — lower priority for initial passive probe
-[FINAL] Ranked survivors (all retained for now, ordered by testability × impact):
-[NEXT] PROBE: GET https://graphql-api.app.cineplex.de/ — Accept: application/json — body: `{"query":"{__schema{types{name fields{name}}}"}` — expect 200 with schema if introspection enabled, 400/403 if disabled
-[LEARN] REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
-[LEARN] REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
-[LEARN] REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
-[LEARN] REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
-[LEARN] REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
-[LEARN] ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
-[LEARN] ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
-[RISK] cineplex: 78 — Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints, central auth, booking/payment flows, staging/dev exposure, third-party CNAMEs); high business value (ticketing, payments, PII, loyalty); multiple high-priority classes applicable (GraphQL, IDOR, JWT, SSRF-to-cloud via Azure Container Apps); wildcard-dominated DNS limits subdomain takeover but increases shared-infra risk
-[PRIO] graphql-api.app.cineplex.de,8.8,attack_surface=9,business_value=9,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=9
-[PRIO] booking.cineplex.de,8.3,attack_surface=9,business_value=9,tech_exposure=7,gate_ease=6,cloud_surface=7,freshness=8
-[PRIO] auth.cineplex.de,8.0,attack_surface=8,business_value=10,tech_exposure=9,gate_ease=5,cloud_surface=5,freshness=8
-[PRIO] api.cineplex.de,7.5,attack_surface=8,business_value=8,tech_exposure=8,gate_ease=7,cloud_surface=6,freshness=7
-[PRIO] graphql-api.app.staging.cineplex.de,7.2,attack_surface=7,business_value=7,tech_exposure=10,gate_ease=8,cloud_surface=5,freshness=6
-[PRIO] buchung.cineplex.de,7.0,attack_surface=7,business_value=8,tech_exposure=6,gate_ease=6,cloud_surface=6,freshness=7
-[PRIO] sso.cineplex.de,6.8,attack_surface=7,business_value=9,tech_exposure=8,gate_ease=4,cloud_surface=4,freshness=7
-[PRIO] profil.cineplex.de,6.5,attack_surface=6,business_value=7,tech_exposure=7,gate_ease=8,cloud_surface=8,freshness=6
-[HYP] GraphQL Introspection Enabled on Production API
-class: OTHER
-asset: graphql-api.app.cineplex.de
-confidence: 75
-reasoning: GraphQL endpoint in inventory; staging counterpart exists suggesting shared schema; introspection commonly enabled in production misconfigurations; no prior probe confirmed status
-evidence_needed: Introspection query returns full schema with types/fields; mutations visible in schema (createBooking, modifyPayment, cancelBooking)
-verify_steps: GET https://graphql-api.app.cineplex.de/ — Accept: application/json — body: {"query":"{__schema{types{name fields{name}}}"}} — expect 200 with schema if enabled, 400/403 if disabled
-impact: Full API schema enumeration → discover hidden mutations → unauthorized booking creation/modification/cancellation → financial loss + PII access (Critical)
-testability: PASSIVE
-[HYP] IDOR/BOLA on Booking API — Cross-User Booking Access via Numeric IDs
-class: IDOR
-asset: booking.cineplex.de
-confidence: 70
-reasoning: Booking systems use numeric/sequential IDs; booking.cineplex.de and buchung.cineplex.de share backend; regional subdomains indicate multi-tenant; central auth (auth.cineplex.de/sso.cineplex.de) but booking endpoints may not validate ownership
-evidence_needed: Booking reference parameter (booking_id, order_id, reservation_id) returns other user's data without ownership check; 200 for unauthorized IDs vs 403/404
+## 2026-10-12 09:24:58 UTC [target] (model bigpickle)
 verify_steps: GET https://booking.cineplex.de/api/booking/{id} (test /booking/{id}, /reservation/{id}, /api/v1/booking/{id}) with valid session; iterate numeric IDs 1000-1010; check for 200 vs 403/404; compare responses across two test accounts
 impact: Access to all customers' booking data (names, emails, phone, seats, payment partials) → PII dump + booking manipulation (High/Critical)
 testability: AUTH_HELPED
@@ -190,3 +139,55 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: reflection is real but the impact chain is broken by transport; downgraded to config-hygiene (~20), not reportable standalone.
 [LEARN] REJECTED app_cineplex_static_525 @ app.cineplex.de: 525 on non-challenge paths is availability/TLS-origin, not a reportable class.
 [RISK] cineplex: 66 — down from 72: recovered auth transport shows no ambient API credential, materially weakening the CORS chain; remaining substance is the HUMAN_ONLY decoder-oracle PII path, the provider-gated dangle, and a new unconfirmed refresh-cookie exposure. Surface otherwise unchanged; triager has errored for 5+ consecutive cycles, reducing validation throughput.
+[NEW] Full OAuth2 client config recovered passively from archived `app.cineplex.de/rechtliches/impressum/` (snapshot 20251203143321): `window.oAuth2Url="https://buchung.cineplex.de/gateway/auth"`, `window.oAuth2ClientId="4a64660b-979a-4fb4-a671-909d2d943f0f"`, `window.oAuth2SSODomain=".cineplex.de"`, `window.oAuth2PublicKey="-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...-----END PUBLIC KEY-----"`.
+[NEW] Archived `app.cineplex.de/static/js/all.min_t08202025052836.js` (20251203140651) contains the OAuth2 logic: `$.cookie("authorization", JSON.stringify({refresh_token:e.refresh_token}), {path:"/",domain:window.oAuth2SSODomain,expires:365,secure:!0})` and `getAuthorizationJson` reads it back via `$.cookie("authorization")`.
+[NEW] Cookie is JS-set, so it cannot be HttpOnly; the jQuery-cookie attribute builder emits only `expires/path/domain/secure` (no SameSite). ⇒ refresh token is JavaScript-readable and scoped to every `*.cineplex.de` host.
+[NEW] Token redemption path recovered: `POST ${oAuth2Url}/oauth/token`, body `client_id=<public>&grant_type=refresh_token&refresh_token=<token>` — no client_secret (public client).
+[NEW] Environment→host map from `getEnvironment()`: local(`cineplex.local`), dev(`dev.cineplex.de`), uat(`uat/app-uat.cineplex.de`), couat(`couat.cineplex.de`), live(`cineplex.de`,`www`,`www2`,`app`,`live`).
+[CHANGED] Prior claim "archived `all.min.js` contains no oauth2 / `static/dist/app_*.js` not archived" is FALSIFIED — the Internet Archive CDX API is online; both `static/js/all.min_t08202025052836.js` and `static/dist/app_t08202025052836.js` are archived and oauth2-bearing.
+[CHANGED] OAuth2 refresh-cookie hypothesis confidence 40→70: cookie domain now confirmed parent `.cineplex.de` and the refresh grant confirmed public-client ⇒ concrete ATO chain, not a generic cookie note.
+[CHANGED] Real OAuth2 issuer `buchung.cineplex.de/gateway/auth` is CF bot-gated: GET `/`, `/oauth/token`, `/.well-known/openid-configuration`, `/.well-known/jwks.json` all → 403 `cf-mitigated: challenge`.
+[CHANGED] `web-dev.cineplex.de` dangling CNAME unchanged at 20th+ consecutive cycle (NXDOMAIN, Azure SOA).
+[PRIO] web-dev.cineplex.de,9.0,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=10,cloud_surface=10,freshness=9
+[PRIO] graphql-api.app.cineplex.de,8.5,attack_surface=9,business_value=9,tech_exposure=10,gate_ease=8,cloud_surface=6,freshness=7
+[PRIO] app.cineplex.de,8.1,attack_surface=8,business_value=10,tech_exposure=10,gate_ease=4,cloud_surface=5,freshness=10
+[PRIO] buchung.cineplex.de,7.4,attack_surface=6,business_value=10,tech_exposure=9,gate_ease=5,cloud_surface=6,freshness=8
+[HYP] OAuth2 refresh-token cookie is JS-readable and scoped to parent domain `.cineplex.de`, redeemable via a public client — any `*.cineplex.de` JS execution yields 365-day ATO
+class: AUTH
+asset: app.cineplex.de (cookie `authorization`; scope `.cineplex.de`; token endpoint https://buchung.cineplex.de/gateway/auth/oauth/token)
+confidence: 70
+reasoning: Archived 2025-12-03 `all.min_t08202025052836.js` sets the refresh token with `$.cookie("authorization", JSON.stringify({refresh_token:...}), {path:"/", domain: window.oAuth2SSODomain, expires:365, secure:true})`; `window.oAuth2SSODomain=".cineplex.de"` (parent), `window.oAuth2ClientId="4a64660b-979a-4fb4-a671-909d2d943f0f"`, `window.oAuth2Url="https://buchung.cineplex.de/gateway/auth"`. JS-set ⇒ no HttpOnly; attribute builder has no SameSite. Redemption is `grant_type=refresh_token` with a public client_id and no client_secret, callable server-side by an attacker who merely reads the cookie value. `web-dev.cineplex.de` (NXDOMAIN 20+ cycles) is a candidate `*.cineplex.de` JS-execution vector; any XSS on any cineplex.de origin is equivalent.
+evidence_needed: On a live `*.cineplex.de` origin, `document.cookie` returns `authorization={"refresh_token":"..."}` with Domain=.cineplex.de; redeeming that value at the token endpoint returns a valid access_token for the victim.
+verify_steps: HUMAN: in an authenticated browser on `app.cineplex.de` run `document.cookie` and record the `authorization` value + Domain; then from a separate host `curl -sS -X POST "https://buchung.cineplex.de/gateway/auth/oauth/token" -d "client_id=4a64660b-979a-4fb4-a671-909d2d943f0f&grant_type=refresh_token&refresh_token=<stolen>"`.
+impact: 365-day full account takeover across all `cineplex.de` properties from one stolen cookie; the only remaining precondition is JS execution on any `*.cineplex.de` origin. High.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME on web-dev.cineplex.de — provider-side claimability is the enabler for the `.cineplex.de` cookie theft
+class: MISCONFIG
+asset: web-dev.cineplex.de
+confidence: 55
+reasoning: 20+ consecutive cycles CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow NXDOMAIN (+ Azure SOA); sole dangle in the dev/system sweep. Azure Container Apps requires an `asuid` TXT custom-domain check, so re-claiming the exact label is unlikely without a provider weakness. If claimed, attacker JS on `web-dev.cineplex.de` reads the `.cineplex.de` refresh cookie set by app.cineplex.de.
+evidence_needed: Demonstrated ability to serve attacker content at the exact FQDN `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`.
+verify_steps: `dig +short CNAME web-dev.cineplex.de`; `dig +short web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; confirm Azure Container Apps asuid/TXT binding semantics.
+impact: Control of a `*.cineplex.de` origin → read the parent-domain refresh cookie → ATO (Critical if claimable; Low standalone).
+testability: HUMAN_ONLY
+[HYP] Pre-auth decoder oracle across GraphQL resolvers remains the only cross-tenant PII path
+class: AUTH
+asset: graphql-api.app.cineplex.de
+confidence: 50
+reasoning: 4 single-entity resolvers (`userById`/`invoice`/`order`/`ticket`) decode caller-supplied IDs before any auth gate (`id:"0"` → 200 `INVALID_ID` + `decodePublicId` frame, no Authorization); `currentUser` on the same surface → 200 `UNAUTHENTICATED`, proving a gate exists elsewhere. Gate-omission NOT proven (`idor_ownership_omission` falsified). Auth is OAuth2 Bearer (no ambient cookie), so exploitation needs a valid token. `User` exposes 51 fields incl. `onlineTicketingToken`, `inviteCode`, `linkedAccounts`.
+evidence_needed: One cross-user record returned to a second consented account (AUTH_HELPED); program forbids live PII exposure during testing.
+verify_steps: with two consented accounts, POST `{userById(id:"<victim-id>"){...}}` using account-B's token and diff against account-A.
+impact: Cross-tenant User PII (email, phone, tickets, orders, invoices) — High if confirmed.
+testability: HUMAN_ONLY
+[PARKED] cors_credentialed_chain @ graphql-api.app.cineplex.de CONF 20 — the `.cineplex.de` `authorization` cookie is the refresh token, not a GraphQL API credential; the API consumes only Bearer, so CORS credentialed reflection still has no ambient credential to ride.
+[PARKED] jwt_alg_confusion @ buchung.cineplex.de/gateway/auth CONF 35 — issuer + public key now known and the client verifies JWTs using the token-header `alg`, but server-side HS256 acceptance is untestable passively (CF challenge, no token) → AUTH_HELPED.
+[PARKED] mass_assignment accessRight* @ graphql-api.app.cineplex.de CONF 40 — schema mirrors real; decisive test is a write against live data → HUMAN_ONLY.
+[PARKED] graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de CONF 60 — real but informational without a credentialed impact.
+[FINAL] Ranked survivors: 1) oauth2_refresh_cookie_parent_domain @ app.cineplex.de (High, HUMAN_ONLY end-to-end); 2) dangling_cname_takeover @ web-dev.cineplex.de (ATO vector, provider-gated); 3) pre-auth decoder oracle @ graphql-api.app.cineplex.de (High-if-PII, HUMAN_ONLY).
+[NEXT] HUMAN: with a consented production account on `app.cineplex.de`, run `document.cookie` in devtools and record whether `authorization={"refresh_token":...}` is present and its `Domain=.cineplex.de` (proves no HttpOnly + parent scope); then from a separate host redeem it with `curl -sS -X POST "https://buchung.cineplex.de/gateway/auth/oauth/token" -d "client_id=4a64660b-979a-4fb4-a671-909d2d943f0f&grant_type=refresh_token&refresh_token=<stolen>"` to confirm the ATO end-to-end.
+[LEARN] ACCEPTED oauth2_client_config @ app.cineplex.de: full OAuth2 client config (issuer URL, public client_id, `.cineplex.de` SSO cookie domain, public key) recovered passively from the archived 2025-12-03 impressum page.
+[LEARN] ACCEPTED oauth2_refresh_cookie_parent_domain @ app.cineplex.de: refresh token stored in a JS-set cookie `authorization` (domain `.cineplex.de`, no HttpOnly, no SameSite, 365-day) and redeemable via a public-client refresh_token grant.
+[LEARN] REJECTED archived_bundle_unavailable @ app.cineplex.de: falsified — CDX API online and both `static/js/all.min_t08202025052836.js` and `static/dist/app_t08202025052836.js` archived with the oauth2 code.
+[LEARN] REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: `.cineplex.de` cookie is the refresh token, not an API session credential; CORS reflection still lacks an ambient API credential.
+[LEARN] ACCEPTED buchung_oauth2_issuer @ buchung.cineplex.de/gateway/auth: live CF challenge on all GET paths; passive OIDC discovery remains closed.
+[RISK] cineplex: 80 — up from 66. The OAuth2 transport is now fully characterized: a JavaScript-readable, SameSite-less refresh-token cookie scoped to the parent domain `.cineplex.de`, exchangeable through a public OAuth2 client, yields a 365-day ATO across cineplex.de gated only on any `*.cineplex.de` JS-execution foothold (the 20+ cycle dangling CNAME on `web-dev.cineplex.de` is the standing candidate). GraphQL introspection, CORS reflection, and the pre-auth decoder oracle are unchanged. All work read-only, ≤1 rps, no customer data touched.
