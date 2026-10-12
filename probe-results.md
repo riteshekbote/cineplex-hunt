@@ -1556,3 +1556,10 @@ https://app.staging.cineplex.de -> ERR <urlopen error [SSL: SSLV3_ALERT_HANDSHAK
 https://graphql-api.app.cineplex.de/zz-catchall-verify-$(date -> HTTP 403
 https://web.archive.org/web/2025id_/https://app.cineplex.de/static/dist/app_t08202025052836.js -> 200 len=?
 https://buchung.cineplex.de/gateway/auth -> HTTP 403
+
+## 2026-10-12 19:14:04 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
+https://graphql-api.app.staging.cineplex.de/?query={testing_getConfirmationCode(email: -> HTTP 400
+https://buchung.cineplex.de/gateway/auth/oauth/token -> HTTP 403

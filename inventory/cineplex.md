@@ -2873,3 +2873,21 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
 - CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+
+## 2026-10-12 19:13:57 UTC
+- NEW prod GraphQL compiles `testing_getConfirmationCode(email!)` and `testing_forceDeleteUser(email!)` but runtime-gates them — GET returns FORBIDDEN "only available in testing environments" (an env flag, 
+- NEW staging GraphQL passes that env gate and proxies to internal Spring Data REST, leaking the paths per type: PASSWORD_RESET→`/userPasswordResets/search/findByMandatorIdAndEmailAddress`, LOGIN_CREATION→`
+- NEW full URL/credential-shaped arg enumeration complete: `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession)→LoginReturnType{user,jwt,refreshToken,csrf,roles,fileSe
+- NEW `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → FORBIDDEN "You must be the root user" (URL/securityKey args unreachable; SSRF/IDOR vector retired).
+- CHANGED `externalUrl(appDeepLink)` / `appDeepLink(externalUrl)` are fixed-map validators returning UNKNOWN_SCHEME / UNKNOWN_HOST / UNKNOWN_PATH — not an open redirect.
+- CHANGED app.cineplex.de origin: HTML → 403 Cloudflare challenge, `/static/dist/*.js` → 525 origin TLS fail; archive.org reports "Temporarily Offline" this cycle → OAuth SPA JS recovery BLOCKED.
+- CHANGED staging GraphQL does NOT reflect an arbitrary Origin (evil.example reflected no ACAO) — stricter CORS than prod's private-IP-prefix reflection.
+- NEW graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live this cycle (was 500); entry point now matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de client auth model recovered via Internet Archive (all.min.js 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO dom
+- NEW CORS credentialed chain impact DOWNGRADED: with Bearer/localStorage transport and no API-origin session cookie, cross-origin attacker page cannot obtain/auto-attach credential — finding reclassified t
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive cycle NXDOMAIN re-verified via DoH (CNAME Status 0, A/AAAA-follow Status 3 + azure-dns.com SOA); sole CNAME in 14-host sweep
+- CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
+- CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only

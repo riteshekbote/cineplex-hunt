@@ -1481,3 +1481,8 @@
 - 2026-10-12 ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - 2026-10-12 REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
 - 2026-10-12 Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
+- 2026-10-12 REJECTED SSRF @ graphql-api.app.cineplex.de:getOnlineTicketingBooking — unauth returns FORBIDDEN "You must be the root user"; referenceUrl arg never reached.
+- 2026-10-12 REJECTED MISCONFIG @ graphql-api.app.cineplex.de:externalUrl,appDeepLink — fixed-map validators (UNKNOWN_SCHEME/UNKNOWN_HOST/UNKNOWN_PATH), not open redirect.
+- 2026-10-12 REJECTED AUTH @ graphql-api.app.cineplex.de:testing_getConfirmationCode — compiled in the prod schema but runtime env-gated ("only available in testing environments"); an environment flag, not RBAC.
+- 2026-10-12 ACCEPTED SCHEMA_DRIFT @ graphql-api.app.cineplex.de — two introspection calls returned different arg lists for testing_getConfirmationCode (first omitted the runtime-required type:ConfirmationCodeType!); introspection arg lists must be re-validated against live GRAPHQL_VALIDATION_FAILED errors.
+- 2026-10-12 ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de — socialLogin accepts email alongside accessToken/idToken and returns jwt+refreshToken; createAnonymousUser returns LoginReturnType with no credential input.
