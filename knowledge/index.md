@@ -1398,3 +1398,54 @@
 - 2026-10-11 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — the CORS middleware reflects before validation, so the trusted-origin set is verified even on error bodies.
 - 2026-10-11 Tooling drift: scripts/passive_verify.py + test_passive_verify.py
 - 2026-10-11 CORS middleware = path-global (does not narrow to `/`).
+- 2026-10-12 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-10-12 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-10-12 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-10-12 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-10-12 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-10-12 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-10-12 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- 2026-10-12 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` dot-boundary, pre-resolution, both envs; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excluded (500 no ACAO).
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable `10.*`/`192.168.*` origins credentialed on both environments.
+- 2026-10-12 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — the CORS middleware reflects before validation, so the trusted-origin set is verified even on error bodies.
+- 2026-10-12 Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- 2026-10-12 CORS middleware = path-global (does not narrow to `/`).
+- 2026-10-12 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- 2026-10-12 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (sub.attacker.cineplex.de 204 vs notcineplex.de 500) — lookalike-registrable-domain path rejected
+- 2026-10-12 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin: null → ACAO:null + ACAC:true with data
+- 2026-10-12 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 403
+- 2026-10-12 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side)
+- 2026-10-12 ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser UA returns 200
+- 2026-10-12 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate edge config; dead
+- 2026-10-12 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- 2026-10-12 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-12 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-10-12 REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes 10./192.168. (dot-boundary enforced)
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable 10.*/192.168.* origins credentialed on both environments
+- 2026-10-12 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true
+- 2026-10-12 Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- 2026-10-12 CORS middleware = path-global (does not narrow to `/`).
+- 2026-10-12 ACCEPTED web_archive_client_bundle @ app.cineplex.de: archived JS replay is a valid passive method to recover the client auth model without touching the CF-challenged origin.
+- 2026-10-12 ACCEPTED oauth2_bearer_transport @ graphql-api.app.cineplex.de: auth is OAuth2 access_token (localStorage) + refresh cookie on the SSO domain; no API-origin session cookie and no Set-Cookie observed → credentialed CORS reflection has no ambient credential.
+- 2026-10-12 REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: reflection is real but the impact chain is broken by transport; downgraded to config-hygiene (~20), not reportable standalone.
+- 2026-10-12 REJECTED app_cineplex_static_525 @ app.cineplex.de: 525 on non-challenge paths is availability/TLS-origin, not a reportable class.
+- 2026-10-12 ACCEPTED cors_preflight_credentialed_post @ graphql-api.app.{,staging}.cineplex.de: OPTIONS / → 204, ACAC:true, ACAM includes POST, ACAH includes authorization
+- 2026-10-12 ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (sub.attacker.cineplex.de 204 vs notcineplex.de 500) — lookalike-registrable-domain path rejected
+- 2026-10-12 ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: actual GET with Origin: null → ACAO:null + ACAC:true with data
+- 2026-10-12 ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging}.cineplex.de: full schema on GET under any unshadowed path; POST to arbitrary paths API-GW 403
+- 2026-10-12 ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 19th+ consecutive NXDOMAIN, sole dangle; composes with CORS suffix match into a chain (precondition passive, claimability provider-side)
+- 2026-10-12 ACCEPTED harness_defect @ .github/workflows/hunt.yml: automated probe log void (trailing backtick → 400, urllib UA → WAF 403); manual balanced-curl with browser UA returns 200
+- 2026-10-12 REJECTED api_cineplex_get_bypass @ api.cineplex.de: strict 403 across all methods/encodings, 20+ cycles; separate stricter edge config; dead
+- 2026-10-12 REJECTED relay_metrics, relay_broker_saturation @ data-9fc27eb430.cineplex.de: IOMB broker counters descriptive telemetry, no unauthenticated manipulation path
+- 2026-10-12 REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library @ all: explicit program exclusions, unchanged
+- 2026-10-12 REJECTED TLS-dead hosts @ app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de, sso.cineplex.de: no reachable web surface
+- 2026-10-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+- 2026-10-12 REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: allowlist trusts credentialed origins matching hostname prefixes 10./192.168. (dot-boundary enforced)
+- 2026-10-12 ACCEPTED cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de: identical private-IP prefix trust on staging; attacker-registrable 10.*/192.168.* origins credentialed on both environments
+- 2026-10-12 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true
+- 2026-10-12 Tooling drift: scripts/passive_verify.py + test_passive_verify.py
+- 2026-10-12 CORS middleware = path-global (does not narrow to `/`).

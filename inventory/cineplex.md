@@ -2787,3 +2787,32 @@ wwww.cineplex.de
 - CHANGED web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `az
 - CHANGED graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed
 - CHANGED graphql-api.app.cineplex.de actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
+
+## 2026-10-12 02:06:28 UTC
+- NEW auth.cineplex.de OIDC realm discovery — NEGATIVE
+- NEW cors middleware is path-global @ graphql-api.app.cineplex.de
+- CHANGED none
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de — same-cycle live verified (browser UA, ≤1 rps): trusted credentialed origins are exactly hostname-prefixes `10.` and `192.168.
+- NEW cors_private_ip_prefix_staging_parity @ graphql-api.app.staging.cineplex.de — same rule confirmed on staging: attacker-registrable `10.*`/`192.168.*` origins credentialed on both environments
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de — production SPA returns `403 cf-mitigated: challenge` with COOP `same-origin`, COEP `require-corp`, CORP `same-origin`; JS bundle + client token-storage not passively readable → CORS-
+- CHANGED graphql-api.app.{,staging.}cineplex.de catch-all re-verified on brand-new paths — GET `?query={__typename}` → 200 both envs
+- CHANGED web-dev.cineplex.de dangling CNAME now 19th+ consecutive cycle NXDOMAIN (DoH Status 0 CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `az
+- CHANGED graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed
+- CHANGED graphql-api.app.cineplex.de actual GET with `Origin: null` → 200, `ACAO: null`, `ACAC: true` with real data
+- NEW Recovered `app.cineplex.de` client bundle via Internet Archive replay (`all.min.js`, 1.2 MB, snapshot 20251203): OAuth2 auth model — access_token in `localStorage` (`oauth2_access_token`, `authorizati
+- NEW `graphql-api.app.cineplex.de` emits ZERO `Set-Cookie` on every probed response (introspection 200, `currentUser` UNAUTHENTICATED); `vary: Origin` present — no API-origin session cookie exists.
+- NEW Archived `all.min.js` contains no `graphql` and no `Bearer` token → the GraphQL-calling chunk (`static/dist/app_*.js`, `static/app/CineplexJsApp.min_*.js`) was NOT archived; header-attach unconfirmed.
+- NEW `app.cineplex.de` non-challenge paths (e.g. `/static/*`) return HTTP 525 (CF→origin TLS) while `/` returns `403 cf-mitigated:challenge`; availability artifact, not reportable (DoS excluded).
+- CHANGED Hypothesis [92] (CORS credentialed chain) impact DOWNGRADED: with Bearer/localStorage transport and zero API `Set-Cookie`, a cross-origin attacker page cannot obtain or auto-attach the credential — cr
+- CHANGED CORS foothold re-verified live this cycle (browser UA, ≤1 rps): `OPTIONS` w/ `Origin: http://10.evil.com` → 204, ACAO echo + `ACAC:true` + ACAM POST + ACAH `authorization`; `GET` w/ `Origin: http://19
+- CHANGED `web-dev.cineplex.de` dangling CNAME 20th+ consecutive cycle: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow empty (NXDOMAIN/Azure SOA).
+- NEW graphql-api.app.cineplex.de arbitrary path catch-all re-verified on fresh path `/zz-catchall-verify-1791540801` → 200 `{"data":{"__typename":"Query"}}` (manual curl)
+- NEW graphql-api.app.cineplex.de CORS preflight re-verified: `OPTIONS /` Origin `https://sub.attacker.cineplex.de` → 204, `ACAO` reflected, `ACAC: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: cont
+- NEW graphql-api.app.cineplex.de actual GET with `Origin: https://sub.attacker.cineplex.de` → 200, `ACAO` echoed, `ACAC: true` with real GraphQL data
+- NEW web-dev.cineplex.de dangling CNAME 19th+ cycle: CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + `azure-dns.com` SOA (machine-che
+- NEW graphql-api.app.staging.cineplex.de/graphql parity restored: now returns HTTP 200 (was 500) for GET introspection; staging entry point matches prod exactly
+- NEW graphql-api.app.cineplex.de CORS private IP prefix bypass exact boundary rules confirmed: `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably exclud
+- CHANGED Automated probe harness remains void: `probe-results.md` 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
