@@ -2936,3 +2936,55 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
 - CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+
+## 2026-10-13 21:33:17 UTC
+- NEW Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed on both envs — GET 403 (WAF-blocked); confirms disclosure was via schema/introspection, not HTTP reach.
+- CHANGED Root GET for both GraphQL envs stable at 403 in probe log; earlier KB 400/200 entries not reproduced — WAF gate stable, backend reach via GraphQL POST only.
+- CHANGED relay `/metrics` stale in probe log (last 2026-09-05 05:51); no fresh relay read this cycle.
+- NEW Live probe this cycle: root GET on both GraphQL envs returns 400 native Express via curl over HTTP/2 (`X-Powered-By: Express`, `cf-cache-status: DYNAMIC`) — origin directly reachable, contradicting au
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` fresh 200/115B: `messages_queued` 553,564,053 (553.5M) — up from 418.9M (09-07) / 301.9M (09-05), growth ~135M/cycle accelerating; `queue_length` 0, `messages_dro
+- CHANGED `data-9fc27eb430.cineplex.de/health` unchanged 200/15B `{"status":"ok"}`.
+- CHANGED Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- CHANGED Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md (only GET / probed) — verification gap
+- CHANGED Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra (NOT reportable alone per KB)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- CHANGED Probe-results.md contains ONLY GET/HEAD root probes — zero POST GraphQL introspection or mutation probes recorded despite KB claiming confirmed introspection on prod/staging (verification gap)
+- CHANGED Root GET on both GraphQL endpoints consistently returns HTTP 403 in probe-results.md — KB claims of 400/200 via curl HTTP/2 NOT reproduced in automated probe log
+- CHANGED Staging `testing_getConfirmationCode` auth bypass reported in KB but NOT in probe-results.md (only GET / probed) — verification gap
+- CHANGED Staging Spring Data JPA REST endpoints (`userPasswordResets`, `userRegistrations`) probed 2026-09-07 returned HTTP 403 — contradicts KB claim of 200 disclosure via schema/introspection
+- CHANGED Production systemic IDOR across 4 resolvers (`userById`, `invoice`, `order`, `ticket`) from bigpickle lead — not in probe-results.md (no auth'ed cross-ID tests)
+- CHANGED `data-9fc27eb430.cineplex.de/metrics` stable 200/115B since 2026-09-04; body fully examined — IOMB broker stats only, descriptive infra (NOT reportable alone per KB)
+- CHANGED `graphql-api.app.couat.cineplex.de` + `app.staging.cineplex.de` confirmed TLS-dead (SSLv3 handshake failure) — no web surface
+- CHANGED `api.cineplex.de/graphql` confirmed WAF-gated (GET 403, POST Cloudflare challenge) — no GraphQL access
+- NEW `data-9fc27eb430.cineplex.de/metrics` fresh read: `messages_queued` 553,564,053 (up from 418.9M/301.9M), growth ~135M/cycle accelerating; `queue_length` 0, `dropped` 0, build header `cST-479f2fb-26090
+- NEW staging GraphQL passes that env gate and proxies to internal Spring Data REST, leaking the paths per type: PASSWORD_RESET→`/userPasswordResets/search/findByMandatorIdAndEmailAddress`, LOGIN_CREATION→`
+- NEW full URL/credential-shaped arg enumeration complete: `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession)→LoginReturnType{user,jwt,refreshToken,csrf,roles,fileSe
+- NEW `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → FORBIDDEN "You must be the root user" (URL/securityKey args unreachable; SSRF/IDOR vector retired).
+- CHANGED `externalUrl(appDeepLink)` / `appDeepLink(externalUrl)` are fixed-map validators returning UNKNOWN_SCHEME / UNKNOWN_HOST / UNKNOWN_PATH — not an open redirect.
+- CHANGED app.cineplex.de origin: HTML → 403 Cloudflare challenge, `/static/dist/*.js` → 525 origin TLS fail; archive.org reports "Temporarily Offline" this cycle → OAuth SPA JS recovery BLOCKED.
+- CHANGED staging GraphQL does NOT reflect an arbitrary Origin (evil.example reflected no ACAO) — stricter CORS than prod's private-IP-prefix reflection.
+- CHANGED `graphql-api.app.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed this cycle: fresh `/zz-<epoch>?query={__typename}` → HTTP 200 `{"data":{"__typename":"Query"}}` (manual curl). No material change.
+- CHANGED `graphql-api.app.staging.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed: fresh arbitrary path → HTTP 200. No material change.
+- CHANGED `graphql-api.app.cineplex.de` :: CORS_PRIVATE_IP_PREFIX — live re-confirmed: `OPTIONS /` `Origin: http://10.evil.com` + ACRM POST → HTTP 204, `access-control-allow-origin: http://10.evil.com`, `access
+- CHANGED `web-dev.cineplex.de` :: SUBDOMAIN_TAKEOVER — DoH CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow Status 3 NXDOMAIN/Azure SOA. Dangle holds. No
+- CHANGED harness void — `probe-results.md` automated log still unusable (trailing backtick → 400, urllib UA → CF 403); all above via manual curl only; no conclusion drawn from automated silence.
+- NEW cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+- CHANGED graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+- CHANGED CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-
+- CHANGED dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
+- NEW cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+- CHANGED graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+- CHANGED CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-
+- CHANGED dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
+- NEW graphql-api.app.cineplex.de :: SCHEMA — live GET introspection surfaces a third testing_* mutation `increaseUserTestingStatus` in mutationType; KB had enumerated only testing_getConfirmationCode / tes
+- CHANGED graphql-api.app.{,staging.}cineplex.de :: SCHEMA_EXPOSURE — catch-all re-confirmed live: fresh `/zz-<epoch>?query={__typename}` → HTTP 200 `{"data":{"__typename":"Query"}}` on both envs. No behavior c
+- CHANGED graphql-api.app.cineplex.de :: INTROSPECTION via GET — `?query={__schema{...}}` → HTTP 200; queryType=83 / mutationType=140, counts unchanged vs KB.
+- CHANGED graphql-api.app.cineplex.de :: CORS_PRIVATE_IP_PREFIX — OPTIONS Origin http://10.evil.com → HTTP 204, ACAO echo, ACAC:true, ACAM GET,HEAD,PUT,PATCH,POST,DELETE, ACAH authorization; backend x-amz-apigw
+- CHANGED graphql-api.app.cineplex.de :: ROOT — GET / → HTTP 400 (Cloudflare), consistent with 09-30 canonical WAF state, not the intermittent 200.
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — DoH CNAME TTL 300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN + switzerlandnorth.azurecontainerapps.io S
+- CHANGED recon — crt.sh returned 502 this cycle; certspotter fallback enumerated 17 in-zone names, all already in inventory → no new hosts.

@@ -6067,3 +6067,109 @@
 - LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
 - LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
+
+## RANKED HYPOTHESES 2026-10-13 21:33:17 UTC
+- [93] graphql-api.app.cineplex.de: Production systemic unauthenticated IDOR via single-entity resolvers (from art/lead_bigpickle.txt)
+- [90] graphql-api.app.cineplex.de: CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads (from art/lead_nemotron3.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: (a) Submit `bugs.olivermaicher.eu` structural prod report: **Unauthenticated Systemic IDOR** — `userById`, `invoice`, `order`, `ticket` resolvers all rea
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Meth
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) wi
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET stable 403 (Cloudflare) — earlier 400/200 reports not reproduced in prob
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), man
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 1
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-g
+- LEARN: ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUM
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passi
+- LEARN: ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value.
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB bro
+- LEARN: REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: curl HTTP/2 root GET = 400 native Express both envs (X-Powered-By: Express, cf-ca
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: fresh read messages_queued 553,564,053 (from 418.9M), queue_length 0, dropped 0, build header stable cST-4
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sen
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: prod POST introspection 200 full schema; validated 8.1 by triage — reportable base.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: out of scope per program.
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) wi
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET 403 (Cloudflare automated urllib) confirmed stable this cycle; curl HTTP
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: prod+staging POST introspection 200 full schema; validated 8.1/7.5 — reportable base.
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection (userPasswordResets, userR
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: /metrics 115B, 553.5M queued, descriptive infra only, not reportable alone.
+- LEARN: REJECTED username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library: all out of scope per program.
+- LEARN: REJECTED app.staging.cineplex.de, graphql-api.app.couat.cineplex.de: TLS-dead, no web surface.
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: growing queue has no exploitable authless manipulation surface; DoS class not applicable; no sen
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 1
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-g
+- LEARN: ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUM
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passi
+- LEARN: ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB bro
+- LEARN: REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only l
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipu
+- LEARN: REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot pass
+- LEARN: REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- LEARN: REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- LEARN: REJECTED graphql-api.app.couat.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) wi
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET stable 403 (Cloudflare) — earlier 400 reports not reproduced in probe lo
+- LEARN: REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), man
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 1
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.staging.cineplex.de: POST introspection returns 200 with full schema (140 mutations, 83 queries) — WAF method-g
+- LEARN: ACCEPTED staging_sensitive_parity @ graphql-api.app.staging.cineplex.de: staging queryType contains userById/searchUsers/adminUsers/userByQr/voucherInstanceByQR
+- LEARN: ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUM
+- LEARN: ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passi
+- LEARN: ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- LEARN: ACCEPTED relay_metrics @ data-9fc27eb430.cineplex.de: GET /metrics returns 200 with 115 bytes — second authless 200 surface; content examined: internal IOMB bro
+- LEARN: REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only l
+- LEARN: REJECTED relay_broker_saturation @ data-9fc27eb430.cineplex.de: 273.9M queued messages over 30k capacity is infra saturation with no exploitable authless manipu
+- LEARN: REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot pass
+- LEARN: REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- LEARN: REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- LEARN: REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" are out of scope
+- LEARN: REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- LEARN: REJECTED app.staging.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- LEARN: REJECTED graphql-api.app.couat.cineplex.de @ TLS-dead: SSLv3 handshake failure — no web surface reachable; not pursuable
+- LEARN: ACCEPTED idor_booking @ graphql-api.app.cineplex.de: Systemic unauth'd IDOR format-confirmed across 4 single-entity resolvers (userById/invoice/order/ticket) wi
+- LEARN: ACCEPTED waf_method_gate_attenuation @ graphql-api.app.{,staging.}cineplex.de: Root GET stable 403 (Cloudflare) — earlier 400 reports not reproduced in probe lo
+- LEARN: REJECTED relay_* @ data-9fc27eb430.cineplex.de: /metrics descriptive infra (IOMB broker) only; no new exploitable surface; not reportable alone (reaffirmed).
+- LEARN: ACCEPTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode` resolves authless (200, backend hit, 405-mismatch) vs prod 
+- LEARN: ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), man
+- LEARN: REJECTED SSRF @ graphql-api.app.cineplex.de:getOnlineTicketingBooking — unauth returns FORBIDDEN "You must be the root user"; referenceUrl arg never reached.
+- LEARN: REJECTED MISCONFIG @ graphql-api.app.cineplex.de:externalUrl,appDeepLink — fixed-map validators (UNKNOWN_SCHEME/UNKNOWN_HOST/UNKNOWN_PATH), not open redirect.
+- LEARN: REJECTED AUTH @ graphql-api.app.cineplex.de:testing_getConfirmationCode — compiled in the prod schema but runtime env-gated ("only available in testing environm
+- LEARN: ACCEPTED SCHEMA_DRIFT @ graphql-api.app.cineplex.de — two introspection calls returned different arg lists for testing_getConfirmationCode (first omitted the ru
+- LEARN: ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de — socialLogin accepts email alongside accessToken/idToken and returns jwt+refreshToken; createAnonymousUser 
+- LEARN: ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+- LEARN: REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect 
+- LEARN: REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+- LEARN: ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+- LEARN: REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect 
+- LEARN: REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+- LEARN: ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de: live mutationType carries three testing_* mutations (testing_getConfirmationCode, testing_forceDeleteUser, 
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths and via GET on
+- LEARN: REJECTED open_redirect @ graphql-api.app.cineplex.de: externalUrl/appDeepLink fixed-map validators, no controllable target.
+- LEARN: REJECTED ssrf @ graphql-api.app.cineplex.de: getOnlineTicketingBooking root-gated (FORBIDDEN).
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential is not reportable alone.
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO 
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
