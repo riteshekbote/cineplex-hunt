@@ -1,59 +1,47 @@
-## 2026-10-12 19:13:46 UTC [target] (model bigpickle)
-[HYP] <title>
-class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
-asset: <host/endpoint>
-confidence: <0-100>
-reasoning: <facts only>
-evidence_needed: <what proves it>
-verify_steps: <passive-first concrete HTTP requests>
-impact: <what attacker gets + severity>
-testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
-[NEW] prod GraphQL compiles `testing_getConfirmationCode(email!)` and `testing_forceDeleteUser(email!)` but runtime-gates them — GET returns FORBIDDEN "only available in testing environments" (an env flag, not RBAC); prod oracle is dead.
-[NEW] staging GraphQL passes that env gate and proxies to internal Spring Data REST, leaking the paths per type: PASSWORD_RESET→`/userPasswordResets/search/findByMandatorIdAndEmailAddress`, LOGIN_CREATION→`/userRegistrations/search/findByMandatorIdAndEmailAddress`, EMAIL_CHANGE→`/userChangeEmailAddresses/search/findByMandatorIdAndEmailAddress`; all return HTTP 405 CINEPLEX_SERVICE_ERROR and disclose `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`.
-[NEW] full URL/credential-shaped arg enumeration complete: `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession)→LoginReturnType{user,jwt,refreshToken,csrf,roles,fileServerToken}`; `refreshLogin(refreshToken,privileged)`; `login(...,privileged,code,nativeBuildCode)`; `createAnonymousUser(appId,bonusProgramId)→LoginReturnType` with no credential input.
-[NEW] `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → FORBIDDEN "You must be the root user" (URL/securityKey args unreachable; SSRF/IDOR vector retired).
-[CHANGED] `externalUrl(appDeepLink)` / `appDeepLink(externalUrl)` are fixed-map validators returning UNKNOWN_SCHEME / UNKNOWN_HOST / UNKNOWN_PATH — not an open redirect.
-[CHANGED] app.cineplex.de origin: HTML → 403 Cloudflare challenge, `/static/dist/*.js` → 525 origin TLS fail; archive.org reports "Temporarily Offline" this cycle → OAuth SPA JS recovery BLOCKED.
-[CHANGED] staging GraphQL does NOT reflect an arbitrary Origin (evil.example reflected no ACAO) — stricter CORS than prod's private-IP-prefix reflection.
-[PRIO] graphql-api.app.cineplex.de 9.4 (attack_surface10 business10 tech10 gate8 cloud10 fresh7)
-[PRIO] graphql-api.app.staging.cineplex.de 8.0 (attack_surface8 business6 tech9 gate9 cloud10 fresh8)
-[PRIO] app.cineplex.de 6.9 (attack_surface6 business10 tech8 gate3 cloud7 fresh5)
-[HYP] socialLogin trusts the client-supplied email over the verified Apple/Google identity, minting LoginReturnType (jwt+refreshToken) for an arbitrary account
+## 2026-10-13 01:25:56 UTC [target] (model bigpickle)
+[CHANGED] `graphql-api.app.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed this cycle: fresh `/zz-<epoch>?query={__typename}` → HTTP 200 `{"data":{"__typename":"Query"}}` (manual curl). No material change.
+[CHANGED] `graphql-api.app.staging.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed: fresh arbitrary path → HTTP 200. No material change.
+[CHANGED] `graphql-api.app.cineplex.de` :: CORS_PRIVATE_IP_PREFIX — live re-confirmed: `OPTIONS /` `Origin: http://10.evil.com` + ACRM POST → HTTP 204, `access-control-allow-origin: http://10.evil.com`, `access-control-allow-credentials: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`. No material change.
+[CHANGED] `web-dev.cineplex.de` :: SUBDOMAIN_TAKEOVER — DoH CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow Status 3 NXDOMAIN/Azure SOA. Dangle holds. No material change.
+[CHANGED] harness void — `probe-results.md` automated log still unusable (trailing backtick → 400, urllib UA → CF 403); all above via manual curl only; no conclusion drawn from automated silence.
+[PRIO] graphql-api.app.cineplex.de 9.3: attack_surface 10 / business_value 9 / tech_exposure 10 / gate_ease 9 / cloud_surface 7 / freshness 10
+[PRIO] graphql-api.app.staging.cineplex.de 9.0: attack_surface 9 / business_value 8 / tech_exposure 10 / gate_ease 10 / cloud_surface 7 / freshness 10
+[PRIO] web-dev.cineplex.de 7.7: attack_surface 7 / business_value 7 / tech_exposure 5 / gate_ease 10 / cloud_surface 9 / freshness 10
+[HYP] socialLogin trusts client-supplied email over verified provider identity
 class: AUTH
-asset: graphql-api.app.cineplex.de (mutation socialLogin)
+asset: graphql-api.app.cineplex.de (socialLogin mutation)
 confidence: 48
-reasoning: schema exposes socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession) returning LoginReturnType{user,jwt,refreshToken,csrf,roles,fileServerToken}; accepting email as a first-class arg alongside the provider token is the known "identity trust" ATO pattern when account resolution uses the unverified email.
-evidence_needed: behavioral proof that a bogus/absent Apple or Google token still mints a session bound to the supplied email (or that email is used to resolve the account before token validation).
-verify_steps: one POST to https://graphql-api.app.cineplex.de/ with body {"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<tester-own-email>\"){jwt refreshToken user{id email}}}"} and Content-Type: application/json, no auth header; safe variant uses the tester's OWN email plus a deliberately invalid token — any 200 containing jwt/refreshToken proves the token is not required.
-impact: authenticated session as an arbitrary user → full account takeover with ticketing/loyalty PII access; Critical.
+reasoning: schema shows `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession)→LoginReturnType{user,jwt,refreshToken,csrf,roles,...}`; email is a plain client arg alongside the provider token, and the resolver returns a full jwt+refreshToken; no server-side verification of email↔token binding is evidenced in the schema.
+evidence_needed: a 200 response containing jwt/refreshToken when a deliberately invalid provider token is paired with an email the attacker does not control.
+verify_steps: HUMAN ONLY — with OWN account email, POST `https://graphql-api.app.cineplex.de/` body `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header.
+impact: account takeover of arbitrary accounts if email is trusted without token verification — critical.
 testability: HUMAN_ONLY
-[HYP] Staging testing_getConfirmationCode returns account confirmation/reset codes by email, giving pre-auth ATO wherever staging resolves a production identity
+[HYP] staging testing_getConfirmationCode is an authless confirmation-code oracle
 class: AUTH
-asset: graphql-api.app.staging.cineplex.de (query testing_getConfirmationCode)
+asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode mutation)
 confidence: 45
-reasoning: unlike prod, staging is not env-gated and resolves {email,type} to a backend lookup; the three ConfirmationCodeType values map to findByMandatorIdAndEmailAddress services, so a returned code for an arbitrary email is an ATO primitive.
-evidence_needed: a non-405 response carrying a code value for a controlled test account, plus evidence that a production user resolves on staging (shared mandatorId / data store).
-verify_steps: GET https://graphql-api.app.staging.cineplex.de/?query={testing_getConfirmationCode(email:"<own-staging-test-account>",type:LOGIN_CREATION)} and observe whether a code is returned; backing path is /userRegistrations/search/findByMandatorIdAndEmailAddress?emailAddress=..&mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b.
-impact: pre-auth read of confirmation / password-reset codes → ATO on staging; Critical if staging and prod share identity, otherwise High on test data only.
+reasoning: prod compiles `testing_getConfirmationCode(email!)` but runtime-gates it with `FORBIDDEN "only available in testing environments"`; staging passes that env gate and proxies to internal Spring Data REST (`PASSWORD_RESET→/userPasswordResets/search/findByMandatorIdAndEmailAddress`, `LOGIN_CREATION→…`), so the mutation is reachable without auth on staging.
+evidence_needed: a 200 response returning a live confirmation/reset code for an email, with no authentication and no matching reset request.
+verify_steps: AUTH_HELPED ONLY — POST `https://graphql-api.app.staging.cineplex.de/` `{"query":"mutation{testing_getConfirmationCode(email:\"<own-email>\")}"}`; must be an account the tester owns; do not target third parties.
+impact: authless password-reset/login code disclosure → account takeover; scope caveat is that impact lands on the staging env unless the gate omission extends to prod.
 testability: AUTH_HELPED
-[HYP] JS-readable refresh-token cookie scoped to parent domain .cineplex.de, redeemable via a public client, yields 365-day ATO across cineplex.de
-class: AUTH
-asset: app.cineplex.de
-confidence: 55
-reasoning: recovered config oAuth2ClientId=4a64660b-979a-4fb4-a671-909d2d943f0f and oAuth2SSODomain=.cineplex.de; the refresh cookie is JS-set so it cannot be HttpOnly and the cookie builder emits no SameSite; a refresh grant against a public client needs no secret.
-evidence_needed: document.cookie showing authorization={"refresh_token":..} with Domain=.cineplex.de, plus a successful refresh exchange.
-verify_steps: in a consented app.cineplex.de session run document.cookie; then POST https://buchung.cineplex.de/gateway/auth/oauth/token with client_id=4a64660b-979a-4fb4-a671-909d2d943f0f&grant_type=refresh_token&refresh_token=<captured>; expect 200 access_token.
-impact: session takeover of every .cineplex.de host, valid 365 days, once any JS-execution foothold exists.
+[HYP] Dangling CNAME on web-dev.cineplex.de to unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: DoH confirms a persistent dangling CNAME (20+ cycles) to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; follow-on A/AAAA queries return NXDOMAIN with an Azure DNS SOA, consistent with a deleted/unclaimed app. The name is in the in-scope `*.cineplex.de` zone.
+evidence_needed: proof the target FQDN is claimable — i.e. an attacker can bind `web-dev.cineplex.de` (or serve content on it) by recreating the Azure resource; the random env suffix must be reconcilable.
+verify_steps: HUMAN — attempt to register a Container App / custom domain serving the target FQDN in `switzerlandnorth`; if the FQDN cannot be recreated, the dangle is not exploitable.
+impact: control of a genuine `*.cineplex.de` origin (usable as an authenticated same-site origin) if claimable — medium/high; unproven.
 testability: HUMAN_ONLY
-[PARKED] externalUrl/appDeepLink open redirect: fixed-map validator (UNKNOWN_SCHEME/HOST/PATH), no attacker-chosen destination.
-[PARKED] getOnlineTicketingBooking SSRF/IDOR: unauth → FORBIDDEN "You must be the root user"; referenceUrl/securityKey never reached.
-[PARKED] Prod testing_getConfirmationCode ATO: runtime env-gated on prod ("only available in testing environments") — no production data path.
-[PARKED] testing_forceDeleteUser: destructive and env-gated; must never be invoked.
-[FINAL] 1) socialLogin identity-trust (AUTH, 48) 2) parent-domain refresh cookie (AUTH, 55) 3) staging confirmation-code oracle (AUTH, 45).
-[NEXT] HUMAN: with your OWN app account email and a deliberately invalid Google/Apple token, POST {"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<your-email>\"){jwt refreshToken user{id}}}"} to https://graphql-api.app.cineplex.de/ (Content-Type: application/json, no auth header); a 200 containing jwt/refreshToken proves the email param is trusted over the token (account takeover).
-[LEARN] REJECTED SSRF @ graphql-api.app.cineplex.de:getOnlineTicketingBooking — unauth returns FORBIDDEN "You must be the root user"; referenceUrl arg never reached.
-[LEARN] REJECTED MISCONFIG @ graphql-api.app.cineplex.de:externalUrl,appDeepLink — fixed-map validators (UNKNOWN_SCHEME/UNKNOWN_HOST/UNKNOWN_PATH), not open redirect.
-[LEARN] REJECTED AUTH @ graphql-api.app.cineplex.de:testing_getConfirmationCode — compiled in the prod schema but runtime env-gated ("only available in testing environments"); an environment flag, not RBAC.
-[LEARN] ACCEPTED SCHEMA_DRIFT @ graphql-api.app.cineplex.de — two introspection calls returned different arg lists for testing_getConfirmationCode (first omitted the runtime-required type:ConfirmationCodeType!); introspection arg lists must be re-validated against live GRAPHQL_VALIDATION_FAILED errors.
-[LEARN] ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de — socialLogin accepts email alongside accessToken/idToken and returns jwt+refreshToken; createAnonymousUser returns LoginReturnType with no credential input.
-[RISK] cineplex: 78 — a new unauthenticated auth-mutation surface (socialLogin email-trust, createAnonymousUser→jwt/refreshToken) plus a live staging confirmation-code oracle raise impact, while the prod testing oracle is properly env-gated and several SSRF/open-redirect/IDOR vectors are retired; archive.org offline and app.cineplex.de origin 525/403 keep the OAuth SPA confirmation blocked. All probes read-only, ≤1 rps, no customer data touched.
+[PARKED] CORS private-IP prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live-verified and env-agnostic, but the API emits zero `Set-Cookie` and the client uses Bearer/localStorage, so a cross-origin page cannot obtain or auto-attach a credential → standalone impact ≤40, config-hygiene; revisited only if chained to control of a real same-site origin.
+[PARKED] open redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), not redirects — REJECTED class.
+[PARKED] SSRF @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → `FORBIDDEN "You must be the root user"`; URL/securityKey args unreachable — retired.
+[FINAL] 1. socialLogin email-trust → ATO (AUTH, 48)  2. staging testing_getConfirmationCode oracle (AUTH, 45)  3. web-dev.cineplex.de dangling-CNAME takeover, claimability unproven (OTHER, 50)
+[NEXT] HUMAN: with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header — a 200 carrying jwt/refreshToken proves the server trusts the client `email` over the provider token and confirms a critical ATO primitive.
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+[LEARN] REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect target.
+[LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+[RISK] cineplex: 30 — high-value classes (ATO, BOLA, SSRF) remain reachable in principle but are gated behind HUMAN_ONLY / AUTH_HELPED tests against live customer data that program rules forbid; inventory static and most surface is OOS or config-hygiene.

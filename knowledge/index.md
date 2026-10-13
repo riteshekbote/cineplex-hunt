@@ -1486,3 +1486,17 @@
 - 2026-10-12 REJECTED AUTH @ graphql-api.app.cineplex.de:testing_getConfirmationCode — compiled in the prod schema but runtime env-gated ("only available in testing environments"); an environment flag, not RBAC.
 - 2026-10-12 ACCEPTED SCHEMA_DRIFT @ graphql-api.app.cineplex.de — two introspection calls returned different arg lists for testing_getConfirmationCode (first omitted the runtime-required type:ConfirmationCodeType!); introspection arg lists must be re-validated against live GRAPHQL_VALIDATION_FAILED errors.
 - 2026-10-12 ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de — socialLogin accepts email alongside accessToken/idToken and returns jwt+refreshToken; createAnonymousUser returns LoginReturnType with no credential input.
+- 2026-10-13 ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+- 2026-10-13 REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect target.
+- 2026-10-13 REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+- 2026-10-13 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
+- 2026-10-13 ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+- 2026-10-13 ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- 2026-10-13 ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` provably excluded (500 no ACAO)
+- 2026-10-13 ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before validation
+- 2026-10-13 ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; ZERO `Set-Cookie` on GraphQL API responses; `Vary: Origin` present
+- 2026-10-13 REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de localStorage or SSO cookie; downgraded to config-hygiene (~CVSS 2.0)
+- 2026-10-13 REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 contracts, 2 arg shapes)
+- 2026-10-13 ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- 2026-10-13 REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- 2026-10-13 Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)

@@ -106998,3 +106998,234 @@ testability: HUMAN_ONLY
 [LEARN] ACCEPTED AUTH_SURFACE @ graphql-api.app.cineplex.de — socialLogin accepts email alongside accessToken/idToken and returns jwt+refreshToken; createAnonymousUser returns LoginReturnType with no credential input.
 
 [RISK] cineplex: 78 — a new unauthenticated auth-mutation surface (socialLogin email-trust, createAnonymousUser→jwt/refreshToken) plus a live staging confirmation-code oracle raise impact, while the prod testing oracle is properly env-gated and several SSRF/open-redirect/IDOR vectors are retired; archive.org offline and app.cineplex.de origin 525/403 keep the OAuth SPA confirmation blocked. All probes read-only, ≤1 rps, no customer data touched.
+===== ANALYST bigpickle 2026-10-13 01:26:05 UTC =====
+[0m
+> build · big-pickle
+[0m
+I'll run a small set of read-only probes to establish the current delta before emitting blocks.
+[0m$ [0mfor h in graphql-api.app.cineplex.de graphql-api.app.staging.cineplex.de; do echo "=== $h ==="; curl -sS --http2 -m 20 -A "Mozilla/5.0" "https://$h/?query=%7B__typename%7D" -w "\n[%{http_code} %{size_download}b]\n"; sleep 1; done
+=== graphql-api.app.cineplex.de ===
+{"data":{"__typename":"Query"}}
+
+[200 32b]
+=== graphql-api.app.staging.cineplex.de ===
+{"data":{"__typename":"Query"}}
+
+[200 32b]
+[0m
+## Objective
+- Run the 8-step bug-bounty hunt workflow against Cineplex Deutschland / Cineplex Group (report channel: bugs.olivermaicher.eu), prioritizing high-value classes (IDOR/BOLA, auth/session, OAuth, GraphQL mutations, mass assignment, SSRF, subdomain takeover) with aggressive chaining.
+- Output only structured blocks ([NEW]/[CHANGED], [PRIO], [HYP], [PARKED]/[FINAL], [NEXT], [LEARN], [RISK]); facts vs hypotheses strictly separated, passive-first, no invented findings.
+
+## Important Details
+- Rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only for live probes; no auth-bypass or mutating tests vs live customer data; sha256 any secret; all claims must trace to context or own read-only probes.
+- REJECTED (out of scope): DoS/account-lockout, descriptive errors/headers, robots.txt/public files, outdated libraries, OPTIONS/TRACE, CSRF on logout/anon forms, cookie flags on non-sensitive data, self-XSS, scanner reports w/o POC, username enumeration, brute-force/rate-limit, SSL/TLS best practice/attacks, clickjacking w/o exploit, mail config, password/recovery policy, autocomplete, public login panels, lack of email verification, session control during email/password change.
+- Scope includes only company-owned infrastructure/domains under Cineplex Deutschland GmbH & Co. KG.
+- Critical harness fact: automated `probe-results.md` has ZERO POST GraphQL probes ever; automated GET probes carry a literal trailing backtick (→ 400) and urllib UA hits Cloudflare bot-gate (→ 403). All structural findings are manual-curl-verified only; automated log silence carries no weight.
+- Top surviving verified primitives: (1) CORS private-IP-prefix credentialed reflection on prod `graphql-api.app.cineplex.de` — `Origin: http://10.evil.com` / `http://192.168.…` reflected with `ACAC: true`; dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` excluded (500); `sub.attacker.cineplex.de` allowed (label boundary). (2) GraphQL introspection + arbitrary-path catch-all (`/zz-…?query={__typename}` → 200 both envs). (3) Dual entry points `/` and `/graphql`. (4) web-dev.cineplex.de dangling CNAME (20+ cycles NXDOMAIN → azurecontainerapps.io). (5) staging `testing_getConfirmationCode` env-gate omission. (6) IDOR decoder oracle only (structural, NOT demonstrated auth omission — falsified 2026-09-27).
+- CORS credentialed chain impact DOWNGRADED: app.cineplex.de uses Bearer/localStorage + SSO-domain refresh cookie, no API-origin `Set-Cookie` → no ambient credential; reclassified config-hygiene. Chain now requires control of a real `*.cineplex.de` host (which web-dev dangle would supply).
+- OAuth2 client config recovered from archived bundle: `oAuth2ClientId=4a64660b-979a-4fb4-a671-909d2d943f0f`, `oAuth2SSODomain=.cineplex.de`; refresh cookie JS-set (`authorization`, no HttpOnly, no SameSite, 365d), redeemed via public-client refresh_token grant to `buchung.cineplex.de/gateway/auth/oauth/token`.
+- `getOnlineTicketingBooking` is root-gated (`FORBIDDEN "You must be the root user"`) — SSRF lead dead. `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH) — not open redirect.
+
+## Work State
+### Completed
+- Full GraphQL schema mapping: 83 queries / 140 mutations (150 incl. deprecated), 385 types, 44 INPUT_OBJECT bodies; mass-assignment read/write mirror confirmed (`CinemaOperatingCompanyData.accessRight*` == `UserPrivileges` derived names).
+- CORS characterization: preflight 204 reflecting hostile origins with `ACAC:true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE` (no OPTIONS), `ACAH: content-type,authorization`; private-IP prefix rule + staging parity; reflections also on 400 bodies.
+- IDOR decoder oracle proven (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list-decode in `Array.map`); ownership-omission claim falsified by `contentSectionListByNameAndCinemas` → UNAUTHENTICATED.
+- Prior falsifications/retractions recorded: "4 equivalent surfaces" (GET-only generalization), "zero POST captures" misread, injected staging-only-predicted 10 deprecated fields (self-error), name-only "no injection vectors" claim.
+- web-dev.cineplex.de dangling CNAME re-verified across 20+ cycles; sole CNAME in 14-host dev/systems sweep; machine-checkable DoH path working (header defect fixed).
+- cms/helpdesk/VPN/Nextcloud/Zammad/mailing etc. reviewed → auth-gated or OOS.
+
+### Active
+- Three open AUTH hypotheses awaiting HUMAN_ONLY verification (top-ranked by bigpickle lead): (1) `socialLogin(email,accessToken,idToken,…)` trusts client email over verified provider identity → mints jwt/refreshToken (conf 48); (2) parent-domain `.cineplex.de` refresh-token cookie → 365-day ATO via public-client refresh grant (conf 55); (3) staging `testing_getConfirmationCode` authless code oracle vs prod FORBIDDEN (conf 45, AUTH_HELPED).
+- [PRIO] graphql-api.app.cineplex.de 9.4; graphql-api.app.staging 8.0; app.cineplex.de 6.9.
+
+### Blocked
+- Archived-bundle OAuth SPA JS recovery BLOCKED this cycle: archive.org "Temporarily Offline"; app.cineplex.de HTML → 403 CF challenge, `/static/dist/*.js` → 525 origin TLS.
+- Live mutation testing (socialLogin, mass-assignment, testing_forceDeleteUser) blocked — HUMAN_ONLY, would touch live customer data; testing_forceDeleteUser must NEVER be invoked.
+- api.cineplex.de GET-based GraphQL bypass dead (strict 403 all methods/encodings).
+- TLS-dead hosts unreachable: app.staging.cineplex.de, graphql-api.app.couat.cineplex.de, login.cineplex.de (525), sso.cineplex.de (525).
+
+## Next Move
+1. HUMAN (top pending): with OWN app-account email + deliberately invalid Google/Apple token, POST to `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id}}}"}` (Content-Type: application/json, no auth header); a 200 containing jwt/refreshToken proves email trusted over token → ATO.
+2. PROBE (read-only, if continuing passively): re-confirm CORS private-IP-prefix foothold live: `curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST"` and re-verify web-dev DoH dangle + staging/prod `/graphql` catch-all on a fresh path.
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB + `## CANONICAL STATUS` section (LIVE/DEAD/SURVIVING/METHOD RULES); source of all verdicts.
+- `probe-results.md`: automated probe log (~1399 lines); harness-corrupted (trailing backtick → 400, urllib UA → 403), zero POST — do not draw conclusions from its silence.
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: live `[HYP]` blocks (CORS, mass-assignment, dangle, 3 AUTH hypotheses); falsified IDOR lines tagged `[LEARN]`.
+- `scripts/sync-issues.py`: tracker publisher — `parse_blocks` matches `^\[HYP\]` only, globs `leads/lead-*.md`; `fingerprint()`=md5(asset|class) (fragmentation risk); `ensure_label()` return bug.
+- `scripts/passive_verify.py`, `scripts/test_passive_verify.py`: testable extraction module, 14 offline tests (replaces retired harness).
+- `.github/workflows/hunt.yml`: lines 207-225 hold harness defect root causes (URL regex missing backtick exclusion, urllib UA "(passive verifier)" suffix, `urls[:12]` truncation, brace truncation → false 400).
+- `inventory/cineplex.md`: 132-host baseline (complete since 2026-09-23); web-dev sole dangle, Azure target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mecho "=== CORS private-IP prefix ==="; curl -sS --http2 -m 20 -o /dev/null -D - -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization" -w "\n[%{http_code}]\n"; sleep 1; echo "=== fresh catch-all path ==="; curl -sS --http2 -m 20 -A "Mozilla/5.0" "https://graphql-api.app.cineplex.de/zz-$(date +%s)?query=%7B__typename%7D" -w "\n[%{http_code}]\n"
+=== CORS private-IP prefix ===
+HTTP/2 204 
+date: Tue, 13 Oct 2026 01:24:45 GMT
+x-amzn-requestid: eaaae83e-6c23-4e12-a30f-cfb4934fd3f8
+access-control-allow-origin: http://10.evil.com
+access-control-allow-headers: content-type,authorization
+x-amzn-remapped-content-length: 0
+x-amz-apigw-id: FKI-uHcpliAEBUg=
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+x-powered-by: Express
+x-amzn-trace-id: Root=1-6acd885d-1da2c78b2fba0e7277254f6d;Parent=44371a6a3a3159ad;Sampled=0;Lineage=1:2b27107c:0
+access-control-allow-credentials: true
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: a49a8be99dd2e7fa-ORD
+alt-svc: h3=":443"; ma=86400
+
+
+[204]
+=== fresh catch-all path ===
+{"data":{"__typename":"Query"}}
+
+[200]
+[0m
+[0m$ [0mecho "=== web-dev CNAME (DoH) ==="; curl -sS -m 20 -H "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=CNAME" | head -c 600; echo; sleep 1; echo "=== staging catch-all fresh ==="; curl -sS --http2 -m 20 -A "Mozilla/5.0" "https://graphql-api.app.staging.cineplex.de/zz-$(date +%s)?query=%7B__typename%7D" -w "\n[%{http_code}]\n"
+=== web-dev CNAME (DoH) ===
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":5}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}]}
+=== staging catch-all fresh ===
+{"data":{"__typename":"Query"}}
+
+[200]
+[0m
+[0m$ [0mecho "=== web-dev HTTP ==="; curl -sS -m 20 -o /dev/null -D - -A "Mozilla/5.0" "https://web-dev.cineplex.de/" -w "\n[%{http_code}]\n" 2>&1 | head -20; echo "=== A record ==="; curl -sS -m 20 -H "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=web-dev.cineplex.de&type=A" | head -c 400
+=== web-dev HTTP ===
+curl: (6) Could not resolve host: web-dev.cineplex.de
+
+[000]
+=== A record ===
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de","type":1}],"Answer":[{"name":"web-dev.cineplex.de","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com.
+[0m
+[0m$ [0mls -la; echo "---"; git log --oneline -8; echo "--- leads ---"; ls -la leads/ 2>/dev/null
+total 1656
+drwxr-xr-x 12 runner runner   4096 Oct 13 01:23 .
+drwxr-xr-x  3 runner runner   4096 Oct 13 01:23 ..
+drwxr-xr-x  7 runner runner   4096 Oct 13 01:23 .git
+drwxr-xr-x  3 runner runner   4096 Oct 13 01:23 .github
+-rw-r--r--  1 runner runner   1923 Oct 13 01:23 README.md
+-rw-r--r--  1 runner runner  11014 Oct 13 01:25 analyst-out.txt
+-rw-r--r--  1 runner runner 745718 Oct 13 01:23 analyst-prompt.txt
+-rw-r--r--  1 runner runner 741761 Oct 13 01:23 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 leads
+-rw-r--r--  1 runner runner  97211 Oct 13 01:23 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 reports
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct 13 01:23 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 13 01:23 scripts
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 13 01:23 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 13 01:23 triage
+---
+3a6ed2f reposcan 2026-10-12-22-34
+--- leads ---
+total 4492
+drwxr-xr-x  2 runner runner    4096 Oct 13 01:23 .
+drwxr-xr-x 12 runner runner    4096 Oct 13 01:23 ..
+-rw-r--r--  1 runner runner 1732660 Oct 13 01:23 lead-bigpickle.md
+-rw-r--r--  1 runner runner   11781 Oct 13 01:23 lead-laguna.md
+-rw-r--r--  1 runner runner   11550 Oct 13 01:23 lead-ling3.md
+-rw-r--r--  1 runner runner   12012 Oct 13 01:23 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 13 01:23 lead-mimo.md
+-rw-r--r--  1 runner runner 2783697 Oct 13 01:23 lead-nemotron3.md
+-rw-r--r--  1 runner runner   28165 Oct 13 01:23 reposcan-cineplex.md
+[0m
+[0m→ [0mRead README.md
+[0m
+[0m$ [0mwc -l analyst-prompt.txt analyst-out.txt ctx.txt; echo "--- head analyst-prompt ---"; head -c 3000 analyst-prompt.txt
+4515 analyst-prompt.txt
+    143 analyst-out.txt
+   4486 ctx.txt
+   9144 total
+--- head analyst-prompt ---
+=== KNOWLEDGE BASE ===
+# Knowledge Base (seed)
+- 2026-09-03 REJECTED username_enumeration @ auth.cineplex.de/login.cineplex.de/sso.cineplex.de: Program explicitly lists "Username enumeration based on login or forgot password pages" as out of scope
+- 2026-09-03 REJECTED ssl_tls_best_practices @ all HTTPS endpoints: "SSL/TLS best practices" and "SSL attacks" are out of scope
+- 2026-09-03 REJECTED csrf_logout @ all endpoints: "CSRF on logout" is out of scope
+- 2026-09-03 REJECTED descriptive_errors @ all endpoints: "Descriptive error messages or headers" is out of scope
+- 2026-09-03 REJECTED known_vuln_library @ all: "Use of known-vulnerable library without exploit specific to implementation" is out of scope
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: Not in rejected classes; high-value if enabled
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+- 2026-09-03 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surface on relay; not rejected; active infra; high discovery value
+- 2026-09-03 REJECTED grafana/metrics-only @ data-9fc27eb430.cineplex.de: confidence drops if only /health + build header confirmed with no other 200 surface (metrics-only leaks are borderline descriptive-header class)
+- 2026-09-03 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+- 2026-09-03 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-03 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; now extended to GraphQL API via userById/searchUsers/adminUsers
+- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+- 2026-09-04 ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+- 2026-09-04 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized; extended to GraphQL API via userById/searchUsers/adminUsers — but testability HUMAN_ONLY per program PII rule
+- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but auth.cineplex.de/.well-known/jwks.json returns 404, no passive JWKS fetch possible
+- 2026-09-04 ACCEPTED relay_internal_disclosure @ data-9fc27eb430.cineplex.de: Live 200 JSON health/build surfac
+[0m
+[0m→ [0mRead analyst-out.txt
+[0m→ [0mRead analyst-prompt.txt[90m [offset=4200, limit=320][0m
+[0m→ [0mRead analyst-prompt.txt[90m [offset=4497][0m
+[CHANGED] `graphql-api.app.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed this cycle: fresh `/zz-<epoch>?query={__typename}` → HTTP 200 `{"data":{"__typename":"Query"}}` (manual curl). No material change.
+[CHANGED] `graphql-api.app.staging.cineplex.de` :: SCHEMA_EXPOSURE — live re-confirmed: fresh arbitrary path → HTTP 200. No material change.
+[CHANGED] `graphql-api.app.cineplex.de` :: CORS_PRIVATE_IP_PREFIX — live re-confirmed: `OPTIONS /` `Origin: http://10.evil.com` + ACRM POST → HTTP 204, `access-control-allow-origin: http://10.evil.com`, `access-control-allow-credentials: true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`. No material change.
+[CHANGED] `web-dev.cineplex.de` :: SUBDOMAIN_TAKEOVER — DoH CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow Status 3 NXDOMAIN/Azure SOA. Dangle holds. No material change.
+[CHANGED] harness void — `probe-results.md` automated log still unusable (trailing backtick → 400, urllib UA → CF 403); all above via manual curl only; no conclusion drawn from automated silence.
+NO_DELTA (no new assets; 132-host inventory unchanged since 2026-09-23).
+
+[PRIO] graphql-api.app.cineplex.de 9.3: attack_surface 10 / business_value 9 / tech_exposure 10 / gate_ease 9 / cloud_surface 7 / freshness 10
+[PRIO] graphql-api.app.staging.cineplex.de 9.0: attack_surface 9 / business_value 8 / tech_exposure 10 / gate_ease 10 / cloud_surface 7 / freshness 10
+[PRIO] web-dev.cineplex.de 7.7: attack_surface 7 / business_value 7 / tech_exposure 5 / gate_ease 10 / cloud_surface 9 / freshness 10
+
+[HYP] socialLogin trusts client-supplied email over verified provider identity
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin mutation)
+confidence: 48
+reasoning: schema shows `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession)→LoginReturnType{user,jwt,refreshToken,csrf,roles,...}`; email is a plain client arg alongside the provider token, and the resolver returns a full jwt+refreshToken; no server-side verification of email↔token binding is evidenced in the schema.
+evidence_needed: a 200 response containing jwt/refreshToken when a deliberately invalid provider token is paired with an email the attacker does not control.
+verify_steps: HUMAN ONLY — with OWN account email, POST `https://graphql-api.app.cineplex.de/` body `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header.
+impact: account takeover of arbitrary accounts if email is trusted without token verification — critical.
+testability: HUMAN_ONLY
+
+[HYP] staging testing_getConfirmationCode is an authless confirmation-code oracle
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode mutation)
+confidence: 45
+reasoning: prod compiles `testing_getConfirmationCode(email!)` but runtime-gates it with `FORBIDDEN "only available in testing environments"`; staging passes that env gate and proxies to internal Spring Data REST (`PASSWORD_RESET→/userPasswordResets/search/findByMandatorIdAndEmailAddress`, `LOGIN_CREATION→…`), so the mutation is reachable without auth on staging.
+evidence_needed: a 200 response returning a live confirmation/reset code for an email, with no authentication and no matching reset request.
+verify_steps: AUTH_HELPED ONLY — POST `https://graphql-api.app.staging.cineplex.de/` `{"query":"mutation{testing_getConfirmationCode(email:\"<own-email>\")}"}`; must be an account the tester owns; do not target third parties.
+impact: authless password-reset/login code disclosure → account takeover; scope caveat is that impact lands on the staging env unless the gate omission extends to prod.
+testability: AUTH_HELPED
+
+[HYP] Dangling CNAME on web-dev.cineplex.de to unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: DoH confirms a persistent dangling CNAME (20+ cycles) to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; follow-on A/AAAA queries return NXDOMAIN with an Azure DNS SOA, consistent with a deleted/unclaimed app. The name is in the in-scope `*.cineplex.de` zone.
+evidence_needed: proof the target FQDN is claimable — i.e. an attacker can bind `web-dev.cineplex.de` (or serve content on it) by recreating the Azure resource; the random env suffix must be reconcilable.
+verify_steps: HUMAN — attempt to register a Container App / custom domain serving the target FQDN in `switzerlandnorth`; if the FQDN cannot be recreated, the dangle is not exploitable.
+impact: control of a genuine `*.cineplex.de` origin (usable as an authenticated same-site origin) if claimable — medium/high; unproven.
+testability: HUMAN_ONLY
+
+[PARKED] CORS private-IP prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live-verified and env-agnostic, but the API emits zero `Set-Cookie` and the client uses Bearer/localStorage, so a cross-origin page cannot obtain or auto-attach a credential → standalone impact ≤40, config-hygiene; revisited only if chained to control of a real same-site origin.
+[PARKED] open redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), not redirects — REJECTED class.
+[PARKED] SSRF @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → `FORBIDDEN "You must be the root user"`; URL/securityKey args unreachable — retired.
+[FINAL] 1. socialLogin email-trust → ATO (AUTH, 48)  2. staging testing_getConfirmationCode oracle (AUTH, 45)  3. web-dev.cineplex.de dangling-CNAME takeover, claimability unproven (OTHER, 50)
+
+[NEXT] HUMAN: with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header — a 200 carrying jwt/refreshToken proves the server trusts the client `email` over the provider token and confirms a critical ATO primitive.
+
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+[LEARN] REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect target.
+[LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+
+[RISK] cineplex: 30 — high-value classes (ATO, BOLA, SSRF) remain reachable in principle but are gated behind HUMAN_ONLY / AUTH_HELPED tests against live customer data that program rules forbid; inventory static and most surface is OOS or config-hygiene.

@@ -6015,3 +6015,23 @@
 - LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
 - LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
+
+## RANKED HYPOTHESES 2026-10-13 01:26:05 UTC
+- [90] graphql-api.app.cineplex.de: CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads (from art/lead_nemotron3.txt)
+- [48] graphql-api.app.cineplex.de: socialLogin trusts client-supplied email over verified provider identity (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"in
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Meth
+- LEARN: ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+- LEARN: REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect 
+- LEARN: REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — `10.` and `192.168.` dot-boundary enforced; 
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; Z
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to `/`)
