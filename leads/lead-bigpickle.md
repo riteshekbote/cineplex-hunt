@@ -11327,3 +11327,8 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
 [LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
 [RISK] cineplex: 30 — high-value classes (ATO, BOLA, SSRF) remain reachable in principle but are gated behind HUMAN_ONLY / AUTH_HELPED tests against live customer data that program rules forbid; inventory static and most surface is OOS or config-hygiene.
+## 2026-10-13 08:24:48 UTC [target] (model bigpickle)
+[NEW] cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+[CHANGED] graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+[CHANGED] CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-apigw-id, x-powered-by: Express)
+[CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
