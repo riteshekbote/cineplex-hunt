@@ -2922,3 +2922,17 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
 - CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
 - CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+
+## 2026-10-13 16:25:57 UTC
+- NEW cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+- CHANGED graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+- CHANGED CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-
+- CHANGED dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
+- NEW graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live this cycle (was 500); entry point now matches prod exactly
+- NEW cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- NEW cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request (no valid GraphQL query) returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before va
+- NEW app.cineplex.de client auth model recovered via Internet Archive (all.min.js 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO dom
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive cycle NXDOMAIN re-verified via DoH (CNAME Status 0, A/AAAA-follow Status 3 + azure-dns.com SOA); sole CNAME in 14-host sweep
+- CHANGED buchung-dev/bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated, oscillation continue
+- CHANGED Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only

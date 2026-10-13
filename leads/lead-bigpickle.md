@@ -11332,3 +11332,23 @@ testability: HUMAN_ONLY
 [CHANGED] graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
 [CHANGED] CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-apigw-id, x-powered-by: Express)
 [CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
+## 2026-10-13 16:25:44 UTC [target] (model bigpickle)
+evidence_needed: proof the target FQDN is claimable — i.e. an attacker can bind `web-dev.cineplex.de` (or serve content on it) by recreating the Azure resource; the random env suffix must be reconcilable.
+verify_steps: HUMAN — attempt to register a Container App / custom domain serving the target FQDN in `switzerlandnorth`; if the FQDN cannot be recreated, the dangle is not exploitable.
+impact: control of a genuine `*.cineplex.de` origin (usable as an authenticated same-site origin) if claimable — medium/high; unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live-verified and env-agnostic, but the API emits zero `Set-Cookie` and the client uses Bearer/localStorage, so a cross-origin page cannot obtain or auto-attach a credential → standalone impact ≤40, config-hygiene; revisited only if chained to control of a real same-site origin.
+[PARKED] open redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), not redirects — REJECTED class.
+[PARKED] SSRF @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → `FORBIDDEN "You must be the root user"`; URL/securityKey args unreachable — retired.
+[FINAL] 1. socialLogin email-trust → ATO (AUTH, 48)  2. staging testing_getConfirmationCode oracle (AUTH, 45)  3. web-dev.cineplex.de dangling-CNAME takeover, claimability unproven (OTHER, 50)
+[NEXT] HUMAN: with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header — a 200 carrying jwt/refreshToken proves the server trusts the client `email` over the provider token and confirms a critical ATO primitive.
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+[LEARN] REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect target.
+[LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+[RISK] cineplex: 30 — high-value classes (ATO, BOLA, SSRF) remain reachable in principle but are gated behind HUMAN_ONLY / AUTH_HELPED tests against live customer data that program rules forbid; inventory static and most surface is OOS or config-hygiene.
+[NEW] cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+[CHANGED] graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+[CHANGED] CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-apigw-id, x-powered-by: Express)
+[CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300

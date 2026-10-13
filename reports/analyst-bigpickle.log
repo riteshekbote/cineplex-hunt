@@ -107336,3 +107336,352 @@ The one unproven link that would elevate CORS-hygiene → critical is whether `g
 - AUTH_HELPED (owned only): POST staging `testing_getConfirmationCode(email:"<own>", type:PASSWORD_RESET)` to confirm authless oracle.
 
 I have no auth-free next step that adds evidence; the remaining three survivors (socialLogin ATO, staging code oracle, web-dev CNAME claim) all require either an owned account or provider-side claim action. Want me to (a) draft the report blocks for the two report-ready items (schema exposure CVSS 7.5 + arbitrary-path catch-all), or (b) stand by and keep the case at POC?
+===== ANALYST bigpickle 2026-10-13 16:25:57 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls leads 2>/dev/null; echo "---"; ls knowledge 2>/dev/null | head; echo "---"; ls inventory 2>/dev/null
+total 1664
+drwxr-xr-x 12 runner runner   4096 Oct 13 16:23 .
+drwxr-xr-x  3 runner runner   4096 Oct 13 16:23 ..
+drwxr-xr-x  7 runner runner   4096 Oct 13 16:23 .git
+drwxr-xr-x  3 runner runner   4096 Oct 13 16:23 .github
+-rw-r--r--  1 runner runner   1923 Oct 13 16:23 README.md
+-rw-r--r--  1 runner runner     32 Oct 13 16:23 analyst-out.txt
+-rw-r--r--  1 runner runner 754434 Oct 13 16:23 analyst-prompt.txt
+-rw-r--r--  1 runner runner 750477 Oct 13 16:23 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 leads
+-rw-r--r--  1 runner runner  97779 Oct 13 16:23 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 reports
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct 13 16:23 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 scripts
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 13 16:23 triage
+---
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-cineplex.md
+---
+index.md
+---
+cineplex.md
+[0m
+[0m$ [0mcurl -sS -m 12 -o /dev/null -w "%{http_code}" https://graphql-api.app.cineplex.de/ 2>&1; echo; curl -sS -m 12 -o /dev/null -w "%{http_code}" https://example.com 2>&1; echo
+400
+200
+[0m
+## Objective
+- Hunt high-value bug-bounty vulnerabilities across Cineplex Deutschland infrastructure (in-scope: company-owned domains/APIs/ticketing/loyalty/portals), leaning on GraphQL introspection, IDOR/BOLA, CORS/OAuth/mass-assignment, and subdomain takeover.
+- Produce structured per-cycle analyst output (DELTA, PRIO, HYP, self-critique, NEXT, LEARN, RISK) via 8-step process; report channel bugs.olivermaicher.eu.
+
+## Important Details
+- Current state: `{"phase": "POC", "target": "api"}`.
+- Rules: passive-first; live probes GET/HEAD/OPTIONS only, ≤1 rps; no auth-bypass or mutating tests against live customer data; sha256 any secret; scanner output needs manual validation.
+- REJECTED program classes (must not re-file): network/account-lockout DoS, descriptive errors/headers only, robots.txt/known public files, outdated libraries, OPTIONS/TRACE, logout/anonymous-form CSRF, non-sensitive cookie flags, self-XSS, username enumeration, SSL/TLS best practice & SSL attacks, mail config, password-recovery policy, public login panels, and any exposure of customer/employee/financial/auth data.
+- WAF model: `graphql-api.app.{,staging.}cineplex.de` root GET = 403 Cloudflare for automated urllib UA but 200 via manual balanced curl (`?query=%7B__typename%7D`); WAF is a client-differentiated bot-gate, not auth. `api.cineplex.de` uses a stricter separate WAF — strict 403 all methods (hypothesis dead).
+- Automated probe harness is VOID: `probe-results.md` ~1399 lines, ZERO POST GraphQL probes ever; 8 defects confirmed (URL regex omits backtick → 400 trailing-backtick URLs; urllib UA `(passive verifier)` suffix → CF 403; `urls[:12]` truncation; brace truncation → false-negative 400). No conclusion may be drawn from automated silence.
+- Confirmed live surface: arbitrary-path GraphQL catch-all (`/zz-*?query={__typename}` → 200 both envs), full introspection (83 queries / 140 mutations, 385 types, 44 INPUT_OBJECTs), CORS private-IP-prefix credentialed reflection (`10.`/`192.168.` dot-boundary, pre-resolution), CORS null-origin credentialed, `web-dev.cineplex.de` dangling CNAME (20+ cycles NXDOMAIN to Azure Container Apps).
+- app.cineplex.de client auth model recovered from Internet Archive (all.min.js, snapshot 20251203): OAuth2 access_token in localStorage + JS-set parent-domain `.cineplex.de` refresh cookie, public-client `POST ${oAuth2Url}/oauth/token` grant. This downgraded the CORS credentialed chain to config-hygiene (no ambient API credential).
+- TLS-dead / unreachable: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`; `auth.cineplex.de` JWKS/OIDC 404.
+- IDOR status: the falsified "systemic authorization omission" claim is retracted; only the pre-auth id-decode oracle (15 resolvers, 4 decoder contracts) survives as class ACCESS_CONTROL, fingerprint `4ad65631f720`.
+
+## Work State
+### Completed
+- Validated introspection, CORS reflection primitives, dangling CNAME, and decoder oracle via manual curl (automated log unusable).
+- Cleared falsified IDOR contamination from publish path: `class:IDOR` blocks 297→0; KB canonical status section added 2026-09-30 (LIVE/DEAD/SURVIVING/METHOD RULES) resolving resurrected claims.
+- Enumerated argument types + 44 input-object bodies; documented mass-assignment read/write mirror (`CinemaOperatingCompanyData.accessRight*` ↔ `UserPrivileges`), IDOR chaining (`ticket→order→user`, `order→user`), `userByQr` physical-to-profile.
+- Closed dead avenues: SSRF `getOnlineTicketingBooking` (root-gated FORBIDDEN), open redirect via `externalUrl`/`appDeepLink` (fixed-map validators), `api.cineplex.de` GET-bypass, `testing_getConfirmationCode` standalone (env-gated on prod).
+
+### Active
+- 3 FINAL hypotheses in leads (see Relevant Files): socialLogin email-trust ATO (AUTH, 48), parent-domain refresh cookie (AUTH, 55), staging testing_getConfirmationCode oracle (AUTH, 45); nemotron3 top hypothesis [90] = CORS private-IP prefix credentialed reflection.
+- Cycle 2026-10-13T08:24Z: no new assets, re-confirmation only — arbitrary-path catch-all, CORS private-IP bypass, web-dev dangle all STILL LIVE.
+
+### Blocked
+- Automated probe harness cannot see `/graphql` or balanced GET; no POST GraphQL probes across all cycles — all structural findings are manual-curl-only.
+- `socialLogin` ATO, staging oracle code extraction, and cross-tenant IDOR PII proof are HUMAN_ONLY / AUTH_HELPED (cannot be confirmed passively; program PII rules forbid).
+- `web-dev.cineplex.de` dangle claimability is provider-side (Azure FQDN re-creation) — unprovable passively.
+
+## Next Move
+1. HUMAN: with OWN account email, POST to `https://graphql-api.app.cineplex.de/` body `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}` (Content-Type: application/json, no auth header) — a 200 with jwt/refreshToken proves server trusts client `email` over the provider token (critical ATO).
+2. PROBE (read-only, if continuing CORS thread): `curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST"` → expect 204 with ACAO echo + `ACAC: true`.
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB log (~pad-overrun); contains LIVE/DEAD/SURVIVING verdicts; canonical status section added 2026-09-30.
+- `probe-results.md`: automated probe log (~1399 lines); harness-output-only, VOID — zero POST GraphQL probes.
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: hold `[HYP]`/`[LEARN]` blocks; `parse_blocks` opens only on `^\[HYP]`.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP]`, globs `leads/lead-*.md`; `fingerprint()` = md5(asset|class); `ensure_label()` return-bug noted.
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement verifier module, 14 offline tests, all passing.
+- `.github/workflows/hunt.yml`: lines 207-225 — retired inline passive verifier with 8 defects (root cause of void log).
+- `inventory/cineplex.md`: 132-host baseline, unchanged since 2026-09-23.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m
+[0m$ [0mecho "== catch-all GET =="; curl -sS -m 15 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36" "https://graphql-api.app.cineplex.de/zz-probe-bp?query=%7B__typename%7D" -o /tmp/opencode/catch.json -w "%{http_code}\n"; head -c 300 /tmp/opencode/catch.json; echo; sleep 2
+echo "== CORS OPTIONS private-IP =="; curl -sS -m 15 --http2 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -D - -o /dev/null 2>&1 | grep -iE "^HTTP|access-control"; sleep 2
+echo "== web-dev CNAME =="; getent hosts web-dev.cineplex.de || echo NXDOMAIN; nslookup -type=CNAME web-dev.cineplex.de 2>&1 | grep -iE "canonical|NXDOMAIN|name =" | head
+== catch-all GET ==
+200
+{"data":{"__typename":"Query"}}
+
+== CORS OPTIONS private-IP ==
+HTTP/2 204 
+access-control-allow-origin: http://10.evil.com
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+== web-dev CNAME ==
+NXDOMAIN
+web-dev.cineplex.de	canonical name = web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+[0m
+[0m$ [0mcat analyst-out.txt; echo "---state---"; cat state_bigpickle.json; echo; echo "---README---"; cat README.md
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la; echo "---"; ls leads 2>/dev/null; echo "---"; ls knowledge 2>/dev/null | head; echo "---"; ls inventory 2>/dev/null
+total 1664
+drwxr-xr-x 12 runner runner   4096 Oct 13 16:23 .
+drwxr-xr-x  3 runner runner   4096 Oct 13 16:23 ..
+drwxr-xr-x  7 runner runner   4096 Oct 13 16:23 .git
+drwxr-xr-x  3 runner runner   4096 Oct 13 16:23 .github
+-rw-r--r--  1 runner runner   1923 Oct 13 16:23 README.md
+-rw-r--r--  1 runner runner     32 Oct 13 16:23 analyst-out.txt
+-rw-r--r--  1 runner runner 754434 Oct 13 16:23 analyst-prompt.txt
+-rw-r--r--  1 runner runner 750477 Oct 13 16:23 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 leads
+-rw-r--r--  1 runner runner  97779 Oct 13 16:23 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 reports
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct 13 16:23 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 13 16:23 scripts
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 13 16:23 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 13 16:23 triage
+---
+lead-bigpickle.md
+lead-laguna.md
+lead-ling3.md
+lead-longcat.md
+lead-mimo.md
+lead-nemotron3.md
+reposcan-cineplex.md
+---
+index.md
+---
+cineplex.md
+[0m
+[0m$ [0mcurl -sS -m 12 -o /dev/null -w "%{http_code}" https://graphql-api.app.cineplex.de/ 2>&1; echo; curl -sS -m 12 -o /dev/null -w "%{http_code}" https://example.com 2>&1; echo
+400
+200
+[0m
+## Objective
+- Hunt high-value bug-bounty vulnerabilities across Cineplex Deutschland infrastructure (in-scope: company-owned domains/APIs/ticketing/loyalty/portals), leaning on GraphQL introspection, IDOR/BOLA, CORS/OAuth/mass-assignment, and subdomain takeover.
+- Produce structured per-cycle analyst output (DELTA, PRIO, HYP, self-critique, NEXT, LEARN, RISK) via 8-step process; report channel bugs.olivermaicher.eu.
+
+## Important Details
+- Current state: `{"phase": "POC", "target": "api"}`.
+- Rules: passive-first; live probes GET/HEAD/OPTIONS only, ≤1 rps; no auth-bypass or mutating tests against live customer data; sha256 any secret; scanner output needs manual validation.
+- REJECTED program classes (must not re-file): network/account-lockout DoS, descriptive errors/headers only, robots.txt/known public files, outdated libraries, OPTIONS/TRACE, logout/anonymous-form CSRF, non-sensitive cookie flags, self-XSS, username enumeration, SSL/TLS best practice & SSL attacks, mail config, password-recovery policy, public login panels, and any exposure of customer/employee/financial/auth data.
+- WAF model: `graphql-api.app.{,staging.}cineplex.de` root GET = 403 Cloudflare for automated urllib UA but 200 via manual balanced curl (`?query=%7B__typename%7D`); WAF is a client-differentiated bot-gate, not auth. `api.cineplex.de` uses a stricter separate WAF — strict 403 all methods (hypothesis dead).
+- Automated probe harness is VOID: `probe-results.md` ~1399 lines, ZERO POST GraphQL probes ever; 8 defects confirmed (URL regex omits backtick → 400 trailing-backtick URLs; urllib UA `(passive verifier)` suffix → CF 403; `urls[:12]` truncation; brace truncation → false-negative 400). No conclusion may be drawn from automated silence.
+- Confirmed live surface: arbitrary-path GraphQL catch-all (`/zz-*?query={__typename}` → 200 both envs), full introspection (83 queries / 140 mutations, 385 types, 44 INPUT_OBJECTs), CORS private-IP-prefix credentialed reflection (`10.`/`192.168.` dot-boundary, pre-resolution), CORS null-origin credentialed, `web-dev.cineplex.de` dangling CNAME (20+ cycles NXDOMAIN to Azure Container Apps).
+- app.cineplex.de client auth model recovered from Internet Archive (all.min.js, snapshot 20251203): OAuth2 access_token in localStorage + JS-set parent-domain `.cineplex.de` refresh cookie, public-client `POST ${oAuth2Url}/oauth/token` grant. This downgraded the CORS credentialed chain to config-hygiene (no ambient API credential).
+- TLS-dead / unreachable: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`; `auth.cineplex.de` JWKS/OIDC 404.
+- IDOR status: the falsified "systemic authorization omission" claim is retracted; only the pre-auth id-decode oracle (15 resolvers, 4 decoder contracts) survives as class ACCESS_CONTROL, fingerprint `4ad65631f720`.
+
+## Work State
+### Completed
+- Validated introspection, CORS reflection primitives, dangling CNAME, and decoder oracle via manual curl (automated log unusable).
+- Cleared falsified IDOR contamination from publish path: `class:IDOR` blocks 297→0; KB canonical status section added 2026-09-30 (LIVE/DEAD/SURVIVING/METHOD RULES) resolving resurrected claims.
+- Enumerated argument types + 44 input-object bodies; documented mass-assignment read/write mirror (`CinemaOperatingCompanyData.accessRight*` ↔ `UserPrivileges`), IDOR chaining (`ticket→order→user`, `order→user`), `userByQr` physical-to-profile.
+- Closed dead avenues: SSRF `getOnlineTicketingBooking` (root-gated FORBIDDEN), open redirect via `externalUrl`/`appDeepLink` (fixed-map validators), `api.cineplex.de` GET-bypass, `testing_getConfirmationCode` standalone (env-gated on prod).
+
+### Active
+- 3 FINAL hypotheses in leads (see Relevant Files): socialLogin email-trust ATO (AUTH, 48), parent-domain refresh cookie (AUTH, 55), staging testing_getConfirmationCode oracle (AUTH, 45); nemotron3 top hypothesis [90] = CORS private-IP prefix credentialed reflection.
+- Cycle 2026-10-13T08:24Z: no new assets, re-confirmation only — arbitrary-path catch-all, CORS private-IP bypass, web-dev dangle all STILL LIVE.
+
+### Blocked
+- Automated probe harness cannot see `/graphql` or balanced GET; no POST GraphQL probes across all cycles — all structural findings are manual-curl-only.
+- `socialLogin` ATO, staging oracle code extraction, and cross-tenant IDOR PII proof are HUMAN_ONLY / AUTH_HELPED (cannot be confirmed passively; program PII rules forbid).
+- `web-dev.cineplex.de` dangle claimability is provider-side (Azure FQDN re-creation) — unprovable passively.
+
+## Next Move
+1. HUMAN: with OWN account email, POST to `https://graphql-api.app.cineplex.de/` body `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}` (Content-Type: application/json, no auth header) — a 200 with jwt/refreshToken proves server trusts client `email` over the provider token (critical ATO).
+2. PROBE (read-only, if continuing CORS thread): `curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST"` → expect 204 with ACAO echo + `ACAC: true`.
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB log (~pad-overrun); contains LIVE/DEAD/SURVIVING verdicts; canonical status section added 2026-09-30.
+- `probe-results.md`: automated probe log (~1399 lines); harness-output-only, VOID — zero POST GraphQL probes.
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: hold `[HYP]`/`[LEARN]` blocks; `parse_blocks` opens only on `^\[HYP]`.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP]`, globs `leads/lead-*.md`; `fingerprint()` = md5(asset|class); `ensure_label()` return-bug noted.
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement verifier module, 14 offline tests, all passing.
+- `.github/workflows/hunt.yml`: lines 207-225 — retired inline passive verifier with 8 defects (root cause of void log).
+- `inventory/cineplex.md`: 132-host baseline, unchanged since 2026-09-23.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m→ [0mRead leads/lead-bigpickle.md
+[0m
+[0m$ [0mecho "== catch-all GET =="; curl -sS -m 15 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36" "https://graphql-api.app.cineplex.de/zz-probe-bp?query=%7B__typename%7D" -o /tmp/opencode/catch.json -w "%{http_code}\n"; head -c 300 /tmp/opencode/catch.json; echo; sleep 2
+echo "== CORS OPTIONS private-IP =="; curl -sS -m 15 --http2 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -D - -o /dev/null 2>&1 | grep -iE "^HTTP|access-control"; sleep 2
+echo "== web-dev CNAME =="; getent hosts web-dev.cineplex.de || echo NXDOMAIN; nslookup -type=CNAME web-dev.cineplex.de 2>&1 | grep -iE "canonical|NXDOMAIN|name =" | head
+== catch-all GET ==
+200
+{"data":{"__typename":"Query"}}
+
+== CORS OPTIONS private-IP ==
+HTTP/2 204 
+access-control-allow-origin: http://10.evil.com
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+== web-dev CNAME ==
+NXDOMAIN
+web-dev.cineplex.de	canonical name = web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.
+[0m
+---state---
+{"phase": "POC", "target": "api"}
+---README---
+# cineplex-hunt
+
+24/7 deep multi-model bug-hunting automation for **Cineplex Deutschland GmbH & Co. KG / Cineplex Group** (Oliver Maicher bug-bounty hub).
+
+Scope: All company-owned infrastructure, websites, ticketing systems, mobile applications, APIs, customer portals, loyalty platforms, digital signage systems, and domains operated by Cineplex Deutschland GmbH & Co. KG and participating Cineplex entities under its control
+(full exclusion + rules list in `scope.yml`)
+
+Pipeline (all workflows run every 20 minutes):
+
+- **Deep Hunt** (`hunt.yml`): analyst hunts the discovered inventory + hypotheses, emits structured
+  leads, chains primitives, self-critiques. Models: mimo.
+- **Triager** (`triage.yml`): second-model 7-Question Gate validation + live passive probe; keeps
+  running count in `reports/valid-bugs.md`.
+- **Reposcan** (`reposcan.yml`): deep source scan of any public GitHub org (if configured).
+- **Sync Issues** (`sync-issues.yml`): mirrors leads to GitHub issues.
+
+Testing discipline: rate-limited (1 rps), no DoS/account-lockout, writes only on non-prod/test
+assets, no exposure of customer/employee/financial/auth data, secrets committed only as hashes.
+
+> IMPORTANT: the pipeline produces CANDIDATE leads. A reportable, validated finding requires
+> human triage + proof against the program's gate. No finding is fabricated; scanner output alone
+> is never accepted. Active testing is gated behind the in-scope hosts in `inventory/cineplex.md` and
+> must stay within the program's published scope.
+
+Artifacts:
+
+| Artifact | Purpose |
+|---|---|
+| `leads/` | Candidate findings (UNVALIDATED) |
+| `triage/` | Validation verdicts |
+| `reports/valid-bugs.md` | Validated findings + running count |
+| `scope.yml` | Program scope and exclusions (edit to adjust) |
+
+Program description: German cinema group and cinema network operator providing ticketing, loyalty, mobile, and digital entertainment services
+[0m
+[0m$ [0mdate -u "+%Y-%m-%d %H:%M:%S UTC"; echo "---tail---"; tail -n 20 leads/lead-bigpickle.md
+2026-10-13 16:25:18 UTC
+---tail---
+evidence_needed: proof the target FQDN is claimable — i.e. an attacker can bind `web-dev.cineplex.de` (or serve content on it) by recreating the Azure resource; the random env suffix must be reconcilable.
+verify_steps: HUMAN — attempt to register a Container App / custom domain serving the target FQDN in `switzerlandnorth`; if the FQDN cannot be recreated, the dangle is not exploitable.
+impact: control of a genuine `*.cineplex.de` origin (usable as an authenticated same-site origin) if claimable — medium/high; unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live-verified and env-agnostic, but the API emits zero `Set-Cookie` and the client uses Bearer/localStorage, so a cross-origin page cannot obtain or auto-attach a credential → standalone impact ≤40, config-hygiene; revisited only if chained to control of a real same-site origin.
+[PARKED] open redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), not redirects — REJECTED class.
+[PARKED] SSRF @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking(ticketId,referenceUrl,securityKey,cinemaId)` unauth → `FORBIDDEN "You must be the root user"`; URL/securityKey args unreachable — retired.
+[FINAL] 1. socialLogin email-trust → ATO (AUTH, 48)  2. staging testing_getConfirmationCode oracle (AUTH, 45)  3. web-dev.cineplex.de dangling-CNAME takeover, claimability unproven (OTHER, 50)
+[NEXT] HUMAN: with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header — a 200 carrying jwt/refreshToken proves the server trusts the client `email` over the provider token and confirms a critical ATO primitive.
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists 20+ cycles to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
+[LEARN] REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH), no controllable redirect target.
+[LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / API-origin session cookie is not reportable on its own.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries / 140 mutations) still served on arbitrary paths on both envs.
+[RISK] cineplex: 30 — high-value classes (ATO, BOLA, SSRF) remain reachable in principle but are gated behind HUMAN_ONLY / AUTH_HELPED tests against live customer data that program rules forbid; inventory static and most surface is OOS or config-hygiene.
+## 2026-10-13 08:24:48 UTC [target] (model bigpickle)
+[NEW] cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+[CHANGED] graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+[CHANGED] CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-apigw-id, x-powered-by: Express)
+[CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
+[0m
+Fresh probes this cycle (16:25Z) confirm all three surviving primitives are still live. Appending the cycle to my lead log.
+[0m← [0mEdit leads/lead-bigpickle.md
+Index: /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
+===================================================================
+--- /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
++++ /home/runner/work/cineplex-hunt/cineplex-hunt/leads/lead-bigpickle.md
+@@ -11331,4 +11331,50 @@
+ [NEW] cycle 2026-10-13T08:24Z — no new assets (re-confirmation only)
+ [CHANGED] graphql-api.app.{,staging.}cineplex.de arbitrary-path catch-all: STILL LIVE (HTTP 200, `{"data":{"__typename":"Query"}}`, both envs)
+ [CHANGED] CORS private-IP prefix bypass: STILL LIVE — OPTIONS Origin=http://10.evil.com → 204, ACAO echoes, ACAC:true, ACAH includes authorization/content-type; backend AWS API Gateway behind Cloudflare (x-amz-apigw-id, x-powered-by: Express)
+ [CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io, A-follow NXDOMAIN (Azure SOA), TTL 300
++## 2026-10-13 16:25:18 UTC [target] (model bigpickle)
++[NEW] cycle 2026-10-13T16:25Z — no new assets (third same-day re-confirmation); manual read-only curl, ≤1 rps
++[CHANGED] graphql-api.app.cineplex.de arbitrary-path catch-all: STILL LIVE — `GET /zz-probe-bp?query=%7B__typename%7D` → HTTP 200 `{"data":{"__typename":"Query"}}`
++[CHANGED] CORS private-IP prefix bypass @ graphql-api.app.cineplex.de: STILL LIVE — OPTIONS Origin:http://10.evil.com → HTTP/2 204, `access-control-allow-origin: http://10.evil.com`, `access-control-allow-credentials: true`, `access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE`, `vary: Origin, Access-Control-Request-Headers`
++[CHANGED] dangling_cname web-dev.cineplex.de: STILL DANGLING — CNAME `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN
++[PRIO] graphql-api.app.cineplex.de,8.8,0.25(9)+0.25(9,core API)+0.15(10,GraphQL)+0.15(8,unauth catch-all POST)+0.10(8,cloud)+0.10(8,active)
++[PRIO] web-dev.cineplex.de,7.6,0.25(7,dangle persists)+0.25(8,real *.cineplex.de origin)+0.15(8,takeover)+0.15(6,claim unproven)+0.10(7,cloud)+0.10(8,fresh)
++[PRIO] graphql-api.app.staging.cineplex.de,7.0,0.25(6,staging)+0.25(7,shared schema)+0.15(10,GraphQL)+0.15(7,likely same WAF)+0.10(7,cloud)+0.10(7,fresh)
++[HYP] socialLogin trusts client-supplied email over provider token → account takeover
++class: AUTH
++asset: graphql-api.app.cineplex.de
++confidence: 48
++reasoning: `socialLogin(provider, accessToken, idToken, email)` accepts an `email` argument alongside the provider artifacts and returns `jwt`+`refreshToken`+`user`; if the server binds the session to the client-supplied `email` without independently verifying it against the validated idToken, an attacker can mint a session for any account. Not in any REJECTED class; the mutation root is reachable anonymously (catch-all POST 200).
++evidence_needed: a response 200 carrying `jwt`/`refreshToken` for an `email` that does not match the (invalid) provider token.
++verify_steps: HUMAN — with an account you own, POST `https://graphql-api.app.cineplex.de/` body `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header.
++impact: unauth account takeover via forged social identity; critical.
++testability: HUMAN_ONLY
++[HYP] staging testing_getConfirmationCode returns a valid confirmation code → account-verification oracle
++class: AUTH
++asset: graphql-api.app.staging.cineplex.de
++confidence: 45
++reasoning: `testing_getConfirmationCode` is gated on production only by a runtime environment flag (`testing_*`), not by RBAC; on the staging sibling the flag is expected off, so the resolver may return a real confirmation code for a caller-supplied identity. Prior KB entries that rejected it treated the prod method-mismatch error as descriptive-only; the staging behavior is untested.
++evidence_needed: staging POST returns a non-empty confirmation code for a targeted account identifier.
++verify_steps: AUTH_HELPED — POST the mutation to `https://graphql-api.app.staging.cineplex.de/` with a non-customer/test identifier; do NOT target live accounts (program PII rule).
++impact: account-verification/ownership bypass enabling ATO; high if the code is accepted at the production verification step.
++testability: AUTH_HELPED
++[HYP] web-dev.cineplex.de dangling CNAME → subdomain takeover of a real same-site origin
++class: OTHER
++asset: web-dev.cineplex.de
++confidence: 50
++reasoning: CNAME persists 20+ cycles to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` with A-follow NXDOMAIN; controlling a genuine `*.cineplex.de` origin would be a same-site cookie scope and would chain with the JS-readable parent-domain `.cineplex.de` refresh cookie recovered from the client bundle.
++evidence_needed: proof an attacker can bind/recreate the Azure Container App FQDN — provider-side and unprovable passively.
++verify_steps: HUMAN — attempt to (re)create a Container App serving the target FQDN in `switzerlandnorth`; if the random env suffix cannot be reconciled, the dangle is not exploitable.
++impact: control of a `*.cineplex.de` origin (same-site credential scope) if claimable; medium/high, unproven.
++testability: HUMAN_ONLY
++[PARKED] CORS private-IP prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live-verified this cycle (ACAO echo + ACAC:true), but the API emits zero `Set-Cookie` and the client uses Bearer/localStorage → cross-origin page cannot auto-attach a credential; standalone ≤40, config-hygiene; revisit only if chained to control of a real same-site origin.
++[PARKED] staging testing_getConfirmationCode standalone on production: env-flag gated on prod; only the staging sibling remains.
++[PARKED] open_redirect / SSRF @ graphql-api.app.cineplex.de: fixed-map validators and root-gated resolver respectively — REJECTED classes, no change.
++[FINAL] 1. socialLogin email-trust → ATO (AUTH, 48)  2. web-dev.cineplex.de dangling-CNAME takeover, claimability unproven (OTHER, 50)  3. staging testing_getConfirmationCode oracle (AUTH, 45)
++[NEXT] HUMAN (highest value): with an account you own, POST `https://graphql-api.app.cineplex.de/` `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, `Content-Type: application/json`, no auth header — a 200 carrying jwt/refreshToken proves the server trusts the client `email` over the provider token (critical ATO). No further passive action yields new signal: inventory static, all three survivors re-confirmed live.
++[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME persists to an unclaimed Azure Container Apps FQDN inside the in-scope zone.
++[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema still served on arbitrary paths on both envs via anonymous POST/GET.
++[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential / same-site origin is not reportable on its own.
++[LEARN] REJECTED open_redirect @ graphql-api.app.cineplex.de: `externalUrl`/`appDeepLink` are fixed-map validators (UNKNOWN_SCHEME/HOST/PATH).
++[LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: `getOnlineTicketingBooking` is root-gated (`FORBIDDEN`), removing the URL/securityKey SSRF surface.
++[RISK] cineplex: 30 — high-value classes (ATO, BOLA, subdomain takeover) remain reachable in principle but the confirmable ones are gated behind HUMAN_ONLY / AUTH_HELPED tests touching live customer data that program rules forbid; automated harness still VOID (zero POST GraphQL probes), so all findings are manual-curl-only; inventory unchanged.
+
+[0m
+Cycle appended to `leads/lead-bigpickle.md:`. State: `POC` / target `api`, inventory static.
+
+Re-confirmed live this cycle (read-only curl, ≤1 rps):
+- arbitrary-path GraphQL catch-all — `GET /zz-*?query={__typename}` → 200
+- CORS private-IP-prefix credentialed reflection — `OPTIONS Origin:http://10.evil.com` → 204, ACAO echo + `ACAC:true`
+- `web-dev.cineplex.de` dangling CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, NXDOMAIN
+
+No new passive signal is available; the confirmable paths are all blocked behind program rules. Next move (HUMAN, highest value): POST `socialLogin` with your own email + invalid provider tokens to `https://graphql-api.app.cineplex.de/` — a 200 carrying `jwt`/`refreshToken` proves a critical ATO primitive. Want me to prep the exact request and a minimal evidence-capture script?
