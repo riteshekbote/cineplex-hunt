@@ -1608,3 +1608,8 @@ https://graphql-api.app.cineplex.de/ -> HTTP 403
 https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
 https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400
 https://graphql-api.app.staging.cineplex.de/graphql?query={testing_getConfirmationCode(email: -> HTTP 400
+
+## 2026-10-14 15:36:41 UTC
+https://graphql-api.app.cineplex.de/ -> HTTP 403
+https://web-dev.cineplex.de -> ERR <urlopen error [Errno -2] Name or service not know
+https://graphql-api.app.cineplex.de/?query={__typename -> HTTP 400

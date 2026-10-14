@@ -112057,3 +112057,1474 @@ testability: HUMAN_ONLY
 ```
 
 Key change from the parked state: the staging oracle is now **bounded** (all three code types 405), and the "missing environment guard" family is **larger than documented** — `sendTestEmail`, `sendTestNotification`, and `increaseUserTestingStatus` sit in the **prod** schema too. I did not fire any write/send mutation. Want me to draft the human hand-off request for authorization to test those two send mutations and `increaseUserTestingStatus`?
+===== ANALYST bigpickle 2026-10-14 15:36:37 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la
+total 1740
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x  3 runner runner   4096 Oct 14 15:26 ..
+drwxr-xr-x  7 runner runner   4096 Oct 14 15:26 .git
+drwxr-xr-x  3 runner runner   4096 Oct 14 15:26 .github
+-rw-r--r--  1 runner runner   1923 Oct 14 15:26 README.md
+-rw-r--r--  1 runner runner     32 Oct 14 15:26 analyst-out.txt
+-rw-r--r--  1 runner runner 792732 Oct 14 15:26 analyst-prompt.txt
+-rw-r--r--  1 runner runner 788775 Oct 14 15:26 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 leads
+-rw-r--r--  1 runner runner  99520 Oct 14 15:26 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 reports
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct 14 15:26 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 scripts
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 14 15:26 triage
+[0m
+[0m$ [0mls -la leads/ 2>/dev/null; ls -la knowledge/ 2>/dev/null; ls -la inventory/ 2>/dev/null; ls -la reports/ 2>/dev/null | head -30
+total 4704
+drwxr-xr-x  2 runner runner    4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner    4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 1868676 Oct 14 15:26 lead-bigpickle.md
+-rw-r--r--  1 runner runner   12138 Oct 14 15:26 lead-laguna.md
+-rw-r--r--  1 runner runner   11900 Oct 14 15:26 lead-ling3.md
+-rw-r--r--  1 runner runner   12376 Oct 14 15:26 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 14 15:26 lead-mimo.md
+-rw-r--r--  1 runner runner 2857869 Oct 14 15:26 lead-nemotron3.md
+-rw-r--r--  1 runner runner   28914 Oct 14 15:26 reposcan-cineplex.md
+total 340
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 339346 Oct 14 15:26 index.md
+total 436
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 437183 Oct 14 15:26 cineplex.md
+total 14588
+drwxr-xr-x  2 runner runner     4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner     4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 10018668 Oct 14 15:26 analyst-bigpickle.log
+-rw-r--r--  1 runner runner    51646 Oct 14 15:26 analyst-laguna.log
+-rw-r--r--  1 runner runner    51408 Oct 14 15:26 analyst-ling3.log
+-rw-r--r--  1 runner runner    51884 Oct 14 15:26 analyst-longcat.log
+-rw-r--r--  1 runner runner  3752181 Oct 14 15:26 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    32514 Oct 14 15:26 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner       51 Oct 14 15:26 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner       50 Oct 14 15:26 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner       52 Oct 14 15:26 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner    10911 Oct 14 15:26 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner   926756 Oct 14 15:26 hypotheses.md
+-rw-r--r--  1 runner runner     7807 Oct 14 15:26 valid-bugs.md
+[0m
+## Objective
+- Act as senior bug-bounty analyst for the Cineplex Deutschland GmbH program (report channel: bugs.olivermaicher.eu), running a 7-step per-cycle hunt (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARNING → RISK) and emitting only structured blocks.
+- Current phase: POC, target: "api"; depth-only work on graphql-api.app.cineplex.de (132-host inventory exhausted).
+
+## Important Details
+- Only in-scope assets: Cineplex-owned infra/domains per scope.yml + inventory/cineplex.md (132-host baseline, complete since 2026-09-23).
+- Explicitly OOS (REJECTED classes): username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, relay/metrics, TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso = 525/SSLv3), api.cineplex.de GET-bypass (strict 403), relay_broker_saturation, staging_testing_oracle as standalone (method-mismatch = descriptive error).
+- PII rule: cross-tenant IDOR proof and staging POST oracle extraction are HUMAN_ONLY; no mutating probes on live customer data; passive-first, ≤1 rps, GET/HEAD/OPTIONS only.
+- Automated probe harness (`.github/workflows/hunt.yml:207-225`) is VOID: trailing-backtick URLs → 400, urllib UA "(passive verifier)" → Cloudflare 403 bot-gate, urls[:12] truncation, brace truncation; probe-results.md has ZERO POST probes across all cycles. All conclusions must come from manual `curl -G --data-urlencode` with browser UA.
+- Systemic IDOR claim (idor_booking) was FALSIFIED: `INVALID_ID`-vs`UNAUTHENTICATED` discriminator measures decode position, not check presence. Surviving: pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`). Dead: authorization-omission inference. Retagged from class:IDOR (297→0) to class:ACCESS_CONTROL (fingerprint 4ad65631f720).
+- Mutations are POST-only at this edge (GET mutation → 405 `HttpQueryError`); introspection arg-name extraction is lossy for NON_NULL.
+- `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields (not mutations), prod env-gated FORBIDDEN, staging authless with deterministic backend 405 on all 3 ConfirmationCodeType branches.
+- Known tooling: `scripts/sync-issues.py` (publisher, parse_blocks matches `^\[HYP]`, fingerprint=md5(asset|class)), `scripts/passive_verify.py` (+14 offline tests), `leads/lead-*.md`, `knowledge/index.md` (CANONICAL STATUS section added 2026-09-30).
+- Method rules: same-cycle verification requires a fresh request; method-vary every equivalence claim; enumerate policies rather than scoring by absence of evidence; scope evidence to blast radius before asserting system properties.
+
+## Work State
+### Completed
+- Schema fully read: 83 queries / 140 mutations / 385 types / 44 INPUT_OBJECT bodies; 0 descriptions, 0 defaultValue → unauthenticated schema evidence exhausted (stop condition).
+- Live-verified this cycle: arbitrary-path catch-all (fresh path → 200 both envs); CORS private-IP prefix boundary (`10.`/`192.168.` dot-boundary, `172.16/12`,`100.64/10`,`169.254.169.254`,`0.*` excluded → 500 no ACAO) on both envs; `Origin: null` → ACAO:null+ACAC:true; web-dev.cineplex.de dangle 21st+ cycle (CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN, Azure SOA, TTL 300).
+- `test(inputVal:String):String` → constant `"Cineplex"`, not injectable; closed.
+- `getOnlineTicketingBooking` root-gated; `externalUrl`/`appDeepLink` fixed-map validators → SSRF/open-redirect closed.
+- Client auth model recovered via Internet Archive: OAuth2 access_token in localStorage, refresh cookie JS-set on `.cineplex.de`, public-client refresh grant; ZERO Set-Cookie on GraphQL API → CORS credentialed chain downgraded to config-hygiene.
+- Publisher remediation: class:IDOR contamination 297→0; `ensure_label()` bug and fingerprint fragmentation documented.
+
+### Active
+- Last leads (tail) hypothesis set: `sendTestEmail` (AUTH, 30, HUMAN_ONLY), `sendTestNotification` (BUSLOGIC, 30, HUMAN_ONLY), `increaseUserTestingStatus` (BUSLOGIC, 35, AUTH_HELPED), staging `testing_getConfirmationCode` guard-omission+topology (AUTH, 60, PASSIVE), `socialLogin` email-trust (AUTH, 48, HUMAN_ONLY), web-dev dangle (OTHER, 50, HUMAN_ONLY).
+- [FINAL] ranked 1-5: sendTestEmail, sendTestNotification, staging guard-omission, web-dev dangle, socialLogin.
+- [LEARN] added this cycle: mutations POST-only; testing-family broader than KB recorded (`sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` schema-present on prod too — structural presence ≠ missing runtime gate); staging oracle bounded (405 on all 3 types).
+- RISK: cineplex = 50.
+
+### Blocked
+- Schema-presence-only evidence: cannot prove runtime gates absent without POST probes; self-critique warns `Test*` names are likely env-gated like `testing_getConfirmationCode`.
+- HUMAN_ONLY gates: no program authorization yet for `sendTestEmail`/`sendTestNotification` test-send or staging confirmation-code extraction.
+- Automated harness unusable (void); archive.org intermittently offline for app.cineplex.de JS recovery.
+
+## Next Move
+1. SELF-CRITIQUE first: do NOT report `sendTestEmail`/`sendTestNotification` on schema presence alone (prod env-gate precedent on `testing_getConfirmationCode`).
+2. [NEXT] HUMAN: request program authorization to (a) send one `sendTestEmail`/`sendTestNotification` test against a program-designated recipient, and (b) confirm staging `testing_getConfirmationCode` is an intended QA surface.
+
+## Relevant Files
+- `knowledge/index.md`: append-only verdict log + CANONICAL STATUS (2026-09-30) section; corrections must outrank claims.
+- `inventory/cineplex.md`: 132-host baseline + passive recon / probe history.
+- `leads/lead-*.md`: [HYP]/[LEARN] blocks consumed by publisher; lead-authoring discipline debt (web-dev dangle split across ~5 blocks with divergent class labels).
+- `scripts/sync-issues.py`: publisher (parse_blocks:57, fingerprint:112, ensure_label:153) — trust boundary for what a reviewer sees.
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement verifier, 14 offline tests.
+- `.github/workflows/hunt.yml:207-225`: retired/defective inline probe logic (backtick regex, bot UA, urls[:12]).
+- `probe-results.md`: automated probe log (1399 lines, zero POST) — void as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat analyst-out.txt; echo "---"; for f in state_*.json; do echo "$f: $(cat $f)"; done
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mls -la
+total 1740
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x  3 runner runner   4096 Oct 14 15:26 ..
+drwxr-xr-x  7 runner runner   4096 Oct 14 15:26 .git
+drwxr-xr-x  3 runner runner   4096 Oct 14 15:26 .github
+-rw-r--r--  1 runner runner   1923 Oct 14 15:26 README.md
+-rw-r--r--  1 runner runner     32 Oct 14 15:26 analyst-out.txt
+-rw-r--r--  1 runner runner 792732 Oct 14 15:26 analyst-prompt.txt
+-rw-r--r--  1 runner runner 788775 Oct 14 15:26 ctx.txt
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 inventory
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 knowledge
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 leads
+-rw-r--r--  1 runner runner  99520 Oct 14 15:26 probe-results.md
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 recon-notes
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 reports
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 reposcan-raw
+-rw-r--r--  1 runner runner   3370 Oct 14 15:26 scope.yml
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 scripts
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_bigpickle.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_laguna.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_ling3.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_longcat.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_mimo.json
+-rw-r--r--  1 runner runner     33 Oct 14 15:26 state_nemotron3.json
+drwxr-xr-x  2 runner runner  12288 Oct 14 15:26 triage
+[0m
+[0m$ [0mls -la leads/ 2>/dev/null; ls -la knowledge/ 2>/dev/null; ls -la inventory/ 2>/dev/null; ls -la reports/ 2>/dev/null | head -30
+total 4704
+drwxr-xr-x  2 runner runner    4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner    4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 1868676 Oct 14 15:26 lead-bigpickle.md
+-rw-r--r--  1 runner runner   12138 Oct 14 15:26 lead-laguna.md
+-rw-r--r--  1 runner runner   11900 Oct 14 15:26 lead-ling3.md
+-rw-r--r--  1 runner runner   12376 Oct 14 15:26 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 14 15:26 lead-mimo.md
+-rw-r--r--  1 runner runner 2857869 Oct 14 15:26 lead-nemotron3.md
+-rw-r--r--  1 runner runner   28914 Oct 14 15:26 reposcan-cineplex.md
+total 340
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 339346 Oct 14 15:26 index.md
+total 436
+drwxr-xr-x  2 runner runner   4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner   4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 437183 Oct 14 15:26 cineplex.md
+total 14588
+drwxr-xr-x  2 runner runner     4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner     4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner 10018668 Oct 14 15:26 analyst-bigpickle.log
+-rw-r--r--  1 runner runner    51646 Oct 14 15:26 analyst-laguna.log
+-rw-r--r--  1 runner runner    51408 Oct 14 15:26 analyst-ling3.log
+-rw-r--r--  1 runner runner    51884 Oct 14 15:26 analyst-longcat.log
+-rw-r--r--  1 runner runner  3752181 Oct 14 15:26 analyst-nemotron3.log
+-rw-r--r--  1 runner runner    32514 Oct 14 15:26 hypotheses-bigpickle.txt
+-rw-r--r--  1 runner runner       51 Oct 14 15:26 hypotheses-laguna.txt
+-rw-r--r--  1 runner runner       50 Oct 14 15:26 hypotheses-ling3.txt
+-rw-r--r--  1 runner runner       52 Oct 14 15:26 hypotheses-longcat.txt
+-rw-r--r--  1 runner runner    10911 Oct 14 15:26 hypotheses-nemotron3.txt
+-rw-r--r--  1 runner runner   926756 Oct 14 15:26 hypotheses.md
+-rw-r--r--  1 runner runner     7807 Oct 14 15:26 valid-bugs.md
+[0m
+## Objective
+- Act as senior bug-bounty analyst for the Cineplex Deutschland GmbH program (report channel: bugs.olivermaicher.eu), running a 7-step per-cycle hunt (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARNING → RISK) and emitting only structured blocks.
+- Current phase: POC, target: "api"; depth-only work on graphql-api.app.cineplex.de (132-host inventory exhausted).
+
+## Important Details
+- Only in-scope assets: Cineplex-owned infra/domains per scope.yml + inventory/cineplex.md (132-host baseline, complete since 2026-09-23).
+- Explicitly OOS (REJECTED classes): username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, relay/metrics, TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso = 525/SSLv3), api.cineplex.de GET-bypass (strict 403), relay_broker_saturation, staging_testing_oracle as standalone (method-mismatch = descriptive error).
+- PII rule: cross-tenant IDOR proof and staging POST oracle extraction are HUMAN_ONLY; no mutating probes on live customer data; passive-first, ≤1 rps, GET/HEAD/OPTIONS only.
+- Automated probe harness (`.github/workflows/hunt.yml:207-225`) is VOID: trailing-backtick URLs → 400, urllib UA "(passive verifier)" → Cloudflare 403 bot-gate, urls[:12] truncation, brace truncation; probe-results.md has ZERO POST probes across all cycles. All conclusions must come from manual `curl -G --data-urlencode` with browser UA.
+- Systemic IDOR claim (idor_booking) was FALSIFIED: `INVALID_ID`-vs`UNAUTHENTICATED` discriminator measures decode position, not check presence. Surviving: pre-auth decoder reach (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`). Dead: authorization-omission inference. Retagged from class:IDOR (297→0) to class:ACCESS_CONTROL (fingerprint 4ad65631f720).
+- Mutations are POST-only at this edge (GET mutation → 405 `HttpQueryError`); introspection arg-name extraction is lossy for NON_NULL.
+- `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields (not mutations), prod env-gated FORBIDDEN, staging authless with deterministic backend 405 on all 3 ConfirmationCodeType branches.
+- Known tooling: `scripts/sync-issues.py` (publisher, parse_blocks matches `^\[HYP]`, fingerprint=md5(asset|class)), `scripts/passive_verify.py` (+14 offline tests), `leads/lead-*.md`, `knowledge/index.md` (CANONICAL STATUS section added 2026-09-30).
+- Method rules: same-cycle verification requires a fresh request; method-vary every equivalence claim; enumerate policies rather than scoring by absence of evidence; scope evidence to blast radius before asserting system properties.
+
+## Work State
+### Completed
+- Schema fully read: 83 queries / 140 mutations / 385 types / 44 INPUT_OBJECT bodies; 0 descriptions, 0 defaultValue → unauthenticated schema evidence exhausted (stop condition).
+- Live-verified this cycle: arbitrary-path catch-all (fresh path → 200 both envs); CORS private-IP prefix boundary (`10.`/`192.168.` dot-boundary, `172.16/12`,`100.64/10`,`169.254.169.254`,`0.*` excluded → 500 no ACAO) on both envs; `Origin: null` → ACAO:null+ACAC:true; web-dev.cineplex.de dangle 21st+ cycle (CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, A-follow NXDOMAIN, Azure SOA, TTL 300).
+- `test(inputVal:String):String` → constant `"Cineplex"`, not injectable; closed.
+- `getOnlineTicketingBooking` root-gated; `externalUrl`/`appDeepLink` fixed-map validators → SSRF/open-redirect closed.
+- Client auth model recovered via Internet Archive: OAuth2 access_token in localStorage, refresh cookie JS-set on `.cineplex.de`, public-client refresh grant; ZERO Set-Cookie on GraphQL API → CORS credentialed chain downgraded to config-hygiene.
+- Publisher remediation: class:IDOR contamination 297→0; `ensure_label()` bug and fingerprint fragmentation documented.
+
+### Active
+- Last leads (tail) hypothesis set: `sendTestEmail` (AUTH, 30, HUMAN_ONLY), `sendTestNotification` (BUSLOGIC, 30, HUMAN_ONLY), `increaseUserTestingStatus` (BUSLOGIC, 35, AUTH_HELPED), staging `testing_getConfirmationCode` guard-omission+topology (AUTH, 60, PASSIVE), `socialLogin` email-trust (AUTH, 48, HUMAN_ONLY), web-dev dangle (OTHER, 50, HUMAN_ONLY).
+- [FINAL] ranked 1-5: sendTestEmail, sendTestNotification, staging guard-omission, web-dev dangle, socialLogin.
+- [LEARN] added this cycle: mutations POST-only; testing-family broader than KB recorded (`sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` schema-present on prod too — structural presence ≠ missing runtime gate); staging oracle bounded (405 on all 3 types).
+- RISK: cineplex = 50.
+
+### Blocked
+- Schema-presence-only evidence: cannot prove runtime gates absent without POST probes; self-critique warns `Test*` names are likely env-gated like `testing_getConfirmationCode`.
+- HUMAN_ONLY gates: no program authorization yet for `sendTestEmail`/`sendTestNotification` test-send or staging confirmation-code extraction.
+- Automated harness unusable (void); archive.org intermittently offline for app.cineplex.de JS recovery.
+
+## Next Move
+1. SELF-CRITIQUE first: do NOT report `sendTestEmail`/`sendTestNotification` on schema presence alone (prod env-gate precedent on `testing_getConfirmationCode`).
+2. [NEXT] HUMAN: request program authorization to (a) send one `sendTestEmail`/`sendTestNotification` test against a program-designated recipient, and (b) confirm staging `testing_getConfirmationCode` is an intended QA surface.
+
+## Relevant Files
+- `knowledge/index.md`: append-only verdict log + CANONICAL STATUS (2026-09-30) section; corrections must outrank claims.
+- `inventory/cineplex.md`: 132-host baseline + passive recon / probe history.
+- `leads/lead-*.md`: [HYP]/[LEARN] blocks consumed by publisher; lead-authoring discipline debt (web-dev dangle split across ~5 blocks with divergent class labels).
+- `scripts/sync-issues.py`: publisher (parse_blocks:57, fingerprint:112, ensure_label:153) — trust boundary for what a reviewer sees.
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement verifier, 14 offline tests.
+- `.github/workflows/hunt.yml:207-225`: retired/defective inline probe logic (backtick regex, bot UA, urls[:12]).
+- `probe-results.md`: automated probe log (1399 lines, zero POST) — void as evidence.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+---
+state_bigpickle.json: {"phase": "POC", "target": "api"}
+state_laguna.json: {"phase": "POC", "target": "api"}
+state_ling3.json: {"phase": "POC", "target": "api"}
+state_longcat.json: {"phase": "POC", "target": "api"}
+state_mimo.json: {"phase": "POC", "target": "api"}
+state_nemotron3.json: {"phase": "POC", "target": "api"}
+[0m
+[0m$ [0mtail -c 4000 knowledge/index.md
+Vary: Origin present
+- 2026-10-14 REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de localStorage or SSO cookie; downgraded to config-hygiene (~CVSS 2.0)
+- 2026-10-14 REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 contracts, 2 arg shapes)
+- 2026-10-14 ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- 2026-10-14 REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- 2026-10-14 Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode/testing_forceDeleteUser are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks service LOGIN + mandatorId 746241be-8a37-44d8-8690-8ad67e674a2b.
+- 2026-10-14 CORRECTED graphql_introspection schema classification: testing_* are queries (queryType), not mutations; prod=staging 83 queries/140 mutations; odd fields `a` (mutation) and `deleteReviewRating_2`.
+- 2026-10-14 ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- 2026-10-14 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential → config-hygiene.
+- 2026-10-14 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M).
+- 2026-10-14 REJECTED descriptive_errors: Lambda stack traces in GraphQL errors are OOS-class by themselves.
+- 2026-10-14 lines.
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks `service:LOGIN` + `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`.
+- 2026-10-14 CORRECTED graphql_introspection @ graphql-api.app.{,staging.}.cineplex.de: `testing_*` are QUERIES (queryType), not mutations; counts 83 queries / 140 mutations both envs; odd fields `a` and `deleteReviewRating_2`.
+- 2026-10-14 ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- 2026-10-14 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hygiene only.
+- 2026-10-14 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
+- 2026-10-14 REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.
+- 2026-10-14 `test(inputVal:String):String` = constant `"Cineplex"`, ungated on prod+staging — not injectable; close.
+- 2026-10-14 testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
+- 2026-10-14 testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
+- 2026-10-14 Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.
+[0m
+[0m$ [0mgrep -n "verification_method: PASSIVE" leads/lead-bigpickle.md | tail -20; echo "==="; grep -c "^\[HYP\]" leads/lead-bigpickle.md; echo "==="; tail -c 6000 leads/lead-bigpickle.md
+===
+896
+===
+ed: proof the runtime gate is absent (a POST returning non-FORBIDDEN) and that `componentData`/recipient is caller-influenced.
+verify_steps: HUMAN_ONLY — POST `mutation{sendTestEmail(brand:CINEPLEX,componentData:""){__typename}}` to a program-approved test recipient only.
+impact: outbound email abuse / content injection from Cineplex mail infra (phishing) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated `sendTestNotification` pushes attacker-controlled content to arbitrary cinemas
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (sendTestNotification)
+confidence: 30
+reasoning: `sendTestNotification(title,body,link:String!,imageUrl,inAppNotification,pushNotificationChannel,language,cinemaIds)` present on prod+staging; arbitrary `link`+`imageUrl`+`cinemaIds` in an unauth context would permit push/in-app content injection to real users.
+evidence_needed: non-FORBIDDEN response on a POST probe + delivery to a controlled device/tester.
+verify_steps: HUMAN_ONLY — requires authorization; do not send.
+impact: mass push/in-app notification injection (phishing/spam) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] `increaseUserTestingStatus` lets a low-privilege user self-elevate testingStatus
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (increaseUserTestingStatus)
+confidence: 35
+reasoning: accepts `testingStatus:TestingStatus` with values STAGING/DEVELOPMENT/CINEMA_EMPLOYEE; if it mutates the caller's own status without an admin gate, it may unlock other test-only resolvers/roles.
+evidence_needed: AUTH_HELPED call from a self-owned account observing the status change and any privilege delta.
+verify_steps: AUTH_HELPED (own account only).
+impact: privilege/role elevation primitive — medium if confirmed.
+testability: AUTH_HELPED
+[HYP] staging `testing_getConfirmationCode` missing environment guard → authless internal login-service topology disclosure
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode)
+confidence: 60
+reasoning: resolver executes authlessly on staging for all 3 types, leaking internal Spring Data REST paths + service LOGIN + tenant mandatorId; code extraction is blocked (deterministic backend 405 on every type), so this is guard-omission + disclosure, not a live oracle.
+evidence_needed: none further for the guard/disclosure; only an owned-email extraction would raise impact, and that is blocked.
+verify_steps: PASSIVE (done).
+impact: environment-misconfiguration + internal topology disclosure (staging-scoped) — low/medium.
+testability: PASSIVE
+[HYP] `socialLogin` trusts client-supplied email over the verified provider identity
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin)
+confidence: 48
+reasoning: live args confirm `provider:SocialAuthProvider!` alongside independent `email,name,firstName,lastName` client args plus `accessToken/idToken` — account resolution may use the unverified email. Unchanged.
+evidence_needed: 200 with jwt/refreshToken from an invalid provider token paired with a self-owned email.
+verify_steps: HUMAN ONLY (no auth-bypass probes).
+impact: account takeover — critical if confirmed.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: persistent dangling CNAME (21st+ NXDOMAIN cycle) inside the in-scope zone; unchanged.
+evidence_needed: proof the Container App env suffix is claimable in switzerlandnorth.
+verify_steps: HUMAN — attempt to bind the FQDN.
+impact: control of a genuine *.cineplex.de origin; medium/high, unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP-prefix credentialed reflection — live and env-agnostic, but API emits zero Set-Cookie and client uses Bearer/localStorage → config-hygiene; revisit only with a same-site origin foothold.
+[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de — IOMB broker stats, descriptive infra only.
+[PARKED] testing_forceDeleteUser / deleteReviewRating_2 / mutation `a` — destructive/write; NOT executed, require authorization.
+[PARKED] `test` query — constant stub, no injection, OOS alone.
+[FINAL] 1. prod `sendTestEmail` unauth email-send (AUTH, 30, HUMAN_ONLY) 2. prod `sendTestNotification` unauth push (BUSLOGIC, 30, HUMAN_ONLY) 3. staging testing_getConfirmationCode guard-omission+topology (AUTH, 60, PASSIVE) 4. web-dev dangle (OTHER, 50) 5. socialLogin email-trust (AUTH, 48)
+[NEXT] SELF-CRITIQUE first: schema presence ≠ missing runtime gate — the `Test*` names and the proven prod env-gate on `testing_getConfirmationCode` strongly suggest `sendTestEmail`/`sendTestNotification` are equally gated; do NOT report them on schema presence alone. THEN: HUMAN request to the program to (a) authorize a single `sendTestEmail`/`sendTestNotification` test against a program-designated recipient, and (b) confirm staging `testing_getConfirmationCode` is an intended QA surface.
+[LEARN] `test(inputVal:String):String` = constant `"Cineplex"`, ungated on prod+staging — not injectable; close.
+[LEARN] testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
+[LEARN] testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
+[LEARN] Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.
+[RISK] cineplex: 50 — new unauthenticated-looking test mutation surface (`sendTestEmail`/`sendTestNotification`/`increaseUserTestingStatus`) is structurally present on production and expands the "missing env guard" class, but no gate has been bypassed and no side-effecting mutation was fired; staging oracle is now provably bounded (405). All probes read-only, ≤1 rps, no customer data touched.
+[0m
+[0m$ [0mcat leads/lead-laguna.md leads/lead-ling3.md leads/lead-longcat.md leads/lead-mimo.md
+## 2026-09-03 15:40:21 UTC [target] (model laguna)
+## 2026-09-03 19:02:33 UTC [target] (model laguna)
+## 2026-09-03 21:44:39 UTC [target] (model laguna)
+## 2026-09-03 23:44:59 UTC [target] (model laguna)
+## 2026-09-04 02:35:27 UTC [target] (model laguna)
+## 2026-09-04 07:24:22 UTC [target] (model laguna)
+## 2026-09-04 12:15:37 UTC [target] (model laguna)
+## 2026-09-04 16:25:49 UTC [target] (model laguna)
+## 2026-09-04 19:06:51 UTC [target] (model laguna)
+## 2026-09-04 21:32:29 UTC [target] (model laguna)
+## 2026-09-04 23:16:22 UTC [target] (model laguna)
+## 2026-09-05 01:03:21 UTC [target] (model laguna)
+## 2026-09-05 05:48:40 UTC [target] (model laguna)
+## 2026-09-05 09:52:06 UTC [target] (model laguna)
+## 2026-09-05 13:12:57 UTC [target] (model laguna)
+## 2026-09-05 16:07:17 UTC [target] (model laguna)
+## 2026-09-05 18:21:30 UTC [target] (model laguna)
+## 2026-09-05 20:41:37 UTC [target] (model laguna)
+## 2026-09-05 22:36:38 UTC [target] (model laguna)
+## 2026-09-06 00:13:07 UTC [target] (model laguna)
+## 2026-09-06 04:45:33 UTC [target] (model laguna)
+## 2026-09-06 09:07:11 UTC [target] (model laguna)
+## 2026-09-06 12:55:53 UTC [target] (model laguna)
+## 2026-09-06 15:57:42 UTC [target] (model laguna)
+## 2026-09-06 18:05:04 UTC [target] (model laguna)
+## 2026-09-06 20:27:38 UTC [target] (model laguna)
+## 2026-09-06 22:18:36 UTC [target] (model laguna)
+## 2026-09-07 00:02:38 UTC [target] (model laguna)
+## 2026-09-07 04:48:49 UTC [target] (model laguna)
+## 2026-09-07 09:54:29 UTC [target] (model laguna)
+## 2026-09-07 15:27:53 UTC [target] (model laguna)
+## 2026-09-07 19:22:27 UTC [target] (model laguna)
+## 2026-09-07 22:15:26 UTC [target] (model laguna)
+## 2026-09-08 00:27:33 UTC [target] (model laguna)
+## 2026-09-08 05:10:13 UTC [target] (model laguna)
+## 2026-09-08 09:45:56 UTC [target] (model laguna)
+## 2026-09-08 14:04:26 UTC [target] (model laguna)
+## 2026-09-08 17:56:54 UTC [target] (model laguna)
+## 2026-09-08 20:45:54 UTC [target] (model laguna)
+## 2026-09-08 23:07:33 UTC [target] (model laguna)
+## 2026-09-09 01:16:33 UTC [target] (model laguna)
+## 2026-09-09 06:03:46 UTC [target] (model laguna)
+## 2026-09-09 11:29:44 UTC [target] (model laguna)
+## 2026-09-09 15:16:05 UTC [target] (model laguna)
+## 2026-09-09 18:40:48 UTC [target] (model laguna)
+## 2026-09-09 21:28:50 UTC [target] (model laguna)
+## 2026-09-09 23:32:43 UTC [target] (model laguna)
+## 2026-09-10 01:25:12 UTC [target] (model laguna)
+## 2026-09-10 06:37:12 UTC [target] (model laguna)
+## 2026-09-10 11:47:44 UTC [target] (model laguna)
+## 2026-09-10 15:43:38 UTC [target] (model laguna)
+## 2026-09-10 18:53:42 UTC [target] (model laguna)
+## 2026-09-10 21:20:34 UTC [target] (model laguna)
+## 2026-09-10 23:22:39 UTC [target] (model laguna)
+## 2026-09-11 01:26:00 UTC [target] (model laguna)
+## 2026-09-11 06:36:25 UTC [target] (model laguna)
+## 2026-09-11 11:47:09 UTC [target] (model laguna)
+## 2026-09-11 15:44:42 UTC [target] (model laguna)
+## 2026-09-11 18:56:23 UTC [target] (model laguna)
+## 2026-09-11 21:32:40 UTC [target] (model laguna)
+## 2026-09-11 23:31:09 UTC [target] (model laguna)
+## 2026-09-12 01:30:40 UTC [target] (model laguna)
+## 2026-09-12 06:27:52 UTC [target] (model laguna)
+## 2026-09-12 11:13:22 UTC [target] (model laguna)
+## 2026-09-12 14:11:33 UTC [target] (model laguna)
+## 2026-09-12 17:14:17 UTC [target] (model laguna)
+## 2026-09-12 19:25:00 UTC [target] (model laguna)
+## 2026-09-12 21:36:28 UTC [target] (model laguna)
+## 2026-09-12 23:18:21 UTC [target] (model laguna)
+## 2026-09-13 01:08:17 UTC [target] (model laguna)
+## 2026-09-13 06:15:08 UTC [target] (model laguna)
+## 2026-09-13 11:58:12 UTC [target] (model laguna)
+## 2026-09-13 15:50:17 UTC [target] (model laguna)
+## 2026-09-13 18:29:18 UTC [target] (model laguna)
+## 2026-09-13 21:06:42 UTC [target] (model laguna)
+## 2026-09-13 23:12:15 UTC [target] (model laguna)
+## 2026-09-14 01:10:44 UTC [target] (model laguna)
+## 2026-09-14 06:23:08 UTC [target] (model laguna)
+## 2026-09-14 13:17:57 UTC [target] (model laguna)
+## 2026-09-14 18:42:13 UTC [target] (model laguna)
+## 2026-09-14 22:14:31 UTC [target] (model laguna)
+## 2026-09-15 00:42:30 UTC [target] (model laguna)
+## 2026-09-15 05:42:54 UTC [target] (model laguna)
+## 2026-09-15 10:54:03 UTC [target] (model laguna)
+## 2026-09-15 15:25:21 UTC [target] (model laguna)
+## 2026-09-15 19:10:34 UTC [target] (model laguna)
+## 2026-09-15 22:17:33 UTC [target] (model laguna)
+## 2026-09-16 00:27:55 UTC [target] (model laguna)
+## 2026-09-16 05:11:28 UTC [target] (model laguna)
+## 2026-09-16 10:00:31 UTC [target] (model laguna)
+## 2026-09-16 14:46:50 UTC [target] (model laguna)
+## 2026-09-16 18:37:20 UTC [target] (model laguna)
+## 2026-09-16 21:41:34 UTC [target] (model laguna)
+## 2026-09-17 00:01:28 UTC [target] (model laguna)
+## 2026-09-17 04:57:35 UTC [target] (model laguna)
+## 2026-09-17 09:52:03 UTC [target] (model laguna)
+## 2026-09-17 14:36:25 UTC [target] (model laguna)
+## 2026-09-17 18:31:20 UTC [target] (model laguna)
+## 2026-09-17 21:42:59 UTC [target] (model laguna)
+## 2026-09-17 23:51:18 UTC [target] (model laguna)
+## 2026-09-18 02:51:24 UTC [target] (model laguna)
+## 2026-09-18 07:54:21 UTC [target] (model laguna)
+## 2026-09-18 12:38:06 UTC [target] (model laguna)
+## 2026-09-18 16:42:46 UTC [target] (model laguna)
+## 2026-09-18 19:24:07 UTC [target] (model laguna)
+## 2026-09-18 21:50:04 UTC [target] (model laguna)
+## 2026-09-18 23:49:30 UTC [target] (model laguna)
+## 2026-09-19 02:49:39 UTC [target] (model laguna)
+## 2026-09-19 07:45:08 UTC [target] (model laguna)
+## 2026-09-19 12:13:38 UTC [target] (model laguna)
+## 2026-09-19 15:55:44 UTC [target] (model laguna)
+## 2026-09-19 18:22:51 UTC [target] (model laguna)
+## 2026-09-19 20:57:51 UTC [target] (model laguna)
+## 2026-09-19 22:43:02 UTC [target] (model laguna)
+## 2026-09-20 00:35:14 UTC [target] (model laguna)
+## 2026-09-20 05:21:49 UTC [target] (model laguna)
+## 2026-09-20 10:04:29 UTC [target] (model laguna)
+## 2026-09-20 14:15:30 UTC [target] (model laguna)
+## 2026-09-20 17:30:29 UTC [target] (model laguna)
+## 2026-09-20 19:42:11 UTC [target] (model laguna)
+## 2026-09-20 22:08:23 UTC [target] (model laguna)
+## 2026-09-21 00:18:33 UTC [target] (model laguna)
+## 2026-09-21 05:07:33 UTC [target] (model laguna)
+## 2026-09-21 10:47:50 UTC [target] (model laguna)
+## 2026-09-21 16:45:07 UTC [target] (model laguna)
+## 2026-09-21 20:44:51 UTC [target] (model laguna)
+## 2026-09-21 23:47:05 UTC [target] (model laguna)
+## 2026-09-22 02:59:00 UTC [target] (model laguna)
+## 2026-09-22 08:23:27 UTC [target] (model laguna)
+## 2026-09-22 13:38:44 UTC [target] (model laguna)
+## 2026-09-22 17:45:33 UTC [target] (model laguna)
+## 2026-09-22 20:47:32 UTC [target] (model laguna)
+## 2026-09-22 23:26:22 UTC [target] (model laguna)
+## 2026-09-23 01:44:29 UTC [target] (model laguna)
+## 2026-09-23 07:12:58 UTC [target] (model laguna)
+## 2026-09-23 12:47:07 UTC [target] (model laguna)
+## 2026-09-23 17:39:49 UTC [target] (model laguna)
+## 2026-09-23 20:40:56 UTC [target] (model laguna)
+## 2026-09-23 23:24:34 UTC [target] (model laguna)
+## 2026-09-24 01:37:45 UTC [target] (model laguna)
+## 2026-09-24 06:43:31 UTC [target] (model laguna)
+## 2026-09-24 12:29:50 UTC [target] (model laguna)
+## 2026-09-24 17:31:52 UTC [target] (model laguna)
+## 2026-09-24 20:44:58 UTC [target] (model laguna)
+## 2026-09-24 23:43:33 UTC [target] (model laguna)
+## 2026-09-25 03:06:28 UTC [target] (model laguna)
+## 2026-09-25 08:53:46 UTC [target] (model laguna)
+## 2026-09-25 14:23:02 UTC [target] (model laguna)
+## 2026-09-25 18:51:18 UTC [target] (model laguna)
+## 2026-09-25 21:56:51 UTC [target] (model laguna)
+## 2026-09-26 00:22:57 UTC [target] (model laguna)
+## 2026-09-26 05:24:44 UTC [target] (model laguna)
+## 2026-09-26 10:12:44 UTC [target] (model laguna)
+## 2026-09-26 14:32:29 UTC [target] (model laguna)
+## 2026-09-26 17:59:14 UTC [target] (model laguna)
+## 2026-09-26 20:54:10 UTC [target] (model laguna)
+## 2026-09-26 23:20:56 UTC [target] (model laguna)
+## 2026-09-27 01:44:48 UTC [target] (model laguna)
+## 2026-09-27 07:30:05 UTC [target] (model laguna)
+## 2026-09-27 13:16:27 UTC [target] (model laguna)
+## 2026-09-27 17:48:15 UTC [target] (model laguna)
+## 2026-09-27 20:45:07 UTC [target] (model laguna)
+## 2026-09-27 23:33:45 UTC [target] (model laguna)
+## 2026-09-28 01:57:28 UTC [target] (model laguna)
+## 2026-09-28 08:20:20 UTC [target] (model laguna)
+## 2026-09-28 16:59:01 UTC [target] (model laguna)
+## 2026-09-28 22:28:01 UTC [target] (model laguna)
+## 2026-09-29 02:16:24 UTC [target] (model laguna)
+## 2026-09-29 08:39:22 UTC [target] (model laguna)
+## 2026-09-29 15:05:05 UTC [target] (model laguna)
+## 2026-09-29 20:01:22 UTC [target] (model laguna)
+## 2026-09-29 23:45:38 UTC [target] (model laguna)
+## 2026-09-30 03:40:15 UTC [target] (model laguna)
+## 2026-09-30 10:00:02 UTC [target] (model laguna)
+## 2026-09-30 16:22:07 UTC [target] (model laguna)
+## 2026-09-30 20:58:29 UTC [target] (model laguna)
+## 2026-10-01 00:25:25 UTC [target] (model laguna)
+## 2026-10-01 06:29:34 UTC [target] (model laguna)
+## 2026-10-01 13:51:10 UTC [target] (model laguna)
+## 2026-10-01 19:13:24 UTC [target] (model laguna)
+## 2026-10-01 23:14:18 UTC [target] (model laguna)
+## 2026-10-02 02:18:36 UTC [target] (model laguna)
+## 2026-10-02 08:39:11 UTC [target] (model laguna)
+## 2026-10-02 14:59:29 UTC [target] (model laguna)
+## 2026-10-02 19:50:52 UTC [target] (model laguna)
+## 2026-10-02 23:31:01 UTC [target] (model laguna)
+## 2026-10-03 02:17:58 UTC [target] (model laguna)
+## 2026-10-03 08:16:23 UTC [target] (model laguna)
+## 2026-10-03 13:28:30 UTC [target] (model laguna)
+## 2026-10-03 17:34:54 UTC [target] (model laguna)
+## 2026-10-03 20:10:13 UTC [target] (model laguna)
+## 2026-10-03 23:07:23 UTC [target] (model laguna)
+## 2026-10-04 02:42:57 UTC [target] (model laguna)
+## 2026-10-04 09:15:45 UTC [target] (model laguna)
+## 2026-10-04 14:48:49 UTC [target] (model laguna)
+## 2026-10-04 18:30:23 UTC [target] (model laguna)
+## 2026-10-04 21:53:28 UTC [target] (model laguna)
+## 2026-10-05 00:24:01 UTC [target] (model laguna)
+## 2026-10-05 06:10:24 UTC [target] (model laguna)
+## 2026-10-05 14:49:18 UTC [target] (model laguna)
+## 2026-10-05 21:47:11 UTC [target] (model laguna)
+## 2026-10-06 02:01:46 UTC [target] (model laguna)
+## 2026-10-06 09:03:35 UTC [target] (model laguna)
+## 2026-10-06 15:59:39 UTC [target] (model laguna)
+## 2026-10-06 20:53:13 UTC [target] (model laguna)
+## 2026-10-07 00:19:27 UTC [target] (model laguna)
+## 2026-10-07 06:11:14 UTC [target] (model laguna)
+## 2026-10-07 13:31:28 UTC [target] (model laguna)
+## 2026-10-07 19:30:10 UTC [target] (model laguna)
+## 2026-10-07 23:46:40 UTC [target] (model laguna)
+## 2026-10-08 04:09:11 UTC [target] (model laguna)
+## 2026-10-08 11:25:04 UTC [target] (model laguna)
+## 2026-10-08 17:58:44 UTC [target] (model laguna)
+## 2026-10-08 23:07:30 UTC [target] (model laguna)
+## 2026-10-09 02:57:33 UTC [target] (model laguna)
+## 2026-10-09 10:10:34 UTC [target] (model laguna)
+## 2026-10-09 17:01:10 UTC [target] (model laguna)
+## 2026-10-09 21:43:26 UTC [target] (model laguna)
+## 2026-10-10 01:27:00 UTC [target] (model laguna)
+## 2026-10-10 07:42:47 UTC [target] (model laguna)
+## 2026-10-10 14:09:48 UTC [target] (model laguna)
+## 2026-10-10 18:40:24 UTC [target] (model laguna)
+## 2026-10-10 22:10:35 UTC [target] (model laguna)
+## 2026-10-11 01:01:48 UTC [target] (model laguna)
+## 2026-10-11 07:15:57 UTC [target] (model laguna)
+## 2026-10-11 14:07:10 UTC [target] (model laguna)
+## 2026-10-11 18:58:01 UTC [target] (model laguna)
+## 2026-10-11 22:43:16 UTC [target] (model laguna)
+## 2026-10-12 02:00:29 UTC [target] (model laguna)
+## 2026-10-12 09:19:01 UTC [target] (model laguna)
+## 2026-10-12 19:08:56 UTC [target] (model laguna)
+## 2026-10-13 01:24:02 UTC [target] (model laguna)
+## 2026-10-13 08:23:37 UTC [target] (model laguna)
+## 2026-10-13 16:23:43 UTC [target] (model laguna)
+## 2026-10-13 21:30:51 UTC [target] (model laguna)
+## 2026-10-14 00:35:12 UTC [target] (model laguna)
+## 2026-10-14 05:19:41 UTC [target] (model laguna)
+## 2026-10-14 10:20:27 UTC [target] (model laguna)
+## 2026-09-03 15:40:39 UTC [target] (model ling3)
+## 2026-09-03 19:02:33 UTC [target] (model ling3)
+## 2026-09-03 21:44:49 UTC [target] (model ling3)
+## 2026-09-03 23:45:01 UTC [target] (model ling3)
+## 2026-09-04 02:35:29 UTC [target] (model ling3)
+## 2026-09-04 07:24:26 UTC [target] (model ling3)
+## 2026-09-04 12:15:35 UTC [target] (model ling3)
+## 2026-09-04 16:25:49 UTC [target] (model ling3)
+## 2026-09-04 19:06:52 UTC [target] (model ling3)
+## 2026-09-04 21:32:24 UTC [target] (model ling3)
+## 2026-09-04 23:16:23 UTC [target] (model ling3)
+## 2026-09-05 01:03:13 UTC [target] (model ling3)
+## 2026-09-05 05:48:47 UTC [target] (model ling3)
+## 2026-09-05 09:52:10 UTC [target] (model ling3)
+## 2026-09-05 13:13:01 UTC [target] (model ling3)
+## 2026-09-05 16:06:57 UTC [target] (model ling3)
+## 2026-09-05 18:21:29 UTC [target] (model ling3)
+## 2026-09-05 20:41:55 UTC [target] (model ling3)
+## 2026-09-05 22:36:31 UTC [target] (model ling3)
+## 2026-09-06 00:12:51 UTC [target] (model ling3)
+## 2026-09-06 04:45:31 UTC [target] (model ling3)
+## 2026-09-06 09:07:12 UTC [target] (model ling3)
+## 2026-09-06 12:55:28 UTC [target] (model ling3)
+## 2026-09-06 15:57:32 UTC [target] (model ling3)
+## 2026-09-06 18:05:00 UTC [target] (model ling3)
+## 2026-09-06 20:28:16 UTC [target] (model ling3)
+## 2026-09-06 22:18:22 UTC [target] (model ling3)
+## 2026-09-07 00:02:34 UTC [target] (model ling3)
+## 2026-09-07 04:48:55 UTC [target] (model ling3)
+## 2026-09-07 09:54:26 UTC [target] (model ling3)
+## 2026-09-07 15:28:01 UTC [target] (model ling3)
+## 2026-09-07 19:22:30 UTC [target] (model ling3)
+## 2026-09-07 22:15:27 UTC [target] (model ling3)
+## 2026-09-08 00:27:33 UTC [target] (model ling3)
+## 2026-09-08 05:10:18 UTC [target] (model ling3)
+## 2026-09-08 09:46:01 UTC [target] (model ling3)
+## 2026-09-08 14:04:22 UTC [target] (model ling3)
+## 2026-09-08 17:56:54 UTC [target] (model ling3)
+## 2026-09-08 20:45:56 UTC [target] (model ling3)
+## 2026-09-08 23:07:35 UTC [target] (model ling3)
+## 2026-09-09 01:16:20 UTC [target] (model ling3)
+## 2026-09-09 06:03:45 UTC [target] (model ling3)
+## 2026-09-09 11:29:43 UTC [target] (model ling3)
+## 2026-09-09 15:16:14 UTC [target] (model ling3)
+## 2026-09-09 18:40:45 UTC [target] (model ling3)
+## 2026-09-09 21:28:50 UTC [target] (model ling3)
+## 2026-09-09 23:33:40 UTC [target] (model ling3)
+## 2026-09-10 01:25:15 UTC [target] (model ling3)
+## 2026-09-10 06:37:10 UTC [target] (model ling3)
+## 2026-09-10 11:47:36 UTC [target] (model ling3)
+## 2026-09-10 15:43:51 UTC [target] (model ling3)
+## 2026-09-10 18:53:43 UTC [target] (model ling3)
+## 2026-09-10 21:20:34 UTC [target] (model ling3)
+## 2026-09-10 23:22:38 UTC [target] (model ling3)
+## 2026-09-11 01:26:16 UTC [target] (model ling3)
+## 2026-09-11 06:36:25 UTC [target] (model ling3)
+## 2026-09-11 11:47:09 UTC [target] (model ling3)
+## 2026-09-11 15:44:41 UTC [target] (model ling3)
+## 2026-09-11 18:56:20 UTC [target] (model ling3)
+## 2026-09-11 21:32:28 UTC [target] (model ling3)
+## 2026-09-11 23:31:03 UTC [target] (model ling3)
+## 2026-09-12 01:30:38 UTC [target] (model ling3)
+## 2026-09-12 06:27:47 UTC [target] (model ling3)
+## 2026-09-12 11:13:20 UTC [target] (model ling3)
+## 2026-09-12 14:11:36 UTC [target] (model ling3)
+## 2026-09-12 17:14:14 UTC [target] (model ling3)
+## 2026-09-12 19:25:01 UTC [target] (model ling3)
+## 2026-09-12 21:36:30 UTC [target] (model ling3)
+## 2026-09-12 23:18:21 UTC [target] (model ling3)
+## 2026-09-13 01:08:19 UTC [target] (model ling3)
+## 2026-09-13 06:15:48 UTC [target] (model ling3)
+## 2026-09-13 11:58:11 UTC [target] (model ling3)
+## 2026-09-13 15:50:18 UTC [target] (model ling3)
+## 2026-09-13 18:29:13 UTC [target] (model ling3)
+## 2026-09-13 21:06:45 UTC [target] (model ling3)
+## 2026-09-13 23:12:14 UTC [target] (model ling3)
+## 2026-09-14 01:10:45 UTC [target] (model ling3)
+## 2026-09-14 06:22:52 UTC [target] (model ling3)
+## 2026-09-14 13:18:01 UTC [target] (model ling3)
+## 2026-09-14 18:42:08 UTC [target] (model ling3)
+## 2026-09-14 22:14:34 UTC [target] (model ling3)
+## 2026-09-15 00:42:37 UTC [target] (model ling3)
+## 2026-09-15 05:42:59 UTC [target] (model ling3)
+## 2026-09-15 10:54:03 UTC [target] (model ling3)
+## 2026-09-15 15:25:26 UTC [target] (model ling3)
+## 2026-09-15 19:10:33 UTC [target] (model ling3)
+## 2026-09-15 22:17:33 UTC [target] (model ling3)
+## 2026-09-16 00:27:55 UTC [target] (model ling3)
+## 2026-09-16 05:11:23 UTC [target] (model ling3)
+## 2026-09-16 10:00:27 UTC [target] (model ling3)
+## 2026-09-16 14:46:47 UTC [target] (model ling3)
+## 2026-09-16 18:37:19 UTC [target] (model ling3)
+## 2026-09-16 21:41:24 UTC [target] (model ling3)
+## 2026-09-17 00:01:31 UTC [target] (model ling3)
+## 2026-09-17 04:57:37 UTC [target] (model ling3)
+## 2026-09-17 09:52:19 UTC [target] (model ling3)
+## 2026-09-17 14:36:25 UTC [target] (model ling3)
+## 2026-09-17 18:31:22 UTC [target] (model ling3)
+## 2026-09-17 21:42:45 UTC [target] (model ling3)
+## 2026-09-17 23:52:06 UTC [target] (model ling3)
+## 2026-09-18 02:51:26 UTC [target] (model ling3)
+## 2026-09-18 07:54:17 UTC [target] (model ling3)
+## 2026-09-18 12:38:08 UTC [target] (model ling3)
+## 2026-09-18 16:42:43 UTC [target] (model ling3)
+## 2026-09-18 19:24:05 UTC [target] (model ling3)
+## 2026-09-18 21:50:08 UTC [target] (model ling3)
+## 2026-09-18 23:49:33 UTC [target] (model ling3)
+## 2026-09-19 02:49:39 UTC [target] (model ling3)
+## 2026-09-19 07:45:08 UTC [target] (model ling3)
+## 2026-09-19 12:13:39 UTC [target] (model ling3)
+## 2026-09-19 15:55:49 UTC [target] (model ling3)
+## 2026-09-19 18:22:50 UTC [target] (model ling3)
+## 2026-09-19 20:58:03 UTC [target] (model ling3)
+## 2026-09-19 22:43:02 UTC [target] (model ling3)
+## 2026-09-20 00:35:13 UTC [target] (model ling3)
+## 2026-09-20 05:21:50 UTC [target] (model ling3)
+## 2026-09-20 10:04:30 UTC [target] (model ling3)
+## 2026-09-20 14:15:30 UTC [target] (model ling3)
+## 2026-09-20 17:30:29 UTC [target] (model ling3)
+## 2026-09-20 19:42:09 UTC [target] (model ling3)
+## 2026-09-20 22:08:25 UTC [target] (model ling3)
+## 2026-09-21 00:18:27 UTC [target] (model ling3)
+## 2026-09-21 05:07:21 UTC [target] (model ling3)
+## 2026-09-21 10:47:49 UTC [target] (model ling3)
+## 2026-09-21 16:45:05 UTC [target] (model ling3)
+## 2026-09-21 20:44:50 UTC [target] (model ling3)
+## 2026-09-21 23:47:03 UTC [target] (model ling3)
+## 2026-09-22 02:58:58 UTC [target] (model ling3)
+## 2026-09-22 08:23:24 UTC [target] (model ling3)
+## 2026-09-22 13:38:44 UTC [target] (model ling3)
+## 2026-09-22 17:45:35 UTC [target] (model ling3)
+## 2026-09-22 20:47:33 UTC [target] (model ling3)
+## 2026-09-22 23:26:24 UTC [target] (model ling3)
+## 2026-09-23 01:44:28 UTC [target] (model ling3)
+## 2026-09-23 07:12:59 UTC [target] (model ling3)
+## 2026-09-23 12:47:04 UTC [target] (model ling3)
+## 2026-09-23 17:39:48 UTC [target] (model ling3)
+## 2026-09-23 20:40:59 UTC [target] (model ling3)
+## 2026-09-23 23:24:32 UTC [target] (model ling3)
+## 2026-09-24 01:37:45 UTC [target] (model ling3)
+## 2026-09-24 06:43:55 UTC [target] (model ling3)
+## 2026-09-24 12:30:01 UTC [target] (model ling3)
+## 2026-09-24 17:31:54 UTC [target] (model ling3)
+## 2026-09-24 20:44:56 UTC [target] (model ling3)
+## 2026-09-24 23:43:33 UTC [target] (model ling3)
+## 2026-09-25 03:06:27 UTC [target] (model ling3)
+## 2026-09-25 08:53:52 UTC [target] (model ling3)
+## 2026-09-25 14:23:06 UTC [target] (model ling3)
+## 2026-09-25 18:51:10 UTC [target] (model ling3)
+## 2026-09-25 21:56:54 UTC [target] (model ling3)
+## 2026-09-26 00:22:57 UTC [target] (model ling3)
+## 2026-09-26 05:24:43 UTC [target] (model ling3)
+## 2026-09-26 10:12:38 UTC [target] (model ling3)
+## 2026-09-26 14:32:39 UTC [target] (model ling3)
+## 2026-09-26 17:59:11 UTC [target] (model ling3)
+## 2026-09-26 20:54:07 UTC [target] (model ling3)
+## 2026-09-26 23:20:54 UTC [target] (model ling3)
+## 2026-09-27 01:44:47 UTC [target] (model ling3)
+## 2026-09-27 07:30:15 UTC [target] (model ling3)
+## 2026-09-27 13:16:30 UTC [target] (model ling3)
+## 2026-09-27 17:48:13 UTC [target] (model ling3)
+## 2026-09-27 20:45:07 UTC [target] (model ling3)
+## 2026-09-27 23:33:43 UTC [target] (model ling3)
+## 2026-09-28 01:57:31 UTC [target] (model ling3)
+## 2026-09-28 08:20:20 UTC [target] (model ling3)
+## 2026-09-28 16:59:04 UTC [target] (model ling3)
+## 2026-09-28 22:28:03 UTC [target] (model ling3)
+## 2026-09-29 02:16:27 UTC [target] (model ling3)
+## 2026-09-29 08:39:25 UTC [target] (model ling3)
+## 2026-09-29 15:05:05 UTC [target] (model ling3)
+## 2026-09-29 20:01:20 UTC [target] (model ling3)
+## 2026-09-29 23:45:37 UTC [target] (model ling3)
+## 2026-09-30 03:40:14 UTC [target] (model ling3)
+## 2026-09-30 10:00:03 UTC [target] (model ling3)
+## 2026-09-30 16:22:08 UTC [target] (model ling3)
+## 2026-09-30 20:58:31 UTC [target] (model ling3)
+## 2026-10-01 00:25:27 UTC [target] (model ling3)
+## 2026-10-01 06:29:33 UTC [target] (model ling3)
+## 2026-10-01 13:51:04 UTC [target] (model ling3)
+## 2026-10-01 19:13:23 UTC [target] (model ling3)
+## 2026-10-01 23:14:22 UTC [target] (model ling3)
+## 2026-10-02 02:18:32 UTC [target] (model ling3)
+## 2026-10-02 08:39:06 UTC [target] (model ling3)
+## 2026-10-02 14:59:27 UTC [target] (model ling3)
+## 2026-10-02 19:50:53 UTC [target] (model ling3)
+## 2026-10-02 23:30:59 UTC [target] (model ling3)
+## 2026-10-03 02:18:00 UTC [target] (model ling3)
+## 2026-10-03 08:16:23 UTC [target] (model ling3)
+## 2026-10-03 13:28:34 UTC [target] (model ling3)
+## 2026-10-03 17:34:58 UTC [target] (model ling3)
+## 2026-10-03 20:10:06 UTC [target] (model ling3)
+## 2026-10-03 23:07:25 UTC [target] (model ling3)
+## 2026-10-04 02:42:50 UTC [target] (model ling3)
+## 2026-10-04 09:15:43 UTC [target] (model ling3)
+## 2026-10-04 14:48:50 UTC [target] (model ling3)
+## 2026-10-04 18:30:23 UTC [target] (model ling3)
+## 2026-10-04 21:53:28 UTC [target] (model ling3)
+## 2026-10-05 00:23:58 UTC [target] (model ling3)
+## 2026-10-05 06:10:24 UTC [target] (model ling3)
+## 2026-10-05 14:49:11 UTC [target] (model ling3)
+## 2026-10-05 21:47:09 UTC [target] (model ling3)
+## 2026-10-06 02:01:47 UTC [target] (model ling3)
+## 2026-10-06 09:03:36 UTC [target] (model ling3)
+## 2026-10-06 15:59:36 UTC [target] (model ling3)
+## 2026-10-06 20:53:15 UTC [target] (model ling3)
+## 2026-10-07 00:19:24 UTC [target] (model ling3)
+## 2026-10-07 06:11:12 UTC [target] (model ling3)
+## 2026-10-07 13:31:28 UTC [target] (model ling3)
+## 2026-10-07 19:30:08 UTC [target] (model ling3)
+## 2026-10-07 23:46:40 UTC [target] (model ling3)
+## 2026-10-08 04:09:11 UTC [target] (model ling3)
+## 2026-10-08 11:24:58 UTC [target] (model ling3)
+## 2026-10-08 17:58:42 UTC [target] (model ling3)
+## 2026-10-08 23:07:34 UTC [target] (model ling3)
+## 2026-10-09 02:57:34 UTC [target] (model ling3)
+## 2026-10-09 10:10:34 UTC [target] (model ling3)
+## 2026-10-09 17:01:12 UTC [target] (model ling3)
+## 2026-10-09 21:43:28 UTC [target] (model ling3)
+## 2026-10-10 01:27:09 UTC [target] (model ling3)
+## 2026-10-10 07:42:48 UTC [target] (model ling3)
+## 2026-10-10 14:09:52 UTC [target] (model ling3)
+## 2026-10-10 18:40:23 UTC [target] (model ling3)
+## 2026-10-10 22:10:36 UTC [target] (model ling3)
+## 2026-10-11 01:01:48 UTC [target] (model ling3)
+## 2026-10-11 07:15:59 UTC [target] (model ling3)
+## 2026-10-11 14:07:07 UTC [target] (model ling3)
+## 2026-10-11 18:58:00 UTC [target] (model ling3)
+## 2026-10-11 22:43:14 UTC [target] (model ling3)
+## 2026-10-12 02:00:34 UTC [target] (model ling3)
+## 2026-10-12 09:18:56 UTC [target] (model ling3)
+## 2026-10-12 19:09:01 UTC [target] (model ling3)
+## 2026-10-13 01:23:57 UTC [target] (model ling3)
+## 2026-10-13 08:23:31 UTC [target] (model ling3)
+## 2026-10-13 16:23:41 UTC [target] (model ling3)
+## 2026-10-13 21:30:53 UTC [target] (model ling3)
+## 2026-10-14 00:35:14 UTC [target] (model ling3)
+## 2026-10-14 05:19:38 UTC [target] (model ling3)
+## 2026-10-14 10:20:25 UTC [target] (model ling3)
+## 2026-09-03 15:40:19 UTC [target] (model longcat)
+## 2026-09-03 19:02:40 UTC [target] (model longcat)
+## 2026-09-03 21:44:39 UTC [target] (model longcat)
+## 2026-09-03 23:45:07 UTC [target] (model longcat)
+## 2026-09-04 02:35:30 UTC [target] (model longcat)
+## 2026-09-04 07:24:39 UTC [target] (model longcat)
+## 2026-09-04 12:15:50 UTC [target] (model longcat)
+## 2026-09-04 16:25:49 UTC [target] (model longcat)
+## 2026-09-04 19:06:53 UTC [target] (model longcat)
+## 2026-09-04 21:32:21 UTC [target] (model longcat)
+## 2026-09-04 23:16:21 UTC [target] (model longcat)
+## 2026-09-05 01:03:04 UTC [target] (model longcat)
+## 2026-09-05 05:48:43 UTC [target] (model longcat)
+## 2026-09-05 09:52:11 UTC [target] (model longcat)
+## 2026-09-05 13:12:52 UTC [target] (model longcat)
+## 2026-09-05 16:07:00 UTC [target] (model longcat)
+## 2026-09-05 18:21:27 UTC [target] (model longcat)
+## 2026-09-05 20:41:48 UTC [target] (model longcat)
+## 2026-09-05 22:36:32 UTC [target] (model longcat)
+## 2026-09-06 00:13:28 UTC [target] (model longcat)
+## 2026-09-06 04:45:27 UTC [target] (model longcat)
+## 2026-09-06 09:07:11 UTC [target] (model longcat)
+## 2026-09-06 12:56:34 UTC [target] (model longcat)
+## 2026-09-06 15:57:33 UTC [target] (model longcat)
+## 2026-09-06 18:05:03 UTC [target] (model longcat)
+## 2026-09-06 20:27:39 UTC [target] (model longcat)
+## 2026-09-06 22:18:21 UTC [target] (model longcat)
+## 2026-09-07 00:02:34 UTC [target] (model longcat)
+## 2026-09-07 04:48:49 UTC [target] (model longcat)
+## 2026-09-07 09:55:53 UTC [target] (model longcat)
+## 2026-09-07 15:27:53 UTC [target] (model longcat)
+## 2026-09-07 19:23:05 UTC [target] (model longcat)
+## 2026-09-07 22:15:18 UTC [target] (model longcat)
+## 2026-09-08 00:27:35 UTC [target] (model longcat)
+## 2026-09-08 05:10:14 UTC [target] (model longcat)
+## 2026-09-08 09:45:49 UTC [target] (model longcat)
+## 2026-09-08 14:04:29 UTC [target] (model longcat)
+## 2026-09-08 17:56:58 UTC [target] (model longcat)
+## 2026-09-08 20:45:54 UTC [target] (model longcat)
+## 2026-09-08 23:07:41 UTC [target] (model longcat)
+## 2026-09-09 01:16:21 UTC [target] (model longcat)
+## 2026-09-09 06:04:25 UTC [target] (model longcat)
+## 2026-09-09 11:29:43 UTC [target] (model longcat)
+## 2026-09-09 15:16:03 UTC [target] (model longcat)
+## 2026-09-09 18:40:44 UTC [target] (model longcat)
+## 2026-09-09 21:28:49 UTC [target] (model longcat)
+## 2026-09-09 23:32:23 UTC [target] (model longcat)
+## 2026-09-10 01:25:12 UTC [target] (model longcat)
+## 2026-09-10 06:37:10 UTC [target] (model longcat)
+## 2026-09-10 11:47:41 UTC [target] (model longcat)
+## 2026-09-10 15:43:36 UTC [target] (model longcat)
+## 2026-09-10 18:53:44 UTC [target] (model longcat)
+## 2026-09-10 21:20:34 UTC [target] (model longcat)
+## 2026-09-10 23:22:38 UTC [target] (model longcat)
+## 2026-09-11 01:26:00 UTC [target] (model longcat)
+## 2026-09-11 06:36:26 UTC [target] (model longcat)
+## 2026-09-11 11:47:11 UTC [target] (model longcat)
+## 2026-09-11 15:44:43 UTC [target] (model longcat)
+## 2026-09-11 18:56:21 UTC [target] (model longcat)
+## 2026-09-11 21:32:31 UTC [target] (model longcat)
+## 2026-09-11 23:31:03 UTC [target] (model longcat)
+## 2026-09-12 01:30:40 UTC [target] (model longcat)
+## 2026-09-12 06:27:48 UTC [target] (model longcat)
+## 2026-09-12 11:13:20 UTC [target] (model longcat)
+## 2026-09-12 14:11:35 UTC [target] (model longcat)
+## 2026-09-12 17:14:14 UTC [target] (model longcat)
+## 2026-09-12 19:25:03 UTC [target] (model longcat)
+## 2026-09-12 21:36:30 UTC [target] (model longcat)
+## 2026-09-12 23:18:22 UTC [target] (model longcat)
+## 2026-09-13 01:08:16 UTC [target] (model longcat)
+## 2026-09-13 06:15:22 UTC [target] (model longcat)
+## 2026-09-13 11:58:15 UTC [target] (model longcat)
+## 2026-09-13 15:50:15 UTC [target] (model longcat)
+## 2026-09-13 18:29:15 UTC [target] (model longcat)
+## 2026-09-13 21:06:43 UTC [target] (model longcat)
+## 2026-09-13 23:12:11 UTC [target] (model longcat)
+## 2026-09-14 01:10:43 UTC [target] (model longcat)
+## 2026-09-14 06:22:47 UTC [target] (model longcat)
+## 2026-09-14 13:18:04 UTC [target] (model longcat)
+## 2026-09-14 18:42:08 UTC [target] (model longcat)
+## 2026-09-14 22:14:36 UTC [target] (model longcat)
+## 2026-09-15 00:41:53 UTC [target] (model longcat)
+## 2026-09-15 05:42:57 UTC [target] (model longcat)
+## 2026-09-15 10:54:04 UTC [target] (model longcat)
+## 2026-09-15 15:25:27 UTC [target] (model longcat)
+## 2026-09-15 19:10:40 UTC [target] (model longcat)
+## 2026-09-15 22:17:34 UTC [target] (model longcat)
+## 2026-09-16 00:27:56 UTC [target] (model longcat)
+## 2026-09-16 05:11:26 UTC [target] (model longcat)
+## 2026-09-16 10:00:08 UTC [target] (model longcat)
+## 2026-09-16 14:46:43 UTC [target] (model longcat)
+## 2026-09-16 18:37:25 UTC [target] (model longcat)
+## 2026-09-16 21:41:26 UTC [target] (model longcat)
+## 2026-09-17 00:01:27 UTC [target] (model longcat)
+## 2026-09-17 04:57:36 UTC [target] (model longcat)
+## 2026-09-17 09:52:03 UTC [target] (model longcat)
+## 2026-09-17 14:36:28 UTC [target] (model longcat)
+## 2026-09-17 18:31:31 UTC [target] (model longcat)
+## 2026-09-17 21:42:48 UTC [target] (model longcat)
+## 2026-09-17 23:51:28 UTC [target] (model longcat)
+## 2026-09-18 02:51:28 UTC [target] (model longcat)
+## 2026-09-18 07:54:18 UTC [target] (model longcat)
+## 2026-09-18 12:38:13 UTC [target] (model longcat)
+## 2026-09-18 16:42:42 UTC [target] (model longcat)
+## 2026-09-18 19:24:09 UTC [target] (model longcat)
+## 2026-09-18 21:50:07 UTC [target] (model longcat)
+## 2026-09-18 23:49:30 UTC [target] (model longcat)
+## 2026-09-19 02:50:19 UTC [target] (model longcat)
+## 2026-09-19 07:45:09 UTC [target] (model longcat)
+## 2026-09-19 12:13:39 UTC [target] (model longcat)
+## 2026-09-19 15:55:45 UTC [target] (model longcat)
+## 2026-09-19 18:22:50 UTC [target] (model longcat)
+## 2026-09-19 20:57:54 UTC [target] (model longcat)
+## 2026-09-19 22:43:04 UTC [target] (model longcat)
+## 2026-09-20 00:35:15 UTC [target] (model longcat)
+## 2026-09-20 05:21:49 UTC [target] (model longcat)
+## 2026-09-20 10:04:30 UTC [target] (model longcat)
+## 2026-09-20 14:15:29 UTC [target] (model longcat)
+## 2026-09-20 17:30:11 UTC [target] (model longcat)
+## 2026-09-20 19:42:10 UTC [target] (model longcat)
+## 2026-09-20 22:08:23 UTC [target] (model longcat)
+## 2026-09-21 00:18:26 UTC [target] (model longcat)
+## 2026-09-21 05:07:30 UTC [target] (model longcat)
+## 2026-09-21 10:47:55 UTC [target] (model longcat)
+## 2026-09-21 16:45:09 UTC [target] (model longcat)
+## 2026-09-21 20:44:53 UTC [target] (model longcat)
+## 2026-09-21 23:47:10 UTC [target] (model longcat)
+## 2026-09-22 02:59:02 UTC [target] (model longcat)
+## 2026-09-22 08:23:28 UTC [target] (model longcat)
+## 2026-09-22 13:38:46 UTC [target] (model longcat)
+## 2026-09-22 17:45:35 UTC [target] (model longcat)
+## 2026-09-22 20:47:32 UTC [target] (model longcat)
+## 2026-09-22 23:26:24 UTC [target] (model longcat)
+## 2026-09-23 01:44:28 UTC [target] (model longcat)
+## 2026-09-23 07:12:59 UTC [target] (model longcat)
+## 2026-09-23 12:47:07 UTC [target] (model longcat)
+## 2026-09-23 17:39:45 UTC [target] (model longcat)
+## 2026-09-23 20:40:53 UTC [target] (model longcat)
+## 2026-09-23 23:24:33 UTC [target] (model longcat)
+## 2026-09-24 01:37:46 UTC [target] (model longcat)
+## 2026-09-24 06:43:46 UTC [target] (model longcat)
+## 2026-09-24 12:30:07 UTC [target] (model longcat)
+## 2026-09-24 17:31:44 UTC [target] (model longcat)
+## 2026-09-24 20:44:58 UTC [target] (model longcat)
+## 2026-09-24 23:44:09 UTC [target] (model longcat)
+## 2026-09-25 03:06:26 UTC [target] (model longcat)
+## 2026-09-25 08:53:50 UTC [target] (model longcat)
+## 2026-09-25 14:23:02 UTC [target] (model longcat)
+## 2026-09-25 18:51:26 UTC [target] (model longcat)
+## 2026-09-25 21:56:52 UTC [target] (model longcat)
+## 2026-09-26 00:23:05 UTC [target] (model longcat)
+## 2026-09-26 05:24:39 UTC [target] (model longcat)
+## 2026-09-26 10:12:41 UTC [target] (model longcat)
+## 2026-09-26 14:32:28 UTC [target] (model longcat)
+## 2026-09-26 17:59:12 UTC [target] (model longcat)
+## 2026-09-26 20:54:09 UTC [target] (model longcat)
+## 2026-09-26 23:20:58 UTC [target] (model longcat)
+## 2026-09-27 01:44:47 UTC [target] (model longcat)
+## 2026-09-27 07:30:02 UTC [target] (model longcat)
+## 2026-09-27 13:17:07 UTC [target] (model longcat)
+## 2026-09-27 17:48:12 UTC [target] (model longcat)
+## 2026-09-27 20:45:05 UTC [target] (model longcat)
+## 2026-09-27 23:33:44 UTC [target] (model longcat)
+## 2026-09-28 01:57:29 UTC [target] (model longcat)
+## 2026-09-28 08:20:19 UTC [target] (model longcat)
+## 2026-09-28 16:59:00 UTC [target] (model longcat)
+## 2026-09-28 22:28:02 UTC [target] (model longcat)
+## 2026-09-29 02:16:23 UTC [target] (model longcat)
+## 2026-09-29 08:39:28 UTC [target] (model longcat)
+## 2026-09-29 15:05:06 UTC [target] (model longcat)
+## 2026-09-29 20:01:22 UTC [target] (model longcat)
+## 2026-09-29 23:45:39 UTC [target] (model longcat)
+## 2026-09-30 03:40:16 UTC [target] (model longcat)
+## 2026-09-30 10:00:01 UTC [target] (model longcat)
+## 2026-09-30 16:22:08 UTC [target] (model longcat)
+## 2026-09-30 20:58:31 UTC [target] (model longcat)
+## 2026-10-01 00:25:26 UTC [target] (model longcat)
+## 2026-10-01 06:29:37 UTC [target] (model longcat)
+## 2026-10-01 13:51:07 UTC [target] (model longcat)
+## 2026-10-01 19:13:27 UTC [target] (model longcat)
+## 2026-10-01 23:14:16 UTC [target] (model longcat)
+## 2026-10-02 02:18:32 UTC [target] (model longcat)
+## 2026-10-02 08:39:08 UTC [target] (model longcat)
+## 2026-10-02 14:59:26 UTC [target] (model longcat)
+## 2026-10-02 19:50:54 UTC [target] (model longcat)
+## 2026-10-02 23:30:59 UTC [target] (model longcat)
+## 2026-10-03 02:18:00 UTC [target] (model longcat)
+## 2026-10-03 08:16:27 UTC [target] (model longcat)
+## 2026-10-03 13:28:38 UTC [target] (model longcat)
+## 2026-10-03 17:34:55 UTC [target] (model longcat)
+## 2026-10-03 20:10:09 UTC [target] (model longcat)
+## 2026-10-03 23:07:21 UTC [target] (model longcat)
+## 2026-10-04 02:42:49 UTC [target] (model longcat)
+## 2026-10-04 09:15:48 UTC [target] (model longcat)
+## 2026-10-04 14:48:52 UTC [target] (model longcat)
+## 2026-10-04 18:30:23 UTC [target] (model longcat)
+## 2026-10-04 21:53:32 UTC [target] (model longcat)
+## 2026-10-05 00:23:56 UTC [target] (model longcat)
+## 2026-10-05 06:10:22 UTC [target] (model longcat)
+## 2026-10-05 14:49:11 UTC [target] (model longcat)
+## 2026-10-05 21:47:07 UTC [target] (model longcat)
+## 2026-10-06 02:02:20 UTC [target] (model longcat)
+## 2026-10-06 09:03:38 UTC [target] (model longcat)
+## 2026-10-06 15:59:32 UTC [target] (model longcat)
+## 2026-10-06 20:53:15 UTC [target] (model longcat)
+## 2026-10-07 00:19:23 UTC [target] (model longcat)
+## 2026-10-07 06:11:09 UTC [target] (model longcat)
+## 2026-10-07 13:31:29 UTC [target] (model longcat)
+## 2026-10-07 19:30:10 UTC [target] (model longcat)
+## 2026-10-07 23:46:45 UTC [target] (model longcat)
+## 2026-10-08 04:09:15 UTC [target] (model longcat)
+## 2026-10-08 11:25:00 UTC [target] (model longcat)
+## 2026-10-08 17:58:41 UTC [target] (model longcat)
+## 2026-10-08 23:07:31 UTC [target] (model longcat)
+## 2026-10-09 02:57:39 UTC [target] (model longcat)
+## 2026-10-09 10:10:35 UTC [target] (model longcat)
+## 2026-10-09 17:01:07 UTC [target] (model longcat)
+## 2026-10-09 21:43:35 UTC [target] (model longcat)
+## 2026-10-10 01:27:01 UTC [target] (model longcat)
+## 2026-10-10 07:42:46 UTC [target] (model longcat)
+## 2026-10-10 14:09:46 UTC [target] (model longcat)
+## 2026-10-10 18:40:22 UTC [target] (model longcat)
+## 2026-10-10 22:10:36 UTC [target] (model longcat)
+## 2026-10-11 01:01:49 UTC [target] (model longcat)
+## 2026-10-11 07:15:58 UTC [target] (model longcat)
+## 2026-10-11 14:07:06 UTC [target] (model longcat)
+## 2026-10-11 18:58:00 UTC [target] (model longcat)
+## 2026-10-11 22:43:14 UTC [target] (model longcat)
+## 2026-10-12 02:00:32 UTC [target] (model longcat)
+## 2026-10-12 09:18:59 UTC [target] (model longcat)
+## 2026-10-12 19:09:01 UTC [target] (model longcat)
+## 2026-10-13 01:23:57 UTC [target] (model longcat)
+## 2026-10-13 08:23:31 UTC [target] (model longcat)
+## 2026-10-13 16:23:39 UTC [target] (model longcat)
+## 2026-10-13 21:30:53 UTC [target] (model longcat)
+## 2026-10-14 00:35:15 UTC [target] (model longcat)
+## 2026-10-14 05:19:40 UTC [target] (model longcat)
+## 2026-10-14 10:20:27 UTC [target] (model longcat)
+# Lead log (seed)
+[0m
+[0m$ [0mgrep -o "^\[HYP\].*" leads/lead-nemotron3.md | sort -u | head -60; echo "=== count:"; grep -c "^\[HYP\]" leads/lead-nemotron3.md
+[HYP] Arbitrary Path GraphQL Catch-all Bypasses Path-Based WAF Rules
+[HYP] Arbitrary Path GraphQL Catch-all Bypasses Path-Based WAF Rules  
+[HYP] Booking-Dev Origin Bypass via No-WAF Dev Environment
+[HYP] Booking-Dev Origin Bypass via No-WAF Dev Environment  
+[HYP] CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads
+[HYP] CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads  
+[HYP] CORS Allowlist Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads
+[HYP] CORS Credentialed Reflection on Hostile Origins Enables Cross-Origin GraphQL Reads
+[HYP] CORS Label-Boundary Suffix Match + Null Origin Credentialed Reflection Enables Credentialed Mutation Primitive
+[HYP] CORS Label-Boundary Suffix Match + Null Origin Credentialed Reflection Enables Credentialed Mutation Primitive  
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins on Production GraphQL API
+[HYP] CORS Misconfiguration Enables Credentialed Mutation Execution from Dev/Staging Origins on Production GraphQL API  
+[HYP] CORS Misconfiguration: Production GraphQL API Reflects Dev/Staging Origins with Credentials Enabled
+[HYP] CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads
+[HYP] CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads  
+[HYP] CORS Suffix Match Allows Arbitrary *.cineplex.de Origin Reflection with Credentials
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de (Sole Dangle in Dev Set)
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables CORS Chain to Production GraphQL
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables CORS Chain to Production GraphQL  
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables Trusted-Origin Foothold
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables Trusted-Origin Foothold  
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de → Azure Container Apps  
+[HYP] Dev-Origin WAF Bypass Exposes Booking/Payment Tier + CMS at Direct Origin
+[HYP] Dev-Origin WAF Bypass Exposes Booking/Payment Tier + CMS at Origin
+[HYP] GraphQL Dual Entry Point + Full Type/Argument Surface Exposure on Production
+[HYP] GraphQL Full Introspection + Mutation Argument Surface Exposure on Production
+[HYP] GraphQL Full Introspection + Mutation Surface Exposure on Production
+[HYP] GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT
+[HYP] GraphQL IDOR via userById/searchUsers/adminUsers with Valid JWT  
+[HYP] GraphQL Introspection & Hidden Mutations on Production API
+[HYP] GraphQL Introspection & Unauthorized Mutations on Production API
+[HYP] GraphQL Introspection + Full Mutation Surface Exposure on Production
+[HYP] GraphQL Introspection Enabled on Production API
+[HYP] GraphQL Introspection Enabled on Production and Staging
+[HYP] GraphQL Introspection Enabled on Production via POST
+[HYP] GraphQL Introspection Enabled on Production via POST  
+[HYP] GraphQL Introspection Enabled on Production — Full Schema + Dangerous Mutations Exposed
+[HYP] GraphQL Introspection Enabled on Production — Full Schema + Dangerous Mutations Exposed  
+[HYP] GraphQL Introspection Full Schema Exposure — Mutation Attack Surface Enumeration
+[HYP] GraphQL Introspection Full Schema Exposure — Mutation Attack Surface Enumeration  
+[HYP] IDOR Chaining via Three Independent Pre-Auth Decode Entry Points to Full User PII
+[HYP] IDOR/BOLA on Booking API — Cross-User Booking Access
+[HYP] IDOR/BOLA on Booking API — Cross-User Booking Access via Numeric IDs
+[HYP] IDOR/BOLA via GraphQL userById/searchUsers/adminUsers — Cross-User PII Access
+[HYP] IDOR/BOLA via GraphQL userById/searchUsers/adminUsers — Cross-User PII Access  
+[HYP] JWT Algorithm Confusion (RS256→HS256) on Central Auth
+[HYP] JWT Algorithm Confusion (RS256→HS256) on Central Auth — Token Forgery via Public Key as HMAC Secret
+[HYP] JWT Algorithm Confusion (RS256→HS256) on Central Auth — Token Forgery via Public Key as HMAC Secret  
+[HYP] JWT Algorithm Confusion via GraphQL login Mutation  
+[HYP] JWT Algorithm Confusion via GraphQL login Mutation — RS256→HS256 Key Confusion
+[HYP] JWT Algorithm Confusion via auth.cineplex.de login Mutation
+[HYP] JWT Algorithm/Key Confusion on Central Auth (auth.cineplex.de / sso.cineplex.de)
+[HYP] JWT Algorithm/Key Confusion via GraphQL login Mutation
+[HYP] JWT algorithm confusion via auth.cineplex.de login mutation
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags Mirrors UserPrivileges
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin  
+=== count:
+745
+[0m
+[0m$ [0mgrep -o "^\[HYP\].*" leads/lead-nemotron3.md | sed 's/  *$//' | sort -u | sed 's/.*CNAME Takeover on web-dev.*/DANGLE/; s/.*CORS.*/CORS/; s/.*GraphQL Introspection.*/INTROSPECTION/; s/.*GraphQL Full Introspection.*/INTROSPECTION/; s/.*GraphQL Dual Entry.*/INTROSPECTION/; s/.*IDOR.*/IDOR/; s/.*JWT Algorithm.*/JWT_CONFUSION/; s/.*JWT algorithm.*/JWT_CONFUSION/; s/.*Mass Assignment.*/MASS_ASSIGNMENT/; s/.*Booking-Dev Origin.*/DEV_ORIGIN/; s/.*Dev-Origin WAF.*/DEV_ORIGIN/; s/.*Arbitrary Path GraphQL Catch-all.*/CATCHALL/; s/.*GraphQL IDOR.*/IDOR/' | sort | uniq -c | sort -rn
+16 IDOR
+     11 INTROSPECTION
+      9 CORS
+      8 JWT_CONFUSION
+      5 MASS_ASSIGNMENT
+      5 DANGLE
+      3 DEV_ORIGIN
+      1 [HYP] couat GraphQL accepts introspection POST and exposes schema differing from prod/staging
+      1 [HYP] booking-dev.cineplex.de Origin Bypass via No-WAF Dev Environment
+      1 [HYP] api.cineplex.de/graphql accepts introspection POST bypassing Cloudflare WAF
+      1 [HYP] Undocumented Relay API Routes / SSRF Primitive on Franchise Relay
+      1 [HYP] Subdomain Takeover via Dangling CNAME on web-dev.cineplex.de
+      1 [HYP] Staging testing_getConfirmationCode oracle without role gating
+      1 [HYP] Staging testing_getConfirmationCode auth bypass oracle
+      1 [HYP] Staging testing_getConfirmationCode Auth Bypass Oracle
+      1 [HYP] Staging Testing Mutation Auth Bypass Oracle (testing_getConfirmationCode)
+      1 [HYP] Staging Testing Mutation Auth Bypass Oracle
+      1 [HYP] Staging Spring Data JPA REST Endpoint Exposure
+      1 [HYP] Staging GraphQL mirrors prod destructive mutation surface with no network gate
+      1 [HYP] Staging Confirmation Code Oracle Enables Account Takeover via testing_getConfirmationCode
+      1 [HYP] Relay metrics endpoint discloses internal service topology / Prometheus stats
+      1 [HYP] Relay host undocumented API routes beyond /health and /metrics
+      1 [HYP] Relay host data-9fc27eb430.cineplex.de exposes undocumented API routes beyond /health and /metrics
+      1 [HYP] Relay /metrics endpoint discloses internal service topology or Prometheus stats
+      1 CATCHALL
+[0m
+[0m$ [0mgrep -n -i "mass.assign\|jwt.*confusion\|algorithm.*confusion\|booking-dev\|dev-origin\|cms" knowledge/index.md | head -40
+9:- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized
+10:- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+16:- 2026-09-03 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+19:- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but auth.cineplex.de/.well-known/jwks.json returns 404, no passive JWKS fetch possible
+30:- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken
+39:- 2026-09-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+45:- 2026-09-05 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+69:- 2026-09-06 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+96:- 2026-09-07 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+132:- 2026-09-07 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification.
+145:- 2026-09-08 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized; login mutation returns jwt/refreshToken — but JWKS 404 limits passive verification
+266:- 2026-09-11 NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
+304:- 2026-09-12 NEW booking-dev.cineplex.de = SSL self-signed cert; origin directly reachable (no Cloudflare WAF); returns 404
+306:- 2026-09-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: 194.77.169.121 = nginx-ingress default backend, fake Acme-Co cert, all paths incl /graphql → 404 "default backend - 404"; "self-signed direct origin" was the ingress fake certificate, not a live app; no WAF-bypass surface.
+331:- 2026-09-12 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+346:- 2026-09-13 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+363:- 2026-09-13 REJECTED api.cineplex.de GET bypass, booking-dev origin, nextcloud_unauth_inventory: dead/OOS — unchanged.
+390:- 2026-09-14 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+400:- 2026-09-14 REJECTED booking-dev, nextcloud_unauth_inventory, relay_broker_saturation: no exploitable surface / OOS.
+422:- 2026-09-15 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+430:- 2026-09-15 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+444:- 2026-09-16 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: CF 403 public vs 200 SPA + 503 gateway route at origin IP 194.77.169.121; dev booking/payment+cms tier WAF-less at origin; prod booking/shop NOT on this origin (404); AUTH_HELPED, impact contingent on backend state
+445:- 2026-09-16 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+448:- 2026-09-16 ACCEPTED web-dev.cineplex.de dangle: 5th-cycle NXDOMAIN stability re-confirmed; sibling dev hosts (bms/booking-dev) definitively not dangles
+452:- 2026-09-16 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+468:- 2026-09-16 ACCEPTED web-dev.cineplex.de dangle: 6th-cycle NXDOMAIN stability re-confirmed; sibling dev hosts (bms/booking-dev) definitively not dangles
+480:- 2026-09-17 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+491:- 2026-09-17 ACCEPTED dev_origin_waf_bypass @ buchung-dev/bms-dev.cineplex.de: CF 403 public vs 200 SPA + 503 gateway route at origin IP 194.77.169.121; dev booking/payment+cms tier WAF-less at origin; prod booking/shop NOT on this origin (404); AUTH_HELPED, impact contingent on backend state
+492:- 2026-09-17 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+497:- 2026-09-17 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+531:- 2026-09-17 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+533:- 2026-09-17 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+537:- 2026-09-18 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+539:- 2026-09-18 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+546:- 2026-09-18 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+549:- 2026-09-18 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+565:- 2026-09-19 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+568:- 2026-09-19 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+588:- 2026-09-20 ACCEPTED bms-dev_t360_cms @ bms-dev.cineplex.de: live Ticket360 CMS dev admin, direct origin (A 194.77.169.121, no CF); SPA catch-all on /api, /graphql; API base = buchung-dev
+591:- 2026-09-20 REJECTED booking-dev_origin_bypass @ booking-dev.cineplex.de: nginx-ingress default backend, fake Acme-Co cert, all paths 404; no live app surface
+[0m
+[0m$ [0mgrep -n -i "spring data\|jpa\|CinemaOperatingCompany\|accessRight\|mass_assign" knowledge/index.md | head -30
+84:- 2026-09-06 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+111:- 2026-09-07 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+127:- 2026-09-07 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace. GET probes return 403 (WAF-blocked); disclosure was via schema/introspection, not HTTP GET.
+161:- 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+165:- 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection (userPasswordResets, userRegistrations), mandatorId UUID, Lambda path.
+174:- 2026-09-08 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path.
+185:- 2026-09-09 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path.
+194:- 2026-09-09 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path
+211:- 2026-09-09 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path — NOT via HTTP GET (those returned 403)
+230:- 2026-09-10 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path — NOT via HTTP GET (those returned 403)
+280:- 2026-09-11 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path — NOT via HTTP GET (those returned 403)
+299:- 2026-09-12 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path — NOT via HTTP GET (those returned 403)
+313:- 2026-09-12 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+352:- 2026-09-13 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces
+384:- 2026-09-14 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces
+403:- 2026-09-14 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+417:- 2026-09-14 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+421:- 2026-09-15 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+429:- 2026-09-15 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+451:- 2026-09-16 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+466:- 2026-09-16 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+496:- 2026-09-17 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces — NOT via HTTP GET (those returned 403)
+517:- 2026-09-17 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints via introspection; mandatorId UUID; Lambda path; stacktraces.
+810:- 2026-09-26 ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: new attack surface at the input-object layer, one level below anything read in 25 cycles — `CinemaOperatingCompanyData` carries `accessRightDashboard`/`accessRightFilmStatistics`/`accessRightBonusProgram`/`accessRightCampaigning` plus a caller-supplied `cinemasIds` list, on both `createCinemaOperatingCompany` and `updateCinemaOperatingCompany(id, data)`. Staging field set equal, so the authorization flags are not environment-partitioned. Gates unverified, not executed.
+819:- 2026-09-26 ACCEPTED BUSLOGIC @ graphql-api.app.cineplex.de: `updateUser(userId:ID!, …, adminCinemaOperatingCompanyIds:[ID!], resetAppChangeBlockedUntil:Boolean)` is active and lets the caller name an arbitrary target user and the set of cinema operating companies that user administers. `updateUserProfile` in the same root type has neither field and `updateUserAdminStatus` is the evidently intended grant path, so the omission is visible as a contrast rather than inferred. `increaseUserTestingStatus(testingStatus: TestingStatus!)` with enum TESTING|PRODUCTION|STAGING|DEVELOPMENT|CINEMA_EMPLOYEE is a second instance on the same class. Gates unverified, not executed.
+827:- 2026-09-26 ACCEPTED mass_assignment_readwrite_mirror @ graphql-api.app.cineplex.de: the four caller-supplied `CinemaOperatingCompanyData.accessRight*` flags are the identical four names the server derives onto `UserPrivileges`; `updateUser(adminCinemaOperatingCompanyIds)` mirrors `belongsToCinemaOperatingCompany`/`adminForCinemas`; `increaseUserTestingStatus(testingStatus)` mirrors `User.testingStatus`. When a write body accepts exactly the fields the server separately computes and exposes, that is the mass-assignment signature and it is name-for-name demonstrable. Class confidence 66 → 80.
+1149:- 2026-10-05 ACCEPTED schema_correction_confirmed @ graphql-api.app.cineplex.de: live introspection returns `UserPrivileges` as `kind: OBJECT` with `inputFields: null`, confirming the 14:59 correction that it is not one of the 44 mass-assignable input objects. The mass-assignment hypothesis rests on `CinemaOperatingCompanyData` and the `updateUser` arguments instead, and the earlier reasoning that cited `UserPrivileges` as a read/write mirror has been retracted.
+1163:- 2026-10-06 ACCEPTED schema_correction_confirmed @ graphql-api.app.cineplex.de: live introspection returns `UserPrivileges` as `kind: OBJECT` with `inputFields: null`, confirming the 14:59 correction that it is not one of the 44 mass-assignable input objects. The mass-assignment hypothesis rests on `CinemaOperatingCompanyData` and the `updateUser` arguments instead, and the earlier reasoning that cited `UserPrivileges` as a read/write mirror has been retracted.
+1302:- 2026-10-09 ACCEPTED mass_assignment_privilege_fields @ graphql-api.app.cineplex.de: CinemaOperatingCompanyData.accessRight* (4 flags) IDENTICAL to UserPrivileges derived fields; updateUser(adminCinemaOperatingCompanyIds) mirrors belongsToCinemaOperatingCompanies/adminForCinemas
+1506:- 2026-10-13 ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace. GET probes return 403 (WAF-blocked); disclosure was via schema/introspection, not HTTP GET.
+[0m
+[0m$ [0mgrep -n "Spring Data JPA\|Mass Assignment" leads/lead-nemotron3.md | head; echo "==="; grep -n -A 12 "^\[HYP\] Staging Spring Data JPA REST Endpoint Exposure" leads/lead-nemotron3.md | head -40
+1385:[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+1442:[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+1448:[NEW] `graphql-api.app.staging.cineplex.de` Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace — internal architecture leak
+1506:[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+1512:[NEW] `graphql-api.app.staging.cineplex.de` Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace — internal architecture leak
+1572:[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+1573:[RISK] cineplex: 92 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST (GET 400/POST 200). Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks. Missing environment guard on testing_getConfirmationCode (staging 200, prod FORBIDDEN). Internal architecture leak via Spring Data JPA REST endpoints on staging. Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass). Wildcard-dominated DNS increases shared-infra risk.
+1578:[CHANGED] `graphql-api.app.staging.cineplex.de` Spring Data JPA REST endpoints disclosed (`userPasswordResets`, `userRegistrations`), `mandatorId` UUID, service name `LOGIN`, Lambda path, Apollo Server stacktrace — internal architecture leak
+1638:[LEARN] ACCEPTED internal_architecture_leak @ graphql-api.app.staging.cineplex.de: Spring Data JPA REST endpoints disclosed (userPasswordResets, userRegistrations), mandatorId UUID, service name LOGIN, Lambda path, Apollo Server stacktrace.
+1639:[RISK] cineplex: 92 — Production GraphQL introspection ENABLED with full schema exposure (100+ mutations including login, booking, user admin, voucher, subscription; queries exposing all user PII, tickets, orders, subscriptions, invoices). WAF bypass via GraphQL POST (GET 400/POST 200). Central auth issues JWTs. Staging mirrors prod with additional testing_* mutations (confirmation code oracle, forceDeleteUser) lacking auth checks. Missing environment guard on testing_getConfirmationCode (staging 200, prod FORBIDDEN). Internal architecture leak via Spring Data JPA REST endpoints on staging. Large attack surface (132 hosts, 6 live, 4 GraphQL endpoints). High business value (ticketing, payments, PII, loyalty). Multiple critical classes confirmed (GraphQL introspection, IDOR via GraphQL, JWT confusion, staging auth bypass). Wildcard-dominated DNS increases shared-infra risk.
+===
+1901:[HYP] Staging Spring Data JPA REST Endpoint Exposure
+1902-class: MISCONFIG
+1903-asset: graphql-api.app.staging.cineplex.de
+1904-confidence: 80
+1905-reasoning: Internal architecture leak confirmed: Spring Data JPA REST endpoints exposed at paths like `/userPasswordResets`, `/userRegistrations` returning collection resources. Discloses `mandatorId` UUID, service name `LOGIN`, Lambda execution path, Apollo Server stacktrace. These are unauthenticated REST endpoints on the GraphQL staging host (separate from GraphQL endpoint) indicating misconfigured Spring Boot Actuator/Data REST exposure. Production parity unknown — not yet probed.
+1906-evidence_needed: GET https://graphql-api.app.staging.cineplex.de/userPasswordResets returns 200 with collection data; GET /userRegistrations returns 200; production graphql-api.app.cineplex.de returns 404/403 for same paths
+1907-verify_steps: GET https://graphql-api.app.staging.cineplex.de/userPasswordResets — expect 200 JSON collection; GET https://graphql-api.app.staging.cineplex.de/userRegistrations — expect 200 JSON collection; GET https://graphql-api.app.cineplex.de/userPasswordResets — expect 404/403 (prod guard)
+1908-impact: Internal architecture disclosure (service topology, mandatorId, Lambda paths, stacktraces) aids reconnaissance for chained attacks; potential PII exposure via JPA REST collections if auth not enforced → High reconnaissance value, possible data leak
+1909-testability: PASSIVE
+1910-[PARKED] JWT Algorithm Confusion via auth.cineplex.de login Mutation: confidence 55 but no passive JWKS fetch possible (404); requires active token capture (AUTH_HELPED) and offline crypto analysis — lower priority than PASSIVE staging probes; alternative JWKS endpoints untested but would require auth to reach login mutation first
+1911-[FINAL] Ranked survivors (by testability × impact):
+1912-[NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\"){code}}"} — read-only test of staging testing mutation for auth bypass oracle (verifies 200 with code vs FORBIDDEN)
+1913-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+--
+1969:[HYP] Staging Spring Data JPA REST Endpoint Exposure
+1970-class: MISCONFIG
+1971-asset: graphql-api.app.staging.cineplex.de
+1972-confidence: 65
+1973-reasoning: KB lead claims Spring Data JPA REST endpoints exposed at `/userPasswordResets`, `/userRegistrations` returning collection resources with mandatorId UUID, service name LOGIN, Lambda path, Apollo stacktrace. However probe-results.md 2026-09-07 19:30:52 shows both endpoints returned HTTP 403 — contradiction. If 403 is auth gate (not WAF), endpoints exist behind auth; if WAF, may be different path. Production parity unknown — not yet probed.
+1974-evidence_needed: GET https://graphql-api.app.staging.cineplex.de/userPasswordResets returns 200 JSON collection; GET /userRegistrations returns 200; production graphql-api.app.cineplex.de returns 404/403 for same paths
+1975-verify_steps: GET https://graphql-api.app.staging.cineplex.de/userPasswordResets — expect 200 JSON collection or 401/403 auth gate; GET https://graphql-api.app.staging.cineplex.de/userRegistrations — same; GET https://graphql-api.app.cineplex.de/userPasswordResets — expect 404/403 (prod guard)
+1976-impact: Internal architecture disclosure (service topology, mandatorId, Lambda paths, stacktraces) aids reconnaissance for chained attacks; potential PII exposure via JPA REST collections if auth not enforced → High reconnaissance value, possible data leak
+1977-testability: PASSIVE
+1978-[PARKED] JWT Algorithm Confusion via auth.cineplex.de login Mutation: confidence 55 but no passive JWKS fetch possible (404); requires active token capture (AUTH_HELPED) and offline crypto analysis — lower priority than PASSIVE staging probes; alternative JWKS endpoints untested but would require auth to reach login mutation first
+1979-[FINAL] Ranked survivors (by testability × impact):
+1980-[NEXT] PROBE: POST https://graphql-api.app.staging.cineplex.de/ — Content-Type: application/json — body: {"query":"mutation{testing_getConfirmationCode(email:\"probe@test.de\"){code}}"} — read-only test of staging testing mutation for auth bypass oracle (verifies 200 with code vs FORBIDDEN)
+1981-[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.cineplex.de: CONFIRMED — full introspection enabled on production, returns 200 with complete schema including 100+ sensitive mutations and PII-exposing queries
+[0m
+[0m$ [0mls -la reposcan-raw/ recon-notes/ triage/ 2>/dev/null | head -40; echo "==="; ls reports/ 2>/dev/null
+recon-notes/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner 4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner  820 Oct 14 15:26 DEDICATED-DEEP.md
+
+reposcan-raw/:
+total 12
+drwxr-xr-x  2 runner runner 4096 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner 4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner   71 Oct 14 15:26 summary.txt
+
+triage/:
+total 1100
+drwxr-xr-x  2 runner runner 12288 Oct 14 15:26 .
+drwxr-xr-x 12 runner runner  4096 Oct 14 15:26 ..
+-rw-r--r--  1 runner runner     0 Oct 14 15:26 .gitkeep
+-rw-r--r--  1 runner runner   172 Oct 14 15:26 run-2026-09-02-21-37.md
+-rw-r--r--  1 runner runner   238 Oct 14 15:26 run-2026-09-02-23-32.md
+-rw-r--r--  1 runner runner   184 Oct 14 15:26 run-2026-09-03-01-25.md
+-rw-r--r--  1 runner runner   148 Oct 14 15:26 run-2026-09-03-06-28.md
+-rw-r--r--  1 runner runner   158 Oct 14 15:26 run-2026-09-03-11-42.md
+-rw-r--r--  1 runner runner   214 Oct 14 15:26 run-2026-09-03-15-48.md
+-rw-r--r--  1 runner runner  4079 Oct 14 15:26 run-2026-09-03-19-07.md
+-rw-r--r--  1 runner runner   196 Oct 14 15:26 run-2026-09-03-21-44.md
+-rw-r--r--  1 runner runner   177 Oct 14 15:26 run-2026-09-03-23-47.md
+-rw-r--r--  1 runner runner   298 Oct 14 15:26 run-2026-09-04-02-58.md
+-rw-r--r--  1 runner runner   239 Oct 14 15:26 run-2026-09-04-07-53.md
+-rw-r--r--  1 runner runner   255 Oct 14 15:26 run-2026-09-04-12-31.md
+-rw-r--r--  1 runner runner   143 Oct 14 15:26 run-2026-09-04-16-35.md
+-rw-r--r--  1 runner runner  9079 Oct 14 15:26 run-2026-09-04-19-08.md
+-rw-r--r--  1 runner runner   150 Oct 14 15:26 run-2026-09-04-21-33.md
+-rw-r--r--  1 runner runner   146 Oct 14 15:26 run-2026-09-04-23-17.md
+-rw-r--r--  1 runner runner  8809 Oct 14 15:26 run-2026-09-05-01-09.md
+-rw-r--r--  1 runner runner  7263 Oct 14 15:26 run-2026-09-05-05-51.md
+-rw-r--r--  1 runner runner   178 Oct 14 15:26 run-2026-09-05-09-58.md
+-rw-r--r--  1 runner runner   566 Oct 14 15:26 run-2026-09-05-13-22.md
+-rw-r--r--  1 runner runner  2646 Oct 14 15:26 run-2026-09-05-16-16.md
+-rw-r--r--  1 runner runner 16926 Oct 14 15:26 run-2026-09-05-16-30.md
+-rw-r--r--  1 runner runner   936 Oct 14 15:26 run-2026-09-05-18-23.md
+===
+analyst-bigpickle.log
+analyst-laguna.log
+analyst-ling3.log
+analyst-longcat.log
+analyst-nemotron3.log
+hypotheses-bigpickle.txt
+hypotheses-laguna.txt
+hypotheses-ling3.txt
+hypotheses-longcat.txt
+hypotheses-nemotron3.txt
+hypotheses.md
+valid-bugs.md
+[0m
+[0m$ [0mgrep -n "CANONICAL STATUS" -A 60 knowledge/index.md | head -80
+(no output)
+[0m
+[0m$ [0mgrep -n "mass_assign\|CinemaOperatingCompanyData\|accessRight" leads/lead-bigpickle.md | tail -20
+10729:[PARKED] mass_assignment / IDOR cross-tenant PII CONF 40 — schema-verified mirrors exist; decisive tests are writes/reads on live customer data → AUTH_HELPED/HUMAN_ONLY.
+10821:[PARKED] mass_assignment / IDOR cross-tenant PII CONF 40 — schema-verified mirrors exist; decisive tests are writes/reads on live customer data → AUTH_HELPED/HUMAN_ONLY.
+10902:[PARKED] mass_assignment / IDOR cross-tenant PII CONF 40 — schema-verified mirrors exist; decisive tests are writes/reads on live customer data → AUTH_HELPED/HUMAN_ONLY.
+10940:[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+10944:reasoning: CinemaOperatingCompanyData input (createCinemaOperatingCompany/updateCinemaOperatingCompany) carries 4 caller-supplied accessRight* Booleans (Dashboard, FilmStatistics, BonusProgram, Campaigning) + cinemasIds list; these exact 4 names appear on UserPrivileges as NON_NULL Booleans derived by server. updateUser(adminCinemaOperatingCompanyIds:[ID!]) mirrors belongsToCinemaOperatingCompanies/adminForCinemas. Staging field sets identical — flags not environment-partitioned. Gates unverified (AUTH_HELPED required).
+10945:evidence_needed: Execute createCinemaOperatingCompany/updateCinemaOperatingCompany with crafted accessRight* + cinemasIds against consented test account and verify UserPrivileges reflects caller-supplied values
+10946:verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+11023:[PARKED] mass_assignment accessRight* @ graphql-api.app.cineplex.de: schema mirrors are real; decisive test is a write against live data → HUMAN_ONLY.
+11043:[PARKED] mass_assignment / IDOR cross-tenant PII CONF 40 — schema-verified mirrors exist; decisive tests are writes/reads on live customer data → AUTH_HELPED/HUMAN_ONLY.
+11081:[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+11085:reasoning: CinemaOperatingCompanyData input (createCinemaOperatingCompany/updateCinemaOperatingCompany) carries 4 caller-supplied accessRight* Booleans (Dashboard, FilmStatistics, BonusProgram, Campaigning) + cinemasIds list; these exact 4 names appear on UserPrivileges as NON_NULL Booleans derived by server. updateUser(adminCinemaOperatingCompanyIds:[ID!]) mirrors belongsToCinemaOperatingCompanies/adminForCinemas. Staging field sets identical — flags not environment-partitioned. Gates unverified (AUTH_HELPED required).
+11086:evidence_needed: Execute createCinemaOperatingCompany/updateCinemaOperatingCompany with crafted accessRight* + cinemasIds against consented test account and verify UserPrivileges reflects caller-supplied values
+11087:verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+11164:[PARKED] mass_assignment accessRight* @ graphql-api.app.cineplex.de: schema mirrors are real; decisive test is a write against live data → HUMAN_ONLY.
+11214:[PARKED] mass_assignment accessRight* @ graphql-api.app.cineplex.de CONF 40 — schema mirrors real; decisive test is a write against live data → HUMAN_ONLY.
+12068:[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+12072:reasoning: CinemaOperatingCompanyData input (createCinemaOperatingCompany/updateCinemaOperatingCompany) carries 4 caller-supplied accessRight* Booleans (Dashboard, FilmStatistics, BonusProgram, Campaigning) + cinemasIds list; these exact 4 names appear on UserPrivileges as NON_NULL Booleans derived by server. updateUser(adminCinemaOperatingCompanyIds:[ID!]) mirrors belongsToCinemaOperatingCompanies/adminForCinemas. Staging field sets identical — flags not environment-partitioned. Gates unverified (AUTH_HELPED required).
+12073:evidence_needed: Execute createCinemaOperatingCompany/updateCinemaOperatingCompany with crafted accessRight* + cinemasIds against consented test account and verify UserPrivileges reflects caller-supplied values
+12074:verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+12090:[RISK] cineplex: 88 — Production GraphQL API exposes full introspection (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types), CORS label-boundary suffix match with credentialed reflection on hostile origins (localhost:3000, app.staging.cineplex.de, null origin), dual entry points (/, /graphql) plus 3 GET-only mirrors, arbitrary path catch-all, mass-assignment read/write mirror on 4 privilege flags (CinemaOperatingCompanyData.accessRight* → UserPrivileges), IDOR chaining across 3 pre-auth resolvers to 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history), physical-to-profile via userByQr, auth-layer privilege escalation primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken). Dangling CNAME on web-dev.cineplex.de (20+ cycles NXDOMAIN) chains to CORS for takeover-to-credentialed-read (but auth model breaks chain). Private IP prefix bypass (10.evil.com, 192.168.evil.com) provides alternative foothold without takeover. Staging parity identical. All probes read-only ≤1 rps, no PII touched. Dev-origin booking/payment tier reachable but /gateway/* gated at CF edge. Automated probe harness voided (206 cycles corrupted).
+[0m
+[0m$ [0mgrep -n "testability: PASSIVE" leads/lead-bigpickle.md | wc -l; echo "---"; grep -n "testability: PASSIVE" leads/lead-bigpickle.md | tail -10; echo "==="; grep -n "\[PARKED\]" leads/lead-bigpickle.md | tail -15
+271
+---
+11098:testability: PASSIVE
+11535:testability: PASSIVE
+11610:testability: PASSIVE
+11851:testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+11907:testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+11957:testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+12013:testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+12058:testability: PASSIVE (preflight verified) + HUMAN_ONLY (domain registration + victim interaction required)
+12067:testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azure subscription or domain registration)
+12138:testability: PASSIVE
+===
+11929:[PARKED] GraphQL Lambda stack traces / internal endpoint names in error payloads: descriptive-error class is OOS by itself (retained only as supporting evidence for the AUTH finding).
+11966:[PARKED] CORS private-IP prefix credentialed reflection — no ambient credential/API Set-Cookie.
+11967:[PARKED] relay /metrics — descriptive infra only.
+11968:[PARKED] testing_forceDeleteUser — destructive query, not executed; guard-omission presumed parallel, do not test without authorization.
+11989:[PARKED] lines.
+12032:[PARKED] CORS private-IP-prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live/env-agnostic but API emits zero Set-Cookie and the client uses Bearer/localStorage → standalone config-hygiene; revisit only if chained to control of a same-site origin.
+12033:[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only — descriptive infra, not reportable alone.
+12034:[PARKED] testing_forceDeleteUser @ graphql-api.app.staging.cineplex.de: parallel query field, prod-gated, likely ungated on staging; destructive intent — NOT executed against any account, requires explicit authorization.
+12035:[PARKED] GraphQL Lambda stack traces / internal endpoint names in error payloads: descriptive-error class is OOS by itself (retained only as supporting evidence for the AUTH finding).
+12077:[PARKED] CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads: CORS misconfiguration confirmed but ATO chain broken — auth model uses OAuth2 Bearer in localStorage (app.cineplex.de origin) + refresh cookie on SSO domain; GraphQL API emits ZERO Set-Cookie; cross-origin page on web-dev.cineplex.de cannot access app.cineplex.de localStorage or SSO cookie. CORS finding stands as config-hygiene (~CVSS 2.0); subdomain takeover on web-dev.cineplex.de stands separately. Chain requires victim to already have token in attacker-controlled origin's localStorage — not feasible.
+12078:[PARKED] IDOR Booking Systemic Claim: authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 decoder contracts, 2 argument shapes). The INVALID_ID vs UNAUTHENTICATED split measures decode position, not check absence — same signature appears on a resolver that does enforce auth (contentSectionListByNameAndCinemas returns UNAUTHENTICATED).
+12157:[PARKED] CORS private-IP-prefix credentialed reflection — live and env-agnostic, but API emits zero Set-Cookie and client uses Bearer/localStorage → config-hygiene; revisit only with a same-site origin foothold.
+12158:[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de — IOMB broker stats, descriptive infra only.
+12159:[PARKED] testing_forceDeleteUser / deleteReviewRating_2 / mutation `a` — destructive/write; NOT executed, require authorization.
+12160:[PARKED] `test` query — constant stub, no injection, OOS alone.
+[0m
+[0m$ [0mgrep -n -i "deprecat\|astNode\|__schema.*directive\|directives {" leads/lead-bigpickle.md | tail -20; echo "==="; grep -n -i "deprecat\|directive" knowledge/index.md | tail -10
+7014:[HYP] Deprecated credential mutations accept a password change authorized by neither the old password nor a reset token
+7016:asset: graphql-api.app.cineplex.de — mutationType updatePassword (deprecated) / addLogin (deprecated)
+7018:reasoning: Same-cycle unauthenticated GET with `includeDeprecated:true`, prod 200/45191 B: `updatePassword(oldPassword: String, appId: ID, token: String, password: String!, email: String)`. Only `password` is NON_NULL; `oldPassword` and `token` are both independently optional, so the signature admits a request carrying a new password and neither proof of the current one nor a reset token. In GraphQL, `@deprecated` is advisory metadata and does not remove a field from execution, so the surface is very likely still callable — marked unverified because I did not execute it. Prod and staging expose the identical 150-name surface (140 active + these 10 deprecated), so there is no environment partitioning. `addLogin(email!, password!, appId, name, firstName, lastName)` sits in the same deprecated set. Account-takeover and password-policy classes are explicit priority.
+7020:verify_steps: `GET /?query={__type(name:%22Mutation%22){fields(includeDeprecated:true){name isDeprecated args{name type{kind name ofType{kind name}}}}}}` is the passive half, already captured. The exploit half requires a consented account and writes a credential — not attempted. Do not test unauthenticated: it is an account-takeover primitive on live accounts.
+7036:[FINAL] Survivors ranked: 1) `updatePassword` nullable `oldPassword`+`token` on a deprecated but almost certainly executable field, AUTH, 64, schema leg PASSIVE-complete, exploit leg HUMAN_ONLY. 2) `accessRight*` + `cinemasIds` mass assignment on cinema-operating-company create/update, BUSLOGIC, 66, schema leg PASSIVE-complete, exploit leg HUMAN_ONLY. 3) web-dev dangling CNAME, MISCONFIG, 93, AUTH_HELPED pending provider attestation. Parked above are all write-path surfaces blocked on the same missing credential. Retracted one false finding (staging-only account mutations) and closed a second evidence-depth gap (44 unread input objects).
+7037:[NEXT] HUMAN: file the redacted bundle to bugs.olivermaicher.eu as four findings — (1) introspection, upgraded a **second** time, this cycle from field names to argument types to **the 44 input-object bodies**, with the note that the earlier "all args are scalars or named input objects" line was name-only and that 8 URL/credential-shaped args plus 4 in-body authorization flags and a 24-type audience DSL were underneath it; (2) `updatePassword(oldPassword:String, token:String, password:String!)` deprecated-with-nullable-credentials, stating explicitly that GraphQL `@deprecated` is advisory and I did not execute it; (3) `accessRight*` + `cinemasIds` mass assignment, labelled HUMAN_ONLY with the exact cross-tenant question; (4) web-dev CNAME/NXDOMAIN DoH pair with Azure claimability unverified — and in the same ticket request two consented low-privilege accounts in separate tenants plus one free-ticket campaign, the only thing that can close all three mutation-layer legs. Do **not** file the WAF 403s: the automated wall is a harness defect (trailing backtick, urllib UA), and do not file a "staging-only account mutations" finding — I withdrew it this cycle.
+7039:[LEARN] ACCEPTED AUTH @ graphql-api.app.cineplex.de: `updatePassword(oldPassword:String, appId:ID, token:String, password:String!, email:String)` — both credential arguments independently nullable, so the signature admits a change authorized by neither. Field is `@deprecated`, which is advisory only; execution availability unverified. Same 150-name surface on staging.
+7041:[LEARN] CORRECTION self_error @ this session: the "10 staging-only account mutations" claim was mine and was wrong — I passed `includeDeprecated:true` to staging and omitted it for prod. Both envs expose the identical 150 names (140 active + 10 deprecated). Caught by re-reading my own query, not by a server signal. Recorded because the retracted claim was heading straight into a hypothesis about staging-only ATO primitives.
+7044:[LEARN] REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: unchanged. The `testing_` fields are present on prod too and the only distinguishing signal remains a method-mismatch error, which is descriptive and an explicit exclusion. Note this is a **different rationale** from the 10-deprecated-fields question above, which was schema-level and which I resolved rather than rejected.
+7047:[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: 3/100 — this cycle issued 8 read-only GET requests, all ≥2 s apart: 4 to `graphql-api.app.cineplex.de` (18.5 KB type list, 25 KB input objects, 43 KB mutation args, 45 KB deprecated-inclusive args) and 2 to `graphql-api.app.staging.cineplex.de` (5.5 KB, 45.7 KB), plus 2 to the third-party resolver dns.google for the web-dev DoH pair. Every request carried no `Authorization` header and returned field names, argument names, type kinds and type names only. No field value, no mutation executed, no write path touched, no customer or employee identifier requested, no PII, no credential, no DNS modification, no HTTP to the CNAME target, no claim attempt, no login attempt. The residual exposure is that unauthenticated introspection was exercised against production four more times — the finding under report, inherently repeatable, and the same schema any client already downloads. The three mutation-layer legs, the cross-tenant ownership proof, and the Azure claimability attestation all remain with authorized humans holding consented credentials.
+7058:[NEW] NEGATIVE, closes the last avenue: 0/150 mutations and 0/88 queries carry a \`description\`; 0 arguments in either root type carry a \`defaultValue\`. 88 Query = 83 active + 5 deprecated, 150 Mutation = 140 active + 10 deprecated. No unauthenticated evidence remains in this schema beyond type shape; every remaining question needs execution.
+7073:[NEW] NEGATIVE, closes the last avenue: 0/150 mutations and 0/88 queries carry a `description`; 0 arguments in either root type carry a `defaultValue`. 88 Query = 83 active + 5 deprecated; 150 Mutation = 140 active + 10 deprecated. No unauthenticated evidence remains in this schema beyond type shape.
+7078:[PRIO] graphql-api.app.cineplex.de,9.05,0.25(9.5,385 types + 150 mutations + 44 input objects, all open unauth; 25 object types reachable)+0.25(9.5,51-field User incl. onlineTicketingToken and inviteCode, order.pickupCode, rootRole/adminRole, plus 6 body-authorization primitives)+0.15(9.5,GraphQL + JWT login + client-set role state + pre-auth id-decode ordering demonstrated)+0.15(8,introspection needs no auth; post-decode ownership check unverified)+0.10(3,no cloud-metadata reach proven)+0.10(10,6 fresh GETs this cycle 61/20/5/21/2 KB + first-ever deprecationReason, arg-default and object-field reads)
+7087:verify_steps: Passive half captured in `/tmp/opencode/cineplex/types.json` and `priv.json`. Reproduction is a single unauthenticated GET: `GET /?query={__type(name:%22User%22){fields(includeDeprecated:true){name type{kind name ofType{kind name}}}}}`. The exploit half is a POST carrying A's own id and must not be run unauthenticated or against any id not consented to. Do not request a second party's id, and do not read any returned field value — the goal is the gate behaviour, not the data.
+7094:reasoning: Same-cycle reads: prod `{__type(name:"Mutation")…}` 200/61199 B and staging aliased `{u:__type(name:"Mutation"){fields(includeDeprecated:true){name}}}` 200/5220 B, both unauthenticated, both listing the identical 150 names. `login(email:String!, password:String!, privileged:Boolean, appId:ID, logoutFromOtherApps:Boolean, code:String, nativeBuildCode:Int)` and `refreshLogin(refreshToken:String!, privileged:Boolean)` take a `privileged` boolean from the caller at both session establishment and token refresh — the two points at which session authority is created and extended. Separately `loginPOS(authToken:String!)` accepts one opaque string as the entire authorization input of an authentication mutation, the same body-field-authorizes pattern seen on `deleteCineplexUser(apiKey)` and `sendShowtimeAnalyticsCampaign(authKey)`. Benign reading, stated plainly: `privileged` may denote a first-party client build rather than a role, and the server may ignore it or store it as session metadata — the schema cannot distinguish these, which is precisely why the question is worth one consented test. Account-takeover and session classes are explicit program priorities. Staging is the right environment because its data value is lower and it already exposes `testing_*` fields, so a working PoC costs nothing. Gate status UNVERIFIED — no login attempted, no credential submitted.
+7109:[PARKED] Six further body-authorization primitives, all schema-verified this cycle and all present on staging: `loginPOS(authToken)`, `sendShowtimeAnalyticsCampaign(authKey + customerIds)`, `buyAndRedeemVoucher(voucherClassId, userId)`, `capturePaypalOrderAndCreateTickets(bookingProcessId)`, `reportApprovedSubscription(paypalApproveLink)`, deprecated `updatePassword`. Money-to-ticket issuance and a body-authorized broadcast to an arbitrary customer id list are high value, but every one is a write requiring a consented account, and splitting a single pattern across seven findings would overstate what one account can close.
+7126:[RISK] Cineplex Deutschland GmbH & Co. KG / Cineplex Group: 3/100 — 9 read-only GET requests this cycle, all ≥2 s apart, none carrying an `Authorization` header. Seven against the two in-scope GraphQL hosts (61 KB mutation deprecation reasons and argument types, 20 KB query fields, 5 KB staging name list plus three enum value lists, 21 KB query return types plus User/Order/Invoice/Ticket field lists, 2 KB UserPrivileges and two auxiliary types) and two against the third-party resolver dns.google for the web-dev CNAME pair. Every response contained field names, field types, argument names, argument types, deprecation strings and enum member names only. One request was a repeat after a local file-write error discarded the first response body, and one was a syntax-error retry of the staging query (HTTP 400, GRAPHQL_PARSE_FAILED, my own unbalanced brace) — both my errors, both harmless, both disclosed. No POST, no mutation, no write path, no login, no credential, no token, no customer identifier, no id belonging to any account, no field value read, no PII, no DNS modification, no HTTP to the CNAME target, no claim attempt. The only thing exercised repeatedly is unauthenticated introspection of type shape — the finding under report, inherently repeatable, and the same schema any client already downloads. The ownership question, the cross-account proof, the mass-assignment write and the Azure claimability attestation all remain with authorized humans holding consented credentials.
+7165:[PARKED] Six further body-authorization primitives — `loginPOS(authToken)`, `sendShowtimeAnalyticsCampaign(authKey + customerIds)`, `buyAndRedeemVoucher(voucherClassId, userId)`, `capturePaypalOrderAndCreateTickets(bookingProcessId)`, `reportApprovedSubscription(paypalApproveLink)`, deprecated `updatePassword`: all schema-verified, all present on staging, all writes blocked on the same consented-account leg. Splitting one pattern across seven findings would overstate what one account can close.
+7683:[NEW] `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)` — privilege escalation primitives at auth layer; `updatePassword` deprecated with BOTH credential args nullable (KB 2026-09-26)
+7760:[NEW] `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)` — privilege escalation primitives at auth layer; `updatePassword` deprecated with BOTH credential args nullable (KB 2026-09-26)
+===
+816:- 2026-09-26 REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: unchanged. The `testing_` fields are present on prod too and the only distinguishing signal remains a method-mismatch error, which is descriptive and an explicit exclusion. Note this is a **different rationale** from the 10-deprecated-fields question above, which was schema-level and which I resolved rather than rejected.
+1052:- 2026-10-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+1054:- 2026-10-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+1057:- 2026-10-04 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+1059:- 2026-10-04 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+1376:- 2026-10-11 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+1378:- 2026-10-11 ACCEPTED jwt_alg_confusion @ auth.cineplex.de: JWT alg/key confusion explicitly prioritized in directives
+1381:- 2026-10-11 ACCEPTED idor_relay @ data-9fc27eb430.cineplex.de: if undocumented relay API routes surface, IDOR/BOLA applies per directives
+1394:- 2026-10-11 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+1407:- 2026-10-12 ACCEPTED idor_booking @ booking.cineplex.de: IDOR/BOLA explicitly prioritized in directives
+[0m
+[0m$ [0msed -n '12100,12165p' leads/lead-bigpickle.md
+[CHANGED] CORS private-IP-prefix re-confirmed live same-cycle: OPTIONS Origin http://10.evil.com → 204, ACAO echo, ACAC:true, ACAH content-type,authorization, ACAM GET,HEAD,PUT,PATCH,POST,DELETE.
+[CHANGED] web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300), target NXDOMAIN (Status 3); dangle holds (21st+ cycle).
+[CHANGED] Mutations are POST-only over this edge ("GET supports only query operation" → 405); introspection arg-name extraction is lossy for NON_NULL (e.g. sendTestNotification `link` is actually `String!`).
+[HYP] Unauthenticated `sendTestEmail` renders/sends attacker-supplied `componentData` on production
+class: AUTH
+asset: graphql-api.app.cineplex.de (sendTestEmail)
+confidence: 30
+reasoning: `sendTestEmail(brand:Brand, componentData:String!):SendTestEmail!` is present in the prod schema alongside the known prod-bound but staging-ungated `testing_*` family. If its runtime env/RBAC guard is missing (same guard-omission class as testing_getConfirmationCode) an unauth caller could trigger branded outbound email with a caller-controlled `brand` + `componentData`.
+evidence_needed: proof the runtime gate is absent (a POST returning non-FORBIDDEN) and that `componentData`/recipient is caller-influenced.
+verify_steps: HUMAN_ONLY — POST `mutation{sendTestEmail(brand:CINEPLEX,componentData:""){__typename}}` to a program-approved test recipient only.
+impact: outbound email abuse / content injection from Cineplex mail infra (phishing) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated `sendTestNotification` pushes attacker-controlled content to arbitrary cinemas
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (sendTestNotification)
+confidence: 30
+reasoning: `sendTestNotification(title,body,link:String!,imageUrl,inAppNotification,pushNotificationChannel,language,cinemaIds)` present on prod+staging; arbitrary `link`+`imageUrl`+`cinemaIds` in an unauth context would permit push/in-app content injection to real users.
+evidence_needed: non-FORBIDDEN response on a POST probe + delivery to a controlled device/tester.
+verify_steps: HUMAN_ONLY — requires authorization; do not send.
+impact: mass push/in-app notification injection (phishing/spam) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] `increaseUserTestingStatus` lets a low-privilege user self-elevate testingStatus
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (increaseUserTestingStatus)
+confidence: 35
+reasoning: accepts `testingStatus:TestingStatus` with values STAGING/DEVELOPMENT/CINEMA_EMPLOYEE; if it mutates the caller's own status without an admin gate, it may unlock other test-only resolvers/roles.
+evidence_needed: AUTH_HELPED call from a self-owned account observing the status change and any privilege delta.
+verify_steps: AUTH_HELPED (own account only).
+impact: privilege/role elevation primitive — medium if confirmed.
+testability: AUTH_HELPED
+[HYP] staging `testing_getConfirmationCode` missing environment guard → authless internal login-service topology disclosure
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode)
+confidence: 60
+reasoning: resolver executes authlessly on staging for all 3 types, leaking internal Spring Data REST paths + service LOGIN + tenant mandatorId; code extraction is blocked (deterministic backend 405 on every type), so this is guard-omission + disclosure, not a live oracle.
+evidence_needed: none further for the guard/disclosure; only an owned-email extraction would raise impact, and that is blocked.
+verify_steps: PASSIVE (done).
+impact: environment-misconfiguration + internal topology disclosure (staging-scoped) — low/medium.
+testability: PASSIVE
+[HYP] `socialLogin` trusts client-supplied email over the verified provider identity
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin)
+confidence: 48
+reasoning: live args confirm `provider:SocialAuthProvider!` alongside independent `email,name,firstName,lastName` client args plus `accessToken/idToken` — account resolution may use the unverified email. Unchanged.
+evidence_needed: 200 with jwt/refreshToken from an invalid provider token paired with a self-owned email.
+verify_steps: HUMAN ONLY (no auth-bypass probes).
+impact: account takeover — critical if confirmed.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: persistent dangling CNAME (21st+ NXDOMAIN cycle) inside the in-scope zone; unchanged.
+evidence_needed: proof the Container App env suffix is claimable in switzerlandnorth.
+verify_steps: HUMAN — attempt to bind the FQDN.
+impact: control of a genuine *.cineplex.de origin; medium/high, unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP-prefix credentialed reflection — live and env-agnostic, but API emits zero Set-Cookie and client uses Bearer/localStorage → config-hygiene; revisit only with a same-site origin foothold.
+[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de — IOMB broker stats, descriptive infra only.
+[PARKED] testing_forceDeleteUser / deleteReviewRating_2 / mutation `a` — destructive/write; NOT executed, require authorization.
+[PARKED] `test` query — constant stub, no injection, OOS alone.
+[FINAL] 1. prod `sendTestEmail` unauth email-send (AUTH, 30, HUMAN_ONLY) 2. prod `sendTestNotification` unauth push (BUSLOGIC, 30, HUMAN_ONLY) 3. staging testing_getConfirmationCode guard-omission+topology (AUTH, 60, PASSIVE) 4. web-dev dangle (OTHER, 50) 5. socialLogin email-trust (AUTH, 48)
+[NEXT] SELF-CRITIQUE first: schema presence ≠ missing runtime gate — the `Test*` names and the proven prod env-gate on `testing_getConfirmationCode` strongly suggest `sendTestEmail`/`sendTestNotification` are equally gated; do NOT report them on schema presence alone. THEN: HUMAN request to the program to (a) authorize a single `sendTestEmail`/`sendTestNotification` test against a program-designated recipient, and (b) confirm staging `testing_getConfirmationCode` is an intended QA surface.
+[LEARN] `test(inputVal:String):String` = constant `"Cineplex"`, ungated on prod+staging — not injectable; close.
+[LEARN] testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
+[LEARN] testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
+[0m
+Cycle state confirmed against `knowledge/index.md` (tail = today, 2026-10-14) and `leads/lead-bigpickle.md` tail. All autonomous legs on target `api` are exhausted — this cycle closes at a HUMAN authorization gate. Structured output:
+
+```
+[DELTA] No new unauthenticated surface since last cycle (2026-10-14). Schema fully enumerated (83Q/140M/385T/44IO, 0 descriptions/0 defaults); 132-host inventory static. Cross-lead review of nemotron3 (745 [HYP] blocks) dedupes to ~15 asset/class pairs, all already in KB — no novel asset. Its RISK 92 line claiming "IDOR via GraphQL confirmed" is superseded by the same-day idor_booking falsification (corrections outrank claims per CANONICAL STATUS).
+[PRIORITIZE] Every remaining lead leg is gated: sendTestEmail (HUMAN_ONLY, conf 30), sendTestNotification (HUMAN_ONLY, 30), increaseUserTestingStatus (AUTH_HELPED, 35), socialLogin (HUMAN_ONLY, 48), mass-assignment accessRight* (HUMAN_ONLY, 40), deprecated updatePassword nullable-credential ATO (HUMAN_ONLY exploit leg, 64), web-dev Azure dangle claim (HUMAN_ONLY, 50). Zero PASSIVE-verifiable hypotheses remain open.
+[SELF-CRITIQUE] sendTestEmail/sendTestNotification stay schema-presence-only; the proven prod env-gate on testing_getConfirmationCode makes ungated runtime exposure the unlikely case — not reportable without a POST probe. Staging testing_getConfirmationCode finding is bounded (deterministic 405 on all 3 ConfirmationCodeType branches): guard-omission + topology disclosure only, not a live oracle.
+[NEXT] HUMAN — four decisions needed before any further motion on target api: (a) authorize ONE sendTestEmail/sendTestNotification probe against a program-designated recipient; (b) confirm staging testing_getConfirmationCode is an intended QA surface; (c) supply consented low-privilege accounts (separate tenants) to close increaseUserTestingStatus / mass-assignment / updatePassword legs; (d) rule on an Azure FQDN claim attempt for web-dev.cineplex.de. Until (a)-(d) are answered, no further live probes — re-verifying already-logged findings would only add risk points.
+[LEARN] Lead-file volume ≠ coverage: nemotron3's 745 hypotheses and my 896 collapse to the same ~15 distinct asset/class pairs; dedupe by fingerprint before treating block count as surface area.
+[RISK] cineplex: 50 — unchanged; this turn issued zero live requests (local KB/lead reconciliation only). Residual exposure remains the already-reported unauthenticated introspection, inherently repeatable.
+```
+
+Stopping here as instructed: the next move is yours, not mine. Please pick a decision on (a)-(d) — or tell me to stand down on target `api` and re-open a different in-scope asset.

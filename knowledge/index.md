@@ -1610,3 +1610,4 @@
 - 2026-10-14 testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
 - 2026-10-14 testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
 - 2026-10-14 Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.
+- 2026-10-14 Lead-file volume ≠ coverage: nemotron3's 745 hypotheses and my 896 collapse to the same ~15 distinct asset/class pairs; dedupe by fingerprint before treating block count as surface area.
