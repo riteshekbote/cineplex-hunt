@@ -11830,3 +11830,109 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential is not reportable alone.
 [RISK] cineplex: 30 — NO_DELTA; high-value classes (ATO/BOLA/SSRF) remain only behind HUMAN_ONLY / AUTH_HELPED tests against live customer data the program forbids. Live floor is the already-validated prod+staging GraphQL introspection (8.1/7.5). Inventory static, crt.sh unavailable this cycle (certspotter shows no new hosts). All probes read-only, ≤1 rps, no customer data touched.
 ## 2026-10-14 00:36:25 UTC [target] (model bigpickle)
+## 2026-10-14 05:24:41 UTC [target] (model bigpickle)
+[HYP] <title>
+class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
+asset: <host/endpoint>
+confidence: <0-100>
+reasoning: <facts only>
+evidence_needed: <what proves it>
+verify_steps: <passive-first concrete HTTP requests>
+impact: <what attacker gets + severity>
+testability: <PASSIVE|AUTH_HELPED|HUMAN_ONLY>
+[HYP] staging testing_getConfirmationCode missing environment guard → authless confirmation-code oracle + internal service disclosure
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (/graphql testing_getConfirmationCode)
+confidence: 70
+reasoning: read-only GET confirmed resolver executes without auth and without the prod env gate; returns internal Spring Data REST URLs (/userPasswordResets|userRegistrations|userChangeEmailAddresses/search/findByMandatorIdAndEmailAddress), service "LOGIN", and tenant mandatorId 746241be-...; prod returns FORBIDDEN on all paths.
+evidence_needed: a 200 carrying the actual confirmation code for a controlled account (or confirmation that the 405 is unbypassable, which would reduce to guard-omission + disclosure).
+verify_steps: PASSIVE: GET the staging query for all 3 types with a non-existent email (done). Full: AUTH_HELPED with an owned email.
+impact: if the backend 405 is bypassable, pre-auth retrieval of PASSWORD_RESET/EMAIL_CHANGE/LOGIN_CREATION codes for any email → ATO; currently guard omission + internal topology disclosure. High (staging-scoped).
+testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+[HYP] socialLogin trusts client-supplied email over provider token
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin)
+confidence: 48
+[HYP] dangling CNAME web-dev.cineplex.de
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+[PARKED] CORS private-IP prefix credentialed reflection — no ambient credential/API Set-Cookie.
+[PARKED] relay /metrics — descriptive infra only.
+[PARKED] testing_forceDeleteUser — destructive query, not executed; guard-omission presumed parallel, do not test without authorization.
+[FINAL] 1. staging testing_getConfirmationCode guard omission/oracle (AUTH, 70) 2. web-dev dangle (OTHER, 50) 3. socialLogin email-trust (AUTH, 48)
+[NEXT] HUMAN: request program clarification/authorization to test `testing_forceDeleteUser` and `testing_getConfirmationCode` on staging with a self-owned account, and attempt to retrieve the returned code; prod is gated, staging is not.
+[LEARN] ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode/testing_forceDeleteUser are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks service LOGIN + mandatorId 746241be-8a37-44d8-8690-8ad67e674a2b.
+[LEARN] CORRECTED graphql_introspection schema classification: testing_* are queries (queryType), not mutations; prod=staging 83 queries/140 mutations; odd fields `a` (mutation) and `deleteReviewRating_2`.
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential → config-hygiene.
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M).
+[LEARN] REJECTED descriptive_errors: Lambda stack traces in GraphQL errors are OOS-class by themselves.
+[RISK] cineplex: 55 — staging exposes an authless testing oracle + internal login-service topology (new confirmed live), but prod gating holds and code extraction is blocked by a backend 405; high-value prod classes (ATO/BOLA) remain behind HUMAN_ONLY tests against live data.
+[NEW] certspotter re-enum: no new in-scope hosts (only *.cineplex.de, *.systems.cineplex.de, *.graphql-api.app{,.staging}.cineplex.de wildcards).
+[CHANGED] graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are queryType fields, NOT mutations (KB misclassified); args: email:String! (+ type:ConfirmationCodeType! {LOGIN_CREATION|EMAIL_CHANGE|PASSWORD_RESET}); queryType=83 / mutationType=140 on both envs.
+[CHANGED] graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes AUTH-FREE via GET (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + service LOGIN + mandatorId 746241be-8a37-44d8-8690-8ad67e674a2b; backend status:405.
+[CHANGED] graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (root,/graphql,/api/graphql,/gql) → FORBIDDEN "only available in testing environments" (correct behavior).
+[CHANGED] graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (200 {"data":{"__typename":"Query"}}).
+[CHANGED] graphql-api.app.cineplex.de :: CORS_PRIVATE_IP_PREFIX — OPTIONS Origin http://10.evil.com → 204 ACAO echo + ACAC:true + ACAH authorization; unchanged.
+[CHANGED] web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+[CHANGED] data-9fc27eb430.cineplex.de :: /metrics messages_queued=158,021,887 (was 553,564,053 KB) /health {"status":"ok"} — descriptive infra.
+[CHANGED] schema oddities: mutationType contains field named `a` and `deleteReviewRating_2`.
+[PRIO] lines.
+[HYP] x3.
+[PARKED] lines.
+[FINAL].
+[NEXT].
+[LEARN] lines.
+[RISK].
+[NEW] certspotter re-enum this cycle: no new in-scope hosts (only wildcards `*.cineplex.de`, `*.systems.cineplex.de`, `*.graphql-api.app{,.staging}.cineplex.de`).
+[CHANGED] graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are **queryType fields, not mutations** (KB misclassified them); args: `email: String!` and (for getConfirmationCode) `type: ConfirmationCodeType!` = {LOGIN_CREATION | EMAIL_CHANGE | PASSWORD_RESET}; queryType=83 / mutationType=140 on both envs.
+[CHANGED] graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes **without auth via GET** (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + `service:LOGIN` + `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`; backend returns `status:405`.
+[CHANGED] graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (`/`, `/graphql`, `/api/graphql`, `/gql`) → FORBIDDEN "only available in testing environments" (correct behavior; prod guard holds).
+[CHANGED] graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (HTTP 200 `{"data":{"__typename":"Query"}}`); CORS private-IP-prefix `OPTIONS Origin: http://10.evil.com` → 204 ACAO echo + ACAC:true + ACAH authorization (unchanged).
+[CHANGED] web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+[CHANGED] data-9fc27eb430.cineplex.de :: /metrics `messages_queued`=158,021,887 (KB last 553,564,053) / /health `{"status":"ok"}` — IOMB broker stats, descriptive infra only.
+[CHANGED] schema oddities surfaced: mutationType contains a field literally named `a` and `deleteReviewRating_2`.
+[PRIO] graphql-api.app.cineplex.de 9.30 (attack 10 / business 9 / tech 10 / gate 9 / cloud 7 / fresh 10)
+[PRIO] graphql-api.app.staging.cineplex.de 9.20 (attack 10 / business 8 / tech 10 / gate 10 / cloud 7 / fresh 10)
+[PRIO] web-dev.cineplex.de 7.65 (attack 7 / business 7 / tech 5 / gate 10 / cloud 9 / fresh 10)
+[HYP] Staging `testing_getConfirmationCode` is authless (missing environment guard) and discloses the internal login-service topology
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (/graphql, `/api/graphql`, `/gql`)
+confidence: 70
+reasoning: read-only GET confirms the resolver runs with no authentication and without the prod env gate; prod returns FORBIDDEN on every GET path while staging returns a backend `405` plus the internal Spring Data REST URL (`/userPasswordResets|userRegistrations|userChangeEmailAddresses/search/findByMandatorIdAndEmailAddress`), `service:LOGIN`, and tenant `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`.
+evidence_needed: a 200 carrying an actual confirmation code for a self-owned account (proves oracle); if the backend 405 is deterministic, the finding reduces to guard omission + internal-endpoint disclosure.
+verify_steps: PASSIVE (done): GET `https://graphql-api.app.staging.cineplex.de/graphql?query={testing_getConfirmationCode(email:"nobody-qa-nonexistent@example.com",type:PASSWORD_RESET)}` → 200/405. Full: AUTH_HELPED with an email the tester owns.
+impact: pre-auth retrieval of PASSWORD_RESET / EMAIL_CHANGE / LOGIN_CREATION codes for arbitrary emails → account takeover; currently confirmed as missing env guard + internal service/tenant disclosure. High, staging-scoped.
+testability: PASSIVE (guard omission) / AUTH_HELPED (code extraction)
+[HYP] `socialLogin` trusts client-supplied email over the verified provider identity
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin)
+confidence: 48
+reasoning: schema exposes `socialLogin(provider,accessToken,idToken,email,name,firstName,lastName,socialLoginSession) → LoginReturnType{user,jwt,refreshToken,...}`; email is a first-class client arg alongside the provider token, so account resolution may use the unverified email.
+evidence_needed: 200 carrying jwt/refreshToken with a deliberately invalid provider token paired with the caller's own email.
+verify_steps: HUMAN ONLY — POST root with `{"query":"mutation{socialLogin(provider:GOOGLE,accessToken:\"invalid\",idToken:\"invalid\",email:\"<own-email>\"){jwt refreshToken user{id email}}}"}`, no auth header.
+impact: authenticated session as an arbitrary account → account takeover; critical if confirmed.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: DoH confirms a persistent dangling CNAME to `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; target returns NXDOMAIN with an Azure SOA; name is inside the in-scope `*.cineplex.de` zone.
+evidence_needed: proof the FQDN suffix is claimable (recreate the Container App/environment in switzerlandnorth).
+verify_steps: HUMAN — attempt to bind a Container App serving the target FQDN; if the env-id suffix cannot be recreated, not exploitable.
+impact: control of a genuine `*.cineplex.de` origin (usable as a same-site origin against parent-domain auth material) if claimable; medium/high, unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP-prefix credentialed reflection @ graphql-api.app.{,staging.}cineplex.de: live/env-agnostic but API emits zero Set-Cookie and the client uses Bearer/localStorage → standalone config-hygiene; revisit only if chained to control of a same-site origin.
+[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only — descriptive infra, not reportable alone.
+[PARKED] testing_forceDeleteUser @ graphql-api.app.staging.cineplex.de: parallel query field, prod-gated, likely ungated on staging; destructive intent — NOT executed against any account, requires explicit authorization.
+[PARKED] GraphQL Lambda stack traces / internal endpoint names in error payloads: descriptive-error class is OOS by itself (retained only as supporting evidence for the AUTH finding).
+[FINAL] 1. staging `testing_getConfirmationCode` missing env guard → authless oracle + internal login-service/tenant disclosure (AUTH, 70) 2. web-dev.cineplex.de dangling-CNAME takeover (OTHER, 50) 3. prod `socialLogin` email-trust → ATO (AUTH, 48)
+[NEXT] AUTH_HELPED: on staging, GET `https://graphql-api.app.staging.cineplex.de/graphql?query={testing_getConfirmationCode(email:"<own-account-email>",type:PASSWORD_RESET)}` and confirm whether a real code is returned (tests if the backend 405 is deterministic); only with an email the tester owns.
+[LEARN] ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks `service:LOGIN` + `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`.
+[LEARN] CORRECTED graphql_introspection @ graphql-api.app.{,staging.}.cineplex.de: `testing_*` are QUERIES (queryType), not mutations; counts 83 queries / 140 mutations both envs; odd fields `a` and `deleteReviewRating_2`.
+[LEARN] ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+[LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hygiene only.
+[LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
+[LEARN] REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.
+[RISK] cineplex: 45 — new confirmed live authless testing endpoint on staging raises exposure, but prod gating holds on all paths and the staging code-extraction step is blocked by a backend 405; high-value prod classes (ATO/BOLA) remain behind HUMAN_ONLY tests against live customer data. All probes read-only, ≤1 rps, no customer data touched.

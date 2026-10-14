@@ -1593,3 +1593,16 @@
 - 2026-10-14 ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - 2026-10-14 REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
 - 2026-10-14 Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode/testing_forceDeleteUser are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks service LOGIN + mandatorId 746241be-8a37-44d8-8690-8ad67e674a2b.
+- 2026-10-14 CORRECTED graphql_introspection schema classification: testing_* are queries (queryType), not mutations; prod=staging 83 queries/140 mutations; odd fields `a` (mutation) and `deleteReviewRating_2`.
+- 2026-10-14 ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- 2026-10-14 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential → config-hygiene.
+- 2026-10-14 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M).
+- 2026-10-14 REJECTED descriptive_errors: Lambda stack traces in GraphQL errors are OOS-class by themselves.
+- 2026-10-14 lines.
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN on all paths); resolver proxies internal Spring Data REST and leaks `service:LOGIN` + `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`.
+- 2026-10-14 CORRECTED graphql_introspection @ graphql-api.app.{,staging.}.cineplex.de: `testing_*` are QUERIES (queryType), not mutations; counts 83 queries / 140 mutations both envs; odd fields `a` and `deleteReviewRating_2`.
+- 2026-10-14 ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- 2026-10-14 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hygiene only.
+- 2026-10-14 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
+- 2026-10-14 REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.

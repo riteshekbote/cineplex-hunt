@@ -2990,3 +2990,22 @@ wwww.cineplex.de
 - CHANGED recon — crt.sh returned 502 this cycle; certspotter fallback enumerated 17 in-zone names, all already in inventory → no new hosts.
 
 ## 2026-10-14 00:36:55 UTC
+
+## 2026-10-14 05:24:52 UTC
+- NEW certspotter re-enum: no new in-scope hosts (only *.cineplex.de, *.systems.cineplex.de, *.graphql-api.app{,.staging}.cineplex.de wildcards).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are queryType fields, NOT mutations (KB misclassified); args: email:String! (+ ty
+- CHANGED graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes AUTH-FREE via GET (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + service L
+- CHANGED graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (root,/graphql,/api/graphql,/gql) → FORBIDDEN "only available in testing environments" (correct behavior).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (200 {"data":{"__typename":"Query"}}).
+- CHANGED graphql-api.app.cineplex.de :: CORS_PRIVATE_IP_PREFIX — OPTIONS Origin http://10.evil.com → 204 ACAO echo + ACAC:true + ACAH authorization; unchanged.
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+- CHANGED data-9fc27eb430.cineplex.de :: /metrics messages_queued=158,021,887 (was 553,564,053 KB) /health {"status":"ok"} — descriptive infra.
+- CHANGED schema oddities: mutationType contains field named `a` and `deleteReviewRating_2`.
+- NEW certspotter re-enum this cycle: no new in-scope hosts (only wildcards `*.cineplex.de`, `*.systems.cineplex.de`, `*.graphql-api.app{,.staging}.cineplex.de`).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are **queryType fields, not mutations** (KB misclassified them); args: `email: St
+- CHANGED graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes **without auth via GET** (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + `s
+- CHANGED graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (`/`, `/graphql`, `/api/graphql`, `/gql`) → FORBIDDEN "only available in testing environments" (correct behavior
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (HTTP 200 `{"data":{"__typename":"Query"}}`); CORS private-IP-prefix `OPTIONS Origin: http://10.evil.com` → 20
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+- CHANGED data-9fc27eb430.cineplex.de :: /metrics `messages_queued`=158,021,887 (KB last 553,564,053) / /health `{"status":"ok"}` — IOMB broker stats, descriptive infra only.
+- CHANGED schema oddities surfaced: mutationType contains a field literally named `a` and `deleteReviewRating_2`.

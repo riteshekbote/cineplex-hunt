@@ -6186,3 +6186,31 @@
 - LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
 - LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
+
+## RANKED HYPOTHESES 2026-10-14 05:24:52 UTC
+- [90] graphql-api.app.cineplex.de: CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads (from art/lead_nemotron3.txt)
+- [70] <host/endpoint>: <title> (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: request program clarification/authorization to test `testing_forceDeleteUser` and `testing_getConfirmationCode` on staging with a self-owned account, and
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Meth
+- LEARN: ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: testing_getConfirmationCode/testing_forceDeleteUser are queryType fields, unauthenticated and env-gate-free
+- LEARN: CORRECTED graphql_introspection schema classification: testing_* are queries (queryType), not mutations; prod=staging 83 queries/140 mutations; odd fields `a` (
+- LEARN: ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential → config-hygiene.
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M).
+- LEARN: REJECTED descriptive_errors: Lambda stack traces in GraphQL errors are OOS-class by themselves.
+- LEARN: lines.
+- LEARN: ACCEPTED AUTH @ graphql-api.app.staging.cineplex.de: `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields, unauthenticated and env-gate-
+- LEARN: CORRECTED graphql_introspection @ graphql-api.app.{,staging.}.cineplex.de: `testing_*` are QUERIES (queryType), not mutations; counts 83 queries / 140 mutations
+- LEARN: ACCEPTED subdomain_takeover @ web-dev.cineplex.de: dangling CNAME to unclaimed Azure Container Apps FQDN persists (NXDOMAIN, Azure SOA, TTL 300).
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hy
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
+- LEARN: REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO 
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
