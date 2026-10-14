@@ -2988,3 +2988,5 @@ wwww.cineplex.de
 - CHANGED graphql-api.app.cineplex.de :: ROOT — GET / → HTTP 400 (Cloudflare), consistent with 09-30 canonical WAF state, not the intermittent 200.
 - CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — DoH CNAME TTL 300 → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io; A-follow Status 3 NXDOMAIN + switzerlandnorth.azurecontainerapps.io S
 - CHANGED recon — crt.sh returned 502 this cycle; certspotter fallback enumerated 17 in-zone names, all already in inventory → no new hosts.
+
+## 2026-10-14 00:36:55 UTC

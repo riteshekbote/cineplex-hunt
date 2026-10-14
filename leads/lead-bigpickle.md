@@ -11829,3 +11829,4 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED ssrf @ graphql-api.app.cineplex.de: getOnlineTicketingBooking root-gated (FORBIDDEN).
 [LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: credentialed reflection without an ambient credential is not reportable alone.
 [RISK] cineplex: 30 — NO_DELTA; high-value classes (ATO/BOLA/SSRF) remain only behind HUMAN_ONLY / AUTH_HELPED tests against live customer data the program forbids. Live floor is the already-validated prod+staging GraphQL introspection (8.1/7.5). Inventory static, crt.sh unavailable this cycle (certspotter shows no new hosts). All probes read-only, ≤1 rps, no customer data touched.
+## 2026-10-14 00:36:25 UTC [target] (model bigpickle)
