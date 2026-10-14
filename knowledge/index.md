@@ -1611,3 +1611,9 @@
 - 2026-10-14 testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
 - 2026-10-14 Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.
 - 2026-10-14 Lead-file volume ≠ coverage: nemotron3's 745 hypotheses and my 896 collapse to the same ~15 distinct asset/class pairs; dedupe by fingerprint before treating block count as surface area.
+- 2026-10-14 ...
+- 2026-10-14 ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: prod/staging field sets are identical (83/140, zero diff) — the staging `testing_*` exposure is a runtime env-flag difference, not a schema/build divergence.
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.cineplex.de: privilege decisions (`privileged`, `setAdminPrivilege`) are client-supplied booleans — resolves only under AUTH_HELPED.
+- 2026-10-14 ACCEPTED AUTH @ graphql-api.app.cineplex.de: `createAnonymousUser->LoginReturnType{jwt,refreshToken,roles}` mints a credential-less session; intended for guests, so the reportable surface is downstream authorization, not the mint.
+- 2026-10-14 REJECTED MISCONFIG @ graphql-api.app.cineplex.de: CORS null/private-IP/label-boundary reflection — OOS-adjacent config-hygiene, no ambient credential.
+- 2026-10-14 REJECTED BUSLOGIC @ graphql-api.app.{,staging.}cineplex.de: `sendTestEmail`/`sendTestNotification`/`increaseUserTestingStatus` — schema presence ≠ runtime exposure; consistent with the proven prod env-gate on `testing_*`.

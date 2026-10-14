@@ -3069,3 +3069,29 @@ wwww.cineplex.de
 - CHANGED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; ZERO `Set-Cookie` on GraphQL API responses; `Vary:
 - CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+
+## 2026-10-14 22:41:53 UTC
+- CHANGED ...
+- NEW none — inventory unchanged (132 hosts).
+- CHANGED graphql-api.app.cineplex.de + app.staging — arbitrary unshadowed path still serves schema (GET random path → 200 {"data":{"__typename":"Query"}}) ...
+- CHANGED CORS preflight re-confirmed: origins https://10.attacker.com, http://192.168.1.1, https://sub.attacker.cineplex.de, null → 204 + ACAO echo + ACAC:true.
+- CHANGED web-dev.cineplex.de dangling CNAME, 22nd NXDOMAIN cycle (TTL 300).
+- CHANGED prod vs staging schemas field-identical (83 q /140 m, zero name diff) — the staging testing_ exposure is a runtime env-gate difference, not schema divergence.
+- CHANGED new mutation-signature facts (introspection): createAnonymousUser(appId,bonusProgramId)->LoginReturnType; updateUserAdminStatus(userId,cinemaOperatingCompanyId,setAdminPrivilege:Boolean); socialLogin(
+- CHANGED LoginReturnType fields = {user,posApp,fileServerToken,jwt,csrf,roles,refreshToken} → session minted by createAnonymousUser.
+- CHANGED testing_forceDeleteUser(email):DeleteUserReturnType is a queryType field on prod AND staging (GET-invocable; env-gate is the sole guard).
+- CHANGED graphql-api.app.cineplex.de — CORS preflight re-confirmed live: OPTIONS with Origin `https://10.attacker.com`, `http://192.168.1.1`, `https://sub.attacker.cineplex.de`, and `null` all → 204 + ACAO ech
+- CHANGED web-dev.cineplex.de — dangling CNAME holds, 22nd consecutive NXDOMAIN cycle (TTL 300): `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`.
+- CHANGED prod vs staging schemas are field-identical — 83 queries / 140 mutations, zero name diff; the staging `testing_*` exposure is a runtime env-flag difference, NOT schema/build divergence (corrects the "
+- CHANGED mutation signatures resolved (introspection, read-only): `createAnonymousUser(appId:ID,bonusProgramId:ID)->LoginReturnType`, `updateUserAdminStatus(userId:ID,cinemaOperatingCompanyId:ID,setAdminPrivil
+- CHANGED `LoginReturnType` fields = {user, posApp, fileServerToken, jwt, csrf, roles, refreshToken} → `createAnonymousUser` mints a full session client (JWT + refresh) without credentials.
+- CHANGED `testing_forceDeleteUser(email:String):DeleteUserReturnType` is registered as a **queryType** field on prod AND staging → GET-invocable; the environment flag is the sole guard.
+- NEW No new assets or surface changes since 2026-09-23; 132-host baseline confirmed complete via CT diff + CNAME sweep
+- NEW Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all 206 cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- NEW All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live (was 500); entry point now matches prod exactly
+- CHANGED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- CHANGED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before validation
+- CHANGED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; ZERO `Set-Cookie` on GraphQL API responses; `Vary:
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
