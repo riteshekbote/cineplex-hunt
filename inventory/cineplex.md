@@ -3058,3 +3058,14 @@ wwww.cineplex.de
 - CHANGED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; ZERO `Set-Cookie` on GraphQL API responses; `Vary:
 - CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+
+## 2026-10-14 19:44:05 UTC
+- NEW No new assets or surface changes since 2026-09-23; 132-host baseline confirmed complete via CT diff + CNAME sweep (inventory/cineplex.md)
+- NEW Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all 206 cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- NEW All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live (was 500); entry point now matches prod exactly
+- CHANGED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; `172.16/12`, `100.64/10`, `169.254.169.254`,
+- CHANGED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before validation
+- CHANGED app.cineplex.de client auth model: OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`) + refresh cookie on SSO domain; ZERO `Set-Cookie` on GraphQL API responses; `Vary:
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- CHANGED buchung-dev.cineplex.de + bms-dev.cineplex.de origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated

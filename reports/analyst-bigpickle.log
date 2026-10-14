@@ -113528,3 +113528,136 @@ Cycle state confirmed against `knowledge/index.md` (tail = today, 2026-10-14) an
 ```
 
 Stopping here as instructed: the next move is yours, not mine. Please pick a decision on (a)-(d) — or tell me to stand down on target `api` and re-open a different in-scope asset.
+===== ANALYST bigpickle 2026-10-14 19:44:05 UTC =====
+[0m
+> build · big-pickle
+[0m
+[0m$ [0mcurl -sS --http2 -m 20 -A "Mozilla/5.0" "https://graphql-api.app.cineplex.de/?query=%7B__typename%7D" -w "\nHTTP:%{http_code} LEN:%{size_download}\n" 2>&1 | tail -5
+{"data":{"__typename":"Query"}}
+
+HTTP:200 LEN:32
+[0m
+[0m$ [0mcurl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type" -D - -o /dev/null 2>&1 | grep -iE "HTTP/|access-control|vary"
+HTTP/2 204 
+access-control-allow-origin: http://10.evil.com
+access-control-allow-headers: authorization,content-type
+vary: Origin, Access-Control-Request-Headers
+access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE
+access-control-allow-credentials: true
+[0m
+[0m$ [0mcurl -sS -m 15 -H "Accept: application/dns-json" "https://dns.google/resolve?name=web-dev.cineplex.de&type=CNAME" 2>&1 | head -c 600; echo; curl -sS -m 15 -H "Accept: application/dns-json" "https://dns.google/resolve?name=web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io&type=A" 2>&1 | head -c 600
+{"Status":0,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web-dev.cineplex.de.","type":5}],"Answer":[{"name":"web-dev.cineplex.de.","type":5,"TTL":300,"data":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io."}],"Comment":"Response from 172.64.33.63."}
+{"Status":3,"TC":false,"RD":true,"RA":true,"AD":false,"CD":false,"Question":[{"name":"web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.","type":1}],"Authority":[{"name":"switzerlandnorth.azurecontainerapps.io.","type":6,"TTL":300,"data":"ns1-35.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"}],"Comment":"Response from 13.107.222.35."}
+[0m
+I'll run a few read-only confirmation probes (GET/OPTIONS/DNS only, ≤1 rps) to ground the delta, then emit the structured analysis.
+[0m$ [0mfor h in api.cineplex.de graphql-api.app.staging.cineplex.de; do echo "== $h =="; curl -sS -m 15 -A "Mozilla/5.0" -o /dev/null -w "root GET:%{http_code} len:%{size_download}\n" "https://$h/"; done
+== api.cineplex.de ==
+root GET:403 len:115344
+== graphql-api.app.staging.cineplex.de ==
+root GET:400 len:18
+[0m
+## Objective
+
+- Continue the Cineplex Deutschland GmbH & Co. KG bug bounty hunt with strict separation of facts vs hypotheses, passive-first verification, and HUMAN_ONLY testing for any action that could touch PII, customer data, or live mutations.
+- Enforce evidence discipline: treat the automated probe log (`probe-results.md`) as void due to harness defects, and only accept live evidence from manual balanced-curl reads (browser UA, properly URL-encoded, brace-balanced). 
+
+## Important Details
+
+- **Scope**: All Cineplex-owned infrastructure/websites/APIs/apps/customer portals/loyalty/digital signage/domains under Cineplex control (per `scope.yml` + `inventory/cineplex.md`, 132-host baseline).
+- **Explicit out-of-scope (REJECTED classes)**: username enumeration (login/forgot-password), SSL/TLS best practices/attacks, CSRF on logout, descriptive errors/headers only, known-vulnerable library without implementation-specific exploit, DoS/account-lockout DoS, rate-limit/brute-force policy, clickjacking without demonstrated exploit, mail config (SPF/DKIM/DMARC), password/recovery policy, autocomplete, public login panels, lack of email verification, session changes during email/password change, physical access, social engineering. 
+- **Harness defect (critical)**: `probe-results.md` is corrupted by the retired inline verifier. Verified defects: probe URLs carried a literal trailing backtick (→ HTTP 400), urllib UA included `(passive verifier)` and hit Cloudflare WAF bot-gate (→ HTTP 403), `urls[:12]` truncation, brace truncation (unbalanced GraphQL queries → false-negative 400), and file globs missed the real corpus. As a result, `probe-results.md` contains zero POST GraphQL probes across recorded cycles and its silence/403/400 carries no evidentiary weight. The replacement is `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (14 offline tests). 
+- **KB correction discipline**: The historical KB line claiming "full mutation arg enumeration confirms no injection vectors (all scalar/named input objects)" was derived from a name-only read and is factually incorrect (eight URL/credential-shaped args exist). Multiple self-corrections recorded; any claim that was inferred from automated log alone is void. 
+- **Publisher contamination**: `leads/lead-*.md` previously contained a large falsified `idor_booking` block set (class `IDOR`, high confidence). Publisher (`scripts/sync-issues.py`) suppression-by-tag is not durable by append-only appends; the surviving decoder-oracle has been retained as `class: ACCESS_CONTROL` (fingerprint `4ad65631f720`) while the systemic authorization-omission IDOR claim was falsified by safe public-namespace tests. 
+- **Live surface constraints**: `app.cineplex.de` is behind Cloudflare managed challenge (`cf-mitigated: challenge`, COOP/COEP/CORP) — SPA bundle/token model is OAuth2 (Bearer in `localStorage`, refresh cookie on SSO domain `.cineplex.de`, no API-origin `Set-Cookie` observed). `graphql-api.app.{,staging.}cineplex.de` exposes GraphQL on root `/` (POST-capable) and on `/graphql`, `/api/graphql`, `/gql` (GET-only mirrors, API-GW 403 on POST/OPTIONS). Arbitrary unshadowed paths also serve the GraphQL schema on GET (catch-all). 
+- **Survivors (manually verified, same-cycle)**: 
+  - `graphql-api.app.cineplex.de` + `graphql-api.app.staging.cineplex.de`: full introspection/schema exposure (83 queries / 140 mutations, 44 `INPUT_OBJECT`s, 385 types), identical across envs; dual entry points (`/` and `/graphql`); arbitrary-path catch-all serves schema on GET. 
+  - CORS (prod `graphql-api.app.cineplex.de`, parity on staging): allowlist reflects origins with `access-control-allow-credentials: true` (includes `http://localhost:3000`, `https://app.staging.cineplex.de`, and `null`), preflight `OPTIONS /` returns 204 with `ACAO` echoed, `ACAC:true`, `ACAM: GET,HEAD,PUT,PATCH,POST,DELETE`, `ACAH: content-type,authorization`; `Vary: Origin` present; CORS middleware reflects before validation (also on 400). Allowlist enforces DNS label boundary for `*.cineplex.de` and trusts hostname prefixes `10.` and `192.168.` (dot-boundary enforced, pre-resolution) — `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` excluded. 
+  - `web-dev.cineplex.de`: dangling CNAME to unclaimed Azure Container Apps FQDN (NXDOMAIN + Azure SOA), 20+ consecutive cycles, sole dangle in full sweep; precondition passive (claimability provider-side). 
+- **Retractions/closures (important)**: systemic IDOR authorization omission falsified (only decoder oracle remains as `class: ACCESS_CONTROL`); `getOnlineTicketingBooking` root-gated (`FORBIDDEN "You must be the root user"`) — SSRF lead closed; `testing_getConfirmationCode` on staging is an env-gate omission + topology disclosure (bounded, deterministic 405 on all types) but the standalone "oracle extraction" is rejected as descriptive/excluded; `api.cineplex.de` GET-based GraphQL bypass dead (strict WAF). `relay_metrics`/`relay_broker_saturation` @ `data-9fc27eb430.cineplex.de` are descriptive IOMB telemetry only (not reportable). TLS-dead hosts: `app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`. 
+- **Current repository state**: `probe-results.md` ~1399 lines (all cycles) with zero POST GraphQL probes; `knowledge/index.md` contains an append-only history plus a canonical status section (2026-09-30). Publisher scripts (`scripts/sync-issues.py`) parse `[HYP]` blocks only from `leads/lead-*.md`. Offline verification of extractor/publisher completed against the real corpus.
+
+## Work State
+
+### Completed
+- **Evidence hygiene**: Identified and documented 8 verifier defects in `.github/workflows/hunt.yml` (trailing backtick, UA suffix, `urls[:12]` truncation, brace truncation). Replaced verifier with `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (14 offline tests) and verified offline replay against real corpus extracts filtered, balanced URLs only.
+- **CORS surface mapped (same-cycle)**: Preflight + actual GET responses verified on prod/staging root `/` and paths; hostile origins reflected with `ACAC:true` under boundary rules; reflection confirmed on 400 bodies (middleware before validation). 
+- **GraphQL surface mapped**: Full type/argument inventory (385 types, 44 `INPUT_OBJECT`s), dual entry points and arbitrary-path catch-all confirmed, GET-only mirrors enumerated (4 paths × 2 envs). 
+- **Subdomain dangle**: `web-dev.cineplex.de` CNAME NXDOMAIN confirmed across 20+ consecutive cycles; full dev/systems CNAME sweep completed (sole dangle). 
+- **Contamination cleanup**: Separated decoder oracle (`ACCESS_CONTROL`) from falsified systemic IDOR; corrected KB entries and recorded retractions in canonical status. 
+- **Publisher behavior measured offline**: `parse_blocks` → fingerprints → retraction suppression → near-duplicate collapse verified (idempotent); `ensure_label()` behavior noted. 
+
+### Active
+- **Lead hygiene**: `leads/lead-*.md` still contain a large set of historical `[HYP]` blocks (including many retagged to `[LEARN]`) with fingerprint fragmentation and a small malformed inline-attribute case (`'MISCONFIG' CONF: '93'`). Publisher will suppress retracted blocks by tag/fingerprint but cosmetic asset-string drift creates duplicate tracker slots if not normalized.
+- **CORS impact scope**: Primitive is strong (credentialed reflection + private-IP prefix + preflight permitting POST + `authorization` header). However, client auth model is OAuth2 Bearer in `localStorage` with no API-origin session cookie on GraphQL API; practical ATO chain is broken by transport (cannot auto-attach/steal API credential from a cross-origin page). Impact remains config-hygiene/primitive-strength pending foothold feasibility.
+- **Staging testing_* surface**: `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields, unauthenticated and env-gate-free on staging (prod FORBIDDEN), proxy internal Spring Data REST and leak `service:LOGIN` + `mandatorId` UUID (topology disclosure). Code extraction bounded (deterministic backend 405 on all types). Not reportable as an oracle alone under descriptive/exclusion classes but remains an environment-misconfiguration observation.
+- **Dev origin surface**: `buchung-dev.cineplex.de`/`bms-dev.cineplex.de` (origin `194.77.169.121`, no Cloudflare on SPA paths) oscillate TCP-reachable/unreachable across cycles; `/gateway/*` routes often return 503 "Wartungsarbeiten". Exploitability network/backend-gated, not dead. 
+
+### Blocked
+- **Automated verification**: `probe-results.md` is unusable for positive/negative inference. Any conclusion drawn from its automated 403/400 is void. Must not rely on its silence for POST/arbitrary-path/cross-origin behavior.
+- **Live mutation execution**: All write/mutation hypotheses (e.g., `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus`, `updateUser`, `deleteCineplexUser`, `storeSDKLogin`, `storeConsent`, `logItems`, `editUserGroupFilter`) require authorization/consent and are explicitly HUMAN_ONLY or AUTH_HELPED; not executed (program rule to avoid touching customer data).
+- **Publisher automation**: `scripts/sync-issues.py`'s `ensure_label()` discards return values in both branches (latent bug) and `fingerprint = md5(asset|class)` is overly coarse relative to cosmetic asset prose (causes duplicate tracker issues). Near-duplicate collapse exists but class/asset normalization needed at source (leads). 
+- **External verification gaps**: `web-dev.cineplex.de` claimability (Azure Container Apps FQDN binding) requires provider-side attestation (HUMAN). Reposcan is unconfigured (`TARGET_ORG` not set). Internet Archive coverage for `app.cineplex.de` GraphQL-calling JS chunks is incomplete (header-attach path unconfirmed).
+- **OAuth chain closure**: Archived SPA bundle confirms OAuth2 model (Bearer in localStorage + refresh cookie `.cineplex.de`, no API-origin `Set-Cookie`) but live token redemption/ambient credential presence not testable without execution; chain downgraded to config-hygiene until foothold proven.
+
+## Next Move
+
+1. **Harden verification pipeline (blocking for automation)**: Replace/patch `.github/workflows/hunt.yml` verifier to (a) strip trailing backtick and other delimiter artifacts before issuing requests, (b) use a browser UA (not `*(passive verifier)*`), (c) remove `urls[:12]` truncation and balance GraphQL query strings before fetch, (d) only treat brace-balanced URL-encoded GETs as valid GraphQL probes, (e) treat 403/400 from malformed inputs as artifacts (log separately). Validate with `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (all 14 passing) and re-extract a filtered corpus. 
+2. **Stabilize leads/publisher before any mass publish**: Normalize `leads/lead-*.md` to remove cosmetic asset-string drift, fix the malformed inline attribute `class: 'MISCONFIG' CONF: '93'`, enforce a single canonical status block per finding (not many timestamped append lines), and prefer fingerprinting that includes a normalized asset (or dedupe by title+class+asset key) to avoid duplicate tracker issues. Fix `ensure_label()` to return/use created/fetched label objects. Verify with offline `parse_blocks` run over glob: confirm retracted blocks suppressed and survivor set matches intended canonical list.
+
+## Relevant Files
+
+- `knowledge/index.md`: append-only KB with canonical status (2026-09-30); contains corrections, retractions, METHOD RULES and LIVE/DEAD/SURVIVING partitions (must remain the retrieval entry point; avoid re-deriving from tail-only).
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: current hypothesis blocks (mixture `[HYP]`/`[LEARN]`); require normalization + dedupe before publish.
+- `scripts/sync-issues.py`: publisher — parses `[HYP]` only, uses `fingerprint()` (`asset|class`), near-duplicate collapse, suppression-by-tag; has latent `ensure_label()` return-value bug and coarse fingerprint.
+- `scripts/passive_verify.py`, `scripts/test_passive_verify.py`: replacement extractor + 14 offline tests (use as source of truth for URL extraction/filtering).
+- `.github/workflows/hunt.yml`: workflow containing the retired inline verifier (lines around 207–225 contain the 8 defects) — must be patched to use the new extractor or the corrected logic.
+- `inventory/cineplex.md`: 132-host baseline (discovery seed 2026-09-02) — source of scope assets and CNAME inventory.
+- `probe-results.md`: automated probe log (void for inference) — 1399 lines, zero POST GraphQL probes; useful only to document harness behavior/artifacts, not to establish server behavior.
+- `reports/analyst-*.log`, `reports/run-*.md`: per-cycle triage notes (some contain `UnknownError` server faults) — treat as analyst notes, never adopt another agent’s conclusion as evidence without independent verification.
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcurl -sS -m 20 -A "Mozilla/5.0" -X POST "https://graphql-api.app.cineplex.de/" -H "Content-Type: application/json" -d '{"query":"{__typename}"}' -w "\nHTTP:%{http_code} LEN:%{size_download}\n" 2>&1 | tail -2
+HTTP:200 LEN:32
+[0m
+[0m$ [0mcurl -sS -m 20 -A "Mozilla/5.0" "https://graphql-api.app.staging.cineplex.de/?query=%7B__typename%7D" -w "\nHTTP:%{http_code} LEN:%{size_download}\n" 2>&1 | tail -2
+HTTP:200 LEN:32
+[0m
+[0m$ [0mpython3 -m json.tool /tmp/out2 2>&1 | wc -c; echo "---"; python3 -c "
+# quick test
+pass
+" 2>&1 | tail -0; curl -sS -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/graphql" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -D - -o /dev/null 2>&1 | grep -i access-control-allow-credentials | head -1
+351
+---
+[0m
+## State check (manual, balanced-curl)
+
+- graphql-api.app.cineplex.de: GET `/?query={__typename}` 200 → `{"data":{"__typename":"Query"}}`. POST `/` JSON `{"query":"{__typename}"}` 200 → 32 bytes. OPTIONS `/` with Origin `http://10.evil.com` + `Access-Control-Request-Method: POST` returns `access-control-allow-credentials: true`, `access-control-allow-origin: http://10.evil.com`, `access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE`, `access-control-allow-headers: authorization,content-type`, `Vary: Origin, Access-Control-Request-Headers` (204). 
+- graphql-api.app.staging.cineplex.de: GET `/?query={__typename}` 200 → 32 bytes. Root GET `/` without query returns 400 (18 bytes) — consistent with schema introspection/validation model on root; parity holds. 
+- web-dev.cineplex.de: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (DNS 300 TTL). Target `switzerlandnorth.azurecontainerapps.io` authoritatively returns NXDOMAIN (Status 3) — dangling CNAME (claimable only provider-side). 
+- api.cineplex.de: root GET 403 (Cloudflare/gateway). 
+
+## Next steps (concrete, blocking for automation)
+
+1. **Normalize leads/publisher (source hygiene)** before any mass publish.
+- Fix malformed inline attribute in leads: `class: 'MISCONFIG' CONF: '93'` → normalize to standard `class: MISCONFIG` (and separate CONF as structured field) per publisher schema. 
+- Reduce asset-string drift (title+class+asset key fingerprinting) to avoid duplicate tracker slots; normalize cosmetic prose. 
+- Enforce single canonical status block per finding (not many timestamped appends). 
+- Fix `scripts/sync-issues.py::ensure_label()` to return/use created/fetched label objects (both branches discard return values). 
+- Offline verify: `python3 -c "import sys; sys.path.insert(0,'.'); from scripts import sync_issues; # parse_blocks over glob"` — confirm retracted blocks suppressed, survivor set matches canonical list.
+
+2. **Patch harness verifier** in `.github/workflows/hunt.yml` to use corrected logic (or call `scripts/passive_verify.py` as source of truth).
+- Strip trailing backtick and other delimiter artifacts before requests.
+- Remove browser-UA suffix `*(passive verifier)*`, use real browser UA.
+- Remove `urls[:12]` truncation; balance GraphQL query strings before fetch (brace-balanced, URL-encoded). 
+- Treat 403/400 from malformed inputs as artifacts; log separately. 
+- Only treat brace-balanced, URL-encoded GETs as valid GraphQL probes. 
+- Validate against `scripts/passive_verify.py` + `scripts/test_passive_verify.py` (all 14 passing). Re-extract filtered corpus.
+
+3. **CORS/primitive tracking** (low risk)
+- OPTIONS parity check on `https://graphql-api.app.staging.cineplex.de/` and `/graphql` for the 10.* Origin (confirm `ACAC:true`, boundary enforced). 
+- Document primitive strength vs practical impact (OAuth2 Bearer in `localStorage`, no API-origin session cookie) — chain broken for cross-origin auto-exfiltration; treat as config hygiene until foothold proven.
+
+## Recommended immediate action
+
+Start with (1) lead normalization + publisher label fix (local, idempotent, no live external calls), then (2) workflow patch. Do not mass-publish until (1) passes offline verification.
+
+Stop and ask if you want me to (A) fix leads/publisher first, (B) patch workflow first, or (C) just produce normalized patches for review.
