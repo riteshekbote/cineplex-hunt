@@ -1606,3 +1606,7 @@
 - 2026-10-14 REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hygiene only.
 - 2026-10-14 REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
 - 2026-10-14 REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.
+- 2026-10-14 `test(inputVal:String):String` = constant `"Cineplex"`, ungated on prod+staging — not injectable; close.
+- 2026-10-14 testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
+- 2026-10-14 testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
+- 2026-10-14 Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.

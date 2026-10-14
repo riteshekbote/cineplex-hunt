@@ -3009,3 +3009,38 @@ wwww.cineplex.de
 - CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
 - CHANGED data-9fc27eb430.cineplex.de :: /metrics `messages_queued`=158,021,887 (KB last 553,564,053) / /health `{"status":"ok"}` — IOMB broker stats, descriptive infra only.
 - CHANGED schema oddities surfaced: mutationType contains a field literally named `a` and `deleteReviewRating_2`.
+
+## 2026-10-14 10:25:09 UTC
+- NEW certspotter re-enum: no new in-scope hosts (only *.cineplex.de, *.systems.cineplex.de, *.graphql-api.app{,.staging}.cineplex.de wildcards).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are queryType fields, NOT mutations (KB misclassified); args: email:String! (+ ty
+- CHANGED graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes AUTH-FREE via GET (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + service L
+- CHANGED graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (root,/graphql,/api/graphql,/gql) → FORBIDDEN "only available in testing environments" (correct behavior).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (200 {"data":{"__typename":"Query"}}).
+- CHANGED graphql-api.app.cineplex.de :: CORS_PRIVATE_IP_PREFIX — OPTIONS Origin http://10.evil.com → 204 ACAO echo + ACAC:true + ACAH authorization; unchanged.
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+- CHANGED data-9fc27eb430.cineplex.de :: /metrics messages_queued=158,021,887 (was 553,564,053 KB) /health {"status":"ok"} — descriptive infra.
+- CHANGED schema oddities: mutationType contains field named `a` and `deleteReviewRating_2`.
+- NEW certspotter re-enum this cycle: no new in-scope hosts (only wildcards `*.cineplex.de`, `*.systems.cineplex.de`, `*.graphql-api.app{,.staging}.cineplex.de`).
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: SCHEMA_TYPING — `testing_getConfirmationCode` and `testing_forceDeleteUser` are **queryType fields, not mutations** (KB misclassified them); args: `email: St
+- CHANGED graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — resolver executes **without auth via GET** (no FORBIDDEN) and proxies internal Spring Data REST, leaking per-type internal URL + `s
+- CHANGED graphql-api.app.cineplex.de :: testing_getConfirmationCode — env-gated on ALL GET paths (`/`, `/graphql`, `/api/graphql`, `/gql`) → FORBIDDEN "only available in testing environments" (correct behavior
+- CHANGED graphql-api.app.{,staging.}.cineplex.de :: CATCH_ALL — arbitrary path still serves schema (HTTP 200 `{"data":{"__typename":"Query"}}`); CORS private-IP-prefix `OPTIONS Origin: http://10.evil.com` → 20
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (TTL 300); A-follow NXDOMAIN + Azure SOA; dangle holds.
+- CHANGED data-9fc27eb430.cineplex.de :: /metrics `messages_queued`=158,021,887 (KB last 553,564,053) / /health `{"status":"ok"}` — IOMB broker stats, descriptive infra only.
+- CHANGED schema oddities surfaced: mutationType contains a field literally named `a` and `deleteReviewRating_2`.
+- NEW QueryType field `test(inputVal:String):String` exists and is env-gate-free on BOTH prod and staging — returns the constant `"Cineplex"` for every input. Tested literal, `${7*7}`, `{{7*7}}`, `<%= 7*7 %
+- NEW MutationType carries `sendTestEmail(brand:Brand, componentData:String!): SendTestEmail!` and `sendTestNotification(title, body, link:String!, imageUrl, inAppNotification, pushNotificationChannel, lang
+- NEW Enums resolved live: TestingStatus={TESTING,PRODUCTION,STAGING,DEVELOPMENT,CINEMA_EMPLOYEE}; Brand={CINURU,CINFINITY,CINEPLEX,CINEWEB,LUMOS,ELSELICHTSPIELE,DREHWERK}; SocialAuthProvider={APPLE,GOOGLE}
+- NEW Build divergence: staging errors originate `graphql.js:25188`, prod `graphql.js:30005` — distinct bundles for the same schema.
+- CHANGED graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — all THREE types now confirmed authless and deterministically backend-405: PASSWORD_RESET→/userPasswordResets/search/findByMandatorI
+- CHANGED graphql-api.app.cineplex.de :: testing_getConfirmationCode — FORBIDDEN "only available in testing environments" on all GET paths (prod env guard holds).
+- CHANGED CORS private-IP-prefix re-confirmed live same-cycle: OPTIONS Origin http://10.evil.com → 204, ACAO echo, ACAC:true, ACAH content-type,authorization, ACAM GET,HEAD,PUT,PATCH,POST,DELETE.
+- CHANGED web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300), target NXDOMAIN (Status 3); dangle holds (21st+ cycle).
+- CHANGED Mutations are POST-only over this edge ("GET supports only query operation" → 405); introspection arg-name extraction is lossy for NON_NULL (e.g. sendTestNotification `link` is actually `String!`).
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- CHANGED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.16/12, 100.64/10, 169.254.169.254, 0.* provably e
+- CHANGED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before validation
+- CHANGED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: Origin
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- CHANGED Automated probe harness defect confirmed: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- CHANGED All structural findings (introspection, CORS, IDOR decoder oracle, mass-assignment, chaining, physical-to-profile, dual entry point, arbitrary path catch-all) confirmed via manual curl only — automate

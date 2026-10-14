@@ -1,4 +1,4 @@
-## 2026-10-14 05:24:41 UTC [target] (model bigpickle)
+## 2026-10-14 10:24:58 UTC [target] (model bigpickle)
 [HYP] <title>
 class: <IDOR|SSRF|AUTH|XSS|BUSLOGIC|MISCONFIG|OATH|OTHER>
 asset: <host/endpoint>
@@ -104,3 +104,126 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only (messages_queued 158.0M, down from 553.5M) — descriptive infra.
 [LEARN] REJECTED descriptive_errors @ graphql-api.app.{,staging.}cineplex.de: Lambda stack traces in error bodies are OOS by themselves.
 [RISK] cineplex: 45 — new confirmed live authless testing endpoint on staging raises exposure, but prod gating holds on all paths and the staging code-extraction step is blocked by a backend 405; high-value prod classes (ATO/BOLA) remain behind HUMAN_ONLY tests against live customer data. All probes read-only, ≤1 rps, no customer data touched.
+[PRIO] graphql-api.app.cineplex.de,9.8,attack_surface=10,business_value=10,tech_exposure=10,gate_ease=10,cloud_surface=9,freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,9.5,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=9,freshness=9
+[PRIO] web-dev.cineplex.de,9.2,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=10,cloud_surface=10,freshness=9
+[PRIO] buchung-dev.cineplex.de,7.1,attack_surface=7,business_value=8,tech_exposure=7,gate_ease=7,cloud_surface=6,freshness=6
+[PRIO] auth.cineplex.de,7.0,attack_surface=7,business_value=10,tech_exposure=8,gate_ease=3,cloud_surface=5,freshness=5
+[HYP] CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 90
+reasoning: CORS allowlist on production reflects Origin: http://10.evil.com and http://192.168.evil.com with ACAO echo + ACAC:true + ACAM:GET,HEAD,PUT,PATCH,POST,DELETE + ACAH:content-type,authorization. Boundary is DNS-label-prefix (10. and 192.168.), not raw suffix — 172.16/12, 100.64/10, 169.254.169.254, 0.* provably excluded (500). Identical on staging. Preflight permits credentialed POST from attacker-registrable private-IP-hostname domains.
+evidence_needed: Register 10.evil.com or 192.168.evil.com, host page that issues credentialed GraphQL POST to graphql-api.app.cineplex.de/ with Origin header, observe successful mutation execution
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization"
+impact: Attacker registers 10.evil.com (or similar), serves malicious page that triggers credentialed GraphQL mutations from victim's browser — bypasses need for subdomain takeover. CVSS ~7.5 if victim has valid access_token in localStorage (Bearer transport). Chain broken by auth model (no API session cookie, token in localStorage only).
+testability: PASSIVE (preflight verified) + HUMAN_ONLY (domain registration + victim interaction required)
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables Trusted-Origin Foothold
+class: SUBDOMAIN_TAKEOVER
+asset: web-dev.cineplex.de
+confidence: 88
+reasoning: web-dev.cineplex.de CNAME → web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io returns NXDOMAIN (20+ consecutive cycles, DoH Status 3, Azure SOA present). Sole dangling CNAME in 14-host sweep. CORS allowlist on graphql-api.app.cineplex.de trusts any *.cineplex.de label-boundary origin with ACAC:true. If attacker claims the Azure Container Apps namespace gentleglacier-dfef6458, they control a trusted origin. Private IP prefix bypass (10.evil.com) provides alternative foothold without takeover.
+evidence_needed: Claim Azure Container Apps namespace gentleglacier-dfef6458 in switzerlandnorth region and deploy page that issues credentialed GraphQL request to graphql-api.app.cineplex.de from web-dev.cineplex.de origin
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: https://web-dev.cineplex.de" "https://graphql-api.app.cineplex.de/?query={__typename}"
+impact: Subdomain takeover → trusted origin for CORS credentialed reads; but auth model uses Bearer in localStorage (app.cineplex.de origin) + SSO cookie — cross-origin page cannot auto-attach credentials. Chain to ATO broken; standalone takeover CVSS 6.5-7.5, CORS config-hygiene CVSS 2.0
+testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azure subscription or domain registration)
+[HYP] Mass Assignment via CinemaOperatingCompanyData accessRight* Flags — Auth-Helped Privilege Escalation to Cinema Admin
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de
+confidence: 80
+reasoning: CinemaOperatingCompanyData input (createCinemaOperatingCompany/updateCinemaOperatingCompany) carries 4 caller-supplied accessRight* Booleans (Dashboard, FilmStatistics, BonusProgram, Campaigning) + cinemasIds list; these exact 4 names appear on UserPrivileges as NON_NULL Booleans derived by server. updateUser(adminCinemaOperatingCompanyIds:[ID!]) mirrors belongsToCinemaOperatingCompanies/adminForCinemas. Staging field sets identical — flags not environment-partitioned. Gates unverified (AUTH_HELPED required).
+evidence_needed: Execute createCinemaOperatingCompany/updateCinemaOperatingCompany with crafted accessRight* + cinemasIds against consented test account and verify UserPrivileges reflects caller-supplied values
+verify_steps: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Content-Type: application/json" -d '{"query":"mutation{createCinemaOperatingCompany(data:{name:\"test\",cinemasIds:[\"Cinema:1\"],accessRightDashboard:true,accessRightFilmStatistics:true,accessRightBonusProgram:true,accessRightCampaigning:true}){id name}}"}' -X POST "https://graphql-api.app.cineplex.de/"
+impact: If gates missing/permissive, caller grants themselves dashboard/film-statistics/bonus-program/campaigning access across arbitrary cinemas — privilege escalation to cinema-operating-company admin; CVSS ~8.0 if exploitable
+testability: AUTH_HELPED
+[PARKED] CORS Allowlist Label-Boundary Suffix Match with Credentialed Reflection Enables Subdomain Takeover Chain to Authenticated GraphQL Reads: CORS misconfiguration confirmed but ATO chain broken — auth model uses OAuth2 Bearer in localStorage (app.cineplex.de origin) + refresh cookie on SSO domain; GraphQL API emits ZERO Set-Cookie; cross-origin page on web-dev.cineplex.de cannot access app.cineplex.de localStorage or SSO cookie. CORS finding stands as config-hygiene (~CVSS 2.0); subdomain takeover on web-dev.cineplex.de stands separately. Chain requires victim to already have token in attacker-controlled origin's localStorage — not feasible.
+[PARKED] IDOR Booking Systemic Claim: authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 decoder contracts, 2 argument shapes). The INVALID_ID vs UNAUTHENTICATED split measures decode position, not check absence — same signature appears on a resolver that does enforce auth (contentSectionListByNameAndCinemas returns UNAUTHENTICATED).
+[FINAL] Ranked survivors (by testability × impact):
+[NEXT] PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -X OPTIONS "https://graphql-api.app.cineplex.de/" -H "Origin: http://10.evil.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization"
+[LEARN] ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+[LEARN] ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.16/12, 100.64/10, 169.254.169.254, 0.* provably excluded (500 no ACAO)
+[LEARN] ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middleware reflects before validation
+[LEARN] ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: Origin present
+[LEARN] REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de localStorage or SSO cookie; downgraded to config-hygiene (~CVSS 2.0)
+[LEARN] REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 contracts, 2 arg shapes)
+[LEARN] ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+[LEARN] REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+[LEARN] Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
+[RISK] cineplex: 88 — Production GraphQL API exposes full introspection (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types), CORS label-boundary suffix match with credentialed reflection on hostile origins (localhost:3000, app.staging.cineplex.de, null origin), dual entry points (/, /graphql) plus 3 GET-only mirrors, arbitrary path catch-all, mass-assignment read/write mirror on 4 privilege flags (CinemaOperatingCompanyData.accessRight* → UserPrivileges), IDOR chaining across 3 pre-auth resolvers to 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history), physical-to-profile via userByQr, auth-layer privilege escalation primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken). Dangling CNAME on web-dev.cineplex.de (20+ cycles NXDOMAIN) chains to CORS for takeover-to-credentialed-read (but auth model breaks chain). Private IP prefix bypass (10.evil.com, 192.168.evil.com) provides alternative foothold without takeover. Staging parity identical. All probes read-only ≤1 rps, no PII touched. Dev-origin booking/payment tier reachable but /gateway/* gated at CF edge. Automated probe harness voided (206 cycles corrupted).
+[PRIO] graphql-api.app.cineplex.de 9.30 (attack 10 / business 9 / tech 10 / gate 9 / cloud 7 / fresh 10)
+[PRIO] graphql-api.app.staging.cineplex.de 9.25 (attack 10 / business 8 / tech 10 / gate 10 / cloud 7 / fresh 10)
+[PRIO] web-dev.cineplex.de 7.65 (attack 7 / business 7 / tech 5 / gate 10 / cloud 9 / fresh 10)
+[NEW] QueryType field `test(inputVal:String):String` exists and is env-gate-free on BOTH prod and staging — returns the constant `"Cineplex"` for every input. Tested literal, `${7*7}`, `{{7*7}}`, `<%= 7*7 %>` → all `"Cineplex"`. NOT injectable; exposed debug stub only (descriptive/OOS alone). CLOSED as an injection vector.
+[NEW] MutationType carries `sendTestEmail(brand:Brand, componentData:String!): SendTestEmail!` and `sendTestNotification(title, body, link:String!, imageUrl, inAppNotification, pushNotificationChannel, language, cinemaIds): SendTestNotificationReturnType` on BOTH prod and staging (structurally present = not compiled out per-env). `increaseUserTestingStatus(testingStatus:TestingStatus): increaseUserTestingStatusReturnType`, `deleteReviewRating_2(movieId:ID)`, and debug-named `a(id:ID):String` also present on both.
+[NEW] Enums resolved live: TestingStatus={TESTING,PRODUCTION,STAGING,DEVELOPMENT,CINEMA_EMPLOYEE}; Brand={CINURU,CINFINITY,CINEPLEX,CINEWEB,LUMOS,ELSELICHTSPIELE,DREHWERK}; SocialAuthProvider={APPLE,GOOGLE}.
+[NEW] Build divergence: staging errors originate `graphql.js:25188`, prod `graphql.js:30005` — distinct bundles for the same schema.
+[CHANGED] graphql-api.app.staging.cineplex.de :: testing_getConfirmationCode — all THREE types now confirmed authless and deterministically backend-405: PASSWORD_RESET→/userPasswordResets/search/findByMandatorIdAndEmailAddress, EMAIL_CHANGE→/userChangeEmailAddresses/..., LOGIN_CREATION→/userRegistrations/... (all `service:LOGIN`, mandatorId 746241be-…). No type returns data → code-extraction oracle is BOUNDED.
+[CHANGED] graphql-api.app.cineplex.de :: testing_getConfirmationCode — FORBIDDEN "only available in testing environments" on all GET paths (prod env guard holds).
+[CHANGED] CORS private-IP-prefix re-confirmed live same-cycle: OPTIONS Origin http://10.evil.com → 204, ACAO echo, ACAC:true, ACAH content-type,authorization, ACAM GET,HEAD,PUT,PATCH,POST,DELETE.
+[CHANGED] web-dev.cineplex.de :: SUBDOMAIN_TAKEOVER — CNAME→web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io (TTL 300), target NXDOMAIN (Status 3); dangle holds (21st+ cycle).
+[CHANGED] Mutations are POST-only over this edge ("GET supports only query operation" → 405); introspection arg-name extraction is lossy for NON_NULL (e.g. sendTestNotification `link` is actually `String!`).
+[HYP] Unauthenticated `sendTestEmail` renders/sends attacker-supplied `componentData` on production
+class: AUTH
+asset: graphql-api.app.cineplex.de (sendTestEmail)
+confidence: 30
+reasoning: `sendTestEmail(brand:Brand, componentData:String!):SendTestEmail!` is present in the prod schema alongside the known prod-bound but staging-ungated `testing_*` family. If its runtime env/RBAC guard is missing (same guard-omission class as testing_getConfirmationCode) an unauth caller could trigger branded outbound email with a caller-controlled `brand` + `componentData`.
+evidence_needed: proof the runtime gate is absent (a POST returning non-FORBIDDEN) and that `componentData`/recipient is caller-influenced.
+verify_steps: HUMAN_ONLY — POST `mutation{sendTestEmail(brand:CINEPLEX,componentData:""){__typename}}` to a program-approved test recipient only.
+impact: outbound email abuse / content injection from Cineplex mail infra (phishing) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] Unauthenticated `sendTestNotification` pushes attacker-controlled content to arbitrary cinemas
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (sendTestNotification)
+confidence: 30
+reasoning: `sendTestNotification(title,body,link:String!,imageUrl,inAppNotification,pushNotificationChannel,language,cinemaIds)` present on prod+staging; arbitrary `link`+`imageUrl`+`cinemaIds` in an unauth context would permit push/in-app content injection to real users.
+evidence_needed: non-FORBIDDEN response on a POST probe + delivery to a controlled device/tester.
+verify_steps: HUMAN_ONLY — requires authorization; do not send.
+impact: mass push/in-app notification injection (phishing/spam) — medium/high if ungated.
+testability: HUMAN_ONLY
+[HYP] `increaseUserTestingStatus` lets a low-privilege user self-elevate testingStatus
+class: BUSLOGIC
+asset: graphql-api.app.cineplex.de (increaseUserTestingStatus)
+confidence: 35
+reasoning: accepts `testingStatus:TestingStatus` with values STAGING/DEVELOPMENT/CINEMA_EMPLOYEE; if it mutates the caller's own status without an admin gate, it may unlock other test-only resolvers/roles.
+evidence_needed: AUTH_HELPED call from a self-owned account observing the status change and any privilege delta.
+verify_steps: AUTH_HELPED (own account only).
+impact: privilege/role elevation primitive — medium if confirmed.
+testability: AUTH_HELPED
+[HYP] staging `testing_getConfirmationCode` missing environment guard → authless internal login-service topology disclosure
+class: AUTH
+asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode)
+confidence: 60
+reasoning: resolver executes authlessly on staging for all 3 types, leaking internal Spring Data REST paths + service LOGIN + tenant mandatorId; code extraction is blocked (deterministic backend 405 on every type), so this is guard-omission + disclosure, not a live oracle.
+evidence_needed: none further for the guard/disclosure; only an owned-email extraction would raise impact, and that is blocked.
+verify_steps: PASSIVE (done).
+impact: environment-misconfiguration + internal topology disclosure (staging-scoped) — low/medium.
+testability: PASSIVE
+[HYP] `socialLogin` trusts client-supplied email over the verified provider identity
+class: AUTH
+asset: graphql-api.app.cineplex.de (socialLogin)
+confidence: 48
+reasoning: live args confirm `provider:SocialAuthProvider!` alongside independent `email,name,firstName,lastName` client args plus `accessToken/idToken` — account resolution may use the unverified email. Unchanged.
+evidence_needed: 200 with jwt/refreshToken from an invalid provider token paired with a self-owned email.
+verify_steps: HUMAN ONLY (no auth-bypass probes).
+impact: account takeover — critical if confirmed.
+testability: HUMAN_ONLY
+[HYP] Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 50
+reasoning: persistent dangling CNAME (21st+ NXDOMAIN cycle) inside the in-scope zone; unchanged.
+evidence_needed: proof the Container App env suffix is claimable in switzerlandnorth.
+verify_steps: HUMAN — attempt to bind the FQDN.
+impact: control of a genuine *.cineplex.de origin; medium/high, unproven.
+testability: HUMAN_ONLY
+[PARKED] CORS private-IP-prefix credentialed reflection — live and env-agnostic, but API emits zero Set-Cookie and client uses Bearer/localStorage → config-hygiene; revisit only with a same-site origin foothold.
+[PARKED] relay /metrics @ data-9fc27eb430.cineplex.de — IOMB broker stats, descriptive infra only.
+[PARKED] testing_forceDeleteUser / deleteReviewRating_2 / mutation `a` — destructive/write; NOT executed, require authorization.
+[PARKED] `test` query — constant stub, no injection, OOS alone.
+[FINAL] 1. prod `sendTestEmail` unauth email-send (AUTH, 30, HUMAN_ONLY) 2. prod `sendTestNotification` unauth push (BUSLOGIC, 30, HUMAN_ONLY) 3. staging testing_getConfirmationCode guard-omission+topology (AUTH, 60, PASSIVE) 4. web-dev dangle (OTHER, 50) 5. socialLogin email-trust (AUTH, 48)
+[NEXT] SELF-CRITIQUE first: schema presence ≠ missing runtime gate — the `Test*` names and the proven prod env-gate on `testing_getConfirmationCode` strongly suggest `sendTestEmail`/`sendTestNotification` are equally gated; do NOT report them on schema presence alone. THEN: HUMAN request to the program to (a) authorize a single `sendTestEmail`/`sendTestNotification` test against a program-designated recipient, and (b) confirm staging `testing_getConfirmationCode` is an intended QA surface.
+[LEARN] `test(inputVal:String):String` = constant `"Cineplex"`, ungated on prod+staging — not injectable; close.
+[LEARN] testing-family is broader than KB recorded: `sendTestEmail`, `sendTestNotification`, `increaseUserTestingStatus` are schema-present on both prod and staging; prod structural presence does not imply prod runtime exposure.
+[LEARN] testing_getConfirmationCode staging oracle is bounded: all 3 ConfirmationCodeType branches return deterministic backend 405.
+[LEARN] Mutations are POST-only at this edge; GET mutation → 405 `HttpQueryError`; introspection arg-name extraction must not be trusted for NON_NULL typing.
+[RISK] cineplex: 50 — new unauthenticated-looking test mutation surface (`sendTestEmail`/`sendTestNotification`/`increaseUserTestingStatus`) is structurally present on production and expands the "missing env guard" class, but no gate has been bypassed and no side-effecting mutation was fired; staging oracle is now provably bounded (405). All probes read-only, ≤1 rps, no customer data touched.
