@@ -3138,3 +3138,5 @@ wwww.cineplex.de
 - CHANGED REJECTED `staging_testing_oracle` @ `graphql-api.app.staging.cineplex.de`: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
 
 ## 2026-10-15 15:11:41 UTC
+
+## 2026-10-15 19:19:12 UTC

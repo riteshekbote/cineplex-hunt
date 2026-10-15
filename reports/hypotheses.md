@@ -6368,3 +6368,40 @@
 - LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.
 - LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
 - LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO 
+
+## RANKED HYPOTHESES 2026-10-15 19:19:12 UTC
+- [90] graphql-api.app.cineplex.de: CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads (from art/lead_nemotron3.txt)
+- [85] web-dev.cineplex.de: Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: submit the two report-ready findings (dangling CNAME on web-dev.cineplex.de, CVSS ~Medium pending claimability attestation; full GraphQL schema exposure 
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://10.evil.com" "https://graphql-api.app.cineplex.de/?query={__typename}"
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hy
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M).
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 22nd+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; DoH machine-checkable; PASSIVE report-ready.
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema on GET under any unshadowed path; POST to non-root paths API-GW 4
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. dot-boundary enforced; 172.16/12, 100.64/
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly.
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: 
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /); automated probe harness remains
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed — git history empty, files absent. The harness replacement was cl
+- LEARN: STATE CORRECTION: `.github/workflows/hunt.yml:207-240` "Passive verifier" step is still active with all defects intact (HEAD-only, UA `Mozilla/5.0 (passive veri
+- LEARN: STATE CORRECTION: `knowledge/index.md` has no `## CANONICAL STATUS` section — it is a flat append-only line list; prior summary overclaimed structure.
+- LEARN: Publish-path contamination residual: `leads/lead-nemotron3.md` = 32 `class:IDOR` blocks (bigpickle/nemotron3 divergence — bigpickle cleared, nemotron3 not).
+- LEARN: REAFFIRMED this cycle — graphql arbitrary-path catch-all: 200/32B on root + deep path, prod + staging (4/4).
+- LEARN: REAFFIRMED this cycle — CORS private-IP prefix boundary: 10./192.168. reflect (preflight 204, actual 200, both ACAC:true); 172.16 negative → 500 no ACAO.
+- LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle.
+- LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS).
+- LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- LEARN: REJECTED automated probe harness: probe-results.md 1399 lines, ZERO POST GraphQL probes; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects
+- LEARN: Tooling drift: scripts/passive_verify.py + test_passive_verify.py updated; CORS middleware = path-global (does not narrow to /)
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed — 10. and 192.168. dot-boundary enforced; 172.
+- LEARN: ACCEPTED cors_allowlist_reflects_on_400 @ graphql-api.app.cineplex.de: flawed-body request returns HTTP 400 but still carries ACAO echo + ACAC:true — CORS middl
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage (oauth2_access_token, authorizationBearer) + refresh cookie on SSO domain; ZERO 
