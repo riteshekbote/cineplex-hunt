@@ -115304,3 +115304,70 @@ evidence: DoH CNAME → Azure FQDN (TTL 300); DoH A on target → NXDOMAIN.
 - Re-reporting rejected classes (CORS chain, descriptive errors, dangles-without-claim) risks program credibility.
 
 I've re-confirmed the primitives live and there's genuinely no new delta — the engagement is blocked on four human authorizations. Continuing to probe would be re-emitting rejected/low-value classes, so I stopped. Want me to proceed on any specific leg if you can supply one of those authorizations?
+===== ANALYST bigpickle 2026-10-15 10:19:58 UTC =====
+[0m
+> build · big-pickle
+[0m
+[93m[1m! [0mpermission requested: external_directory (/tmp/*); auto-rejecting
+[0m✗ [0mUA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"; EPOCH=$(date +%s); echo "=== 1. Schema catch-all prod (fresh path) ==="; curl -sS --http2 -m 15 -A "$UA" -o /tmp/catch_prod.txt -w "HTTP %{http_code} len=%{size_download}\n" "https://graphql-api.app.cineplex.de/zz-analyst-${EPOCH}?query=%7B__typename%7D"; cat /tmp/catch_prod.txt; echo; sleep 2; echo "=== 2. Schema catch-all staging (fresh path) ==="; curl -sS --http2 -m 15 -A "$UA" -o /tmp/catch_stg.txt -w "HTTP %{http_code} len=%{size_download}\n" "https://graphql-api.app.staging.cineplex.de/zz-analyst-${EPOCH}?query=%7B__typename%7D"; cat /tmp/catch_stg.txt; echo failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+## Objective
+- Ongoing authorized bug-bounty hunt for Cineplex Deutschland (report channel bugs.olivermaicher.eu), targeting the "api" surface, producing structured [HYP]/[PRIO]/[LEARN]/[RISK] blocks each cycle per the 8-step analyst protocol.
+- Current phase: POC. Deliver reportable findings without inventing vulnerabilities; passive-first, read-only probes only (GET/HEAD/OPTIONS, ≤1 rps).
+
+## Important Details
+- Only these findings survive as live: (1) CORS allowlist on graphql-api.app.{,staging.}cineplex.de — label-boundary `*.cineplex.de` suffix match + private-IP prefixes `10.`/`192.168.` + `localhost`/`127.0.0.1` + `Origin: null`, all reflected with `ACAC:true`; evaluated pre-resolution; no ambient credential (client auth = Bearer/localStorage, ZERO Set-Cookie on API) → CORS credentialed chain REJECTED, config-hygiene only (~CVSS 2.0). (2) Arbitrary-path GraphQL catch-all: any unshadowed path serves full schema on GET both envs; POST only on root `/`; `/graphql`,`/api/graphql`,`/gql` are GET-only mirrors (API-GW 403). (3) web-dev.cineplex.de dangling CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` (NXDOMAIN, 20+ cycles, sole dangle; claimability likely non-claimable random suffix).
+- Systemic IDOR claim (idor_booking) FALSIFIED: INVALID_ID-vs-UNAUTHENTICATED measures decode position, not check presence; only a decoder oracle survives (15 resolvers, 4 decoder contracts, 2 arg shapes incl. list decode in `Array.map`); class:ACCESS_CONTROL, fingerprint 4ad65631f720; cross-tenant proof HUMAN_ONLY.
+- `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields (not mutations); prod env-gated ("only available in testing environments", FORBIDDEN on all paths); staging executes authless, leaks service:LOGIN + mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b + Spring Data REST paths; REJECTED as standalone (method-mismatch error is descriptive/OOS; field exists in prod schema too).
+- Prod/staging schemas field-identical: 83 queries / 140 mutations, zero diff — staging exposure is runtime env-flag, not schema divergence. Odd fields: `a`, `deleteReviewRating_2`, `test(inputVal)` (constant "Cineplex").
+- Auth-layer surface: `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken:String!)`, `updateUserAdminStatus(userId,cinemaOperatingCompanyId,setAdminPrivilege:Boolean)`, `createAnonymousUser→LoginReturnType{user,jwt,csrf,roles,refreshToken}`, mass-assignment `CinemaOperatingCompanyData.accessRight*` + `updateUser(adminCinemaOperatingCompanyIds)` — all AUTH_HELPED, not executed.
+- Automated probe harness (probe-results.md, 1399 lines) is VOID: trailing backtick → 400, urllib UA "(passive verifier)" → CF 403 bot-gate, brace truncation, urls[:12] truncation — 8 defects; all conclusions from manual curl only. scripts/passive_verify.py replaced with testable module (14 offline tests).
+- Explicit OOS: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, relay_metrics/broker_saturation, api.cineplex.de GET-bypass (dead), TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso — 525/SSLv3).
+- KB corrections: the 2026-09-12..09-19 "no injection vectors, CVSS 5.3" claim was false (name-only read); CVSS now 7.5. KB is append-only with a CANONICAL STATUS section; falsified IDOR [HYP] blocks retagged [LEARN] (class:IDOR 297→0).
+- Publisher: scripts/sync-issues.py parses `^\[HYP]` from leads/lead-*.md; fingerprint=md5(asset|class); 1109 blocks → 59 fingerprints; web-dev dangle spread across ~5 divergent-class blocks (MISCONFIG/OTHER/SUBDOMAIN_TAKEOVER) — not auto-mergeable, lead-authoring debt.
+- Program risk rating: 50 — recent cycles read-only.
+- Last leads (bigpickle): staging testing_* guard-omission (AUTH, 55, PASSIVE), dangle (OTHER, 50, HUMAN_ONLY), privilege booleans (AUTH, 45, AUTH_HELPED). Nemotron3 ranked CORS private-IP prefix at 90 (but ATO chain broken per later REJECTED entries).
+
+## Work State
+### Completed
+- Same-cycle re-verification of survivors on 2026-10-15 cycles: catch-all 2/2 envs, CORS preflight (localhost:3000, app.staging.cineplex.de, 10.attacker.com, 192.168.1.1, null → 204 + ACAO echo + ACAC:true), dangle DoH re-check.
+- Harness repaired (8 defects), verifier replaced, probe_results_void documented; all botgate-derived conclusions retracted.
+- Publish-path contamination cleared: falsified IDOR blocks suppressed; decoder oracle reclassified ACCESS_CONTROL.
+- Full URL/credential-shaped arg enumeration done; SSRF (getOnlineTicketingBooking) root-gated — killed by loopback canary; open redirect (externalUrl/appDeepLink) fixed-map validators — rejected; schema metadata mining (descriptions/defaults) — negative, closed.
+- App.cineplex.de client auth model recovered via Internet Archive: OAuth2 public client, refresh token in JS-set cookie `authorization` domain `.cineplex.de` (no HttpOnly/SameSite), redeemable at `buchung.cineplex.de/gateway/auth/oauth/token`; issuer CF-challenged (403).
+
+### Active
+- Latest lead blocks emitted 2026-10-15 05:32:44 (model bigpickle): schema catch-all (MISCONFIG, conf 80), staging testing_* (AUTH, 55), dangle (OTHER, 50); heavy PARKED list (privilege booleans, mass-assignment, socialLogin, createAnonymousUser, testing_forceDeleteUser).
+- Cycle stasis acknowledged: same top-3 re-emitted repeatedly with zero movement; awaiting human authorization decisions.
+
+### Blocked
+- No new live probes permitted until HUMAN answers: (a) authorize self-owned low-priv account pair for updateUserAdminStatus/setAdminPrivilege + mass-assignment legs; (b) confirm staging testing_getConfirmationCode is intended QA; (c) rule on Azure FQDN claim for web-dev; (d) permission to use createAnonymousUser as test session.
+- All POCs needing extraction (cross-tenant PII, staging POST oracle) are HUMAN_ONLY per program PII rule.
+- api.cineplex.de hypothesis dead (strict 403 all methods); TLS-dead hosts unreachable; dangle claimability likely non-claimable.
+
+## Next Move
+1. HUMAN: request authorization answers (a)–(d) listed in the [NEXT] block; issue no further live probes until answered.
+2. If authorized: single smallest falsifiable step — passive env-flag confirmation on staging, then one authorized privilege-boolean read (never `testing_forceDeleteUser`).
+
+## Relevant Files
+- `knowledge/index.md`: append-only KB with CANONICAL STATUS section; contains CORRECTION entries for the 09-12..09-19 false "no injection vectors" claim and harness defect notes.
+- `.github/workflows/hunt.yml:207-225`: retired inline verifier source (8 defects located here).
+- `scripts/passive_verify.py` + `scripts/test_passive_verify.py`: replacement testable extractor, 14 offline tests.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP]` (line 57), `fingerprint()` md5(asset|class), `ensure_label()` bug at :153.
+- `leads/lead-bigpickle.txt` / `lead-nemotron3.txt` (also referenced as lead-*.md): analyst lead files with [HYP]/[LEARN]/[PARKED] blocks.
+- `probe-results.md`: void automated log (1399 lines, zero POST); do not use as evidence.
+- `inventory/cineplex.md`: 132-host inventory (baseline complete 2026-09-23).
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+Stopping to ask — my re-verification probe was rejected, and the session's own status says no further live probes until you answer the pending authorization questions:
+
+1. **Self-owned test accounts** — authorize a low-priv account pair for the `updateUserAdminStatus` / `setAdminPrivilege` legs, or keep them PARKED?
+2. **Staging `testing_getConfirmationCode`** — is the staging-only guard omission intended QA behavior, or a reportable finding?
+3. **web-dev.cineplex.de dangling CNAME** — may I test Azure FQDN claimability (or file it as-is, HUMAN_ONLY)?
+4. **`createAnonymousUser`** — permitted as a test session for passive verification, or not?
+
+Two non-live options I can do in the meantime if you'd rather I not probe:
+
+- **Lead hygiene**: consolidate the ~5 divergent web-dev dangle blocks (MISCONFIG/OTHER/SUBDOMAIN_TAKEOVER) into one fingerprint so the publisher stops creating parallel issues.
+- **Draft the report-ready finding**: GraphQL introspection + arbitrary-path catch-all (7.5, verified both envs) is the strongest surviving item and doesn't need any of the above.
+
+Which would you like — answer the authorization questions, lead hygiene, report drafting, or something else?
