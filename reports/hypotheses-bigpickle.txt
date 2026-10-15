@@ -1,78 +1,9 @@
-## 2026-10-14 22:41:43 UTC [target] (model bigpickle)
-[HYP] ...
-[CHANGED] ...
-[PARKED] ...
-[FINAL] ...
-[NEXT] ...
-[LEARN] ...
-[RISK] ...
-[NEW] none — inventory unchanged (132 hosts).
-[CHANGED] graphql-api.app.cineplex.de + app.staging — arbitrary unshadowed path still serves schema (GET random path → 200 {"data":{"__typename":"Query"}}) ...
-[CHANGED] CORS preflight re-confirmed: origins https://10.attacker.com, http://192.168.1.1, https://sub.attacker.cineplex.de, null → 204 + ACAO echo + ACAC:true.
-[CHANGED] web-dev.cineplex.de dangling CNAME, 22nd NXDOMAIN cycle (TTL 300).
-[CHANGED] prod vs staging schemas field-identical (83 q /140 m, zero name diff) — the staging testing_ exposure is a runtime env-gate difference, not schema divergence.
-[CHANGED] new mutation-signature facts (introspection): createAnonymousUser(appId,bonusProgramId)->LoginReturnType; updateUserAdminStatus(userId,cinemaOperatingCompanyId,setAdminPrivilege:Boolean); socialLogin(...email,name,accessToken,idToken,socialLoginSession).
-[CHANGED] LoginReturnType fields = {user,posApp,fileServerToken,jwt,csrf,roles,refreshToken} → session minted by createAnonymousUser.
-[CHANGED] testing_forceDeleteUser(email):DeleteUserReturnType is a queryType field on prod AND staging (GET-invocable; env-gate is the sole guard).
-reasoning: facts only: `updateUserAdminStatus(userId:ID, cinemaOperatingCompanyId:ID, setAdminPrivilege:Boolean) -> updateUserAdminStatusReturnType`; `login(email,password,privileged:Boolean,appId,logoutFromOtherApps,code,nativeBuildCode)`; `refreshLogin(refreshToken, privileged:Boolean)`; `createAnonymousUser(appId,bonusProgramId)->LoginReturnType{jwt,refreshToken,roles}` is unauth; prior cycle proved 15 resolvers process IDs with no auth gate (userById/invoice/order/ticket) and `currentUser` fires an UNAUTHENTICATED gate (so gates exist and can be omitted).
-evidence_needed: a session (anonymous or self-owned) calling `updateUserAdminStatus` and observing `roles` delta; or `login(privileged:true)` returning elevated roles on a non-privileged account.
-verify_steps: AUTH_HELPED (own account) POST mutation — do not run unauthenticated.
-impact: privilege escalation to cinema/company admin (money-adjacent: ticketing, refunds, mass email) — critical if confirmed.
-testability: AUTH_HELPED
-reasoning: both are queryType (GET-invocable) on prod+staging; prod returns FORBIDDEN "only available in testing environments" for testing_getConfirmationCode; staging runs it authlessly, returning service:LOGIN + mandatorId 746241be-… + Spring Data REST paths; testing_forceDeleteUser is a destructive DeleteUserReturnType registered as a query on the same surface.
-evidence_needed: none for the guard-omission on getConfirmationCode (already passive); a non-destructive read proving the env flag is the only gate.
-verify_steps: PASSIVE (GET staging getConfirmationCode, already logged). Do NOT call testing_forceDeleteUser.
-impact: env-misconfig + internal topology disclosure (low/medium); latent unauth destructive query if the same guard is absent (do not test).
-testability: PASSIVE
-[FINAL] survivors ranked.
-[CHANGED] graphql-api.app.cineplex.de — CORS preflight re-confirmed live: OPTIONS with Origin `https://10.attacker.com`, `http://192.168.1.1`, `https://sub.attacker.cineplex.de`, and `null` all → 204 + ACAO echo + ACAC:true + ACAM GET,HEAD,PUT,PATCH,POST,DELETE (null-origin reflection added to the record).
-[CHANGED] web-dev.cineplex.de — dangling CNAME holds, 22nd consecutive NXDOMAIN cycle (TTL 300): `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`.
-[CHANGED] prod vs staging schemas are field-identical — 83 queries / 140 mutations, zero name diff; the staging `testing_*` exposure is a runtime env-flag difference, NOT schema/build divergence (corrects the "graphql.js:25188 vs 30005" reading).
-[CHANGED] mutation signatures resolved (introspection, read-only): `createAnonymousUser(appId:ID,bonusProgramId:ID)->LoginReturnType`, `updateUserAdminStatus(userId:ID,cinemaOperatingCompanyId:ID,setAdminPrivilege:Boolean)->...`, `login(email,password,privileged:Boolean,appId,logoutFromOtherApps,code,nativeBuildCode)`, `refreshLogin(refreshToken,privileged:Boolean)`.
-[CHANGED] `LoginReturnType` fields = {user, posApp, fileServerToken, jwt, csrf, roles, refreshToken} → `createAnonymousUser` mints a full session client (JWT + refresh) without credentials.
-[CHANGED] `testing_forceDeleteUser(email:String):DeleteUserReturnType` is registered as a **queryType** field on prod AND staging → GET-invocable; the environment flag is the sole guard.
-[PRIO] graphql-api.app.cineplex.de,8.90,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=9,cloud_surface=7,freshness=6
-[PRIO] graphql-api.app.staging.cineplex.de,8.55,attack_surface=10,business_value=7,tech_exposure=10,gate_ease=10,cloud_surface=7,freshness=6
-[PRIO] web-dev.cineplex.de,5.80,attack_surface=5,business_value=6,tech_exposure=3,gate_ease=10,cloud_surface=8,freshness=3
-[HYP] Client-controlled privilege booleans are the sole gate on auth/role mutations
-class: AUTH
-asset: graphql-api.app.cineplex.de (updateUserAdminStatus / login / refreshLogin)
-confidence: 45
-reasoning: schema exposes `updateUserAdminStatus(userId,cinemaOperatingCompanyId,setAdminPrivilege:Boolean)`, `login(...privileged:Boolean...)`, `refreshLogin(refreshToken,privileged:Boolean)`; `createAnonymousUser(appId,bonusProgramId)->LoginReturnType{jwt,refreshToken,roles}` is callable without credentials; prior cycle proved 15 resolvers process IDs with no auth gate while `currentUser` fires UNAUTHENTICATED (gates exist and can be omitted).
-evidence_needed: a self-owned/anonymous session calling `updateUserAdminStatus` or `login(privileged:true)` and observing a `roles` delta.
-verify_steps: AUTH_HELPED (own account) POST mutation only — no unauthenticated invocation.
-impact: self-escalation to cinema/admin role (ticketing, refunds, mass-notify) — critical if confirmed.
-testability: AUTH_HELPED
-[HYP] `testing_getConfirmationCode`/`testing_forceDeleteUser` exposed as queryType with the env flag as the only guard
-class: AUTH
-asset: graphql-api.app.staging.cineplex.de (testing_getConfirmationCode, testing_forceDeleteUser)
-confidence: 55
-reasoning: both are queryType (GET-invocable) on prod+staging; prod returns FORBIDDEN "only available in testing environments"; staging executes `testing_getConfirmationCode` authlessly, leaking `service:LOGIN`, `mandatorId=746241be-8a37-44d8-8690-8ad67e674a2b`, and Spring Data REST paths; `testing_forceDeleteUser` is a destructive resolver on the same surface.
-evidence_needed: none further for the guard-omission (passive proof logged); confirm the flag is the only gate.
-verify_steps: PASSIVE — GET staging `testing_getConfirmationCode` (logged). Do NOT invoke `testing_forceDeleteUser`.
-impact: env-misconfiguration + internal topology disclosure (low/medium); latent unauthenticated destructive query if the guard is absent (untested).
-testability: PASSIVE
-[HYP] Dangling CNAME on web-dev.cineplex.de to an unclaimed Azure Container Apps FQDN
-class: OTHER
-asset: web-dev.cineplex.de
-confidence: 50
-reasoning: persistent dangling CNAME (22nd NXDOMAIN cycle, TTL 300) inside the in-scope zone; sole CNAME in the 14-host sweep; target `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` NXDOMAIN.
-evidence_needed: proof the Container App env suffix is claimable in switzerlandnorth.
-verify_steps: PASSIVE DoH re-check (done) + HUMAN Azure FQDN bind attempt.
-impact: control of a genuine *.cineplex.de origin — medium/high, unproven (random suffix likely non-claimable).
-testability: HUMAN_ONLY
-[PARKED] `sendTestEmail` / `sendTestNotification` — confidence 30 (schema-presence only); the proven prod env-gate on the sibling `testing_*` family predicts they are gated; needs HUMAN authorization.
-[PARKED] `increaseUserTestingStatus` — confidence 35; requires AUTH_HELPED, no passive verify.
-[PARKED] CORS credentialed reflection (null + private-IP + label-boundary) — reflects with ACAC:true but the API emits zero Set-Cookie and client auth is Bearer/localStorage, so there is no ambient credential to ride; adjacent to OOS cookie-flags; config-hygiene only.
-[PARKED] `createAnonymousUser` standalone — guest sessions are intended; only the downstream authorization on authenticated mutations is in scope.
-[PARKED] `socialLogin` client-supplied-email trust — confidence 48 but verify is HUMAN_ONLY with no passive proof; retained for human, out of the top-3 asset slots.
-[PARKED] mass-assignment `updateUser(adminCinemaOperatingCompanyIds)` / IDOR chain via `ticket→order→user` — needs AUTH_HELPED + two accounts; PII-exposure rule forbids.
-[PARKED] `testing_forceDeleteUser` — destructive queryType; NOT invoked (destructive + exposure rules).
-[FINAL] 1. staging `testing_*` queryType guard-omission + topology disclosure (AUTH, 55, PASSIVE). 2. web-dev dangling CNAME (OTHER, 50, HUMAN_ONLY). 3. prod client-controlled privilege booleans (`privileged` / `setAdminPrivilege`) (AUTH, 45, AUTH_HELPED).
-[NEXT] HUMAN: authorize (a) one self-owned low-privilege account pair to close the `updateUserAdminStatus`/`setAdminPrivilege` and mass-assignment legs; (b) confirmation that staging `testing_getConfirmationCode` is an intended QA surface; (c) a rule on the Azure FQDN claim for `web-dev.cineplex.de`; (d) whether an anonymous guest account via `createAnonymousUser` may be used as the test session. Until answered, no further live probes.
-[LEARN] ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: prod/staging field sets are identical (83/140, zero diff) — the staging `testing_*` exposure is a runtime env-flag difference, not a schema/build divergence.
-[LEARN] ACCEPTED AUTH @ graphql-api.app.cineplex.de: privilege decisions (`privileged`, `setAdminPrivilege`) are client-supplied booleans — resolves only under AUTH_HELPED.
-[LEARN] ACCEPTED AUTH @ graphql-api.app.cineplex.de: `createAnonymousUser->LoginReturnType{jwt,refreshToken,roles}` mints a credential-less session; intended for guests, so the reportable surface is downstream authorization, not the mint.
-[LEARN] REJECTED MISCONFIG @ graphql-api.app.cineplex.de: CORS null/private-IP/label-boundary reflection — OOS-adjacent config-hygiene, no ambient credential.
-[LEARN] REJECTED BUSLOGIC @ graphql-api.app.{,staging.}cineplex.de: `sendTestEmail`/`sendTestNotification`/`increaseUserTestingStatus` — schema presence ≠ runtime exposure; consistent with the proven prod env-gate on `testing_*`.
-[RISK] cineplex: 50 — unchanged; this cycle issued only read-only GET/OPTIONS (introspection, CORS preflight, DoH), no state change. Residual = the already-reported unauthenticated introspection (repeatable) plus the pending AUTH_HELPED privilege-escalation class.
+## 2026-10-15 00:51:19 UTC [target] (model bigpickle)
+[HYP] graphql-api.app.cineplex.de — unauth schema + arbitrary-path catch-all (CONFIRMED, fresh)
+[HYP] graphql-api.app.cineplex.de — CORS allowlist private-IP-prefix bypass (CONFIRMED, fresh)
+[HYP] web-dev.cineplex.de — dangling CNAME to azurecontainerapps.io (CONFIRMED, 23 cycles)
+[HYP] graphql-api.app.staging.cineplex.de — testing_* queryType guard omission (AUTH, PASSIVE)
+[PRIO]
+[NEXT]
+[LEARN]
+[RISK]

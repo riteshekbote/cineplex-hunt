@@ -12433,3 +12433,12 @@ testability: HUMAN_ONLY
 [LEARN] REJECTED MISCONFIG @ graphql-api.app.cineplex.de: CORS null/private-IP/label-boundary reflection — OOS-adjacent config-hygiene, no ambient credential.
 [LEARN] REJECTED BUSLOGIC @ graphql-api.app.{,staging.}cineplex.de: `sendTestEmail`/`sendTestNotification`/`increaseUserTestingStatus` — schema presence ≠ runtime exposure; consistent with the proven prod env-gate on `testing_*`.
 [RISK] cineplex: 50 — unchanged; this cycle issued only read-only GET/OPTIONS (introspection, CORS preflight, DoH), no state change. Residual = the already-reported unauthenticated introspection (repeatable) plus the pending AUTH_HELPED privilege-escalation class.
+## 2026-10-15 00:51:19 UTC [target] (model bigpickle)
+[HYP] graphql-api.app.cineplex.de — unauth schema + arbitrary-path catch-all (CONFIRMED, fresh)
+[HYP] graphql-api.app.cineplex.de — CORS allowlist private-IP-prefix bypass (CONFIRMED, fresh)
+[HYP] web-dev.cineplex.de — dangling CNAME to azurecontainerapps.io (CONFIRMED, 23 cycles)
+[HYP] graphql-api.app.staging.cineplex.de — testing_* queryType guard omission (AUTH, PASSIVE)
+[PRIO]
+[NEXT]
+[LEARN]
+[RISK]
