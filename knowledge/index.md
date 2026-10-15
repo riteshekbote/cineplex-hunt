@@ -1648,3 +1648,4 @@
 - 2026-10-15 REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle.
 - 2026-10-15 REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS).
 - 2026-10-15 Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), known_vuln_library, OAuth/JWKS passive paths, relay/metrics, api_cineplex_get_bypass, TLS-dead hosts, booking-dev origin bypass, wildcard.systems dangle replication, cors_misconfig_alone, cors_credentialed_chain, staging_testing_oracle, idor_booking systemic, waf_gate_attenuation_change.
+- 2026-10-15 ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; DoH machine-checkable; PASSIVE report-ready
