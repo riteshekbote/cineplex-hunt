@@ -6478,3 +6478,31 @@
 - LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; 
 - LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1
 - LEARN: OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction com
+
+## RANKED HYPOTHESES 2026-10-16 18:43:04 UTC
+- [85] graphql-api.app.staging.cineplex.de: Staging testing_* queryType guard omission exposing internal topology (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): Draft the two report-ready submissions for bugs.olivermaicher.eu (schema exposure as primary with the CORS/private-IP prefix as a supporting section; dangling C
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed — git history empty, files absent. The harness replacement was cl
+- LEARN: STATE CORRECTION: `.github/workflows/hunt.yml:207-240` "Passive verifier" step is still active with all defects intact (HEAD-only, UA `Mozilla/5.0 (passive veri
+- LEARN: STATE CORRECTION: `knowledge/index.md` has no `## CANONICAL STATUS` section — it is a flat append-only line list; prior summary overclaimed structure.
+- LEARN: Publish-path contamination residual: `leads/lead-nemotron3.md` = 32 `class:IDOR` blocks (bigpickle/nemotron3 divergence — bigpickle cleared, nemotron3 not).
+- LEARN: REAFFIRMED this cycle — graphql arbitrary-path catch-all: 200/32B on root + deep path, prod + staging (4/4).
+- LEARN: REAFFIRMED this cycle — CORS private-IP prefix boundary: 10./192.168. reflect (preflight 204, actual 200, both ACAC:true); 172.16 negative → 500 no ACAO.
+- LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle.
+- LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS).
+- LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+- LEARN: REAFFIRMED this cycle — CORS private-IP prefix boundary: 10./192.168. reflect (preflight 204, actual 200, both ACAC:true); 172.16 negative → 500 no ACAO
+- LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle
+- LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS)
+- LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: schema exposure + arbitrary-path catch-all re-verified live (GET root-intro 200, deep-path 200, sta
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: dangling CNAME NXDOMAIN + Azure SOA re-verified live via DoH — 24th cycle, claimability still HUMAN_ONLY.
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `10.evil.com` preflight 204 + ACAC:true re-verified — config-hygiene, no ambient credential.
+- LEARN: REJECTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: cors_misconfig_alone / cors_credentialed_chain — no API-origin session cookie; chain broken (carry-
+- LEARN: REJECTED AUTH @ graphql-api.app.staging.cineplex.de: staging_testing_oracle — descriptive method-mismatch (OOS); field present in prod queryType; no code extrac
+- LEARN: REJECTED automated probe harness: probe-results.md carries only trailing-backtick 400s + urllib-UA CF 403s with zero POST GraphQL probes — evidence void; manual
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed; `.github/workflows/hunt.yml:207-240` passive verifier still acti
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: bare GET returns GraphQL's own `GET query missing.` (proves catch-all routing, not a web server); `
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; 
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1
+- LEARN: OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction com
