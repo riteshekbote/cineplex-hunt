@@ -6467,3 +6467,5 @@
 - LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. dot-boundary enforced; 172.16/12, 100.64/
 - LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
 - LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: 
+
+## RANKED HYPOTHESES 2026-10-16 05:41:53 UTC

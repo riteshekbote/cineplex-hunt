@@ -3155,3 +3155,5 @@ wwww.cineplex.de
 - CHANGED REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de localStorage or SSO cookie; downgraded 
 - CHANGED REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder oracle proven (15 resolvers, 4 contracts, 
 - CHANGED REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod queryType too; no code ever extracted
+
+## 2026-10-16 05:41:53 UTC
