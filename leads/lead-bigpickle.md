@@ -12660,3 +12660,4 @@ testability: PASSIVE
 [LEARN] STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed; `.github/workflows/hunt.yml:207-240` passive verifier still active with 8 defects; `knowledge/index.md` has no `## CANONICAL STATUS` section; `leads/lead-nemotron3.md` = 33 `class:IDOR` blocks (up from 32, contamination worsening).
 [RISK] cineplex: 45 — this cycle issued only read-only GET/OPTIONS/DoH requests (≤1 rps, browser UA, no POST, no mutations, no customer data, no PII, no state change on target or repo). Residual = already-reportable unauthenticated schema exposure + pending dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
 ## 2026-10-16 05:26:38 UTC [target] (model bigpickle)
+## 2026-10-16 10:06:57 UTC [target] (model bigpickle)

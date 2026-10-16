@@ -6469,3 +6469,5 @@
 - LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: 
 
 ## RANKED HYPOTHESES 2026-10-16 05:41:53 UTC
+
+## RANKED HYPOTHESES 2026-10-16 10:24:50 UTC

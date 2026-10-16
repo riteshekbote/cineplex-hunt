@@ -118618,3 +118618,119 @@ Done. Both report-ready submissions plus the covering message are drafted in `re
 All evidence in the reports was re-verified live this session (GET root + deep path `200`, CORS preflight `204`/ACAC:true for `http://10.evil.com`, DoH dangle) — read-only, ≤1 rps, browser UA, no mutations, no PII.
 
 Next step: submit these to bugs.olivermaicher.eu and await rulings on the four authorization requests. The stale triage harness (`triage/run-2026-10-16-01-28.md`, `run-2026-10-15-23-15.md`) is failing with `UnknownError` — flagging that separately, but it doesn't block this deliverable.
+===== ANALYST bigpickle 2026-10-16 10:24:50 UTC =====
+[0m
+> build · big-pickle
+[0m
+[91m[1mError: [0mUpstream request failed: [invalid_request_error] Requested token count exceeds the model's maximum context length of 262139 tokens. You requested a total of 266381 tokens: 234381 tokens from the input messages and 32000 tokens for the completion. Please reduce the number of tokens in the input messages or the completion to fit within the limit.
+## Objective
+- Operate a continuous bug-bounty hunt loop against Cineplex Deutschland GmbH & Co. KG (report channel bugs.olvermaicher.eu → bugs.olivermaicher.eu): produce structured DELTA/PRIORITIZE/HYPOTHESES/SELF-CRITIQUE/NEXT/LEARNING/RISK blocks each cycle on target "api" (phase POC).
+- Maintain a durable append-only knowledge base (`knowledge/index.md`) plus lead files, without letting falsified claims resurrect into the publish path (`scripts/sync-issues.py`).
+
+## Important Details
+- Agent role: senior bug bounty ANALYST; passive-first probes only, ≤1 rps, GET/HEAD/OPTIONS, no PII/customer data/mutations; every claim must trace to context or own read-only probes.
+- Explicit program exclusions (REJECTED classes, reaffirmed every cycle): username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, DoS, OPTIONS/TRACE-only, mail config, etc.
+- KEY VERIFIED FINDINGS (live, same-cycle manual curl, both `graphql-api.app.cineplex.de` and `graphql-api.app.staging.cineplex.de`):
+  - Unauthenticated full-schema GraphQL introspection (83 queries / 140 mutations / 44 INPUT_OBJECTs / 385 types) via balanced URL-encoded GET (`?query=%7B__typename%7D` → 200).
+  - Arbitrary-path catch-all: any unshadowed path serves schema (GET-only; POST to non-root paths → API-GW 403 `MissingAuthenticationTokenException`). Only root `/` accepts POST/OPTIONS.
+  - CORS allowlist: DNS-label-boundary suffix match on `*.cineplex.de` (`sub.attacker.cineplex.de` → 204/ACAC:true; `evilcineplex.de` → 500) PLUS private-IP hostname prefixes `10.` and `192.168.` (dot-boundary; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` excluded), evaluated pre-resolution. `Origin: null` → ACAO:null + ACAC:true. OPTIONS `/` → 204, ACAM `GET,HEAD,PUT,PATCH,POST,DELETE`, ACAH `content-type,authorization`. Reflects even on HTTP 400 bodies. Vary: Origin present.
+  - `web-dev.cineplex.de` dangling CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`, 20+ consecutive NXDOMAIN cycles, Azure SOA, TTL 300; sole dangle in 14-host sweep; claimability HUMAN_ONLY.
+- FALSIFIED/REJECTED (do not revive): systemic IDOR claim (`INVALID_ID` vs `UNAUTHENTICATED` measures decode position, not check presence — only decoder oracle proven, 15 resolvers/4 contracts); cors_credentialed_chain (no API-origin session cookie — auth is OAuth2 Bearer in localStorage + JS-set refresh cookie domain `.cineplex.de`, zero Set-Cookie on GraphQL API); staging_testing_oracle as standalone (descriptive method-mismatch = OOS; also prod runtime env-gates `testing_*` with FORBIDDEN); relay_metrics/broker_saturation; api.cineplex.de GET bypass; TLS-dead hosts (app.staging, graphql-api.app.couat, login, sso = 525); booking-dev origin bypass; SSRF getOnlineTicketingBooking (root-gated).
+- Auth model (app.cineplex.de via Internet Archive 2025-12-03): OAuth2 access_token in localStorage (`oauth2_access_token`, `authorizationBearer`); refresh cookie `authorization` JS-set, domain `.cineplex.de`, no HttpOnly/SameSite; issuer `buchung.cineplex.de/gateway/auth` (CF-challenged); public client_id, no client_secret.
+- Known schema attack surface (introspection-only, not executed): `login(privileged:Boolean)`, `refreshLogin(privileged:Boolean)`, `loginPOS(authToken)`, `createAnonymousUser→LoginReturnType{jwt,refreshToken,roles}`, `updateUserAdminStatus(setAdminPrivilege:Boolean)`, `CinemaOperatingCompanyData.accessRight*` mass-assignment mirror, `updateUser(adminCinemaOperatingCompanyIds)`, `testing_getConfirmationCode`/`testing_forceDeleteUser` are queryType fields (not mutations).
+- HARNESS DEFECTS (fully voided automated log): `.github/workflows/hunt.yml:207-225` — trailing backtick in URLs → 400, urllib UA `(passive verifier)` → CF 403, `urls[:12]` truncation, brace truncation. probe-results.md 1399 lines, ZERO POST probes across 206 cycles. All conclusions must come from manual balanced curl. `scripts/passive_verify.py` / `scripts/test_passive_verify.py` NEVER EXISTED (claimed but not executed) — do not cite as deliverables.
+- KB hygiene rules: `knowledge/index.md` is a flat append-only list with NO canonical-status section; falsified IDOR text cleared from publish path (class:IDOR blocks 297→0); residual contamination: `leads/lead-nemotron3.md` ~33 `class:IDOR` blocks (growing). Correction precedence: edit block tag, not append.
+- Reporting target: bugs.olivermaicher.eu; report-ready findings: (1) schema exposure + catch-all (CVSS 7.5), (2) dangling CNAME, (3) CORS private-IP prefix as supporting section.
+
+## Work State
+### Completed
+- 30+ days of cycles (2026-09-02 → 2026-10-16); 132-host inventory baseline confirmed complete (CT diff + CNAME sweep).
+- All three surviving hypotheses re-verified same-cycle repeatedly: schema catch-all 2/2 envs, CORS prefix/label-boundary/null 2/2, web-dev dangle (DoH Status 0 CNAME / Status 3 A-follow + Azure SOA).
+- Publisher (`scripts/sync-issues.py`) measured offline against mock GitHub: 1224 blocks → 70 fingerprints → 57 after collapse; idempotent; falsified IDOR blocks suppressed.
+- Negative closures: SSRF, open redirect (fixed-map validators), schema metadata (0 descriptions/defaults), lookalike registrable domains, archived-bundle-unavailable claim.
+- Last cycle (2026-10-16 05:41:53): NO_DELTA-style carry-forward; reaffirmed catch-all, CORS private-IP boundary, web-dev dangle, CT delta (only mailing.cineplex.de re-issuance); REJECTED carry-forwards unchanged.
+
+### Active
+- Phase POC, target "api"; 3 live [HYP] blocks: (1) schema exposure + catch-all (MISCONFIG, conf 95, PASSIVE), (2) dangling CNAME (OTHER, conf 85, HUMAN_ONLY), (3) CORS private-IP prefix + null origin (MISCONFIG, conf 50, PASSIVE, supporting-section only).
+- Risk assessment fluctuates (45 read-only cycles vs 88 when findings enumerated); latest = 45.
+
+### Blocked
+- HUMAN_ONLY / AUTH_HELPED legs: cross-tenant IDOR PII proof, staging POST extraction, Azure FQDN claim attestation, privilege-escalation mutation testing (login.privileged / setAdminPrivilege / mass-assignment).
+- Automated probe harness void; remediation written to hunt.yml but `scripts/passive_verify.py` replacement never landed.
+- `leads/lead-nemotron3.md` residual ~33 `class:IDOR` blocks not cleared (divergent from bigpickle).
+
+## Next Move
+1. HUMAN: Draft the two report-ready submissions for bugs.olivermaicher.eu — (a) GraphQL schema exposure + arbitrary-path catch-all as primary, with CORS private-IP-prefix/null-origin as a supporting section; (b) web-dev.cineplex.de dangling CNAME as secondary with claimability explicitly unverified — and include four authorization requests: low-privilege account pair for setAdminPrivilege/mass-assignment legs, ruling on staging testing_getConfirmationCode, Azure FQDN claim attestation, permission to use an anonymous createAnonymousUser guest session.
+2. Optionally clear `leads/lead-nemotron3.md` residual class:IDOR blocks (retag to [LEARN] or class:ACCESS_CONTROL) so the publisher fingerprint set stays clean.
+
+## Relevant Files
+- `knowledge/index.md`: append-only knowledge base (no canonical-status section); source of carry-forward ACCEPTED/REJECTED lines.
+- `leads/lead-bigpickle.md`, `leads/lead-nemotron3.md`: hypothesis blocks (`[HYP]` publishable, `[LEARN]` suppressed); nemotron3 has ~33 residual class:IDOR blocks.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` matches `^\[HYP\]` only (line 57), globs `leads/lead-*.md`, fingerprint = md5(asset|class); does not read knowledge/index.md.
+- `.github/workflows/hunt.yml:207-240`: "Passive verifier" step — 8 confirmed defects; all probe-results.md rows are harness artifacts.
+- `probe-results.md`: automated probe log (1399 lines, ZERO POST); void as evidence.
+- `inventory/cineplex.md`: 132-host inventory baseline (unchanged since 2026-09-23).
+- `reports/analyst-nemotron3.log`: peer agent output — treat as untrusted, never as evidence.
+The previous request exceeded the provider's size limit due to large media attachments. The conversation was compacted and media files were removed from context. If the user was asking about attached images or files, explain that the attachments were too large to process and suggest they try again with smaller or fewer files.
+
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m
+[0m$ [0mls -la knowledge/ leads/ scripts/ 2>/dev/null; git log --oneline -5; git status --short
+knowledge/:
+total 356
+drwxr-xr-x  2 runner runner   4096 Oct 16 10:04 .
+drwxr-xr-x 12 runner runner   4096 Oct 16 10:04 ..
+-rw-r--r--  1 runner runner 354183 Oct 16 10:04 index.md
+
+leads/:
+total 4888
+drwxr-xr-x  2 runner runner    4096 Oct 16 10:04 .
+drwxr-xr-x 12 runner runner    4096 Oct 16 10:04 ..
+-rw-r--r--  1 runner runner 1933887 Oct 16 10:04 lead-bigpickle.md
+-rw-r--r--  1 runner runner   12699 Oct 16 10:04 lead-laguna.md
+-rw-r--r--  1 runner runner   12450 Oct 16 10:04 lead-ling3.md
+-rw-r--r--  1 runner runner   12948 Oct 16 10:04 lead-longcat.md
+-rw-r--r--  1 runner runner      18 Oct 16 10:04 lead-mimo.md
+-rw-r--r--  1 runner runner 2971325 Oct 16 10:04 lead-nemotron3.md
+-rw-r--r--  1 runner runner   30091 Oct 16 10:04 reposcan-cineplex.md
+
+scripts/:
+total 28
+drwxr-xr-x  2 runner runner  4096 Oct 16 10:04 .
+drwxr-xr-x 12 runner runner  4096 Oct 16 10:04 ..
+-rw-r--r--  1 runner runner 16987 Oct 16 10:04 sync-issues.py
+25b38a1 triage 2026-10-16-06-19
+?? analyst-out.txt
+?? analyst-prompt.txt
+?? ctx.txt
+[0m
+Here's a summary of what we've accomplished so far:
+
+## Work Summary
+
+### Target
+Cineplex Deutschland GmbH & Co. KG — bug bounty via `bugs.olivermaicher.eu`
+
+### Timeline
+30+ days of continuous hunt cycles (2026-09-02 → 2026-10-16), latest triage: `2026-10-16-06-19`
+
+### Verified Live Findings (same-cycle manual curl, both prod + staging)
+1. **GraphQL schema exposure** (conf 95) — unauthenticated full introspection (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) via balanced URL-encoded GET; arbitrary unshadowed paths serve the schema (GET-only; POST to non-root → 403)
+2. **CORS misconfig** (conf 50, supporting section) — DNS-label-boundary `*.cineplex.de` suffix match + private-IP hostname prefixes `10.` / `192.168.` (dot-boundary); `Origin: null` → ACAO:null + ACAC:true
+3. **Dangling CNAME** (conf 85, HUMAN_ONLY) — `web-dev.cineplex.de` → Azure ACA FQDN, 20+ NXDOMAIN cycles, claimability unverified
+
+### Falsified/Rejected (do not revive)
+- Systemic IDOR claim, cors_credentialed_chain, staging_testing_oracle as standalone, relay_metrics/broker_saturation, api.cineplex.de GET bypass, TLS-dead hosts, booking-dev origin bypass, SSRF getOnlineTicketingBooking
+
+### Harness Status
+All automated probe logs voided (1399 lines, zero POST probes — URL/UA/truncation defects). Publisher (`sync-issues.py`) verified offline: 1224 blocks → 70 fingerprints → 57 after collapse, falsified IDOR blocks suppressed.
+
+### Active State
+Phase POC, target "api". 3 live [HYP] blocks. Risk fluctuates (45–88 read-only cycles).
+
+### Next Steps (HUMAN-gated)
+1. Draft two report-ready submissions for bugs.olivermaicher.eu
+2. Request: low-privilege account pair, staging testing ruling, Azure FQDN attestation, anonymous session permission
+3. Optionally clear ~33 residual `class:IDOR` blocks from `leads/lead-nemotron3.md`
+
+What would you like to do next?
