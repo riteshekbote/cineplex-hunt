@@ -119661,3 +119661,68 @@ All three repo tasks done this cycle:
 3. **Both report drafts written for real** — `reports/report-graphql-schema-exposure.md` (primary, 8.1KB) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability marked UNVERIFIED). Both include reproduction commands, honesty notes, and remediation.
 
 Still blocked on **you** for the human-only items: submit both reports to bugs.olivermaicher.eu, and answer the four authorization requests (low-privilege account pair, staging `testing_getConfirmationCode` ruling, Azure FQDN claim attestation, anonymous `createAnonymousUser` permission).
+===== ANALYST bigpickle 2026-10-16 21:59:51 UTC =====
+[0m
+> build · big-pickle
+[0m
+**STEP 1 – DELTA**
+- [NO_NEW_ASSETS] Inventory unchanged since 2026-09-23; 132-host baseline complete via CT diff + CNAME sweep; no new hosts this cycle.
+- [CHANGED] graphql-api.app.staging.cineplex.de/graphql: parity fully restored — HTTP 200 GET introspection live (was 500); staging entry point now matches prod exactly (reaffirmed).
+- [CHANGED] web-dev.cineplex.de: dangling CNAME holds, 20th+ consecutive NXDOMAIN (DoH Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A/AAAA-follow Status 3 NXDOMAIN + Azure SOA; TTL 300).
+- [CHANGED] cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}: re-confirmed live; exact rules (`10.`/`192.168.` dot-boundary; `172.16/12`, `100.64/10`, `169.254.169.254`, `0.*` excluded).
+- [CHANGED] REJECTED cors_credentialed_chain / idor_booking(systemic) / staging_testing_oracle — carry-forward rejections reaffirmed.
+
+**STEP 2 – PRIORITIZE**
+- [PRIO] graphql-api.app.cineplex.de, 8.65 (87) — attack 9 / business 8 / tech 10 / gate 10 / cloud 6 / fresh 8.
+- [PRIO] graphql-api.app.staging.cineplex.de, 7.25 (73) — attack 7 / business 5 / tech 9 / gate 10 / cloud 6 / fresh 8.
+- [PRIO] web-dev.cineplex.de, 7.05 (71) — attack 6 / business 6 / tech 5 / gate 10 / cloud 9 / fresh 9.
+
+**STEP 3 – HYPOTHESES**
+- [HYP] Unauthenticated full-schema GraphQL introspection + arbitrary-path catch-all
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: balanced GET `?query=%7B__typename%7D` → 200 both envs (manual curl); arbitrary unshadowed path → 200; 385 types / 83 q / 140 m / 44 INPUT_OBJECTs; staging field-identical; 12+ cycle stability.
+evidence_needed: none (live-captured).
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: full schema incl. PII resolvers + credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+- [HYP] Dangling CNAME web-dev.cineplex.de → unclaimed Azure Container Apps
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: DoH CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN + Azure SOA; 20th+ consecutive cycle.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+- [HYP] CORS private-IP-prefix credentialed reflection on GraphQL API
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: OPTIONS/GET w/ Origin `http://10.evil.com`/`192.168.*` → 204/200 + ACAO echo + ACAC:true + ACAH authorization + ACAM POST; boundary rules confirmed; localhost:3000 + app.staging origins reflected on prod.
+evidence_needed: ambient credential path (none exists — Bearer/localStorage, zero API Set-Cookie).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` (204); GET `/` Origin `http://10.evil.com` (200 + ACAO echo).
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0), supporting to schema finding.
+testability: PASSIVE
+
+**STEP 4 – SELF-CRITIQUE**
+- [PARKED] Privilege-escalation via client-supplied flags (`updateUser(adminCinemaOperatingCompanyIds)`, `CinemaOperatingCompanyData.accessRight*`, `login(privileged)`, `loginPOS(authToken)`, `sendNotifications(authToken,userIds)`, `deleteCineplexUser`) — AUTH/BUSLOGIC; AUTH_HELPED/HUMAN_ONLY; blocked on program authorization (PII rule).
+- [FINAL] ranked:
+  1. graphql-api.app.{,staging.}cineplex.de unauth schema exposure + arbitrary-path catch-all — MISCONFIG, 95, PASSIVE, CVSS 7.5, report-ready — PRIMARY.
+  2. web-dev.cineplex.de dangling CNAME — OTHER, 85, HUMAN_ONLY, claimability pending — SECONDARY.
+  3. CORS private-IP-prefix/null-origin credentialed reflection — MISCONFIG, 88, PASSIVE read-only; chain broken — SUPPORTING to #1.
+
+**STEP 5 – NEXT ACTION**
+- [NEXT] HUMAN: submit `reports/report-graphql-schema-exposure.md` (primary, CORS supporting) + `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (low-priv account pair for `setAdminPrivilege`/mass-assignment legs; staging `testing_getConfirmationCode` ruling; Azure FQDN claim attestation; anonymous `createAnonymousUser` guest-session permission).
+
+**STEP 6 – LEARNING**
+- [LEARN] ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: unauth full-schema + catch-all confirmed via manual balanced curl; 385 types / 83 q / 140 m / 44 INPUT_OBJECTs; staging parity; CVSS 7.5, report-ready.
+- [LEARN] REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken (Bearer/localStorage, no API Set-Cookie, no ambient credential).
+- [LEARN] REJECTED idor_booking @ graphql-api.app.cineplex.de: systemic gate-omission falsified; decoder oracle only; LOW/ACCESS_CONTROL retained; cross-tenant proof HUMAN_ONLY.
+- [LEARN] REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error descriptive (explicit OOS); field present in prod queryType too.
+
+**STEP 7 – RISK**
+- [RISK] cineplex: 45 — read-only cycle; residuals: reportable schema exposure awaiting submission; dangling-CNAME claimability; AUTH_HELPED privilege-escalation class awaiting human authorization.
+
+**RULES**: all structural findings this cycle confirmed via manual curl only; automated log void (probe-results.md 1399 lines, ZERO POST GraphQL probes, 8 defects confirmed); no new assets; no REJECTED-class top finding promoted.

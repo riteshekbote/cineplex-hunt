@@ -16014,3 +16014,4 @@ testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azur
 ## 2026-10-16 10:24:39 UTC [target] (model nemotron3)
 ## 2026-10-16 15:14:19 UTC [target] (model nemotron3)
 ## 2026-10-16 18:36:04 UTC [target] (model nemotron3)
+## 2026-10-16 21:40:52 UTC [target] (model nemotron3)
