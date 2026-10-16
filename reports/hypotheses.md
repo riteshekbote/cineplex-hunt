@@ -6430,3 +6430,40 @@
 - LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle
 - LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS)
 - LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+
+## RANKED HYPOTHESES 2026-10-16 00:45:19 UTC
+- [90] graphql-api.app.cineplex.de: CORS Private IP Prefix Bypass Enables Credentialed Cross-Origin GraphQL Reads (from art/lead_nemotron3.txt)
+- [85] web-dev.cineplex.de: Dangling CNAME on web-dev.cineplex.de to unclaimed Azure Container Apps environment (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): Draft the two report-ready submissions for bugs.olivermaicher.eu (schema exposure as primary with the CORS/private-IP prefix as a supporting section; dangling C
+- NEXT(hypotheses-nemotron3.txt): PROBE: curl -sS --http2 -m 20 -A "Mozilla/5.0" -H "Origin: http://10.evil.com" "https://graphql-api.app.cineplex.de/?query={__typename}"
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed — git history empty, files absent. The harness replacement was cl
+- LEARN: STATE CORRECTION: `.github/workflows/hunt.yml:207-240` "Passive verifier" step is still active with all defects intact (HEAD-only, UA `Mozilla/5.0 (passive veri
+- LEARN: STATE CORRECTION: `knowledge/index.md` has no `## CANONICAL STATUS` section — it is a flat append-only line list; prior summary overclaimed structure.
+- LEARN: Publish-path contamination residual: `leads/lead-nemotron3.md` = 32 `class:IDOR` blocks (bigpickle/nemotron3 divergence — bigpickle cleared, nemotron3 not).
+- LEARN: REAFFIRMED this cycle — graphql arbitrary-path catch-all: 200/32B on root + deep path, prod + staging (4/4).
+- LEARN: REAFFIRMED this cycle — CORS private-IP prefix boundary: 10./192.168. reflect (preflight 204, actual 200, both ACAC:true); 172.16 negative → 500 no ACAO.
+- LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle.
+- LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS).
+- LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+- LEARN: REAFFIRMED this cycle — CORS private-IP prefix boundary: 10./192.168. reflect (preflight 204, actual 200, both ACAC:true); 172.16 negative → 500 no ACAO
+- LEARN: REAFFIRMED this cycle — web-dev dangle: CNAME Status 0 TTL 300, A Status 3 NXDOMAIN, Azure SOA present; 23rd cycle
+- LEARN: REAFFIRMED — CT delta: only known `mailing.cineplex.de` re-issuance; host already in inventory (line 56) and already REJECTED (mailjet stub, mail-config OOS)
+- LEARN: Carry-forward rejections unchanged: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces + method-mismatch), 
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: schema exposure + arbitrary-path catch-all re-verified live (GET root-intro 200, deep-path 200, sta
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: dangling CNAME NXDOMAIN + Azure SOA re-verified live via DoH — 24th cycle, claimability still HUMAN_ONLY.
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `10.evil.com` preflight 204 + ACAC:true re-verified — config-hygiene, no ambient credential.
+- LEARN: REJECTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: cors_misconfig_alone / cors_credentialed_chain — no API-origin session cookie; chain broken (carry-
+- LEARN: REJECTED AUTH @ graphql-api.app.staging.cineplex.de: staging_testing_oracle — descriptive method-mismatch (OOS); field present in prod queryType; no code extrac
+- LEARN: REJECTED automated probe harness: probe-results.md carries only trailing-backtick 400s + urllib-UA CF 403s with zero POST GraphQL probes — evidence void; manual
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed; `.github/workflows/hunt.yml:207-240` passive verifier still acti
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, cross-origin page cannot access app.cineplex.de
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; prior claim falsified — only decoder or
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit program exclusion); field exists in prod q
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hy
+- LEARN: REJECTED relay_metrics @ data-9fc27eb430.cineplex.de: IOMB broker stats only, descriptive infra (messages_queued 158.0M, down from 553.5M)
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead
+- LEARN: ACCEPTED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; DoH machine-checkable; PASSIVE report-ready
+- LEARN: ACCEPTED graphql_arbitrary_path_catchall @ graphql-api.app.{,staging.}cineplex.de: full schema on GET under any unshadowed path; POST to non-root paths API-GW 4
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. dot-boundary enforced; 172.16/12, 100.64/
+- LEARN: ACCEPTED graphql-api.app.staging.cineplex.de/graphql parity restored: HTTP 200 GET introspection confirmed live; staging entry point matches prod exactly
+- LEARN: ACCEPTED app.cineplex.de client auth model: OAuth2 access_token in localStorage + refresh cookie on SSO domain; ZERO Set-Cookie on GraphQL API responses; Vary: 
