@@ -6471,3 +6471,10 @@
 ## RANKED HYPOTHESES 2026-10-16 05:41:53 UTC
 
 ## RANKED HYPOTHESES 2026-10-16 10:24:50 UTC
+
+## RANKED HYPOTHESES 2026-10-16 15:14:33 UTC
+- NEXT(hypotheses-bigpickle.txt): HUMAN: submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability mark
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: bare GET returns GraphQL's own `GET query missing.` (proves catch-all routing, not a web server); `
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; 
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1
+- LEARN: OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction com
