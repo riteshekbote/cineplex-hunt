@@ -6561,3 +6561,39 @@
 - LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit OOS); field exists in prod queryType
 - LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hy
 - LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead
+
+## RANKED HYPOTHESES 2026-10-17 22:15:46 UTC
+- [95] graphql-api.app.cineplex.de: graphql-schema-exposure-catchall (from art/lead_nemotron3.txt)
+- [0] ?: graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE. (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruli
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Draft the two report-ready submissions for bugs.olivermaicher.eu (schema exposure as primary with the CORS/private-IP-prefix as a supporting section; dan
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: The "reports drafted" drift class recurred one cycle after being "closed" — the previous cycle checked existence but the files were evidently never committed/pe
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: schema exposure + arbitrary-path catch-all re-verified live (GET root-intro 200, deep-path 200, sta
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: dangling CNAME NXDOMAIN + Azure SOA re-verified live via DoH — 24th cycle, claimability still HUMAN_ONLY.
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `10.evil.com` preflight 204 + ACAC:true re-verified — config-hygiene, no ambient credential.
+- LEARN: REJECTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: cors_misconfig_alone / cors_credentialed_chain — no API-origin session cookie; chain broken (carry-
+- LEARN: REJECTED AUTH @ graphql-api.app.staging.cineplex.de: staging_testing_oracle — descriptive method-mismatch (OOS); field present in prod queryType; no code extrac
+- LEARN: REJECTED automated probe harness: probe-results.md carries only trailing-backtick 400s + urllib-UA CF 403s with zero POST GraphQL probes — evidence void; manual
+- LEARN: STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed; `.github/workflows/hunt.yml:207-240` passive verifier still acti
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: bare GET returns GraphQL's own `GET query missing.` (proves catch-all routing, not a web server); `
+- LEARN: ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; 
+- LEARN: ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1
+- LEARN: OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction com
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-o
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-o
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-o
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) served on arbitrar
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 26th consecutive NXDOMAIN cycle; sole dangling CNAME; DoH machine-checkable.
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. reflect with ACAC:true; 172.16/12, 100.64
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAC:true on actual data responses.
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, Bearer in localStorage only.
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; decoder oracle only.
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit OOS); field exists in prod queryType.
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead

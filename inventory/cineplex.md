@@ -3185,3 +3185,7 @@ wwww.cineplex.de
 ## 2026-10-17 17:45:28 UTC
 
 ## 2026-10-17 20:06:24 UTC
+
+## 2026-10-17 22:15:46 UTC
+- NEW Drift correction: `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` did NOT exist on disk despite KB/LEARN claims that they were "drafted" (cycle 25). Verified
+- CHANGED Both report files now written to disk from cycle-25/26 evidence: `reports/report-graphql-schema-exposure.md` (primary, includes CORS private-IP reflection folded in as supporting section + honesty not

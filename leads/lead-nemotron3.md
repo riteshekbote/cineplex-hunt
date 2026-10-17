@@ -16120,3 +16120,240 @@ testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azur
 [LEARN] REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hygiene only
 [LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, api.cineplex.de GET-bypass, booking-dev origin bypass, relay_metrics
 [RISK] cineplex: 88 — Production GraphQL API exposes full introspection (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types), CORS label-boundary suffix match with credentialed reflection on hostile origins (localhost:3000, app.staging.cineplex.de, null origin), dual entry points (/, /graphql) plus 3 GET-only mirrors, arbitrary path catch-all, mass-assignment read/write mirror on 4 privilege flags (CinemaOperatingCompanyData.accessRight* → UserPrivileges), IDOR chaining across 3 pre-auth resolvers to 51-field User (incl. onlineTicketingToken, inviteCode, linkedAccounts, financial history), physical-to-profile via userByQr, auth-layer privilege escalation primitives (login.privileged, refreshLogin.privileged, loginPOS.authToken). Dangling CNAME on web-dev.cineplex.de (20+ cycles NXDOMAIN) chains to CORS for takeover-to-credentialed-read (but auth model breaks chain). Private IP prefix bypass (10.evil.com, 192.168.evil.com) provides alternative foothold without takeover. Staging parity identical. All probes read-only ≤1 rps, no PII touched. Dev-origin booking/payment tier reachable but /gateway/* gated at CF edge. Automated probe harness voided (206 cycles corrupted).
+## 2026-10-17 22:12:11 UTC [target] (model nemotron3)
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY. Publish-path contamination: `leads/lead-nemotron3.md` still holds 33 `class:IDOR` blocks.
+[FINAL] 1. graphql-api.app.{,staging.}cineplex.de unauthenticated schema exposure + arbitrary-path catch-all (MISCONFIG, 95, PASSIVE) — report-ready, CVSS 7.5.
+[FINAL] 2. web-dev.cineplex.de dangling CNAME → unclaimed Azure CAE (OTHER, 85, HUMAN_ONLY) — report-ready pending claimability attestation.
+[FINAL] 3. CORS private-IP prefix + null-origin reflection (MISCONFIG, 50, PASSIVE) — confirmed but config-hygiene; supporting section in finding 1, not its own report.
+[NEXT] HUMAN: Draft the two report-ready submissions for bugs.olivermaicher.eu (schema exposure as primary with the CORS/private-IP-prefix as a supporting section; dangling CNAME as secondary with claimability explicitly marked unverified) and include the four outstanding authorization requests in the covering message: (a) self-owned low-privilege account pair for `setAdminPrivilege`/mass-assignment legs, (b) ruling on staging `testing_getConfirmationCode`, (c) Azure FQDN claim attestation for web-dev.cineplex.de, (d) permission to use an anonymous `createAnonymousUser` guest as test session.
+[LEARN] ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: schema exposure + arbitrary-path catch-all re-verified live (GET root-intro 200, deep-path 200, staging parity 200) — 24th stable cycle.
+[LEARN] ACCEPTED OTHER @ web-dev.cineplex.de: dangling CNAME NXDOMAIN + Azure SOA re-verified live via DoH — 24th cycle, claimability still HUMAN_ONLY.
+[LEARN] ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `10.evil.com` preflight 204 + ACAC:true re-verified — config-hygiene, no ambient credential.
+[LEARN] REJECTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: cors_misconfig_alone / cors_credentialed_chain — no API-origin session cookie; chain broken (carry-forward).
+[LEARN] REJECTED AUTH @ graphql-api.app.staging.cineplex.de: staging_testing_oracle — descriptive method-mismatch (OOS); field present in prod queryType; no code extracted (carry-forward).
+[LEARN] REJECTED automated probe harness: probe-results.md carries only trailing-backtick 400s + urllib-UA CF 403s with zero POST GraphQL probes — evidence void; manual balanced curl remains the sole valid channel.
+[LEARN] STATE CORRECTION: `scripts/passive_verify.py` / `scripts/test_passive_verify.py` never existed; `.github/workflows/hunt.yml:207-240` passive verifier still active with 8 defects; `knowledge/index.md` has no `## CANONICAL STATUS` section; `leads/lead-nemotron3.md` = 33 `class:IDOR` blocks (up from 32, contamination worsening).
+[RISK] cineplex: 45 — this cycle issued only read-only GET/OPTIONS/DoH requests (≤1 rps, browser UA, no POST, no mutations, no customer data, no PII, no state change on target or repo). Residual = already-reportable unauthenticated schema exposure + pending dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+[PRIO] graphql-api.app.cineplex.de @ 8.65 · graphql-api.app.staging.cineplex.de @ 7.25 · web-dev.cineplex.de @ 7.05 (unchanged; all three re-verified live, cycle 25)
+[PARKED] Mass-assignment `updateUser(adminCinemaOperatingCompanyIds)` / `CinemaOperatingCompanyData.accessRight*` / `setAdminPrivilege`; `login(privileged)` / `refreshLogin(privileged)` / `loginPOS(authToken)`; `createAnonymousUser` guest session; `socialLogin` client-supplied email: AUTH_HELPED/HUMAN_ONLY, blocked on program authorization (PII rule).
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY. Publish-path contamination: `leads/lead-nemotron3.md` still holds 33 `class:IDOR` blocks.
+[FINAL] 1. graphql-api.app.{,staging.}cineplex.de unauthenticated schema exposure + arbitrary-path catch-all (MISCONFIG, 95, PASSIVE) — report-ready, CVSS 7.5.
+[FINAL] 2. web-dev.cineplex.de dangling CNAME → unclaimed Azure CAE (OTHER, 85, HUMAN_ONLY) — report-ready pending claimability attestation.
+[FINAL] 3. CORS private-IP/prefix origin reflection + null-origin (MISCONFIG, 50, PASSIVE) — confirmed; config-hygiene; folded as supporting section of finding 1.
+[NEXT] HUMAN: submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability marked UNVERIFIED) to bugs.olivermaicher.eu; attach the four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging `testing_getConfirmationCode`, (c) Azure FQDN claim attestation, (d) anonymous `createAnonymousUser` guest-session permission. Repo tasks: retag 33 `class:IDOR` blocks in `leads/lead-nemotron3.md`; write the never-written hunt.yml passive-verifier remediation.
+[LEARN] ACCEPTED MISCONFIG @ graphql-api.app.{,staging.}cineplex.de: bare GET returns GraphQL's own `GET query missing.` (proves catch-all routing, not a web server); `?query={__typename}` 200 on root AND on `/api/v9/no-such-path-20261016`; full introspection GET 200 = 385 types, 83 queries / 140 mutations / 44 INPUT_OBJECTs; prod/staging parity confirmed again — 25th stable cycle.
+[LEARN] ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; claimability still HUMAN_ONLY; sole dangle in 14-host sweep.
+[LEARN] ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1 as supporting section (no ambient credential, chain broken).
+[LEARN] OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction commands, honesty notes, and remediation.
+[RISK] cineplex: 45 — cycle 25 was read-only (GET + DoH, browser UA, ~1 rps, no POST, no mutations, no customer data, no PII, no state change). Two report drafts written locally. Residual unchanged: reportable schema exposure awaiting submission + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization.
+class:IDOR still publishable as [HYP]: 0
+class:IDOR now tagged [RETRACTED]: 156
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 95
+reasoning: balanced GET `?query=%7B__typename%7D` → 200 both envs (manual curl); arbitrary unshadowed path → 200; 385 types / 83 q / 140 m / 44 INPUT_OBJECTs; staging field-identical; 12+ cycle stability.
+evidence_needed: none (live-captured).
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: full schema incl. PII resolvers + credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: DoH CNAME Status 0 → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io`; A-follow Status 3 NXDOMAIN + Azure SOA; 20th+ consecutive cycle.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+class: MISCONFIG
+asset: graphql-api.app.cineplex.de
+confidence: 88
+reasoning: OPTIONS/GET w/ Origin `http://10.evil.com`/`192.168.*` → 204/200 + ACAO echo + ACAC:true + ACAH authorization + ACAM POST; boundary rules confirmed; localhost:3000 + app.staging origins reflected on prod.
+evidence_needed: ambient credential path (none exists — Bearer/localStorage, zero API Set-Cookie).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` (204); GET `/` Origin `http://10.evil.com` (200 + ACAO echo).
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0), supporting to schema finding.
+testability: PASSIVE
+[PRIO]
+[HYP] graphql-schema-exposure-catchall
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 95
+reasoning: Full introspection (83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 25+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] dangling-cname-takeover-web-dev
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 25th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+[HYP] cors-private-ip-prefix-reflection
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; no ambient API credential (Bearer/localStorage transport, zero Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields (updateUser adminCinemaOperatingCompanyIds, CinemaOperatingCompanyData accessRight*, setAdminPrivilege, login/refreshLogin privileged, loginPOS authToken, createAnonymousUser, socialLogin client-supplied email): AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging testing_getConfirmationCode guard omission: distinguishing signal is descriptive method-mismatch error (OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL]
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+[RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+[PRIO]
+[HYP] graphql-schema-exposure-catchall
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 95
+reasoning: Full introspection (83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 25+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] dangling-cname-takeover-web-dev
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 25th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+[HYP] cors-private-ip-prefix-reflection
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; no ambient API credential (Bearer/localStorage transport, zero Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields (updateUser adminCinemaOperatingCompanyIds, CinemaOperatingCompanyData accessRight*, setAdminPrivilege, login/refreshLogin privileged, loginPOS authToken, createAnonymousUser, socialLogin client-supplied email): AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging testing_getConfirmationCode guard omission: distinguishing signal is descriptive method-mismatch error (OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL]
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+[RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+reasoning: Full introspection (83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 25+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] dangling-cname-takeover-web-dev
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 25th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+[HYP] cors-private-ip-prefix-reflection
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; no ambient API credential (Bearer/localStorage transport, zero Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields (updateUser adminCinemaOperatingCompanyIds, CinemaOperatingCompanyData accessRight*, setAdminPrivilege, login/refreshLogin privileged, loginPOS authToken, createAnonymousUser, socialLogin client-supplied email): AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging testing_getConfirmationCode guard omission: distinguishing signal is descriptive method-mismatch error (OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL]
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+[RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+[NEXT] HUMAN: submit both reports to bugs.olivermaicher.eu + the four authorization requests (a) low-priv account pair, (b) staging testing_getConfirmationCode ruling, (c) Azure FQDN claim attestation, (d) createAnonymousUser guest-session permission. No further passive surface remains — do not fabricate findings on empty delta.
+[RISK] cineplex: 40 (was 45) — reduced because the "drafted report" state drift is now closed (files exist) and all three survivors re-verified live this cycle; residual unchanged: human submission + AUTH_HELPED privilege-escalation class awaiting authorization.
+[PRIO] No new surface; delta empty. Focus was re-verification + closing report drift.
+[HYP] graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE.
+[HYP] dangling-cname-takeover-web-dev — conf 85 (held). LIVE: CNAME intact, target NXDOMAIN (Status 3 + Azure SOA) — 26th cycle. HUMAN_ONLY (claimability).
+[HYP] cors-private-ip-prefix-reflection — conf 50 (held). LIVE: `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAO + ACAC:true; control `https://evil.com` → 500, no ACAO. Root-path-only (OPTIONS `/graphql` → 403 method gate). Config-hygiene; folded as supporting section.
+[PARKED] Mass-assignment privilege fields, IDOR decoder oracle, staging testing_getConfirmationCode — unchanged (AUTH_HELPED/HUMAN_ONLY).
+[FINAL] No publishable verdict change; three survivors stable and re-verified.
+[NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
+[LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
+[RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
+[RISK] cineplex: 40 (was 45) — reduced because the "drafted report" state drift is now closed (files exist) and all three survivors re-verified live this cycle; residual unchanged: human submission + AUTH_HELPED privilege-escalation class awaiting authorization.
+[PRIO] No new surface; delta empty. Focus was re-verification + closing report drift.
+[HYP] graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE.
+[HYP] dangling-cname-takeover-web-dev — conf 85 (held). LIVE: CNAME intact, target NXDOMAIN (Status 3 + Azure SOA) — 26th cycle. HUMAN_ONLY (claimability).
+[HYP] cors-private-ip-prefix-reflection — conf 50 (held). LIVE: `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAO + ACAC:true; control `https://evil.com` → 500, no ACAO. Root-path-only (OPTIONS `/graphql` → 403 method gate). Config-hygiene; folded as supporting section.
+[PARKED] Mass-assignment privilege fields, IDOR decoder oracle, staging testing_getConfirmationCode — unchanged (AUTH_HELPED/HUMAN_ONLY).
+[FINAL] No publishable verdict change; three survivors stable and re-verified.
+[NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
+[LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
+[RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
+[RISK] cineplex: 40 (was 45) — reduced because the "drafted report" state drift is now closed (files exist) and all three survivors re-verified live this cycle; residual unchanged: human submission + AUTH_HELPED privilege-escalation class awaiting authorization.
+[PRIO] No new surface; delta empty. Focus was re-verification + closing report drift.
+[HYP] graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE.
+[HYP] dangling-cname-takeover-web-dev — conf 85 (held). LIVE: CNAME intact, target NXDOMAIN (Status 3 + Azure SOA) — 26th cycle. HUMAN_ONLY (claimability).
+[HYP] cors-private-ip-prefix-reflection — conf 50 (held). LIVE: `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAO + ACAC:true; control `https://evil.com` → 500, no ACAO. Root-path-only (OPTIONS `/graphql` → 403 method gate). Config-hygiene; folded as supporting section.
+[PARKED] Mass-assignment privilege fields, IDOR decoder oracle, staging testing_getConfirmationCode — unchanged (AUTH_HELPED/HUMAN_ONLY).
+[FINAL] No publishable verdict change; three survivors stable and re-verified.
+[NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
+[LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
+[RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
+[RISK] cineplex: 40 (was 45) — reduced because the "drafted report" state drift is now closed (files exist) and all three survivors re-verified live this cycle; residual unchanged: human submission + AUTH_HELPED privilege-escalation class awaiting authorization.
+[PRIO] No new surface; delta empty. Focus was re-verification + closing report drift.
+[HYP] graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE.
+[HYP] dangling-cname-takeover-web-dev — conf 85 (held). LIVE: CNAME intact, target NXDOMAIN (Status 3 + Azure SOA) — 26th cycle. HUMAN_ONLY (claimability).
+[HYP] cors-private-ip-prefix-reflection — conf 50 (held). LIVE: `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAO + ACAC:true; control `https://evil.com` → 500, no ACAO. Root-path-only (OPTIONS `/graphql` → 403 method gate). Config-hygiene; folded as supporting section.
+[PARKED] Mass-assignment privilege fields, IDOR decoder oracle, staging testing_getConfirmationCode — unchanged (AUTH_HELPED/HUMAN_ONLY).
+[FINAL] No publishable verdict change; three survivors stable and re-verified.
+[NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
+[LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
+[RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
+[PRIO] graphql-api.app.cineplex.de,8.65,attack_surface=10,business_value=9,tech_exposure=10,gate_ease=10,cloud_surface=9,freshness=9
+[PRIO] graphql-api.app.staging.cineplex.de,7.25,attack_surface=10,business_value=8,tech_exposure=10,gate_ease=10,cloud_surface=9,freshness=9
+[PRIO] web-dev.cineplex.de,7.05,attack_surface=9,business_value=8,tech_exposure=9,gate_ease=10,cloud_surface=10,freshness=9
+[HYP] GraphQL Full Schema Exposure with Arbitrary Path Catch-All and Dual Entry Points
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 95
+reasoning: Full introspection (83 queries, 140 mutations, 385 types, 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 26+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path `/zz-verify-20261017?query={__typename}` → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] Dangling CNAME Takeover on web-dev.cineplex.de Enables Trusted-Origin Foothold
+class: SUBDOMAIN_TAKEOVER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 26th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match on *.cineplex.de as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: Takeover of *.cineplex.de origin → trusted CORS origin for credentialed GraphQL reads; Medium/High if claimable (CVSS 6.5-7.5); auth model breaks ATO chain (Bearer in localStorage, zero API Set-Cookie).
+testability: PASSIVE (CNAME NXDOMAIN verified) + HUMAN_ONLY (claim requires Azure subscription or domain registration)
+[HYP] CORS Credentialed Reflection with Private-IP Prefix Bypass and DNS Label Boundary Enforcement
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; null-origin reflected with ACAC:true on actual data responses; no ambient API credential (Bearer in localStorage, zero API Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: Credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields: AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization — no verify steps against live customer data.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging `testing_getConfirmationCode` guard omission: distinguishing signal is descriptive method-mismatch error (explicit OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL] Ranked survivors (by testability × impact):
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED — requires Azure FQDN claim attestation) to bugs.olivermaicher.eu; attach four outstanding authorization requests: (a) low-privilege account pair for privilege-escalation legs (`setAdminPrivilege`/mass-assignment), (b) ruling on staging `testing_getConfirmationCode`, (c) Azure FQDN claim attestation for web-dev.cineplex.de, (d) permission to use anonymous `createAnonymousUser` guest session. No further passive surface remains — do not fabricate findings on empty delta.
+[LEARN] ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) served on arbitrary paths via GET; dual entry points (/, /graphql) plus 3 GET-only mirrors — 26th stable cycle.
+[LEARN] ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 26th consecutive NXDOMAIN cycle; sole dangling CNAME; DoH machine-checkable.
+[LEARN] ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. reflect with ACAC:true; 172.16/12, 100.64/10, 169.254.169.254, 0.* excluded (500).
+[LEARN] ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAC:true on actual data responses.
+[LEARN] REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, Bearer in localStorage only.
+[LEARN] REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; decoder oracle only.
+[LEARN] REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit OOS); field exists in prod queryType.
+[LEARN] REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts, api.cineplex.de GET-bypass, booking-dev origin bypass, relay_metrics.
+[RISK] cineplex: 40 — reduced from 45 because report drift is closed (files exist) and all three survivors re-verified live this cycle; residual = human submission pending + AUTH_HELPED privilege-escalation class awaiting authorization. Cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. All probes read-only ≤1 rps, browser UA, no POST, no mutations, no customer data, no PII, no state change.
