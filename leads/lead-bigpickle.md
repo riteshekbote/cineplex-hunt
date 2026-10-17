@@ -12799,3 +12799,4 @@ evidence_needed: ambient credential path (none exists — Bearer/localStorage, z
 verify_steps: OPTIONS `/` Origin `http://10.evil.com` (204); GET `/` Origin `http://10.evil.com` (200 + ACAO echo).
 impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0), supporting to schema finding.
 testability: PASSIVE
+## 2026-10-17 00:12:31 UTC [target] (model bigpickle)

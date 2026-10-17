@@ -6508,3 +6508,5 @@
 - LEARN: OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction com
 
 ## RANKED HYPOTHESES 2026-10-16 21:59:51 UTC
+
+## RANKED HYPOTHESES 2026-10-17 00:12:42 UTC
