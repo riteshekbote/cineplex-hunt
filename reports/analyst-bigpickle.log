@@ -121525,3 +121525,97 @@ https://graphql-api.app.cineplex.de/?query=%7B__typename%7D` -> HTTP 400
 - `inventory/cineplex.md: 132-host inventory baseline (complete 2026-09-23).
 - `scripts/passive_verify.py / scripts/test_passive_verify.py: DO NOT EXIST — prior claims were false.
 Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+===== ANALYST bigpickle 2026-10-17 17:45:28 UTC =====
+[0m
+> build · big-pickle
+[0m
+[91m[1mError: [0mUpstream request failed: [invalid_request_error] Requested token count exceeds the model's maximum context length of 262139 tokens. You requested a total of 266929 tokens: 234929 tokens from the input messages and 32000 tokens for the completion. Please reduce the number of tokens in the input messages or the completion to fit within the limit.
+## Objective
+- Act as a bug bounty analyst for the Cineplex program (report channel: bugs.olivermaicher.eu), running a 7-step per-cycle analysis (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARNING → RISK) over an append-only knowledge base, targeting only the 3 surviving findings.
+
+## Important Details
+- In-scope assets: only company-owned Cineplex infra (132-host baseline in `inventory/cineplex.md`, unchanged since 2026-09-23); CT diff + CNAME sweep exhausted — expect NO_DELTA cycles; do not fabricate findings on empty delta.
+- Out-of-scope (REJECTED, reaffirmed every cycle): username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors (incl. Lambda stacktraces, method-mismatch), known_vuln_library, OAuth/JWKS passive paths, TLS-dead hosts (`app.staging.cineplex.de`, `graphql-api.app.couat.cineplex.de`, `login.cineplex.de`, `sso.cineplex.de`), `api.cineplex.de` GET-bypass (strict 403), relay_metrics/relay_broker_saturation @ `data-9fc27eb430.cineplex.de`, booking-dev origin bypass, cors_misconfig_alone, cors_credentialed_chain, staging_testing_oracle, idor_booking systemic claim, wildcard.systems dangle replication.
+- Three survivors: (1) graphql arbitrary-path catch-all/schema exposure, conf 95, PASSIVE; (2) web-dev.cineplex.de dangling CNAME, conf 85, HUMAN_ONLY (claimability attestation); (3) CORS private-IP prefix reflection, conf 50, config-hygiene (no ambient credential — Bearer/localStorage transport, zero Set-Cookie on API).
+- Live probe rules: passive-first, ≤1 rps, GET/HEAD/OPTIONS only; use manual `curl --http2` with browser UA and balanced URL-encoded queries (e.g. `?query=%7B__typename%7D`); DoH needs `Accept: application/dns-json`.
+- Automated probe harness (`probe-results.md`, 1399 lines) is VOID: trailing backtick → 400, urllib UA `(passive verifier)` → Cloudflare 403, `urls[:12]` truncation, brace truncation; zero POST probes ever. Never draw conclusions from its silence or status codes.
+- `.github/workflows/hunt.yml:207-240` "Passive verifier" step still active with all 8 defects; remediation NOT yet written.
+- `scripts/passive_verify.py` / `scripts/test_passive_verify.py` NEVER EXISTED (claimed but not executed) — do not cite as deliverables.
+- `knowledge/index.md` is a flat append-only line list; no `## CANONICAL STATUS` section exists.
+- Publisher: `scripts/sync-issues.py` `parse_blocks` matches `^\[HYP\]` only; `leads/lead-nemotron3.md` still carries ~33 `class:IDOR` blocks (contamination worsening); bigpickle lead cleared.
+- PII/authorization rule: cross-tenant IDOR proof and staging POST oracle are HUMAN_ONLY; no mutations on live customer data.
+- Next step is a HUMAN action: submit reports + 4 authorization requests.
+
+## Work State
+### Completed
+- 2026-10-17 cycle: all three survivors re-verified live — catch-all `GET /zz-verify-20261017?query={__typename}` → 200 both envs; CNAME Status 0 / A Status 3 NXDOMAIN + Azure SOA (26th cycle); CORS `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAC:true, control `https://evil.com` → 500.
+- Reports confirmed to exist on disk (KB drift closed): `reports/report-graphql-schema-exposure.md`, `reports/report-dangling-cname-web-dev.md`.
+- Risk reduced 45 → 40; lead file corrected to `leads/lead-bigpickle.md` (not `art/lead_bigpickle.txt`).
+- Persistent per-cycle rejections and CORRECTIONs (harness defects, evidence-depth errors, falsified systemic IDOR, CORS chain break) maintained across 26 convergence cycles.
+
+### Active
+- Emitting the 7 structured blocks for the current cycle; state `{"phase": "POC", "target": "api"}`.
+- Held hypotheses: `[HYP] graphql-schema-exposure-catchall` conf 95, `[HYP] dangling-cname-takeover-web-dev` conf 85, `[HYP] cors-private-ip-prefix-reflection` conf 50.
+
+### Blocked
+- Submission pending HUMAN action (bugs.olivermaicher.eu).
+- Four outstanding authorization requests: (a) low-privilege account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission.
+- PARKED (AUTH_HELPED/HUMAN_ONLY): mass-assignment privilege fields, IDOR decoder oracle (LOW), staging testing oracle (REJECTED standalone).
+
+## Next Move
+1. Emit this cycle's blocks: [PRIO] on the 3 survivors, [HYP] ×3 (held, no confidence change), [PARKED] ×3, [FINAL], one [NEXT] HUMAN — submit both reports + four authorization requests to bugs.olivermaicher.eu, [LEARN] e2e_convergence, [RISK] cineplex ~40.
+2. Do not run new probes unless a real delta appears; do not re-verify survivors and count it as progress.
+
+## Relevant Files
+- `knowledge/index.md`: append-only knowledge base (seed); flat line list, no canonical section.
+- `leads/lead-bigpickle.md`: this agent's lead file with `[HYP]`/`[LEARN]` blocks (publish path via `scripts/sync-issues.py`).
+- `leads/lead-nemotron3.md`: peer lead file; ~33 `class:IDOR` blocks contaminating publish path.
+- `scripts/sync-issues.py`: publisher; `parse_blocks` at :57 matches `^\[HYP\]`, globs `leads/lead-*.md`, fingerprint = md5(asset|class).
+- `.github/workflows/hunt.yml:207-240`: broken "Passive verifier" step (8 defects) still active.
+- `probe-results.md`: automated probe log (1399 lines) — void evidence, zero POST probes.
+- `reports/report-graphql-schema-exposure.md`, `reports/report-dangling-cname-web-dev.md`: drafted reports ready for submission.
+- `inventory/cineplex.md`: 132-host inventory baseline (frozen since 2026-09-23).
+The previous request exceeded the provider's size limit due to large media attachments. The conversation was compacted and media files were removed from context. If the user was asking about attached images or files, explain that the attachments were too large to process and suggest they try again with smaller or fewer files.
+
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+## Summary of Work Done
+
+### Context
+Bug bounty analysis for **Cineplex** program (report channel: bugs.olivermaicher.eu), running structured 7-step cycles (DELTA → PRIORITIZE → HYPOTHESES → SELF-CRITIQUE → NEXT → LEARNING → RISK) over an append-only knowledge base.
+
+### Targeting Rules
+- Only company-owned Cineplex infra (132-host baseline, frozen since 2026-09-23)
+- CT diff + CNAME sweep exhausted — expect NO_DELTA cycles
+- Passive-first probing only (≤1 rps, GET/HEAD/OPTIONS)
+
+### Three Surviving Findings
+1. **GraphQL arbitrary-path catch-all/schema exposure** — conf 95, PASSIVE
+2. **web-dev.cineplex.de dangling CNAME** — conf 85, HUMAN_ONLY (claimability attestation needed)
+3. **CORS private-IP prefix reflection** — conf 50, config-hygiene
+
+### 2026-10-17 Cycle Results
+All three re-verified live:
+- Catch-all: 200 both environments ✓
+- CNAME: NXDOMAIN (26th cycle) ✓
+- CORS: ACAC:true on private IP origin ✓
+
+### Critical Corrections Maintained
+- `probe-results.md` (1399 lines) **VOID** — trailing backtick → 400, wrong UA → 403, zero POST probes ever
+- `.github/workflows/hunt.yml` "Passive verifier" step still broken (8 defects, not remediated)
+- `scripts/passive_verify.py` / tests **never existed** (do not cite)
+- `knowledge/index.md` is flat line list — no canonical section
+- Publisher (`scripts/sync-issues.py`) matches `^\[HYP\]` only; nemotron3 lead has ~33 contaminating `class:IDOR` blocks
+- CORS chain break + falsified systemic IDOR claims rejected every cycle
+
+### Current State
+- Risk reduced 45 → 40
+- Reports drafted: `reports/report-graphql-schema-exposure.md`, `reports/report-dangling-cname-web-dev.md`
+- State: `{"phase": "POC", "target": "api"}`
+- **Blocked on HUMAN actions** — no new probes unless real delta appears
+
+### Next Move (HUMAN)
+Submit both reports + 4 authorization requests:
+1. Low-privilege account pair
+2. Staging `testing_getConfirmationCode` ruling
+3. Azure FQDN claim attestation
+4. `createAnonymousUser` guest-session permission

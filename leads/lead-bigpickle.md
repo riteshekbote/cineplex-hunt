@@ -12925,3 +12925,4 @@ testability: PASSIVE
 [NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
 [LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
 [RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
+## 2026-10-17 17:45:18 UTC [target] (model bigpickle)

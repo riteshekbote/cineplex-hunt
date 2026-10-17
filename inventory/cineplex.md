@@ -3181,3 +3181,5 @@ wwww.cineplex.de
 - CHANGED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; excluded ranges provably return 500
 - CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
 - CHANGED buchung-dev/bms-dev origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
+
+## 2026-10-17 17:45:28 UTC
