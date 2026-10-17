@@ -6543,3 +6543,21 @@
 - LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead
 
 ## RANKED HYPOTHESES 2026-10-17 17:45:28 UTC
+
+## RANKED HYPOTHESES 2026-10-17 20:06:24 UTC
+- [95] graphql-api.app.cineplex.de: GraphQL Full Schema Exposure with Arbitrary Path Catch-All and Dual Entry Points (from art/lead_nemotron3.txt)
+- [0] ?: graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE. (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruli
+- NEXT(hypotheses-nemotron3.txt): HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVE
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/le
+- LEARN: ACCEPTED graphql_introspection @ graphql-api.app.{,staging.}cineplex.de: full schema (83 queries, 140 mutations, 44 INPUT_OBJECTs, 385 types) served on arbitrar
+- LEARN: ACCEPTED dangling_cname_takeover @ web-dev.cineplex.de: 20+ consecutive NXDOMAIN cycles; sole dangling CNAME; DoH machine-checkable
+- LEARN: ACCEPTED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules — 10./192.168. reflect with ACAC:true; 172.16/12, 100.64
+- LEARN: ACCEPTED cors_allowlist_suffix_match @ graphql-api.app.cineplex.de: DNS label boundary enforced (sub.attacker.cineplex.de 204 vs evilcineplex.de 500)
+- LEARN: ACCEPTED cors_null_origin_credentialed @ graphql-api.app.cineplex.de: Origin:null reflected with ACAC:true on actual data responses
+- LEARN: REJECTED cors_credentialed_chain @ graphql-api.app.cineplex.de: ATO chain broken — no API-origin session cookie, Bearer in localStorage only
+- LEARN: REJECTED idor_booking @ graphql-api.app.cineplex.de (systemic IDOR claim): authorization gate presence NOT demonstrated; decoder oracle only
+- LEARN: REJECTED staging_testing_oracle @ graphql-api.app.staging.cineplex.de: method-mismatch error is descriptive (explicit OOS); field exists in prod queryType
+- LEARN: REJECTED cors_misconfig_alone @ graphql-api.app.{,staging.}cineplex.de: private-IP prefix reflection live but no ambient credential / API Set-Cookie → config-hy
+- LEARN: REJECTED all out-of-scope: username_enumeration, ssl_tls_best_practices, csrf_logout, descriptive_errors, known_vuln_library, OAuth/JWKS passive paths, TLS-dead

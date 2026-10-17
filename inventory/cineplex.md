@@ -3183,3 +3183,5 @@ wwww.cineplex.de
 - CHANGED buchung-dev/bms-dev origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
 
 ## 2026-10-17 17:45:28 UTC
+
+## 2026-10-17 20:06:24 UTC
