@@ -3173,3 +3173,11 @@ wwww.cineplex.de
 ## 2026-10-17 07:36:43 UTC
 
 ## 2026-10-17 11:57:50 UTC
+
+## 2026-10-17 15:11:04 UTC
+- NEW Automated probe harness remains void: probe-results.md 1399 lines, ZERO POST GraphQL probes across all 206 cycles; trailing backtick → 400, urllib UA → Cloudflare 403 bot-gate; 8 defects confirmed
+- NEW No new assets or surface changes since 2026-09-23; 132-host baseline confirmed complete via CT diff + CNAME sweep
+- CHANGED graphql-api.app.staging.cineplex.de/graphql parity fully restored: HTTP 200 GET introspection confirmed live (was 500); entry point now matches prod exactly
+- CHANGED cors_private_ip_prefix_boundary @ graphql-api.app.{,staging.}cineplex.de: exact boundary rules confirmed live — `10.` and `192.168.` dot-boundary enforced; excluded ranges provably return 500
+- CHANGED web-dev.cineplex.de dangling CNAME: 20th+ consecutive NXDOMAIN cycle; sole CNAME in 14-host sweep; machine-checkable DoH now works
+- CHANGED buchung-dev/bms-dev origins (194.77.169.121) TCP-reachable (SPAs 200); `/gateway/*` routes return 403 at CF edge after redirect — exploitability remains backend-gated
