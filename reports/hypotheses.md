@@ -6512,3 +6512,8 @@
 ## RANKED HYPOTHESES 2026-10-17 00:12:42 UTC
 
 ## RANKED HYPOTHESES 2026-10-17 02:49:10 UTC
+
+## RANKED HYPOTHESES 2026-10-17 07:36:43 UTC
+- [95] graphql-api.app.{,staging.}cineplex.de: graphql-schema-exposure-catchall (from art/lead_bigpickle.txt)
+- NEXT(hypotheses-bigpickle.txt): HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVE
+- LEARN: ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-o

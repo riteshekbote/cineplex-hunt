@@ -1684,3 +1684,4 @@
 - 2026-10-16 ACCEPTED OTHER @ web-dev.cineplex.de: DoH CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io.`, A-query Status 3 NXDOMAIN — 25th cycle; claimability still HUMAN_ONLY; sole dangle in 14-host sweep.
 - 2026-10-16 ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1 as supporting section (no ambient credential, chain broken).
 - 2026-10-16 OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction commands, honesty notes, and remediation.
+- 2026-10-17 ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
