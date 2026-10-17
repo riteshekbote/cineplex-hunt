@@ -1685,3 +1685,4 @@
 - 2026-10-16 ACCEPTED MISCONFIG @ graphql-api.app.cineplex.de: CORS `Origin: https://10.evil.com` → ACAO reflection + ACAC:true, Vary: Origin present — folded into finding 1 as supporting section (no ambient credential, chain broken).
 - 2026-10-16 OUTPUT: drafted `reports/report-graphql-schema-exposure.md` and `reports/report-dangling-cname-web-dev.md` from cycle-25 evidence; both include reproduction commands, honesty notes, and remediation.
 - 2026-10-17 ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+- 2026-10-17 Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).

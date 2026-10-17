@@ -12837,3 +12837,80 @@ testability: PASSIVE
 [NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
 [LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
 [RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+## 2026-10-17 11:57:39 UTC [target] (model bigpickle)
+[PRIO]
+[HYP] graphql-schema-exposure-catchall
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 95
+reasoning: Full introspection (83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 25+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] dangling-cname-takeover-web-dev
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 25th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+[HYP] cors-private-ip-prefix-reflection
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; no ambient API credential (Bearer/localStorage transport, zero Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields (updateUser adminCinemaOperatingCompanyIds, CinemaOperatingCompanyData accessRight*, setAdminPrivilege, login/refreshLogin privileged, loginPOS authToken, createAnonymousUser, socialLogin client-supplied email): AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging testing_getConfirmationCode guard omission: distinguishing signal is descriptive method-mismatch error (OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL]
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+[RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+reasoning: Full introspection (83 queries / 140 mutations / 385 types / 44 INPUT_OBJECTs) served unauthenticated via GET on both environments under any unshadowed path; arbitrary-path catch-all confirmed 25+ cycles; staging schema field-identical to prod; CORS private-IP-prefix reflection (`10.`/`192.168.`) with ACAC:true documented as supporting section.
+evidence_needed: none (live-captured, report drafted)
+verify_steps: GET `/?query=%7B__typename%7D` → 200; deep path → 200; staging → 200.
+impact: Full schema exposure incl. PII-resolver field lists and credential-shaped args; High; CVSS 7.5.
+testability: PASSIVE
+[HYP] dangling-cname-takeover-web-dev
+class: OTHER
+asset: web-dev.cineplex.de
+confidence: 85
+reasoning: CNAME → `web.gentleglacier-dfef6458.switzerlandnorth.azurecontainerapps.io` target NXDOMAIN (DoH Status 3, Azure SOA, TTL 300); 25th consecutive cycle; sole dangle in 14-host sweep; composes with CORS label-boundary match as chain precondition.
+evidence_needed: Azure FQDN claim attestation (provider-side).
+verify_steps: PASSIVE DoH CNAME + A on target.
+impact: takeover of *.cineplex.de origin → trusted CORS origin; Medium/High if claimable.
+testability: HUMAN_ONLY
+[HYP] cors-private-ip-prefix-reflection
+class: MISCONFIG
+asset: graphql-api.app.{,staging.}cineplex.de
+confidence: 50
+reasoning: Allowlist trusts credentialed origins matching hostname prefixes `10.`/`192.168.` (dot-boundary enforced) pre-resolution, both envs; localhost:3000 and app.staging origins reflected on prod; no ambient API credential (Bearer/localStorage transport, zero Set-Cookie) → config-hygiene only.
+evidence_needed: ambient credential path (none exists).
+verify_steps: OPTIONS `/` Origin `http://10.evil.com` → 204 + ACAC:true; GET Origin `null` → ACAO:null + ACAC:true with data.
+impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0); folded as supporting section in schema-exposure report.
+testability: PASSIVE
+[PARKED] Mass-assignment privilege fields (updateUser adminCinemaOperatingCompanyIds, CinemaOperatingCompanyData accessRight*, setAdminPrivilege, login/refreshLogin privileged, loginPOS authToken, createAnonymousUser, socialLogin client-supplied email): AUTH_HELPED/HUMAN_ONLY, blocked on program PII authorization.
+[PARKED] IDOR decoder oracle (15 resolvers, 4 decoder contracts): systemic IDOR claim falsified; only fingerprint/stacktrace oracle proven → LOW; cross-tenant proof HUMAN_ONLY.
+[PARKED] Staging testing_getConfirmationCode guard omission: distinguishing signal is descriptive method-mismatch error (OOS); field exists in prod queryType; no code extracted → REJECTED as standalone, held only for HUMAN ruling.
+[FINAL]
+[NEXT] HUMAN: Submit `reports/report-graphql-schema-exposure.md` (primary, CORS folded in) and `reports/report-dangling-cname-web-dev.md` (secondary, claimability UNVERIFIED) to bugs.olivermaicher.eu; attach four outstanding authorization requests (a) low-privilege account pair for privilege-escalation legs, (b) ruling on staging testing_getConfirmationCode, (c) Azure FQDN claim attestation, (d) anonymous createAnonymousUser guest-session permission.
+[LEARN] ACCEPTED e2e_convergence @ cineplex: 132-host inventory + CT diff + CNAME sweep exhausted; three report-ready findings drafted locally; correct behavior is no-op on empty delta, not fabricated findings — 26th cycle of convergence.
+[RISK] cineplex: 45 — cycle 26 issued zero live requests (offline state only); no new attack surface, no state change. Residual: reportable schema exposure + dangling-CNAME claimability attestation + AUTH_HELPED privilege-escalation class awaiting human authorization. Unchanged from last cycle.
+[NEXT] HUMAN: submit both reports to bugs.olivermaicher.eu + the four authorization requests (a) low-priv account pair, (b) staging testing_getConfirmationCode ruling, (c) Azure FQDN claim attestation, (d) createAnonymousUser guest-session permission. No further passive surface remains — do not fabricate findings on empty delta.
+[RISK] cineplex: 40 (was 45) — reduced because the "drafted report" state drift is now closed (files exist) and all three survivors re-verified live this cycle; residual unchanged: human submission + AUTH_HELPED privilege-escalation class awaiting authorization.
+[PRIO] No new surface; delta empty. Focus was re-verification + closing report drift.
+[HYP] graphql-schema-exposure-catchall — conf 95 (held). LIVE this cycle: GET `/zz-verify-20261017?query={__typename}` → 200 `{"data":{"__typename":"Query"}}` on **both** prod + staging. PASSIVE.
+[HYP] dangling-cname-takeover-web-dev — conf 85 (held). LIVE: CNAME intact, target NXDOMAIN (Status 3 + Azure SOA) — 26th cycle. HUMAN_ONLY (claimability).
+[HYP] cors-private-ip-prefix-reflection — conf 50 (held). LIVE: `OPTIONS /` Origin `http://10.1.2.3` → 204 + ACAO + ACAC:true; control `https://evil.com` → 500, no ACAO. Root-path-only (OPTIONS `/graphql` → 403 method gate). Config-hygiene; folded as supporting section.
+[PARKED] Mass-assignment privilege fields, IDOR decoder oracle, staging testing_getConfirmationCode — unchanged (AUTH_HELPED/HUMAN_ONLY).
+[FINAL] No publishable verdict change; three survivors stable and re-verified.
+[NEXT] **HUMAN** — submit both reports to bugs.olivermaicher.eu + four authorization requests (a) low-priv account pair, (b) staging `testing_getConfirmationCode` ruling, (c) Azure FQDN claim attestation, (d) `createAnonymousUser` guest-session permission. No remaining passive surface; do not fabricate on empty delta.
+[LEARN] Never trust a KB "OUTPUT/drafted" claim without verifying the file exists on disk — this engagement's KB had drifted (also corrected: the lead file is `leads/lead-bigpickle.md`, not `art/lead_bigpickle.txt`).
+[RISK] cineplex: **40** (was 45) — reduced because report drift is closed and all survivors re-verified; residual = submission pending + AUTH_HELPED class awaiting authorization.
