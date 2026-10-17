@@ -12800,3 +12800,4 @@ verify_steps: OPTIONS `/` Origin `http://10.evil.com` (204); GET `/` Origin `htt
 impact: credentialed write primitive if ambient credential existed; chain broken → config-hygiene (~CVSS 2.0), supporting to schema finding.
 testability: PASSIVE
 ## 2026-10-17 00:12:31 UTC [target] (model bigpickle)
+## 2026-10-17 02:48:58 UTC [target] (model bigpickle)
